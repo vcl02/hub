@@ -74,10 +74,22 @@ Registro do que deu errado e do que mudou para não repetir.
 - O teto Besteira contava categorias que só *continham* "besteira" (ex.: a antiga `Besteira Isabella`); agora compara o item inteiro.
 - O saldo diário com `!Categoria` partia de outra base e usava o guardado da conta inteira; agora usa a mesma base e o guardado do próprio recorte.
 
+**Out/2026 — token da captura do Nubank exposto**
+
+- Os XMLs do Tasker subiram para o repositório (público) com o token da Edge Function no cabeçalho `x-fin-token`. O valor saiu dos arquivos (passaram a usar `%FINTOKEN`) e a função foi reescrita para ler o token do secret `FIN_TOKEN` em vez de um hash no código. **Pendente:** gravar o token novo no secret e publicar essa versão; até lá a versão publicada ainda aceita o token antigo, que continua no histórico do git. Nenhum lançamento estranho com `obs = 'auto:tasker'` foi encontrado em 18/10/2026.
+
 **Ferramentas de teste**
 
 - O harness de navegador (Playwright com Supabase simulado) remove o `integrity` (SRI) do `index.html` apenas na cópia servida localmente; sem isso o navegador recusa o `supabase-js` falso. O arquivo publicado mantém o SRI.
 - Com o relógio congelado do harness, comparar horários de carga e gravação falhava (mesmo milissegundo); a recarga após gravar passou a usar contador de gravações em vez de relógio.
+
+## Captura do Nubank (Tasker + Edge Function)
+
+O celular lê as notificações do Nubank no Tasker (`tasker/*.xml`) e envia cada compra à Edge Function `captura-nubank`, cujo código fica versionado em `supabase/functions/captura-nubank/index.ts` e é publicado no Supabase por deploy (o repositório não publica sozinho). A função grava com a chave de serviço, ou seja, **passa por cima do RLS de `fin`** — exceção deliberada, porque o Tasker não tem sessão de usuário; a única barreira é o token.
+
+- O token vive em dois lugares só: o secret `FIN_TOKEN` da função (painel do Supabase) e a variável global `%FINTOKEN` do Tasker. Nunca no código, nos XMLs, no histórico do git ou em print: este repositório é público e publicado no GitHub Pages. `tests/tasker-sem-segredo.test.js` e `tests/captura-nubank.test.js` barram token ou hash de token nesses arquivos.
+- Sem o secret (ou com menos de 32 caracteres) a função recusa tudo (503); token errado dá 401. A comparação é feita pelos hashes, em tempo constante.
+- **Trocar o token:** gerar um novo (ex.: no DataGrip, `select replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '')`, que mostra o valor só no resultado), gravá-lo no secret `FIN_TOKEN` e em `%FINTOKEN`. A troca do secret vale na hora, sem deploy, e o token antigo para de funcionar.
 
 ## Documentação de produto
 

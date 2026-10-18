@@ -26,6 +26,7 @@
 - Toda migration precisa rodar no DataGrip, que parte o script em **cada** `;` — inclusive dentro de `$$` e de comentário. Por isso, a partir da 28: nenhum bloco `do $$`, nenhuma função com `;` no corpo (use `language sql` com uma única expressão, ex.: `case`), nenhum `;` em linha de comentário, tudo entre `begin;` e `commit;`. Pré-requisitos são conferidos com comandos que falham sozinhos (`select 'public.x'::regclass;`), e rodar de novo não pode mudar nada. Detalhes e motivos em `docs/DECISOES.md`, seção "Migrations no DataGrip".
 - Antes de entregar uma migration de dados: prévia só de leitura no banco real (quantas linhas e quais grupos ela toca) e teste num PostgreSQL local (PGlite) executando o script partido em `;`, como o DataGrip. Depois que o mantenedor aplicar, confira o resultado com `SELECT` antes de declarar aplicada.
 - O RLS de `fin` permite escrita somente ao mantenedor e leitura a contas logadas; `anon` não tem acesso (migration 20). Nova policy ou grant precisa preservar isso.
+- Segredos (ex.: o token da captura do Nubank) ficam só em secret do Supabase e no celular, nunca em arquivo do repositório, que é público. A Edge Function `captura-nubank` é a única exceção ao RLS; ver `docs/DECISOES.md`, "Captura do Nubank".
 - Não exponha chaves de serviço nem contorne RLS. Toda atualização por nome deve usar a igualdade exata e `encodeURIComponent` no filtro PostgREST.
 
 ## Como concluir uma mudança
