@@ -39,8 +39,8 @@ function vCiclo() {
                 data: f.vencimento || periodo.fat, nome: `Fatura ${NOME_CARTAO[f.cartao]}`, categ: 'Fatura',
                 // Só exibição, nenhum cálculo lê estes campos da linha calculada: fatura é mensal
                 // por natureza, fica sempre Aberto (o pagamento real é a antecipação/débito) e é
-                // um compromisso do mês.
-                freq: 'Mensal', pago: false, comprometido: true,
+                // um compromisso do mês, sem data pra acabar (Pra sempre).
+                freq: 'Mensal', pago: false, comprometido: true, pra_sempre: true,
                 id: f.cartao === CARTAO_NUBANK ? -3 : -4, v: f.liquido, valor: f.liquido, _fat: 1, _sid: sid,
             };
         });

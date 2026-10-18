@@ -152,16 +152,21 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /`migrations\/23-limites-categoria-por-ciclo\.sql`/);
 });
 
-test('previstas e faturas: Mensal, Aberto e Comprometido só na exibição, somente leitura, ids distintos', () => {
+test('previstas e faturas: Mensal, Aberto, Comprometido e Pra sempre só na exibição, somente leitura, ids distintos', () => {
     const r = carrega([...linhasCiclo]);
     const [besteira, isabella] = r.previstasDoCiclo(1, [...linhasCiclo]);
-    assert.deepEqual([besteira.freq, besteira.pago, besteira.comprometido, besteira.id, isabella.id], ['Mensal', false, true, -6, -7]);
-    assert.match(visoes, /freq: 'Mensal', pago: false, comprometido: true,\s*\n\s*id: f\.cartao === CARTAO_NUBANK \? -3 : -4,/);
+    assert.deepEqual([besteira.freq, besteira.pago, besteira.comprometido, besteira.pra_sempre, besteira.id, isabella.id, isabella.pra_sempre],
+        ['Mensal', false, true, true, -6, -7, true]);
+    assert.match(visoes, /freq: 'Mensal', pago: false, comprometido: true, pra_sempre: true,\s*\n\s*id: f\.cartao === CARTAO_NUBANK \? -3 : -4,/);
+    // Nenhum cálculo lê pra_sempre: só a coluna e o filtro por clique dela.
+    for (const arquivo of ['js/finance.js', 'js/charts.js', 'js/shared.js', 'js/cycle-views.js']) {
+        assert.doesNotMatch(ler(arquivo).replace(/pra_sempre: true,/g, ''), /\.pra_sempre|\[['"]pra_sempre['"]\]/, arquivo);
+    }
     // Pago clicável só em lançamento real; linha calculada mostra texto.
     assert.match(ler('js/tables.js'), /modoRestrito\(\) \|\| !ehLinhaReal\(r\) \? `<span class="\$\{r\[chave\] \? 'vd' : 'vm'\}">/);
     // Marcado em linha só leitura fica na mesma cor das linhas reais.
     assert.match(ler('js/tables.js'), /: \(marcado \? `<span class=\$\{COR_FLAG\[chave\]\}>\$\{texto\}<\/span>` : texto\);/);
     // O indicador Comprometido continua lendo só lançamentos reais.
     assert.match(graficos, /const linhas = Estado\.lancamentos\s*\n\s*\.filter\(r => r\.periodoIdx == idxPeriodo\)/);
-    assert.match(regras, /Mostram Frequência \*\*Mensal\*\*, Pago \*\*Aberto\*\* e \*\*Comprometido\*\*/);
+    assert.match(regras, /Mostram Frequência \*\*Mensal\*\*, Pago \*\*Aberto\*\*, \*\*Comprometido\*\* e \*\*Pra sempre\*\*/);
 });

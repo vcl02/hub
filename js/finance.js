@@ -112,7 +112,8 @@ function previstasDoCiclo(idx, base) {
             // freq e comprometido só aparecem nas colunas (é uma previsão de todo ciclo); o
             // indicador Comprometido lê só lançamentos reais. pago = false é regra: não ocupa
             // o limite de Hoje. Ids distintos na coluna ID: Besteira -6, Isabella -7.
-            data: dataDeFechamentoDoCiclo(ciclo), nome: c.nome, categ: c.categ, freq: 'Mensal', pago: false, comprometido: true, cred: true, fatura,
+            // pra_sempre também é só exibição: todo ciclo tem a sua prevista, sem fim.
+            data: dataDeFechamentoDoCiclo(ciclo), nome: c.nome, categ: c.categ, freq: 'Mensal', pago: false, comprometido: true, pra_sempre: true, cred: true, fatura,
             id: c.chave === 'besteira' ? -6 : -7, _sid: `prev:${c.chave}:${idx}`, _prev: 1, v, valor: v, periodoIdx: idx + 1,
         };
     }).filter(Boolean);
