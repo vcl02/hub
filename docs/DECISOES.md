@@ -76,7 +76,7 @@ Registro do que deu errado e do que mudou para não repetir.
 
 **Out/2026 — token da captura do Nubank exposto**
 
-- Os XMLs do Tasker subiram para o repositório (público) com o token da Edge Function no cabeçalho `x-fin-token`. O valor saiu dos arquivos (passaram a usar `%FINTOKEN`) e a função foi reescrita para ler o token do secret `FIN_TOKEN` em vez de um hash no código. **Pendente:** gravar o token novo no secret e publicar essa versão; até lá a versão publicada ainda aceita o token antigo, que continua no histórico do git. Nenhum lançamento estranho com `obs = 'auto:tasker'` foi encontrado em 18/10/2026.
+- Os XMLs do Tasker subiram para o repositório (público) com o token da Edge Function no cabeçalho `x-fin-token`. O valor saiu dos arquivos (passaram a usar `%FINTOKEN`) e a função foi reescrita para ler o token do secret `FIN_TOKEN` em vez de um hash no código. Em 18/10/2026 o mantenedor criou o secret com um token novo e essa versão foi publicada (versão 6 no Supabase, conferida igual ao arquivo do repositório): o token antigo, que continua no histórico do git, não é mais aceito. Nenhum lançamento estranho com `obs = 'auto:tasker'` foi encontrado até a troca.
 
 **Ferramentas de teste**
 
