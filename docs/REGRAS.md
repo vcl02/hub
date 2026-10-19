@@ -342,6 +342,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   As faixas ficam separadas por um divisor vertical; o nome de cada cartão tem cor própria (Total neutro, Nubank roxo, Mercado Pago azul), rótulos discretos, valores em negrito e o teto ("de R$ …") e a garantia em itálico.
   Com os dois cartões no título, Hoje e Futuro começam por uma faixa **Total**, antes das faixas de cada cartão: Livre somado dos dois de teto somado (incluindo a garantia do Nubank).
   Hoje, a Fatura é só compras confirmadas menos as antecipações já pagas; em Futuro, a fatura exibida inteira (paga e aberta, líquida das antecipações).
+  Cada valor fica colado no próprio rótulo ("Fatura R$ 54,48", "Usado R$ 54,48"), com o espaço que sobra depois dele e um respiro maior entre um par e o seguinte, pra nenhum valor parecer rótulo do próximo.
   Toda faixa, em Hoje e em Futuro, tem sempre os mesmos pedaços — Fatura, Usado, Livre e teto —, mesmo quando Fatura e Usado coincidem (nada confirmado em faturas seguintes): esconder um deles numa linha e não na outra desalinhava as colunas.
   O Aprovado editado no título vai para o ciclo no Supabase (ver a regra de limites por ciclo acima); as preferências antigas deste navegador (`fin.limite-cartao` e `fin.limite-cartao.mp`) só são lidas como padrão enquanto nenhum ciclo define o Aprovado.
 - Identificar o cartão pelo dia do vencimento é uma regra provisória (ver `docs/DECISOES.md`): só funciona enquanto os dois cartões vencerem em dias diferentes.
