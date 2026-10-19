@@ -13,7 +13,7 @@ const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 function carrega() {
     const inicio = visoes.indexOf('function htmlModalCartao(');
     const contexto = {
-        TOLERANCIA_FINANCEIRA: 0.005,
+        TOLERANCIA_FINANCEIRA: 0.005, CARTAO_NUBANK: 'nubank',
         brl: v => `R$ ${Number(v).toFixed(2).replace('.', ',')}`,
         dataBR: s => String(s).slice(0, 10).split('-').reverse().join('/'),
         timestamp: s => Date.parse(String(s || '').slice(0, 10)) || 0,
@@ -45,7 +45,7 @@ const dados = {
 
 test('desenho do cartão com a fatura de Hoje e o vencimento; Hoje e Futuro com Fatura/Usado/Livre', () => {
     const html = carrega()(dados, 'mp');
-    assert.match(html, /<div class="cartaoArte cartao-mp">/);
+    assert.match(html, /<div class="cartaoArte cartao-mp"><span class=cartaoMarcaDagua aria-hidden=true><span>MER<\/span><span>CADO<\/span><span>PAGO<\/span><\/span><span class=cartaoVisa aria-hidden=true>VISA<\/span>/);
     assert.match(html, /<small>Fatura hoje<\/small><b>R\$ 54,48<\/b>/);
     assert.match(html, /<small>Vence<\/small><b>13\/11<\/b>/);
     assert.match(html, /<span class=cartaoLinhaRotulo>Hoje<\/span>.*<small>Fatura<\/small><b class="vm">R\$ 54,48<\/b>.*<small>Usado<\/small><b>R\$ 54,48<\/b>.*<small>Livre<\/small><b class="vd">R\$ 1045,52<\/b>/s);
@@ -110,4 +110,27 @@ test('Hoje/Futuro com o rótulo em cima e as três colunas na largura toda; cabe
 test('REGRAS.md documenta o modal do cartão', () => {
     assert.match(regras, /\*\*Modal do cartão:\*\* dois botões no cabeçalho, junto dos demais ícones — \*\*Nubank\*\* \(cartão roxo\) e \*\*Mercado Pago\*\* \(cartão azul\)/);
     assert.match(regras, /Os botões ficam desativados em Comparar, no Backlog, num ciclo passado e quando o cartão não tem compra no ciclo; a conta restrita não os vê\./);
+});
+
+test('cartão Nubank no estilo do de verdade: círculos da bandeira e o "nu"; o MP não tem', () => {
+    const f = (() => {
+        const visoesFonte = fs.readFileSync('js/cycle-views.js', 'utf8');
+        const contexto = {
+            TOLERANCIA_FINANCEIRA: 0.005, CARTAO_NUBANK: 'nubank',
+            brl: v => `R$ ${Number(v).toFixed(2)}`, dataBR: s => String(s).slice(0, 10).split('-').reverse().join('/'),
+            timestamp: () => 0, escapeHtml: s => String(s), corSoma: () => '', corValor: () => '',
+        };
+        vm.createContext(contexto);
+        vm.runInContext(`${visoesFonte.slice(visoesFonte.indexOf('function htmlModalCartao('))}\nglobalThis.f = htmlModalCartao;`, contexto);
+        return contexto.f;
+    })();
+    const base = { teto: 100, campoAprovado: '', campoGarantia: '', vencimento: '2026-11-12', compras: [],
+        hoje: { fatura: -1, usado: 1, livre: 99, antecipado: 0 }, futuro: { fatura: -1, usado: 1, livre: 99, antecipado: 0 } };
+    const nubank = f({ temHoje: true, cartoes: { nubank: { ...base, nome: 'Nubank' } } }, 'nubank');
+    assert.match(nubank, /<svg class=cartaoBandeira /);
+    assert.match(nubank, /<svg class=cartaoLogoNu /);
+    assert.doesNotMatch(nubank, /cartaoVisa|cartaoMarcaDagua/);
+    const mp = f({ temHoje: true, cartoes: { mp: { ...base, nome: 'Mercado Pago' } } }, 'mp');
+    assert.doesNotMatch(mp, /cartaoBandeira|cartaoLogoNu/);
+    assert.match(regras, /Nubank roxo com os círculos da bandeira e o "nu" em traço fino; Mercado Pago grafite com "MER CADO PAGO" apagado na vertical e "VISA" em pé/);
 });

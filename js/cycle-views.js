@@ -842,12 +842,24 @@ function htmlModalCartao(dados, cartao) {
         `<span class=cartaoCompraData>${r.data ? dataBR(r.data).slice(0, 5) : '—'}</span>` +
         `<span class=cartaoCompraNome>${escapeHtml(r.nome ?? '')}${!r._prev && r.pago === false ? ' <small>aberto</small>' : ''}</span>` +
         `<b class="${corSoma(r.v)}">${brl(Math.abs(r.v))}</b></li>`;
-    return `<div class="cartaoArte cartao-${cartao}">` +
-        `<div class=cartaoArteTopo><span class=cartaoMarca>${escapeHtml(c.nome)}</span>` +
-        `<svg class=cartaoContato viewBox="0 0 24 24" width=22 height=22 fill=none stroke=currentColor stroke-width=2 stroke-linecap=round aria-hidden=true>` +
-        `<path d="M8.5 8.5a5 5 0 0 1 0 7M12 6a8.5 8.5 0 0 1 0 12M15.5 3.5a12 12 0 0 1 0 17"/></svg></div>` +
-        `<span class=cartaoChip aria-hidden=true></span>` +
-        `<div class=cartaoArteRodape><span><small>${dados.temHoje ? 'Fatura hoje' : 'Fatura'}</small><b>${brl(Math.abs(principal.fatura))}</b></span>` +
+    // Desenho no estilo do cartão de verdade de cada emissor (logotipos simplificados): Nubank
+    // roxo com os dois círculos da bandeira e o "nu" em traço fino; Mercado Pago grafite com
+    // "MER CADO PAGO" apagado na vertical e "VISA" em pé. No lugar do nome impresso, a fatura.
+    const contato = `<svg class=cartaoContato viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=2 stroke-linecap=round aria-hidden=true>` +
+        `<path d="M8.5 8.5a5 5 0 0 1 0 7M12 6a8.5 8.5 0 0 1 0 12M15.5 3.5a12 12 0 0 1 0 17"/></svg>`;
+    const chip = `<svg class=cartaoChip viewBox="0 0 40 30" aria-hidden=true><rect x=.5 y=.5 width=39 height=29 rx=5 />` +
+        `<path d="M0 10h13M0 20h13M27 10h13M27 20h13M13 0v30M27 0v30M13 15h14" /></svg>`;
+    const enfeites = cartao === CARTAO_NUBANK
+        ? `<svg class=cartaoBandeira viewBox="0 0 48 30" aria-hidden=true><circle cx=15 cy=15 r=14 fill="#EB001B"/>` +
+          `<circle cx=33 cy=15 r=14 fill="#F79E1B" fill-opacity=.92 /></svg>`
+        : `<span class=cartaoMarcaDagua aria-hidden=true><span>MER</span><span>CADO</span><span>PAGO</span></span>` +
+          `<span class=cartaoVisa aria-hidden=true>VISA</span>`;
+    const logoNu = cartao === CARTAO_NUBANK
+        ? `<svg class=cartaoLogoNu viewBox="0 0 34 22" fill=none stroke=currentColor stroke-width=1.6 stroke-linecap=round aria-hidden=true>` +
+          `<path d="M2 21V9.5a6.5 6.5 0 0 1 13 0V21M19 1v11.5a6.5 6.5 0 0 0 13 0V1"/></svg>` : '';
+    return `<div class="cartaoArte cartao-${cartao}">` + enfeites + chip + contato +
+        `<div class=cartaoArteRodape><span class=cartaoTitular>${logoNu}` +
+        `<span><small>${dados.temHoje ? 'Fatura hoje' : 'Fatura'}</small><b>${brl(Math.abs(principal.fatura))}</b></span></span>` +
         `<span class=cartaoVence><small>Vence</small><b>${c.vencimento ? dataBR(c.vencimento).slice(0, 5) : '—'}</b></span></div>` +
         `</div>` +
         (dados.temHoje ? linha('Hoje', c.hoje) : '') + linha('Futuro', c.futuro) +
