@@ -45,7 +45,7 @@ const dados = {
 
 test('desenho do cartão com a fatura de Hoje e o vencimento; Hoje e Futuro com Fatura/Usado/Livre', () => {
     const html = carrega()(dados, 'mp');
-    assert.match(html, /<div class="cartaoArte cartao-mp"><span class=cartaoMarcaDagua aria-hidden=true><span>MER<\/span><span>CADO<\/span><span>PAGO<\/span><\/span><span class=cartaoVisa aria-hidden=true>VISA<\/span>/);
+    assert.match(html, /<div class="cartaoArte cartao-mp" title="Arraste para os lados para trocar de fatura"><span class=cartaoMarcaDagua aria-hidden=true><span>MER<\/span><span>CADO<\/span><span>PAGO<\/span><\/span><span class=cartaoVisa aria-hidden=true>VISA<\/span>/);
     assert.match(html, /<small>Fatura hoje<\/small><b>R\$ 54,48<\/b>/);
     assert.match(html, /<small>Vence<\/small><b>13\/11<\/b>/);
     assert.match(html, /<span class=cartaoLinhaRotulo>Hoje<\/span>.*<small>Fatura<\/small><b class="vm">R\$ 54,48<\/b>.*<small>Usado<\/small><b>R\$ 54,48<\/b>.*<small>Livre<\/small><b class="vd">R\$ 1045,52<\/b>/s);
@@ -99,7 +99,7 @@ test('botões no cabeçalho, desativados sem dados, escondidos na conta restrita
     assert.match(interacoes, /alinharResumosDosTitulos\(\);\s*\n\s*atualizarCartoes\(\);/);
     // Aprovado/Garantido gravam pelos mesmos handlers no modal (fora do #out).
     assert.match(interacoes, /ligarCamposDeLimite\(el\('out'\)\);\s*\n\s*ligarCamposDeLimite\(el\('modalCartao'\)\);/);
-    assert.match(visoes, /Estado\.cartoesDoCiclo = cicloDebitoPassado \|\| modoRestrito\(\) \? null :/);
+    assert.match(visoes, /Estado\.cartoesDoCiclo = modoRestrito\(\) \? null :/);
 });
 
 test('Hoje/Futuro com o rótulo em cima e as três colunas na largura toda; cabeçalho quebra no celular', () => {
@@ -112,7 +112,7 @@ test('Hoje/Futuro com o rótulo em cima e as três colunas na largura toda; cabe
 
 test('REGRAS.md documenta o modal do cartão', () => {
     assert.match(regras, /\*\*Modal do cartão:\*\* dois botões no cabeçalho, junto dos demais ícones — \*\*Nubank\*\* \(cartão roxo\) e \*\*Mercado Pago\*\* \(cartão azul\)/);
-    assert.match(regras, /Os botões ficam desativados em Comparar, no Backlog, num ciclo passado e quando o cartão não tem compra no ciclo; a conta restrita não os vê\./);
+    assert.match(regras, /Os botões ficam desativados em Comparar, no Backlog e quando o cartão não existe no título; a conta restrita não os vê\./);
 });
 
 test('cartão Nubank no estilo do de verdade: círculos da bandeira e o "nu"; o MP não tem', () => {
@@ -136,4 +136,75 @@ test('cartão Nubank no estilo do de verdade: círculos da bandeira e o "nu"; o 
     const mp = f({ temHoje: true, cartoes: { mp: { ...base, nome: 'Mercado Pago' } } }, 'mp');
     assert.doesNotMatch(mp, /cartaoBandeira|cartaoLogoNu/);
     assert.match(regras, /Nubank roxo com os círculos da bandeira e o "nu" em traço fino; Mercado Pago grafite com "MER CADO PAGO" apagado na vertical e "VISA" em pé/);
+});
+
+test('ciclo passado: fatura fechada com compras brutas, pago/antecipado e o que restou, sem barra de uso', () => {
+    const c = { ...dados.cartoes.mp, bruto: -54.48, futuro: { fatura: 0, usado: 0, livre: 1100, antecipado: 54.48 } };
+    const html = carrega()({ temHoje: false, passado: true, cartoes: { mp: c } }, 'mp');
+    assert.match(html, /<small>Fatura fechada<\/small><b>R\$ 54,48<\/b>/);
+    assert.match(html, /<span class=cartaoLinhaRotulo>Fechada<\/span><span class=cartaoValor><small>Compras<\/small><b class="vm">R\$ 54,48<\/b><\/span><span class=cartaoValor><small>Pago\/antecipado<\/small><b>R\$ 54,48<\/b><\/span><span class=cartaoValor><small>Restou<\/small><b class="vd">R\$ 0,00<\/b>/);
+    assert.doesNotMatch(html, /cartaoUso|cartaoLinhaRotulo>Hoje|cartaoLinhaRotulo>Futuro/);
+});
+
+// Roda deslizarFatura real com o combo De/Até simulado: a navegação é a de navegaCiclo.
+function carregaDeslize(valores, atual) {
+    const inicio = interacoes.indexOf('function animarCartao(');
+    const fim = interacoes.indexOf('let arrasteCartao = null;');
+    const chamadas = [], animacoes = [];
+    const compDe = { value: atual, options: valores.map(value => ({ value })) };
+    const contexto = {
+        el: id => id === 'compDe' ? compDe : { querySelector: () => ({ classList: { add: c => animacoes.push(c), remove() {} }, addEventListener() {} }) },
+        navegaCiclo: d => chamadas.push(d),
+    };
+    vm.createContext(contexto);
+    vm.runInContext(`${interacoes.slice(inicio, fim)}\nglobalThis.f = deslizarFatura;`, contexto);
+    return { deslizar: contexto.f, chamadas, animacoes };
+}
+
+test('deslizar anda um ciclo pelo navegaCiclo, nunca para o Backlog nem além do fim', () => {
+    const meio = carregaDeslize(['', '-1', '0', '1', '2'], '1');
+    meio.deslizar(1); meio.deslizar(-1);
+    assert.deepEqual(meio.chamadas, [1, -1]);
+    assert.deepEqual(meio.animacoes, ['cartaoVemDaDireita', 'cartaoVemDaEsquerda']);
+    const primeiro = carregaDeslize(['', '-1', '0', '1'], '0');
+    primeiro.deslizar(-1);   // antes do 1º ciclo só há o Backlog: não navega
+    assert.deepEqual(primeiro.chamadas, []);
+    assert.deepEqual(primeiro.animacoes, ['cartaoNoLimite']);
+    const ultimo = carregaDeslize(['', '-1', '0', '1'], '1');
+    ultimo.deslizar(1);
+    assert.deepEqual(ultimo.chamadas, []);
+});
+
+test('gestos: arrasto (toque/mouse), trackpad e setas; arrasto não fecha o modal', () => {
+    assert.match(interacoes, /const DISTANCIA_MINIMA_DESLIZE = 50;/);
+    assert.match(interacoes, /Math\.abs\(dx\) >= DISTANCIA_MINIMA_DESLIZE && Math\.abs\(dx\) > Math\.abs\(dy\) \* 1\.5/);
+    assert.match(interacoes, /deslizarFatura\(dx < 0 \? 1 : -1\);/);
+    assert.match(interacoes, /if \(e\.pointerType == 'mouse' && !e\.target\.closest\('\.cartaoArte'\)\) return;/);
+    assert.match(interacoes, /addEventListener\('wheel', e => \{[\s\S]*?deslizarFatura\(rolagemHorizontal > 0 \? 1 : -1\);[\s\S]*?\}, \{ passive: false \}\);/);
+    assert.match(interacoes, /e\.key == 'ArrowRight' \|\| e\.key == 'ArrowLeft'/);
+    assert.match(interacoes, /Date\.now\(\) - ultimoArrasteCartao > 300\) el\('modalCartao'\)\.close\(\);/);
+    const formularios = fs.readFileSync('css/forms.css', 'utf8');
+    assert.match(formularios, /#modalCartao \{\s*\n\s*touch-action: pan-y;/);
+    assert.match(formularios, /@media \(prefers-reduced-motion: reduce\)/);
+    assert.match(regras, /\*\*Deslizar troca de fatura:\*\* puxar o modal para a esquerda vai para a fatura seguinte/);
+});
+
+test('vencimento sem compra na fatura: o dia do cartão dentro do ciclo, nunca o fechamento do ciclo', () => {
+    const inicio = visoes.indexOf('function vencimentoDoCartaoNoCiclo(');
+    const fim = visoes.indexOf('\n}\n', inicio) + 3;
+    const contexto = {
+        Estado: { ciclos: [{ ini: '2026-10-05' }, { ini: '2026-11-20' }] },
+        DIA_VENCIMENTO_CARTAO: { nubank: 12, mp: 13 },
+        faturasDoCiclo: () => [], vencimentoDoCiclo: () => 'cadastrada',
+        dataISO: s => String(s || '').slice(0, 10),
+        somaMeses: (iso, n) => { const [a, m, d] = iso.split('-').map(Number); const t = new Date(Date.UTC(a, m - 1 + n, d)); return t.toISOString().slice(0, 10); },
+    };
+    vm.createContext(contexto);
+    vm.runInContext(`${visoes.slice(inicio, fim)}\nglobalThis.f = vencimentoDoCartaoNoCiclo;`, contexto);
+    assert.equal(contexto.f(0, 'nubank'), '2026-10-12');
+    assert.equal(contexto.f(0, 'mp'), '2026-10-13');
+    assert.equal(contexto.f(1, 'nubank'), '2026-12-12');   // ciclo começa depois do dia 12
+    assert.equal(contexto.f(5, 'nubank'), '');            // ciclo inexistente
+    contexto.faturasDoCiclo = () => [{}];
+    assert.equal(contexto.f(0, 'nubank'), 'cadastrada');
 });

@@ -654,7 +654,73 @@ Object.entries(BOTAO_DO_CARTAO).forEach(([cartao, id]) => {
     };
 });
 el('fechaCartao').onclick = () => el('modalCartao').close();
-el('modalCartao').addEventListener('click', e => { if (e.target == el('modalCartao')) el('modalCartao').close(); });
+
+// Deslizar no modal do cartão troca de fatura: pra esquerda a seguinte, pra direita a
+// anterior. É a mesma navegação do ‹ › do topo (navegaCiclo), então o ciclo da tela anda
+// junto e o modal é refeito no redesenho; nunca entra no Backlog (lá não há fatura). Toque e
+// mouse por Pointer Events (arrasto de 50px+ mais horizontal que vertical; no mouse, só a
+// partir do desenho do cartão, pra não brigar com seleção de texto), trackpad pela rolagem
+// horizontal (um passo por gesto) e setas ← → do teclado fora dos campos.
+const DISTANCIA_MINIMA_DESLIZE = 50;
+function animarCartao(classe) {
+    const arte = el('corpoCartao').querySelector('.cartaoArte');
+    if (!arte) return;
+    arte.classList.add(classe);
+    arte.addEventListener('animationend', () => arte.classList.remove(classe), { once: true });
+}
+function deslizarFatura(direcao) {
+    const opcoes = [...el('compDe').options].map(o => o.value).filter(v => v !== '' && v !== '-1');
+    const pos = opcoes.indexOf(el('compDe').value);
+    if (pos < 0 || !opcoes[pos + direcao]) { animarCartao('cartaoNoLimite'); return; }
+    navegaCiclo(direcao);
+    animarCartao(direcao > 0 ? 'cartaoVemDaDireita' : 'cartaoVemDaEsquerda');
+}
+let arrasteCartao = null;
+el('modalCartao').addEventListener('pointerdown', e => {
+    if (e.target.closest('input, summary, button')) return;
+    if (e.pointerType == 'mouse' && !e.target.closest('.cartaoArte')) return;
+    arrasteCartao = { x: e.clientX, y: e.clientY };
+});
+el('modalCartao').addEventListener('pointermove', e => {
+    if (!arrasteCartao) return;
+    const dx = e.clientX - arrasteCartao.x;
+    const arte = el('corpoCartao').querySelector('.cartaoArte');
+    // O cartão acompanha o dedo pela metade da distância, pra sentir o arrasto.
+    if (arte && Math.abs(dx) > Math.abs(e.clientY - arrasteCartao.y)) arte.style.transform = `translateX(${dx / 2}px)`;
+});
+const terminarArrasteCartao = e => {
+    if (!arrasteCartao) return;
+    const dx = e.clientX - arrasteCartao.x, dy = e.clientY - arrasteCartao.y;
+    arrasteCartao = null;
+    if (Math.abs(dx) >= 10) ultimoArrasteCartao = Date.now();
+    const arte = el('corpoCartao').querySelector('.cartaoArte');
+    if (arte) arte.style.transform = '';
+    if (e.type == 'pointerup' && Math.abs(dx) >= DISTANCIA_MINIMA_DESLIZE && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        deslizarFatura(dx < 0 ? 1 : -1);
+    }
+};
+el('modalCartao').addEventListener('pointerup', terminarArrasteCartao);
+el('modalCartao').addEventListener('pointercancel', terminarArrasteCartao);
+let rolagemHorizontal = 0, rolagemTravadaAte = 0;
+el('modalCartao').addEventListener('wheel', e => {
+    if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+    e.preventDefault();
+    if (Date.now() < rolagemTravadaAte) return;
+    rolagemHorizontal += e.deltaX;
+    if (Math.abs(rolagemHorizontal) < 60) return;
+    deslizarFatura(rolagemHorizontal > 0 ? 1 : -1);
+    rolagemHorizontal = 0;
+    rolagemTravadaAte = Date.now() + 600;   // um gesto do trackpad dispara vários eventos
+}, { passive: false });
+el('modalCartao').addEventListener('keydown', e => {
+    if (e.target.matches('input, select, textarea')) return;
+    if (e.key == 'ArrowRight' || e.key == 'ArrowLeft') { e.preventDefault(); deslizarFatura(e.key == 'ArrowRight' ? 1 : -1); }
+});
+// Um arrasto de mouse que começa no cartão e termina fora dele vira um clique no fundo: não fecha.
+let ultimoArrasteCartao = 0;
+el('modalCartao').addEventListener('click', e => {
+    if (e.target == el('modalCartao') && Date.now() - ultimoArrasteCartao > 300) el('modalCartao').close();
+});
 
 // Recalcula em qual ciclo um lancamento cai, com a MESMA regra da carga inicial
 // (carregarDados) — mudar a data pode jogar a linha pra outro periodo, ou pro Backlog

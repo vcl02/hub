@@ -943,6 +943,78 @@
       margin-bottom: .5rem;
   }
 
+  /* Deslizar pros lados troca de fatura (interactions.js): o navegador fica só com a rolagem
+     vertical, o cartão mostra que pode ser arrastado e entra deslizando do lado certo. */
+  #modalCartao {
+      touch-action: pan-y;
+  }
+
+  #modalCartao .cartaoArte {
+      cursor: grab;
+      user-select: none;
+      transition: transform .12s ease-out;
+  }
+
+  .cartaoArte.cartaoVemDaDireita {
+      animation: cartaoVemDaDireita .28s ease-out;
+  }
+
+  .cartaoArte.cartaoVemDaEsquerda {
+      animation: cartaoVemDaEsquerda .28s ease-out;
+  }
+
+  /* Sem fatura pro lado pedido: o cartão só balança. */
+  .cartaoArte.cartaoNoLimite {
+      animation: cartaoNoLimite .3s ease-in-out;
+  }
+
+  @keyframes cartaoVemDaDireita {
+      from {
+          opacity: 0;
+          transform: translateX(30%);
+      }
+
+      to {
+          opacity: 1;
+          transform: none;
+      }
+  }
+
+  @keyframes cartaoVemDaEsquerda {
+      from {
+          opacity: 0;
+          transform: translateX(-30%);
+      }
+
+      to {
+          opacity: 1;
+          transform: none;
+      }
+  }
+
+  @keyframes cartaoNoLimite {
+      0%,
+      100% {
+          transform: none;
+      }
+
+      30% {
+          transform: translateX(-4%);
+      }
+
+      65% {
+          transform: translateX(3%);
+      }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+      .cartaoArte.cartaoVemDaDireita,
+      .cartaoArte.cartaoVemDaEsquerda,
+      .cartaoArte.cartaoNoLimite {
+          animation: none;
+      }
+  }
+
   /* O cartão desenhado: proporção de cartão de verdade (85,6 × 54 mm), no estilo do cartão
      de cada emissor. Os elementos ficam em posições fixas proporcionais ao cartão. */
   .cartaoArte {

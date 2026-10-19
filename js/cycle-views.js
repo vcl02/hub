@@ -410,12 +410,13 @@ function vCiclo() {
     const temHoje = !(cicloDebitoFuturo || cicloDebitoPassado);
     // Tudo de cada cartão neste ciclo, pro modal aberto pelos botões Nubank/Mercado Pago do
     // cabeçalho (htmlModalCartao): os mesmos números do título, calculados uma vez aqui.
-    // Histórico (ciclo passado) e conta restrita não têm modal.
-    Estado.cartoesDoCiclo = cicloDebitoPassado || modoRestrito() ? null : {
-        nomeCiclo: nomePeriodo(periodo), temHoje,
+    // Ciclo passado mostra a fatura fechada (compras brutas e o que foi pago/antecipado),
+    // pra deslizar de volta às faturas anteriores. A conta restrita não tem modal.
+    Estado.cartoesDoCiclo = modoRestrito() ? null : {
+        nomeCiclo: nomePeriodo(periodo), temHoje, passado: cicloDebitoPassado,
         cartoes: Object.fromEntries(limitesDosCartoes.map(l => [l.cartao, {
             cartao: l.cartao, nome: NOME_CARTAO[l.cartao],
-            vencimento: vencimentoDoCiclo(idxCreditoExibido, l.cartao),
+            vencimento: vencimentoDoCartaoNoCiclo(idxCreditoExibido, l.cartao),
             teto: l.limiteTotal, aprovado: l.aprovado,
             garantido: l.cartao === CARTAO_NUBANK && mostraGarantia ? garantiaNubank.efetiva : null,
             campoAprovado: campoAprovado(l),
@@ -429,6 +430,7 @@ function vCiclo() {
                 antecipado: abatimentoDoCartao(abatido, l.cartao)[idxCreditoExibido] || 0,
             },
             compras: doCartao(creditosExibidos, l.cartao),
+            bruto: doCartao(creditosExibidos, l.cartao).reduce((soma, r) => soma + r.v, 0),
         }])),
     };
     const linhaHojeCredito = !temHoje ? '' :
@@ -819,6 +821,17 @@ function vComp() {
         () => `<div class="wrap wx"><table><thead>${cabecalho}<tbody>${corpo}${linhaTotal}</tbody></table></div>`);
 }
 
+// Vencimento da fatura de um cartão num ciclo: o da fatura cadastrada ou, sem compra nela, o
+// dia de vencimento do cartão dentro do ciclo — o reserva de vencimentoDoCiclo é o
+// fechamento do ciclo, que não é data de cartão. Ciclo inexistente: sem data.
+function vencimentoDoCartaoNoCiclo(idx, cartao) {
+    if (faturasDoCiclo(idx, cartao).length) return vencimentoDoCiclo(idx, cartao);
+    const inicio = dataISO(Estado.ciclos[idx]?.ini);
+    if (!inicio) return '';
+    const noMesDoInicio = `${inicio.slice(0, 8)}${String(DIA_VENCIMENTO_CARTAO[cartao]).padStart(2, '0')}`;
+    return noMesDoInicio >= inicio ? noMesDoInicio : somaMeses(noMesDoInicio, 1);
+}
+
 // Modal de um cartão (botões Nubank/Mercado Pago do cabeçalho): o desenho do cartão com a
 // fatura em destaque e, abaixo, Hoje e Futuro (Fatura, Usado, Livre e a barra de uso do
 // teto), o limite (Aprovado e Garantido editáveis, os mesmos campos que ficavam no título)
@@ -827,6 +840,13 @@ function htmlModalCartao(dados, cartao) {
     const c = dados?.cartoes?.[cartao];
     if (!c) return '<p class=empty>Sem compras deste cartão no ciclo exibido.</p>';
     const principal = dados.temHoje ? c.hoje : c.futuro;
+    // Fatura fechada (ciclo passado): só o bruto das compras e o que foi pago/antecipado.
+    const faturaDoCartaoNoDesenho = dados.passado ? c.bruto : principal.fatura;
+    const rotuloNoDesenho = dados.passado ? 'Fatura fechada' : dados.temHoje ? 'Fatura hoje' : 'Fatura';
+    const linhaFechada = () => `<div class=cartaoLinha><span class=cartaoLinhaRotulo>Fechada</span>` +
+        `<span class=cartaoValor><small>Compras</small><b class="${corSoma(c.bruto)}">${brl(Math.abs(c.bruto))}</b></span>` +
+        `<span class=cartaoValor><small>Pago/antecipado</small><b>${brl(c.futuro.antecipado)}</b></span>` +
+        `<span class=cartaoValor><small>Restou</small><b class="${corSoma(c.futuro.fatura)}">${brl(Math.abs(c.futuro.fatura))}</b></span></div>`;
     // A barra mostra quanto do teto está usado; passou do teto, fica cheia e vermelha.
     const uso = x => c.teto > 0 ? Math.max(0, Math.min(100, x.usado / c.teto * 100)) : 100;
     const linha = (rotulo, x) => `<div class=cartaoLinha>` +
@@ -857,12 +877,12 @@ function htmlModalCartao(dados, cartao) {
     const logoNu = cartao === CARTAO_NUBANK
         ? `<svg class=cartaoLogoNu viewBox="0 0 34 22" fill=none stroke=currentColor stroke-width=1.6 stroke-linecap=round aria-hidden=true>` +
           `<path d="M2 21V9.5a6.5 6.5 0 0 1 13 0V21M19 1v11.5a6.5 6.5 0 0 0 13 0V1"/></svg>` : '';
-    return `<div class="cartaoArte cartao-${cartao}">` + enfeites + chip + contato +
+    return `<div class="cartaoArte cartao-${cartao}" title="Arraste para os lados para trocar de fatura">` + enfeites + chip + contato +
         `<div class=cartaoArteRodape><span class=cartaoTitular>${logoNu}` +
-        `<span><small>${dados.temHoje ? 'Fatura hoje' : 'Fatura'}</small><b>${brl(Math.abs(principal.fatura))}</b></span></span>` +
+        `<span><small>${rotuloNoDesenho}</small><b>${brl(Math.abs(faturaDoCartaoNoDesenho))}</b></span></span>` +
         `<span class=cartaoVence><small>Vence</small><b>${c.vencimento ? dataBR(c.vencimento).slice(0, 5) : '—'}</b></span></div>` +
         `</div>` +
-        (dados.temHoje ? linha('Hoje', c.hoje) : '') + linha('Futuro', c.futuro) +
+        (dados.passado ? linhaFechada() : (dados.temHoje ? linha('Hoje', c.hoje) : '') + linha('Futuro', c.futuro)) +
         `<div class=cartaoLimite><span>Teto <b>${brl(c.teto)}</b></span>` +
         `<span class=limiteCartaoBase>Aprovado R$ ${c.campoAprovado}</span>` +
         (c.campoGarantia ? `<span class=limiteCartaoBase>Garantido + R$ ${c.campoGarantia}</span>` : '') +
