@@ -1013,7 +1013,7 @@
   .cartaoMarcaDagua {
       position: absolute;
       left: 2%;
-      bottom: -3%;
+      bottom: 3%;
       z-index: -1;
       display: flex;
       gap: 0;
