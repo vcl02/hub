@@ -936,8 +936,11 @@
       box-shadow: 0 20px 60px var(--shadow);
   }
 
+  /* O cartão desenhado já diz qual é: o nome fica só pra leitor de tela (.srOnly) e o
+     fechar vai pro canto direito, sozinho na linha. */
   #modalCartao .modalHead {
-      margin-bottom: .9rem;
+      justify-content: flex-end;
+      margin-bottom: .5rem;
   }
 
   /* O cartão desenhado: proporção de cartão de verdade (85,6 × 54 mm), no estilo do cartão

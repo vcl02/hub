@@ -90,6 +90,9 @@ test('botões no cabeçalho, desativados sem dados, escondidos na conta restrita
     assert.match(pagina, /<button type=button id=btNubank class="btIcone btCartao cartao-nubank" data-cartao=nubank title="Nubank"\s*\n\s*aria-label="Cartão Nubank" disabled>/);
     assert.match(pagina, /<button type=button id=btMercadoPago class="btIcone btCartao cartao-mp" data-cartao=mp title="Mercado Pago"\s*\n\s*aria-label="Cartão Mercado Pago" disabled>/);
     assert.match(pagina, /<dialog id=modalCartao>/);
+    // Sem título visível: o nome do cartão fica só pra leitor de tela.
+    assert.match(pagina, /<h2 id=tituloCartao class=srOnly>Cartão<\/h2>/);
+    assert.match(fs.readFileSync('css/forms.css', 'utf8'), /#modalCartao \.modalHead \{\s*\n\s*justify-content: flex-end;/);
     assert.match(interacoes, /el\(id\)\.hidden = restrito;\s*\n\s*el\(id\)\.disabled = restrito \|\| !Estado\.cartoesDoCiclo\?\.cartoes\?\.\[cartao\];/);
     assert.match(interacoes, /if \(el\('modalCartao'\)\.open\) preencherModalCartao\(\);/);
     assert.match(interacoes, /Estado\.cartoesDoCiclo = null;/);
