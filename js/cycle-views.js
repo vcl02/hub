@@ -314,6 +314,7 @@ function vCiclo() {
                 doCartao(creditosExibidosNoCiclo(pagosAteHoje, i), cartao),
                 abatimentoDoCartao(abatidoAteHoje, cartao)[idxCreditoExibido] || 0
             ),
+            totalFuturo: totalExibidoDoCartao,
             limiteLivreHoje: limiteCartaoLivre(Estado.lancamentos, abatimentoDoCartao(abatidoPagoDoCartao, cartao), garantidoDoCartao, -Infinity, cartao, aprovado),
             limiteLivreFuturo: limiteCartaoLivreFuturo(
                 Estado.lancamentos, abatidoNoCartao, garantidoDoCartao, idxCreditoExibido, totalExibidoDoCartao, cartao, aprovado
@@ -363,13 +364,23 @@ function vCiclo() {
     // Cada faixa vai em pedaços que nunca se partem (nome; Usado; Livre; "de" teto; Aprovado;
     // Garantido): com a tela estreita, a faixa quebra entre eles, nunca no meio de um valor.
     const pedaco = html => `<span class=pedaco>${html}</span>`;
-    const usadoELivre = (nome, usado, livre, teto) => (nome ? pedaco(nome) : '') +
-        pedaco(`<span class=limiteRotulo>Usado</span> <b class=limiteUsado>${brl(usado)}</b>`) +
+    // `fatura` (só nas faixas de cartão, com dois cartões) abre a faixa; igual ao Usado — nada
+    // confirmado em faturas seguintes —, ela sozinha já diz o uso e o Usado não se repete.
+    const usadoELivre = (nome, usado, livre, teto, fatura = null) => (nome ? pedaco(nome) : '') +
+        (fatura == null ? '' : pedaco(`<span class=limiteRotulo>Fatura</span> <b class="${corSoma(fatura)}">${brl(Math.abs(fatura))}</b>`)) +
+        (fatura != null && Math.abs(Math.abs(fatura) - usado) < TOLERANCIA_FINANCEIRA ? ''
+            : pedaco(`<span class=limiteRotulo>Usado</span> <b class=limiteUsado>${brl(usado)}</b>`)) +
         pedaco(`<span class=limiteRotulo>Livre</span> <b class="${corValor(livre)}">${brl(livre)}</b>`) +
         `<span class="pedaco limiteTeto">de ${teto}</span>`;
-    const resumoLimiteCartao = (l, limiteLivre) => `<span class="limiteCartao temPedacos">` +
-        usadoELivre(nomeNoTitulo(l.cartao), l.limiteTotal - limiteLivre, limiteLivre,
-            tetoSemGarantia(l) ? `<span class=limiteCartaoBase>R$ ${campoAprovado(l)}</span>` : brl(l.limiteTotal)) +
+    // Com dois cartões, cada faixa abre pela fatura daquele cartão (a mesma conta do valor do
+    // começo da linha, que é a soma das duas): Hoje só com o confirmado e as antecipações
+    // pagas, Futuro com a fatura exibida inteira. Com um cartão só, o começo da linha já é ela.
+    const FATURA_DA_LINHA = { limiteLivreHoje: 'totalHoje', limiteLivreFuturo: 'totalFuturo' };
+    const faturaDoCartao = (l, chaveLivre) => cartoesNoTitulo.length < 2 ? null : l[FATURA_DA_LINHA[chaveLivre]];
+    const resumoLimiteCartao = (l, chaveLivre) => `<span class="limiteCartao temPedacos">` +
+        usadoELivre(nomeNoTitulo(l.cartao), l.limiteTotal - l[chaveLivre], l[chaveLivre],
+            tetoSemGarantia(l) ? `<span class=limiteCartaoBase>R$ ${campoAprovado(l)}</span>` : brl(l.limiteTotal),
+            faturaDoCartao(l, chaveLivre)) +
         (tetoSemGarantia(l) ? ''
             : pedaco(`<span class=limiteTeto><span class=limiteCartaoBase>R$ ${campoAprovado(l)}<span class=limiteCartaoRotulo>Aprovado</span></span></span>`)) +
         (l.cartao === CARTAO_NUBANK && mostraGarantia ? `<span class="pedaco limiteGarantido">+ R$ ${campoGarantia()} Garantido</span>` : '') +
@@ -383,7 +394,7 @@ function vCiclo() {
         return `<span class="limiteCartao temPedacos">${usadoELivre('<span class="limiteCartaoNome cartao-total">Total</span>', teto - livre, livre, brl(teto))}</span>`;
     };
     const resumoLimites = chaveLivre =>
-        resumoTotalDosCartoes(chaveLivre) + limitesDosCartoes.map(l => resumoLimiteCartao(l, l[chaveLivre])).join('');
+        resumoTotalDosCartoes(chaveLivre) + limitesDosCartoes.map(l => resumoLimiteCartao(l, chaveLivre)).join('');
 
     // Crédito histórico volta ao cabeçalho compacto: só o total da fatura, sem Hoje/Futuro.
     // O valor da fatura abre a linha só quando diz algo além do Usado da 1ª faixa (Total, ou o
