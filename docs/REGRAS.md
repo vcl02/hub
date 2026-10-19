@@ -315,6 +315,10 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   No Débito, a linha calculada de fatura vira uma por cartão — **Fatura Nubank** e **Fatura Mercado Pago**, cada uma no próprio vencimento e líquida das antecipações do próprio cartão —, e o saldo por dia e o gráfico de evolução seguem as mesmas duas linhas.
 - O total no título dessa prévia de Crédito usa a mesma base e os mesmos abatimentos por antecipação da linha dinâmica da fatura; a tabela abaixo continua detalhando as compras brutas.
   Cada cartão tem o próprio limite livre, calculado só com as próprias compras e antecipações; o Mercado Pago só aparece no título depois da 1ª compra nele (antes disso o título fica igual ao de um cartão só) e, com dois cartões, cada faixa começa pelo nome do cartão.
+- **Modal do cartão:** dois botões no cabeçalho, junto dos demais ícones — **Nubank** (cartão roxo) e **Mercado Pago** (cartão azul) — abrem um modal só daquele cartão no ciclo exibido: o desenho do cartão com a fatura em destaque (a de Hoje; num ciclo futuro, a única) e o vencimento; Hoje e Futuro com Fatura, Usado, Livre, a barra de uso do teto (vermelha acima do teto) e o que já foi antecipado; o teto com o Aprovado e o Garantido editáveis (mesma gravação por ciclo de antes); e as compras da fatura num botão em pílula que abre a lista (mais recente primeiro; aberta marcada como "aberto", prevista em itálico).
+  Em Hoje e Futuro, o rótulo fica em cima e Fatura, Usado e Livre dividem a largura toda, cada um com o rótulo em cima do valor.
+  Os números são os mesmos do título, calculados uma vez por desenho; com o modal aberto, uma gravação feita nele redesenha o modal junto.
+  Os botões ficam desativados em Comparar, no Backlog, num ciclo passado e quando o cartão não tem compra no ciclo; a conta restrita não os vê.
   O alerta de limite acende se qualquer um dos dois estourar.
   O limite livre de cada cartão em **Hoje** retrata o cartão real: crédito com `pago = false` é projeção e não ocupa limite; crédito com `pago = true` ocupa; antecipação **já paga** alocada à mesma fatura libera somente o que ela abate, até zero; antecipação em aberto ainda não saiu da conta e não libera nada em Hoje (mesma base de pago do resto de Hoje), só em Futuro.
   Em **Futuro**, a fatura exibida inteira (paga e aberta, líquida das antecipações) é subtraída do teto; faturas anteriores são tratadas como quitadas e compras confirmadas de faturas posteriores também continuam consumindo limite.
@@ -329,22 +333,22 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   `Aporte sugerido` não é dinheiro aplicado e não entra nela, nem o Aporte materializado ainda em aberto (a Nubank só garante o que está na caixinha); resgate pago reduz a garantia.
   A Liberdade financeira, que projeta ciclos futuros, continua contando os aportes/resgates reais abertos (planejados).
   Garantia negativa não reduz o limite contratado.
-- O Aprovado de cada cartão e a Garantia do Nubank são definidos por ciclo, na própria linha do ciclo em `fin_ciclo` (colunas `limite_aprovado_nubank`, `limite_aprovado_mp`, `limite_garantia_nubank`), editáveis no título do Crédito daquele ciclo ou no DataGrip.
+- O Aprovado de cada cartão e a Garantia do Nubank são definidos por ciclo, na própria linha do ciclo em `fin_ciclo` (colunas `limite_aprovado_nubank`, `limite_aprovado_mp`, `limite_garantia_nubank`), editáveis no modal de cada cartão (com um cartão só, também no título do Crédito) ou no DataGrip.
   Diferente dos tetos de Besteira/Isabella, eles herdam: o valor definido num ciclo vale para ele e para os seguintes até outro ciclo definir outro; campo vazio volta a herdar.
   Sem nenhum ciclo definindo, o Aprovado usa o padrão (`LIMITE_CARTAO`, que ainda lê a antiga preferência salva neste navegador, ou `LIMITE_CARTAO_MP`).
   Na garantia, a garantia usada é o valor escolhido, nunca acima do guardado real do ciclo; sem escolha, é todo o guardado positivo, como antes.
   O campo Garantido aparece quando há guardado ou uma escolha feita (zero inclusive).
   Vão para o banco, e não só para o navegador, para valer igual em qualquer aparelho.
-- O Mercado Pago tem limite contratado próprio (`LIMITE_CARTAO_MP`, inicialmente **R$ 1.100,00**), editável no título igual ao do Nubank, e nunca tem garantia: o teto dele é só o Aprovado.
+- O Mercado Pago tem limite contratado próprio (`LIMITE_CARTAO_MP`, inicialmente **R$ 1.100,00**), editável no modal dele igual ao do Nubank, e nunca tem garantia: o teto dele é só o Aprovado.
   Quando o teto de um cartão é igual ao Aprovado (Mercado Pago sempre; Nubank sem garantia), o próprio campo editável fica depois de "de" ("Livre R$ 1.090,10 de R$ [1.100,00]"), sem repetir o mesmo valor nem o rótulo Aprovado.
-  Cada faixa (Total, Nubank, Mercado Pago) mostra **Usado** e **Livre** do mesmo teto ("Usado R$ X · Livre R$ Y de R$ Z"), com Usado = teto − Livre: em Hoje, as compras confirmadas que ainda ocupam o cartão; em Futuro, a fatura exibida inteira mais o uso confirmado posterior.
-  Cada faixa abre pela própria **Fatura**, com rótulo: a do cartão nas faixas de cartão e a soma das duas na faixa **Total** (com um cartão só, a única faixa traz a fatura dele); não há mais valor solto no começo de Hoje/Futuro.
+  **No título**, com dois cartões, Hoje e Futuro ficam enxutos: a faixa **Total** completa — **Fatura** (a soma das duas), **Usado** e **Livre** do teto somado (com a garantia do Nubank) — e, de cada cartão, só o nome e a **Fatura** dele; Usado, Livre, teto, Aprovado e Garantido de cada um ficam no modal do cartão.
+  Com um cartão só, a única faixa é completa: Fatura, Usado, Livre, teto e os campos de Aprovado/Garantido.
+  Usado = teto − Livre: em Hoje, as compras confirmadas que ainda ocupam o cartão; em Futuro, a fatura exibida inteira mais o uso confirmado posterior.
+  Hoje, a Fatura é só compras confirmadas menos as antecipações já pagas; em Futuro, a fatura exibida inteira (paga e aberta, líquida das antecipações). Não há valor solto no começo de Hoje/Futuro.
   As faixas ficam separadas por um divisor vertical; o nome de cada cartão tem cor própria (Total neutro, Nubank roxo, Mercado Pago azul), rótulos discretos, valores em negrito e o teto ("de R$ …") e a garantia em itálico.
-  Com os dois cartões no título, Hoje e Futuro começam por uma faixa **Total**, antes das faixas de cada cartão: Livre somado dos dois de teto somado (incluindo a garantia do Nubank).
-  Hoje, a Fatura é só compras confirmadas menos as antecipações já pagas; em Futuro, a fatura exibida inteira (paga e aberta, líquida das antecipações).
-  Cada valor fica colado no próprio rótulo ("Fatura R$ 54,48", "Usado R$ 54,48"), com o espaço que sobra depois dele e um respiro maior entre um par e o seguinte, pra nenhum valor parecer rótulo do próximo.
-  Toda faixa, em Hoje e em Futuro, tem sempre os mesmos pedaços — Fatura, Usado, Livre e teto —, mesmo quando Fatura e Usado coincidem (nada confirmado em faturas seguintes): esconder um deles numa linha e não na outra desalinhava as colunas.
-  O Aprovado editado no título vai para o ciclo no Supabase (ver a regra de limites por ciclo acima); as preferências antigas deste navegador (`fin.limite-cartao` e `fin.limite-cartao.mp`) só são lidas como padrão enquanto nenhum ciclo define o Aprovado.
+  Cada valor fica colado no próprio rótulo ("Fatura R$ 54,48"), com o espaço que sobra depois dele e um respiro maior entre um par e o seguinte, pra nenhum valor parecer rótulo do próximo.
+  Hoje e Futuro têm sempre os mesmos pedaços em cada faixa, pra ficarem alinhados coluna a coluna.
+  O Aprovado editado (no modal do cartão ou, com um cartão só, no título) vai para o ciclo no Supabase (ver a regra de limites por ciclo acima); as preferências antigas deste navegador (`fin.limite-cartao` e `fin.limite-cartao.mp`) só são lidas como padrão enquanto nenhum ciclo define o Aprovado.
 - Identificar o cartão pelo dia do vencimento é uma regra provisória (ver `docs/DECISOES.md`): só funciona enquanto os dois cartões vencerem em dias diferentes.
   Se um vencimento mudar para o dia do outro, ou entrar um terceiro cartão, o caminho é uma migration nova com identificação explícita de cartão em cada crédito e antecipação.
 
@@ -476,7 +480,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 - Nas faixas **Hoje** e **Futuro** (ou Passado) dos títulos de Débito e Crédito, cada item fica exatamente embaixo do correspondente da outra faixa: cada item, e cada valor ou rótulo variável dentro dele (`Usado`/`Ultrapassado`, `Livre`/`Acima`), ocupa a largura do maior entre as faixas, com números de largura uniforme e alinhados à direita.
   Esse alinhamento é refeito quando a largura da janela muda.
-  Com a tela estreita, um item que não cabe na linha desce inteiro; se nem sozinho couber, quebra só entre seus pedaços — Besteira/Isabella em `nome % Usado/Ultrapassado`, `· valor Livre/Acima` e `de/dos teto`; cada cartão (e o Total) em `nome`, `Fatura valor`, `Usado valor`, `Livre valor`, `de teto`, `Aprovado` e `Garantido` —, nunca no meio de um valor ou separando "de" do teto.
+  Com a tela estreita, um item que não cabe na linha desce inteiro; se nem sozinho couber, quebra só entre seus pedaços — Besteira/Isabella em `nome % Usado/Ultrapassado`, `· valor Livre/Acima` e `de/dos teto`; o Total (e o único cartão) em `nome`, `Fatura valor`, `Usado valor`, `Livre valor`, `de teto`, `Aprovado` e `Garantido` —, nunca no meio de um valor ou separando "de" do teto.
   O divisor vertical entre itens nunca aparece no começo de uma linha.
   Os valores também têm tamanho fixo: todo valor em reais nas faixas reserva a largura de `-R$ 99.999,99` e todo percentual a de `100%`, então a faixa não muda de largura quando os números mudam (outro ciclo, um lançamento novo).
   Quando só uma faixa do Crédito abre com o valor da fatura, a outra reserva esse lugar vazio.
@@ -491,7 +495,8 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - Os seletores **De** e **Até** mostram cada ciclo pelo mês abreviado (`Out/26`, mês do início do ciclo), com o nome completo (`Outubro 2026`) no tooltip da opção.
   Os dois ficam lado a lado, sem texto ou traço entre eles (`Out/26` `Nov/26`).
 - O cabeçalho (navegação De/Até, simulação, cadastro, recarregar, diagnóstico, sair) é o mesmo em qualquer largura; quando não cabe numa linha só, quebra para a seguinte.
-  Os botões (Todas/Diferentes, Gráfico, Visualizações, simulação, cadastro, recarregar, diagnóstico, sair, nessa ordem) formam um bloco só, à direita — a navegação de ciclo fica só com setas e De/Até: quando não cabem, descem **juntos** pra linha seguinte, nunca separados, e lá ficam alinhados **à esquerda**.
+  Os botões (cartões Nubank e Mercado Pago, Todas/Diferentes, Gráfico, Visualizações, simulação, cadastro, recarregar, diagnóstico, sair, nessa ordem) formam um bloco só, à direita — a navegação de ciclo fica só com setas e De/Até: quando não cabem, descem **juntos** pra linha seguinte, nunca separados, e lá ficam alinhados **à esquerda**.
+  Só no celular, quando o bloco não cabe nem sozinho na largura da tela, ele quebra entre os botões, também alinhado à esquerda.
   A navegação de ciclo (setas, De/Até) ganha sua própria linha e encolhe/quebra internamente em vez de estourar a tela.
   O botão verde **Recarregar** do cabeçalho (mesmo ícone de setas) faz, num só clique e nesta ordem: recarrega os dados do banco, volta De/Até ao ciclo atual, limpa os filtros — buscas por coluna, filtro de teto (Besteira/Isabella), Linhas, ordenação, blocos recolhidos, seleção e categorias excluídas do gráfico —, devolvendo a tela ao estado em que ela abre, e roda o **Consolidar tudo** (ver **Aportes e resgates**).
   Não existem mais botões "Atual", "Limpar filtros" nem "Consolidar tudo" separados.

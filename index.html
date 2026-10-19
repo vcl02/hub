@@ -119,6 +119,25 @@
 
       <!-- Botões de ação do cabeçalho num grupo só: quebram de linha juntos, nunca separados. -->
       <div class=acoesCabecalho>
+        <!-- Cartões: cada botão abre o modal só daquele cartão, com Hoje e Futuro (#modalCartao,
+             preenchido por htmlModalCartao em cycle-views.js; handlers em interactions.js).
+             Desativados fora da visão de um ciclo ou sem compras daquele cartão. -->
+        <button type=button id=btNubank class="btIcone btCartao cartao-nubank" data-cartao=nubank title="Nubank"
+          aria-label="Cartão Nubank" disabled>
+          <svg viewBox="0 0 24 24" width=19 height=19 aria-hidden=true>
+            <rect x=2 y=5 width=20 height=14 rx=3 fill=currentColor />
+            <rect x=5 y=9.2 width=4.2 height=3.2 rx=.7 fill="#F3D27A" />
+            <path d="M5 15.6h6" stroke="#fff" stroke-opacity=.75 stroke-width=1.4 stroke-linecap=round />
+          </svg>
+        </button>
+        <button type=button id=btMercadoPago class="btIcone btCartao cartao-mp" data-cartao=mp title="Mercado Pago"
+          aria-label="Cartão Mercado Pago" disabled>
+          <svg viewBox="0 0 24 24" width=19 height=19 aria-hidden=true>
+            <rect x=2 y=5 width=20 height=14 rx=3 fill=currentColor />
+            <rect x=5 y=9.2 width=4.2 height=3.2 rx=.7 fill="#F3D27A" />
+            <path d="M5 15.6h6" stroke="#fff" stroke-opacity=.75 stroke-width=1.4 stroke-linecap=round />
+          </svg>
+        </button>
         <!-- Gráfico, Visualizações e Todas/Diferentes junto dos demais botões (handlers em interactions.js e charts.js). -->
         <!-- Todas/Diferentes ao comparar ciclos (handler em interactions.js). Sempre visível:
              fora da comparação de 2 ciclos fica desativado. -->
@@ -437,6 +456,16 @@
         <canvas id=canvasEvolucao role=img
           aria-label="Evolução mensal"></canvas>
       </div>
+    </dialog>
+
+    <!-- Modal de um cartão (botões Nubank/Mercado Pago do cabeçalho): htmlModalCartao em
+         cycle-views.js preenche #corpoCartao a cada abertura e a cada redesenho com ele aberto. -->
+    <dialog id=modalCartao>
+      <div class=modalHead>
+        <h2 id=tituloCartao>Cartão</h2>
+        <button type=button id=fechaCartao aria-label="Fechar" title="Fechar">×</button>
+      </div>
+      <div id=corpoCartao></div>
     </dialog>
 
     <dialog id=modalDetalheCel>

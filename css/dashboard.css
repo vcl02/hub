@@ -1437,6 +1437,30 @@
       opacity: .5;
   }
 
+  /* Botões dos cartões no cabeçalho: o ícone do cartão na cor dele (Nubank roxo, Mercado
+     Pago azul), com fundo levemente tingido, pra achar de relance qual abre qual. */
+  .btCartao.cartao-nubank {
+      color: #A45BEA;
+      background: rgba(130, 10, 209, .16);
+      border-color: rgba(164, 91, 234, .5);
+  }
+
+  .btCartao.cartao-mp {
+      color: #2BB0EA;
+      background: rgba(0, 158, 227, .14);
+      border-color: rgba(43, 176, 234, .5);
+  }
+
+  .btCartao.cartao-nubank:hover:not(:disabled) {
+      background: rgba(130, 10, 209, .32);
+      border-color: #B79BF5;
+  }
+
+  .btCartao.cartao-mp:hover:not(:disabled) {
+      background: rgba(0, 158, 227, .3);
+      border-color: #6CC5EE;
+  }
+
   /* Ligado (ex.: só as linhas diferentes): mesmo verde de "ativo" do restante da tela. */
   .btIcone.ativo {
       color: var(--vd);

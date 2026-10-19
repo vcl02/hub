@@ -393,13 +393,44 @@ function vCiclo() {
         const teto = limitesDosCartoes.reduce((soma, l) => soma + l.limiteTotal, 0);
         return `<span class="limiteCartao temPedacos">${usadoELivre('<span class="limiteCartaoNome cartao-total">Total</span>', teto - livre, livre, brl(teto), faturaTotal(chaveLivre))}</span>`;
     };
-    const resumoLimites = chaveLivre =>
-        resumoTotalDosCartoes(chaveLivre) + limitesDosCartoes.map(l => resumoLimiteCartao(l, chaveLivre)).join('');
+    // Com dois cartões, o título fica enxuto: a faixa Total completa e, de cada cartão, só a
+    // Fatura. Usado, Livre, teto, Aprovado e Garantido de cada um ficam no modal do cartão
+    // (botões Nubank/Mercado Pago do cabeçalho). Com um cartão só, a faixa dele é completa.
+    const faturaSoDoCartao = (l, chaveLivre) => `<span class="limiteCartao temPedacos">` +
+        pedaco(nomeNoTitulo(l.cartao)) +
+        pedaco(`<span class=limiteRotulo>Fatura</span> <b class="${corSoma(faturaDoCartao(l, chaveLivre))}">${brl(Math.abs(faturaDoCartao(l, chaveLivre)))}</b>`) +
+        `</span>`;
+    const resumoLimites = chaveLivre => limitesDosCartoes.length < 2
+        ? limitesDosCartoes.map(l => resumoLimiteCartao(l, chaveLivre)).join('')
+        : resumoTotalDosCartoes(chaveLivre) + limitesDosCartoes.map(l => faturaSoDoCartao(l, chaveLivre)).join('');
 
     // Crédito histórico volta ao cabeçalho compacto: só o total da fatura, sem Hoje/Futuro.
     // A fatura não abre mais a linha solta: é o primeiro pedaço de cada faixa (Total ou o único
     // cartão), com rótulo, igual nas duas linhas.
     const temHoje = !(cicloDebitoFuturo || cicloDebitoPassado);
+    // Tudo de cada cartão neste ciclo, pro modal aberto pelos botões Nubank/Mercado Pago do
+    // cabeçalho (htmlModalCartao): os mesmos números do título, calculados uma vez aqui.
+    // Histórico (ciclo passado) e conta restrita não têm modal.
+    Estado.cartoesDoCiclo = cicloDebitoPassado || modoRestrito() ? null : {
+        nomeCiclo: nomePeriodo(periodo), temHoje,
+        cartoes: Object.fromEntries(limitesDosCartoes.map(l => [l.cartao, {
+            cartao: l.cartao, nome: NOME_CARTAO[l.cartao],
+            vencimento: vencimentoDoCiclo(idxCreditoExibido, l.cartao),
+            teto: l.limiteTotal, aprovado: l.aprovado,
+            garantido: l.cartao === CARTAO_NUBANK && mostraGarantia ? garantiaNubank.efetiva : null,
+            campoAprovado: campoAprovado(l),
+            campoGarantia: l.cartao === CARTAO_NUBANK && mostraGarantia ? campoGarantia() : '',
+            hoje: {
+                fatura: l.totalHoje, usado: l.limiteTotal - l.limiteLivreHoje, livre: l.limiteLivreHoje,
+                antecipado: abatimentoDoCartao(abatidoAteHoje, l.cartao)[idxCreditoExibido] || 0,
+            },
+            futuro: {
+                fatura: l.totalFuturo, usado: l.limiteTotal - l.limiteLivreFuturo, livre: l.limiteLivreFuturo,
+                antecipado: abatimentoDoCartao(abatido, l.cartao)[idxCreditoExibido] || 0,
+            },
+            compras: doCartao(creditosExibidos, l.cartao),
+        }])),
+    };
     const linhaHojeCredito = !temHoje ? '' :
         `<span class=resumoLinha><span class=resumoRotulo>Hoje</span><span class=resumoDados>` +
         resumoLimites('limiteLivreHoje') + `</span></span>`;
@@ -786,4 +817,45 @@ function vComp() {
     // (Ciclo <-> Comparar) ser impercetivel, os blocos ficam visualmente identicos.
     return blocoCasca(tituloPeriodo, subtitulo, nRegistros, 'cp',
         () => `<div class="wrap wx"><table><thead>${cabecalho}<tbody>${corpo}${linhaTotal}</tbody></table></div>`);
+}
+
+// Modal de um cartão (botões Nubank/Mercado Pago do cabeçalho): o desenho do cartão com a
+// fatura em destaque e, abaixo, Hoje e Futuro (Fatura, Usado, Livre e a barra de uso do
+// teto), o limite (Aprovado e Garantido editáveis, os mesmos campos que ficavam no título)
+// e as compras da fatura. Só lê o que vCiclo já calculou em Estado.cartoesDoCiclo.
+function htmlModalCartao(dados, cartao) {
+    const c = dados?.cartoes?.[cartao];
+    if (!c) return '<p class=empty>Sem compras deste cartão no ciclo exibido.</p>';
+    const principal = dados.temHoje ? c.hoje : c.futuro;
+    // A barra mostra quanto do teto está usado; passou do teto, fica cheia e vermelha.
+    const uso = x => c.teto > 0 ? Math.max(0, Math.min(100, x.usado / c.teto * 100)) : 100;
+    const linha = (rotulo, x) => `<div class=cartaoLinha>` +
+        `<span class=cartaoLinhaRotulo>${rotulo}</span>` +
+        `<span class=cartaoValor><small>Fatura</small><b class="${corSoma(x.fatura)}">${brl(Math.abs(x.fatura))}</b></span>` +
+        `<span class=cartaoValor><small>Usado</small><b>${brl(x.usado)}</b></span>` +
+        `<span class=cartaoValor><small>Livre</small><b class="${corValor(x.livre)}">${brl(x.livre)}</b></span>` +
+        `<span class="cartaoUso${x.livre < -TOLERANCIA_FINANCEIRA ? ' acima' : ''}" title="${Math.round(uso(x))}% do teto"><span style="width:${uso(x).toFixed(1)}%"></span></span>` +
+        (x.antecipado > TOLERANCIA_FINANCEIRA ? `<small class=cartaoAntecipado>Já antecipado ${brl(x.antecipado)}</small>` : '') +
+        `</div>`;
+    const compras = [...c.compras].sort((a, b) => timestamp(b.data) - timestamp(a.data) || (+b.id - +a.id));
+    const itemCompra = r => `<li${r._prev ? ' class=prevista' : ''}>` +
+        `<span class=cartaoCompraData>${r.data ? dataBR(r.data).slice(0, 5) : '—'}</span>` +
+        `<span class=cartaoCompraNome>${escapeHtml(r.nome ?? '')}${!r._prev && r.pago === false ? ' <small>aberto</small>' : ''}</span>` +
+        `<b class="${corSoma(r.v)}">${brl(Math.abs(r.v))}</b></li>`;
+    return `<div class="cartaoArte cartao-${cartao}">` +
+        `<div class=cartaoArteTopo><span class=cartaoMarca>${escapeHtml(c.nome)}</span>` +
+        `<svg class=cartaoContato viewBox="0 0 24 24" width=22 height=22 fill=none stroke=currentColor stroke-width=2 stroke-linecap=round aria-hidden=true>` +
+        `<path d="M8.5 8.5a5 5 0 0 1 0 7M12 6a8.5 8.5 0 0 1 0 12M15.5 3.5a12 12 0 0 1 0 17"/></svg></div>` +
+        `<span class=cartaoChip aria-hidden=true></span>` +
+        `<div class=cartaoArteRodape><span><small>${dados.temHoje ? 'Fatura hoje' : 'Fatura'}</small><b>${brl(Math.abs(principal.fatura))}</b></span>` +
+        `<span class=cartaoVence><small>Vence</small><b>${c.vencimento ? dataBR(c.vencimento).slice(0, 5) : '—'}</b></span></div>` +
+        `</div>` +
+        (dados.temHoje ? linha('Hoje', c.hoje) : '') + linha('Futuro', c.futuro) +
+        `<div class=cartaoLimite><span>Teto <b>${brl(c.teto)}</b></span>` +
+        `<span class=limiteCartaoBase>Aprovado R$ ${c.campoAprovado}</span>` +
+        (c.campoGarantia ? `<span class=limiteCartaoBase>Garantido + R$ ${c.campoGarantia}</span>` : '') +
+        `</div>` +
+        `<details class=cartaoCompras><summary>Compras da fatura <span>${compras.length}</span></summary>` +
+        (compras.length ? `<ul>${compras.map(itemCompra).join('')}</ul>` : '<p class=empty>Nenhuma compra.</p>') +
+        `</details>`;
 }

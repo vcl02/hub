@@ -95,7 +95,10 @@
       }
 
       /* Ações do cabeçalho juntas, à direita (sem o Simular separado das demais). */
+      /* Com os botões dos cartões, o grupo não cabe nem sozinho numa tela estreita: aí ele
+         quebra entre os botões, também à esquerda (na largura em que cabe, segue inteiro). */
       .acoesCabecalho {
+          flex-wrap: wrap;
           gap: .5rem;
       }
 

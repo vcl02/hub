@@ -157,6 +157,9 @@ function desenhar() {
     // Sem Recarregar na conta restrita: os dados chegam só pela recarga automática de 5 min.
     el('recarregar').hidden = simples;
     el('toggleSimulacao').hidden = simples;
+    // Botões dos cartões: a conta restrita não vê Crédito. vCiclo preenche os dados do ciclo
+    // exibido; Comparar e Backlog não têm um ciclo de cartão, então ficam desativados.
+    Estado.cartoesDoCiclo = null;
     const noBacklog = modoBlocos && +el('ciclo').value < 0;
 
     // O mesmo botão abre a pizza no ciclo único e a evolução na comparação. Ele permanece
@@ -183,6 +186,7 @@ function desenhar() {
     const scrollsAntigos = [...el('out').querySelectorAll('.wx, .wrap')].map(e => [e.scrollTop, e.scrollLeft]);
     el('out').innerHTML = modoBlocos ? vCiclo() : vComp();
     alinharResumosDosTitulos();
+    atualizarCartoes();
     if (!trocouModo) {
         [...el('out').querySelectorAll('.wx, .wrap')].forEach((e, i) => {
             if (!scrollsAntigos[i]) return;
@@ -592,30 +596,65 @@ el('out').addEventListener('click', e => {
     input.select();
 });
 
-// O Aprovado dentro dos parênteses no título Crédito é editável sem abrir modal. Não é
-// lançamento nem alteração de banco: usa a mesma máscara monetária do cadastro; Enter ou
-// sair do campo atualiza apenas a preferência local do limite contratado.
-el('out').addEventListener('input', e => {
-    const input = e.target.closest('[data-limite-cartao], [data-limite-categoria], [data-garantia-cartao]');
-    if (!input) return;
-    const cursorNoFim = input.selectionEnd == input.value.length;
-    input.value = formataMascaraDinheiro(input.value);
-    if (cursorNoFim) input.setSelectionRange(input.value.length, input.value.length);
+// Campos de limite (Besteira/Isabella no título do Débito; Aprovado e Garantia no modal de
+// cada cartão e, com um cartão só, no título do Crédito): mesma máscara monetária do
+// cadastro; Enter ou sair do campo grava a escolha do ciclo (confirmarLimiteDoCiclo), Esc
+// desfaz. Os mesmos handlers valem no #out e no modal do cartão, que fica fora dele.
+function ligarCamposDeLimite(raiz) {
+    const campo = e => e.target.closest('[data-limite-cartao], [data-limite-categoria], [data-garantia-cartao]');
+    raiz.addEventListener('input', e => {
+        const input = campo(e);
+        if (!input) return;
+        const cursorNoFim = input.selectionEnd == input.value.length;
+        input.value = formataMascaraDinheiro(input.value);
+        if (cursorNoFim) input.setSelectionRange(input.value.length, input.value.length);
+    });
+    raiz.addEventListener('focusin', e => {
+        const input = campo(e);
+        if (input) input.select();
+    });
+    raiz.addEventListener('keydown', e => {
+        const input = campo(e);
+        if (!input) return;
+        if (e.key == 'Enter') { e.preventDefault(); input.blur(); }
+        else if (e.key == 'Escape') { e.preventDefault(); desenhar(); }
+    });
+    raiz.addEventListener('change', e => {
+        const input = campo(e);
+        if (input) confirmarLimiteDoCiclo(input);
+    });
+}
+ligarCamposDeLimite(el('out'));
+ligarCamposDeLimite(el('modalCartao'));
+
+// Botões Nubank/Mercado Pago do cabeçalho: cada um abre o modal só daquele cartão no ciclo
+// exibido (htmlModalCartao em cycle-views.js). A cada redesenho, os botões refletem se há
+// dados do cartão e o modal aberto é refeito com os números novos (ex.: depois de gravar
+// um Aprovado lá dentro).
+const BOTAO_DO_CARTAO = { [CARTAO_NUBANK]: 'btNubank', [CARTAO_MERCADO_PAGO]: 'btMercadoPago' };
+function preencherModalCartao() {
+    const cartao = el('modalCartao').dataset.cartao;
+    el('tituloCartao').textContent = NOME_CARTAO[cartao] || 'Cartão';
+    el('corpoCartao').innerHTML = htmlModalCartao(Estado.cartoesDoCiclo, cartao);
+}
+function atualizarCartoes() {
+    const restrito = modoRestrito();
+    Object.entries(BOTAO_DO_CARTAO).forEach(([cartao, id]) => {
+        el(id).hidden = restrito;
+        el(id).disabled = restrito || !Estado.cartoesDoCiclo?.cartoes?.[cartao];
+    });
+    if (el('modalCartao').open) preencherModalCartao();
+}
+Object.entries(BOTAO_DO_CARTAO).forEach(([cartao, id]) => {
+    el(id).onclick = () => {
+        if (el(id).disabled) return;
+        el('modalCartao').dataset.cartao = cartao;
+        preencherModalCartao();
+        el('modalCartao').showModal();
+    };
 });
-el('out').addEventListener('focusin', e => {
-    const input = e.target.closest('[data-limite-cartao], [data-limite-categoria], [data-garantia-cartao]');
-    if (input) input.select();
-});
-el('out').addEventListener('keydown', e => {
-    const input = e.target.closest('[data-limite-cartao], [data-limite-categoria], [data-garantia-cartao]');
-    if (!input) return;
-    if (e.key == 'Enter') { e.preventDefault(); input.blur(); }
-    else if (e.key == 'Escape') { e.preventDefault(); desenhar(); }
-});
-el('out').addEventListener('change', e => {
-    const input = e.target.closest('[data-limite-cartao], [data-limite-categoria], [data-garantia-cartao]');
-    if (input) confirmarLimiteDoCiclo(input);
-});
+el('fechaCartao').onclick = () => el('modalCartao').close();
+el('modalCartao').addEventListener('click', e => { if (e.target == el('modalCartao')) el('modalCartao').close(); });
 
 // Recalcula em qual ciclo um lancamento cai, com a MESMA regra da carga inicial
 // (carregarDados) — mudar a data pode jogar a linha pra outro periodo, ou pro Backlog

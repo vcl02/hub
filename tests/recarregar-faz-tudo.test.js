@@ -129,7 +129,7 @@ test('Todas/Diferentes, Gráfico e Visualizações ficam no bloco de botões, an
     assert.match(estilos, /\.btIcone \{[\s\S]*?width: 2\.2rem;\s*\n\s*height: 2\.2rem;/);
     assert.match(estilos, /\.btIcone:disabled \{\s*\n\s*opacity: \.5;/);
     assert.match(regras, /\*\*Gráfico\*\* \(ícone de barras\) é botão só de ícone[^.]*no bloco de botões à direita do cabeçalho, junto dos demais\./);
-    assert.match(regras, /Os botões \(Todas\/Diferentes, Gráfico, Visualizações, simulação, cadastro, recarregar, diagnóstico, sair, nessa ordem\) formam um bloco só/);
+    assert.match(regras, /Os botões \(cartões Nubank e Mercado Pago, Todas\/Diferentes, Gráfico, Visualizações, simulação, cadastro, recarregar, diagnóstico, sair, nessa ordem\) formam um bloco só/);
 });
 
 test('navegação de ciclo quebra linha em vez de sobrepor o cabeçalho, e no mobile os ícones cabem ao lado do Até', () => {
