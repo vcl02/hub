@@ -143,8 +143,8 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Sem valor, a série sai inteira com valor vazio em cada linha, pra preencher depois.
   **Sem Frequência**, Vezes é editável (compra parcelada comum) e cada parcela escolhe sua própria fatura; Vezes não muda mais a Frequência sozinho.
   Duplicar herda a Frequência do original — salvar um duplicado de algo Mensal gera a série inteira.
-  Um botão "?" ao lado do rótulo Frequência (`#ajudaFrequencia`, abre `#modalAjudaFrequencia`) resume essa regra no próprio cadastro.
-  Os rótulos Frequência e Categorias apontam explicitamente pro próprio campo (`for=`): tocar no texto do rótulo foca o campo, nunca abre a ajuda — só o "?" abre.
+  Passar o mouse no rótulo Frequência resume essa regra num hover (`title`); não há botão nem modal de ajuda (o app é de uso pessoal: no máximo um hover).
+  Os rótulos Frequência e Categorias apontam explicitamente pro próprio campo (`for=`): tocar no texto do rótulo foca o campo.
 - Quando o campo Vezes (ou uma série de Frequência) cria mais de uma parcela numa única submissão (compra parcelada no Crédito, ou várias ocorrências futuras de um Débito recorrente), todas as parcelas do lote gravam o mesmo `recorrencia_id` (`fin.recorrencia_id`, coluna da migration 15).
   O `recorrencia_id` é **sempre sequencial**: o próximo número da sequência `fin_recorrencia_seq` (1, 2, 3…), obtido pela função `proxima_recorrencia()` (migration 28), nunca o id de um lançamento.
   Só o mantenedor obtém número novo; o pedido não é repetido sozinho, porque cada chamada consome um número.
@@ -457,7 +457,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   O nome ligado fica em verde, como os outros controles ativos; clicar de novo mostra tudo e clicar no outro troca de teto.
   O filtro soma-se às buscas por coluna, vale em qualquer ciclo navegado (Hoje, Futuro e Passado mostram o mesmo toggle), reabre os blocos Débito/Crédito se estiverem recolhidos, só lê (funciona também na simulação) e sai com o clique no Recarregar; Backlog e Comparar não mudam.
   A conta restrita não tem os indicadores, então também não tem o filtro.
-  Um botão de ajuda (ícone "?") ao lado do campo Categorias no cadastro (`#ajudaCategorias`, abre `#modalAjudaCategorias`) repete esse guia na hora de digitar, sem precisar consultar este arquivo.
+  Passar o mouse no rótulo Categorias do cadastro resume esse guia num hover (`title`), sem botão nem modal de ajuda.
 - A pizza de gastos usa o ciclo inteiro conforme seu escopo próprio descrito em **Escopo e exclusões das visões**.
   As demais categorias separadas por vírgula ficam selecionáveis individualmente; `*` vermelho indica classificação compartilhada e aparece primeiro no seletor.
   O dropdown alterna entre Selecionar tudo e Desmarcar tudo.

@@ -422,11 +422,6 @@ el('fFreq').addEventListener('change', () => {
 
 el('fParcelas').addEventListener('change', () => atualizarFaturasDoFormulario());
 
-el('ajudaFrequencia').onclick = () => el('modalAjudaFrequencia').showModal();
-el('fechaAjudaFrequencia').onclick = () => el('modalAjudaFrequencia').close();
-el('modalAjudaFrequencia').addEventListener('click', e => {
-    if (e.target == el('modalAjudaFrequencia')) el('modalAjudaFrequencia').close();
-});
 
 function abreModalNovo(prefill, modoEdicao) {
     el('formNovo').reset();
@@ -749,14 +744,6 @@ el('seledit').onclick = () => {
     const r = Estado.lancamentos.find(x => String(x.id) == chave);
     if (r) abreModalNovo(r, true);
 };
-
-// Guia de categorias (Besteira/Isabella/Lazer): abre por cima do cadastro, sem
-// fechá-lo — é só consulta, não precisa perder o que já foi digitado no formulário.
-el('ajudaCategorias').onclick = () => el('modalAjudaCategorias').showModal();
-el('fechaAjudaCategorias').onclick = () => el('modalAjudaCategorias').close();
-el('modalAjudaCategorias').addEventListener('click', e => {
-    if (e.target == el('modalAjudaCategorias')) el('modalAjudaCategorias').close();
-});
 
 // ao fechar o modal (por qualquer via: X, clique fora, Esc, ou apos salvar), se ele foi
 // aberto pelo "Duplicar", desmarca a linha que originou o duplicado — senao ela ficava

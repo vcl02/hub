@@ -21,7 +21,7 @@ test('o campo Fatura é uma linha fixa: seletor da 1ª parcela + botão "+N"', (
 test('as parcelas 2..N ficam em #modalFaturasParcelas, sem altura limitada própria', () => {
     assert.match(pagina, /<dialog id=modalFaturasParcelas>[\s\S]*?<div id=faturasPorParcela><\/div>\s*\n\s*<\/dialog>/);
     assert.match(estilos, /#faturasPorParcela \{\s*\n\s*display: flex;\s*\n\s*flex-direction: column;\s*\n\s*gap: \.7rem;\s*\n\s*\}/);
-    assert.match(estilos, /dialog#modalFaturasParcelas,\s*\n\s*dialog#modalAjudaFrequencia,/);
+    assert.match(estilos, /dialog#modalFaturasParcelas,\s*\n\s*dialog#modalDiagnostico,/);
     assert.match(formulario, /el\('fFaturasMais'\)\.onclick = \(\) => el\('modalFaturasParcelas'\)\.showModal\(\);/);
     assert.match(formulario, /if \(e\.target == el\('modalFaturasParcelas'\)\) el\('modalFaturasParcelas'\)\.close\(\);/);
 });

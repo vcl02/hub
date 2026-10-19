@@ -126,7 +126,7 @@ test('também abre um modal com o detalhe ciclo a ciclo — resposta direta ao c
 
     const estilosForm = fs.readFileSync('css/forms.css', 'utf8');
     assert.match(estilosForm, /dialog#modalDiagnostico::backdrop,\s*\n\s*dialog#modalConsolidarTudo::backdrop \{\s*\n\s*background: rgba\(0, 0, 0, \.68\);/);
-    assert.match(estilosForm, /dialog#modalDiagnostico,\s*\n\s*dialog#modalAjudaCategorias,\s*\n\s*dialog#modalConsolidarTudo \{/);
+    assert.match(estilosForm, /dialog#modalDiagnostico,\s*\n\s*dialog#modalConsolidarTudo \{/);
     assert.match(estilosForm, /#listaConsolidarTudo \{\s*\n\s*color: var\(--mu\);\s*\n\s*\}/);
 });
 

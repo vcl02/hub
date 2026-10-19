@@ -301,17 +301,7 @@
           </div>
         </label>
 
-        <label class=fm id=fFreqWrap for=fFreq><span>Frequência
-            <button type=button id=ajudaFrequencia class=btAjudaMini title="Como funciona a Frequência"
-              aria-label="Abrir ajuda da Frequência">
-              <svg viewBox="0 0 24 24" width=13 height=13 fill=none stroke=currentColor stroke-width=2.4
-                stroke-linecap=round stroke-linejoin=round aria-hidden=true>
-                <circle cx=12 cy=12 r=10 />
-                <path d="M9.5 9a2.5 2.5 0 0 1 4.6-1.4c.6.9.4 1.8-.4 2.5-.9.8-1.7 1.3-1.7 2.4" />
-                <path d="M12 17h.01" />
-              </svg>
-            </button>
-          </span>
+        <label class=fm id=fFreqWrap for=fFreq><span title="Com Frequência: informe só a 1ª ocorrência; o cadastro gera uma a cada período até 31/12/2032 (no Crédito, cada uma na fatura do mês). Sem Frequência: Vezes parcela.">Frequência</span>
           <select id=fFreq>
             <option value="">— Sem recorrência
             <option value=Mensal>Mensal
@@ -347,17 +337,7 @@
           </div>
         </div>
 
-        <label class=fm for=fCateg><span>Categorias <b class=req>*</b>
-            <button type=button id=ajudaCategorias class=btAjudaMini title="Guia: Besteira, Isabella, Lazer"
-              aria-label="Abrir guia de categorias Besteira, Isabella e Lazer">
-              <svg viewBox="0 0 24 24" width=13 height=13 fill=none stroke=currentColor stroke-width=2.4
-                stroke-linecap=round stroke-linejoin=round aria-hidden=true>
-                <circle cx=12 cy=12 r=10 />
-                <path d="M9.5 9a2.5 2.5 0 0 1 4.6-1.4c.6.9.4 1.8-.4 2.5-.9.8-1.7 1.3-1.7 2.4" />
-                <path d="M12 17h.01" />
-              </svg>
-            </button>
-          </span>
+        <label class=fm for=fCateg><span title="Besteira: seus caprichos, sozinho (só o seu teto). Isabella: com Lazer, o que fizer com ela; sozinha, presente ou mimo (teto dela). Fora do teto dela: fatura do cartão dela e o Comprometido.">Categorias <b class=req>*</b></span>
           <input type=text id=fCateg list=fCategList required autocomplete=off
             placeholder="Ex.: Casa, Mercado">
           <datalist id=fCategList></datalist>
@@ -377,44 +357,6 @@
         <button type=button id=fechaFaturasParcelas aria-label="Fechar">×</button>
       </div>
       <div id=faturasPorParcela></div>
-    </dialog>
-
-    <!-- Guia de referência pra digitar categoria certo na hora do cadastro (ver REGRAS.md,
-         seção Isabella); não altera dado nenhum, é só lembrete da convenção. -->
-    <dialog id=modalAjudaCategorias>
-      <div class=modalHead>
-        <h2>Categorias: Besteira e Isabella</h2>
-        <button type=button id=fechaAjudaCategorias aria-label="Fechar">×</button>
-      </div>
-      <dl class=ajudaCategorias>
-        <div>
-          <dt>Besteira</dt>
-          <dd>Sozinho, sem "Isabella" junto: seus próprios caprichos — comendo fora sozinho, por exemplo. Desconta só do seu teto (R$ 250); nunca entra no teto dela.</dd>
-        </div>
-        <div>
-          <dt>Isabella</dt>
-          <dd>Com "Lazer" junto: qualquer coisa feita com ela, inclusive comer/lanchar juntos (valor inteiro da conta, sem dividir) — estacionamento, ingresso, Uber compartilhado, cover… Sozinha: presente, mimo pra ela. Os dois casos entram no teto dela (R$ 700); nunca no seu. "Lazer" sozinho não conta aqui — pode ser lazer com outra pessoa.</dd>
-        </div>
-      </dl>
-      <p class=meta>Ficam fora desse teto a fatura do cartão dela (categoria ou nome com "Fatura") e o que estiver marcado Comprometido (parcelas fixas, como Iphone).</p>
-    </dialog>
-
-    <!-- Ajuda da Frequência no cadastro (ver REGRAS.md); só explica a regra, não altera dados. -->
-    <dialog id=modalAjudaFrequencia>
-      <div class=modalHead>
-        <h2>Frequência</h2>
-        <button type=button id=fechaAjudaFrequencia aria-label="Fechar">×</button>
-      </div>
-      <dl class=ajudaCategorias>
-        <div>
-          <dt>Com Frequência</dt>
-          <dd>Você informa só a 1ª ocorrência (a Data e, no Crédito, a 1ª fatura). O cadastro gera uma ocorrência a cada período até 31/12/2032; no Crédito, cada uma cai na fatura do mês correspondente.</dd>
-        </div>
-        <div>
-          <dt>Sem Frequência</dt>
-          <dd>Use Vezes pra parcelar e escolha a fatura de cada parcela.</dd>
-        </div>
-      </dl>
     </dialog>
 
     <dialog id=modalVisualizacao>

@@ -57,24 +57,14 @@ test('fatura de cada ocorrência = 1ª fatura avançada pelos meses de calendár
     assert.equal(r.faturaDaOcorrencia('2027-01-31', '2026-12-05', '2027-02-05'), '2027-03-31');
 });
 
-test('Frequência vem antes de Vezes no cadastro, com o "?" de ajuda abrindo um modal próprio', () => {
+test('Frequência vem antes de Vezes; a regra fica só num hover do rótulo, sem botão nem modal de ajuda', () => {
     assert.ok(pagina.indexOf('id=fFreq') < pagina.indexOf('id=fParcelas'));
     assert.match(pagina, /<label class=fm id=fParcelasWrap><span>Vezes<\/span>/);
-    assert.match(pagina, /<button type=button id=ajudaFrequencia class=btAjudaMini title="Como funciona a Frequência"\s*\n\s*aria-label="Abrir ajuda da Frequência">/);
-    assert.match(pagina, /<dialog id=modalAjudaFrequencia>/);
-    assert.match(pagina, /gera uma ocorrência a cada período até 31\/12\/2032/);
-    assert.match(formulario, /el\('ajudaFrequencia'\)\.onclick = \(\) => el\('modalAjudaFrequencia'\)\.showModal\(\);/);
-    assert.match(formulario, /el\('fechaAjudaFrequencia'\)\.onclick = \(\) => el\('modalAjudaFrequencia'\)\.close\(\);/);
-    assert.match(formulario, /if \(e\.target == el\('modalAjudaFrequencia'\)\) el\('modalAjudaFrequencia'\)\.close\(\);/);
-    assert.match(estilos, /dialog#modalAjudaFrequencia,\s*\n\s*dialog#modalDiagnostico,/);
-});
-
-test('o "?" fica dentro do rótulo, mas o rótulo aponta pro campo (for=), não pro botão de ajuda', () => {
-    // Sem for=, o rótulo vira do 1º elemento rotulável dentro dele — o próprio botão "?",
-    // que vem antes do campo: tocar no texto abriria a ajuda e o campo ficaria sem nome
-    // acessível.
-    assert.match(pagina, /<label class=fm id=fFreqWrap for=fFreq><span>Frequência\s*\n\s*<button type=button id=ajudaFrequencia/);
-    assert.match(pagina, /<label class=fm for=fCateg><span>Categorias <b class=req>\*<\/b>\s*\n\s*<button type=button id=ajudaCategorias/);
+    assert.match(pagina, /<label class=fm id=fFreqWrap for=fFreq><span title="Com Frequência: informe só a 1ª ocorrência; o cadastro gera uma a cada período até 31\/12\/2032[^"]*">Frequência<\/span>/);
+    assert.match(pagina, /<label class=fm for=fCateg><span title="Besteira: [^"]*">Categorias <b class=req>\*<\/b><\/span>/);
+    assert.doesNotMatch(pagina, /ajudaFrequencia|ajudaCategorias|btAjudaMini|modalAjuda/);
+    assert.doesNotMatch(formulario, /ajudaFrequencia|ajudaCategorias|modalAjuda/);
+    assert.doesNotMatch(estilos, /modalAjuda|btAjudaMini|\.ajudaCategorias/);
 });
 
 test('com Frequência, Vezes fica desativado e só existe o seletor da 1ª fatura; Vezes não muda mais a Frequência', () => {
@@ -103,11 +93,11 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /a fatura de cada ocorrência é a 1ª fatura avançada pelo mesmo número de meses de calendário/);
     assert.match(regras, /Dividir continua valendo/);
     assert.match(regras, /Duplicar herda a Frequência do original — salvar um duplicado de algo Mensal gera a série inteira/);
-    assert.match(regras, /`#ajudaFrequencia`, abre `#modalAjudaFrequencia`/);
+    assert.match(regras, /Passar o mouse no rótulo Frequência resume essa regra num hover \(`title`\); não há botão nem modal de ajuda/);
 });
 
-test('regra dos rótulos com "?" documentada em REGRAS.md', () => {
-    assert.match(regras, /Os rótulos Frequência e Categorias apontam explicitamente pro próprio campo \(`for=`\): tocar no texto do rótulo foca o campo, nunca abre a ajuda/);
+test('rótulos Frequência e Categorias apontam pro próprio campo (for=), documentado em REGRAS.md', () => {
+    assert.match(regras, /Os rótulos Frequência e Categorias apontam explicitamente pro próprio campo \(`for=`\): tocar no texto do rótulo foca o campo\./);
 });
 
 test('Frequência é um campo comum; Vezes e Dividir ficam numa linha fixa logo abaixo', () => {
@@ -123,4 +113,8 @@ test('depois de salvar, a Frequência volta a "sem recorrência" e Vezes volta a
     assert.match(formulario, /el\('fData'\)\.value = hojeISO\(\);\s*\n(\s*\/\/.*\n)*\s*el\('fFreq'\)\.value = '';\s*\n\s*atualizaModoFrequencia\(\);\s*\n\s*atualizarFaturasDoFormulario\(idsFaturasDoFormulario\(false\)\);/);
     assert.match(regras, /Depois de salvar, a Frequência volta a "sem recorrência" \(e Vezes volta a ser editável, com o valor que tinha antes da Frequência\)/);
     assert.match(regras, /abre marcado no Crédito, desmarcado no Débito, sempre alternável/);
+});
+
+test('AGENTS.md: o app é pessoal, sem dicas na tela; no máximo um hover', () => {
+    assert.match(fs.readFileSync('AGENTS.md', 'utf8'), /O app é só do mantenedor: nada de dicas, guias, instruções na tela nem botões ou modais de ajuda\. Quando uma explicação for útil, no máximo um hover \(`title`\)\./);
 });

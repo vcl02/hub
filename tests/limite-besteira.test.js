@@ -150,28 +150,16 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /e todo lançamento marcado \*\*Comprometido\*\* \(parcelas e compromissos fixos, como Iphone e Senac\)/);
     assert.match(regras, /`Lazer` sozinho nunca conta, pois pode ser lazer com qualquer outra pessoa/);
     assert.match(regras, /Besteira \(café, milkshake, lanche sozinho\) é só o teto `Besteira` — nunca combina com `Isabella`/);
-    assert.match(regras, /`#ajudaCategorias`, abre `#modalAjudaCategorias`/);
+    assert.match(regras, /Passar o mouse no rótulo Categorias do cadastro resume esse guia num hover \(`title`\), sem botão nem modal de ajuda\./);
 
     assert.match(regras, /categoria `Isabella` \(nunca entra no indicador `Isabella`, porque o nome ou a categoria têm `Fatura`/);
 });
 
-test('botão de ajuda ao lado de Categorias abre um guia com as regras de categorização (Besteira solo, Isabella) — só a fatura dela fica de fora', () => {
-    assert.match(html, /<button type=button id=ajudaCategorias class=btAjudaMini title="Guia: Besteira, Isabella, Lazer"/);
-    assert.match(html, /aria-label="Abrir guia de categorias Besteira, Isabella e Lazer"/);
-    assert.match(html, /<dialog id=modalAjudaCategorias>/);
-    assert.match(html, /<dt>Besteira<\/dt>/);
-    assert.doesNotMatch(html, /<dt>Besteira Isabella<\/dt>/);
-    assert.doesNotMatch(html, /<dt>Presentes \+ Isabella<\/dt>/);
-    assert.match(html, /<dt>Isabella<\/dt>\s*\n\s*<dd>Com "Lazer" junto:[^<]*Sozinha: presente, mimo pra ela/);
-    assert.match(html, /Ficam fora desse teto a fatura do cartão dela \(categoria ou nome com "Fatura"\) e o que estiver marcado Comprometido/);
-
-    assert.match(formulario, /el\('ajudaCategorias'\)\.onclick = \(\) => el\('modalAjudaCategorias'\)\.showModal\(\);/);
-    assert.match(formulario, /el\('fechaAjudaCategorias'\)\.onclick = \(\) => el\('modalAjudaCategorias'\)\.close\(\);/);
-    assert.match(formulario, /if \(e\.target == el\('modalAjudaCategorias'\)\) el\('modalAjudaCategorias'\)\.close\(\);/);
-
-    assert.match(estilosForm, /dialog#modalDiagnostico,\s*\n\s*dialog#modalAjudaCategorias,\s*\n\s*dialog#modalConsolidarTudo \{/);
-    assert.match(estilosForm, /\.btAjudaMini\s*\{/);
-    assert.match(estilosForm, /\.ajudaCategorias\s*\{/);
+test('guia de categorias só no hover do rótulo Categorias: Besteira solo, Isabella com Lazer ou sozinha, fatura dela e Comprometido fora', () => {
+    assert.match(html, /<span title="Besteira: seus caprichos, sozinho \(só o seu teto\)\. Isabella: com Lazer, o que fizer com ela; sozinha, presente ou mimo \(teto dela\)\. Fora do teto dela: fatura do cartão dela e o Comprometido\.">Categorias/);
+    assert.doesNotMatch(html, /modalAjudaCategorias|ajudaCategorias/);
+    assert.doesNotMatch(formulario, /ajudaCategorias/);
+    assert.doesNotMatch(estilosForm, /btAjudaMini|\.ajudaCategorias/);
 });
 
 test('cor do indicador: verde com folga, laranja a partir de 70%, vermelho acima do teto', () => {

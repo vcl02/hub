@@ -17,9 +17,7 @@
   }
 
   dialog#modalFaturasParcelas,
-  dialog#modalAjudaFrequencia,
   dialog#modalDiagnostico,
-  dialog#modalAjudaCategorias,
   dialog#modalConsolidarTudo {
       color: var(--fg);
       background: var(--pa);
@@ -31,10 +29,9 @@
       box-shadow: 0 20px 60px var(--shadow);
   }
 
-  /* No desktop, avisos/guia/resultado longos usam a largura disponível antes de quebrar em várias linhas. */
+  /* No desktop, avisos/resultado longos usam a largura disponível antes de quebrar em várias linhas. */
   @media (min-width: 700px) {
       dialog#modalDiagnostico,
-      dialog#modalAjudaCategorias,
       dialog#modalConsolidarTudo {
           width: min(44rem, calc(100vw - 4rem));
           max-height: 78vh;
@@ -700,53 +697,6 @@
      de .listaDiagnostico destoaria do que realmente é (confirmação do que foi gravado). */
   #listaConsolidarTudo {
       color: var(--mu);
-  }
-
-  /* Botão "?" ao lado do rótulo Categorias: abre o guia de combinação de categorias
-     (Besteira/Isabella/Lazer/Presentes) sem sair do cadastro. */
-  .btAjudaMini {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 1.3rem;
-      height: 1.3rem;
-      margin-left: .3rem;
-      vertical-align: middle;
-
-      border: 1px solid var(--ln);
-      border-radius: 50%;
-
-      background: var(--field);
-      color: var(--mu);
-
-      cursor: pointer;
-  }
-
-  .btAjudaMini:hover {
-      background: var(--field-hover);
-      color: var(--fg);
-      border-color: var(--line-strong);
-  }
-
-  .ajudaCategorias {
-      margin: 1rem 0 0;
-  }
-
-  .ajudaCategorias > div + div {
-      margin-top: .9rem;
-      padding-top: .9rem;
-      border-top: 1px solid var(--ln);
-  }
-
-  .ajudaCategorias dt {
-      font-weight: 700;
-      color: var(--fg);
-  }
-
-  .ajudaCategorias dd {
-      margin: .25rem 0 0;
-      color: var(--mu);
-      font-size: .88rem;
   }
 
   /* Toasts são alertas breves de operação; inconsistências de dados usam o modal. */

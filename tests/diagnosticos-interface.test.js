@@ -27,7 +27,7 @@ test('modal separa inconsistências de avisos e problemas operacionais usam toas
     assert.match(html, /id=listaAvisos/);
     assert.match(html, /id=toasts/);
     assert.match(estilos, /dialog#modalDiagnostico/);
-    assert.match(estilos, /@media \(min-width: 700px\) \{\s*dialog#modalDiagnostico,\s*dialog#modalAjudaCategorias,\s*dialog#modalConsolidarTudo \{\s*width: min\(44rem, calc\(100vw - 4rem\)\)/);
+    assert.match(estilos, /@media \(min-width: 700px\) \{\s*dialog#modalDiagnostico,\s*dialog#modalConsolidarTudo \{\s*width: min\(44rem, calc\(100vw - 4rem\)\)/);
     assert.match(estilos, /\.listaDiagnostico \{[\s\S]*?overflow-wrap: anywhere/);
     assert.match(estilos, /#toasts/);
     assert.match(base, /#btDiagnostico\.temInconsistencia::after/);
