@@ -177,7 +177,7 @@ test('com dois cartões, Hoje e Futuro começam pelo Total somado dos dois', () 
     assert.match(visoes, /if \(limitesDosCartoes\.length < 2\) return '';/);
     assert.match(visoes, /const livre = limitesDosCartoes\.reduce\(\(soma, l\) => soma \+ l\[chaveLivre\], 0\);/);
     assert.match(visoes, /const teto = limitesDosCartoes\.reduce\(\(soma, l\) => soma \+ l\.limiteTotal, 0\);/);
-    assert.match(visoes, /<span class="limiteCartao temPedacos">\$\{usadoELivre\('<span class="limiteCartaoNome cartao-total">Total<\/span>', teto - livre, livre, brl\(teto\)\)\}<\/span>/);
+    assert.match(visoes, /<span class="limiteCartao temPedacos">\$\{usadoELivre\('<span class="limiteCartaoNome cartao-total">Total<\/span>', teto - livre, livre, brl\(teto\), faturaTotal\(chaveLivre\)\)\}<\/span>/);
     assert.match(visoes, /resumoTotalDosCartoes\(chaveLivre\) \+ limitesDosCartoes\.map\(l => resumoLimiteCartao\(l, chaveLivre\)\)\.join\(''\);/);
     assert.match(regras, /Com os dois cartões no título, Hoje e Futuro começam por uma faixa \*\*Total\*\*, antes das faixas de cada cartão/);
     assert.match(regras, /o próprio campo editável fica depois de "de"/);
@@ -190,12 +190,11 @@ test('cada faixa (Total, Nubank, Mercado Pago) mostra Usado e Livre do mesmo tet
     assert.match(regras, /Cada faixa \(Total, Nubank, Mercado Pago\) mostra \*\*Usado\*\* e \*\*Livre\*\* do mesmo teto/);
 });
 
-test('o valor da fatura só abre a linha quando difere do Usado da 1ª faixa (sem número repetido)', () => {
-    assert.match(visoes, /const usadoNaPrimeiraFaixa = chaveLivre => limitesDosCartoes\s*\n\s*\.reduce\(\(soma, l\) => soma \+ l\.limiteTotal - l\[chaveLivre\], 0\);/);
-    assert.match(visoes, /Math\.abs\(Math\.abs\(total\) - usadoNaPrimeiraFaixa\(chaveLivre\)\) < TOLERANCIA_FINANCEIRA \? ''/);
-    assert.match(visoes, /valorDaFaturaNaLinha\(totalCreditoHoje, 'limiteLivreHoje'\)/);
-    assert.match(visoes, /valorDaFaturaNaLinha\(totalCreditoExibido, 'limiteLivreFuturo'\)/);
-    assert.match(regras, /o valor da fatura no começo de Hoje\/Futuro só aparece quando é diferente do Usado da 1ª faixa/);
+test('a fatura não fica solta no começo da linha: é o 1º pedaço de cada faixa, com rótulo', () => {
+    assert.doesNotMatch(visoes, /valorDaFaturaNaLinha|celulaReservada|usadoNaPrimeiraFaixa/);
+    assert.match(visoes, /const faturaTotal = chaveLivre => chaveLivre === 'limiteLivreHoje' \? totalCreditoHoje : totalCreditoExibido;/);
+    assert.match(visoes, /usadoELivre\('<span class="limiteCartaoNome cartao-total">Total<\/span>', teto - livre, livre, brl\(teto\), faturaTotal\(chaveLivre\)\)/);
+    assert.match(regras, /Cada faixa abre pela própria \*\*Fatura\*\*, com rótulo/);
 });
 
 test('faixas separadas por divisor, nome do cartão em cor própria, teto em itálico', () => {
@@ -209,14 +208,12 @@ test('faixas separadas por divisor, nome do cartão em cor própria, teto em it�
     assert.match(estilos, /\.limiteTeto,\s*\n\s*\.limiteGarantido \{\s*\n\s*font-style: italic;/);
 });
 
-test('com dois cartões, cada faixa abre pela fatura do próprio cartão (Hoje confirmado, Futuro inteira)', () => {
+test('toda faixa tem Fatura e Usado, nas duas linhas, mesmo quando coincidem (alinhamento)', () => {
     assert.match(visoes, /totalFuturo: totalExibidoDoCartao,/);
     assert.match(visoes, /const FATURA_DA_LINHA = \{ limiteLivreHoje: 'totalHoje', limiteLivreFuturo: 'totalFuturo' \};/);
-    // Com um cartão só, o começo da linha já é a fatura: a faixa não repete.
-    assert.match(visoes, /const faturaDoCartao = \(l, chaveLivre\) => cartoesNoTitulo\.length < 2 \? null : l\[FATURA_DA_LINHA\[chaveLivre\]\];/);
-    assert.match(visoes, /\(fatura == null \? '' : pedaco\(`<span class=limiteRotulo>Fatura<\/span>/);
-    // Fatura igual ao Usado: o Usado não se repete.
-    assert.match(visoes, /\(fatura != null && Math\.abs\(Math\.abs\(fatura\) - usado\) < TOLERANCIA_FINANCEIRA \? ''/);
-    assert.match(regras, /a faixa mostra só a Fatura, sem repetir o mesmo número como Usado/);
-    assert.match(regras, /a faixa de cada cartão abre pela \*\*Fatura\*\* daquele cartão/);
+    assert.match(visoes, /const faturaDoCartao = \(l, chaveLivre\) => l\[FATURA_DA_LINHA\[chaveLivre\]\];/);
+    // Nada condicional: os dois pedaços sempre entram, então Hoje e Futuro têm a mesma estrutura.
+    assert.match(visoes, /const usadoELivre = \(nome, usado, livre, teto, fatura\) => \(nome \? pedaco\(nome\) : ''\) \+\s*\n\s*pedaco\(`<span class=limiteRotulo>Fatura<\/span>[^\n]*\) \+\s*\n\s*pedaco\(`<span class=limiteRotulo>Usado<\/span>/);
+    assert.doesNotMatch(visoes, /fatura != null && Math\.abs/);
+    assert.match(regras, /Toda faixa, em Hoje e em Futuro, tem sempre os mesmos pedaços — Fatura, Usado, Livre e teto —/);
 });

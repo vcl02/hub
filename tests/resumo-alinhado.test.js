@@ -65,10 +65,10 @@ test('faixas com estrutura diferente não são mexidas', () => {
     assert.equal(hoje[0].style.minWidth, undefined);
 });
 
-test('alinhamento roda a cada desenho; Crédito reserva o lugar do valor da fatura', () => {
+test('alinhamento roda a cada desenho; Crédito tem a mesma estrutura em Hoje e Futuro', () => {
     assert.match(interacoes, /el\('out'\)\.innerHTML = modoBlocos \? vCiclo\(\) : vComp\(\);\s*\n\s*alinharResumosDosTitulos\(\);/);
-    assert.match(visoes, /\(faturaHoje \|\| \(exibeFuturoCredito && faturaFuturo \? celulaReservada : ''\)\)/);
-    assert.match(visoes, /\(faturaFuturo \|\| \(temHoje && faturaHoje \? celulaReservada : ''\)\)/);
+    assert.match(visoes, /<span class=resumoRotulo>Hoje<\/span><span class=resumoDados>` \+\s*\n\s*resumoLimites\('limiteLivreHoje'\)/);
+    assert.match(visoes, /<span class=resumoRotulo>Futuro<\/span><span class=resumoDados>` \+\s*\n\s*resumoLimites\('limiteLivreFuturo'\)/);
     assert.match(estilos, /\.resumoDados \{[\s\S]*?font-variant-numeric: tabular-nums;/);
     assert.match(regras, /cada item fica exatamente embaixo do correspondente da outra faixa/);
 });

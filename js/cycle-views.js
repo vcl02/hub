@@ -364,19 +364,19 @@ function vCiclo() {
     // Cada faixa vai em pedaços que nunca se partem (nome; Usado; Livre; "de" teto; Aprovado;
     // Garantido): com a tela estreita, a faixa quebra entre eles, nunca no meio de um valor.
     const pedaco = html => `<span class=pedaco>${html}</span>`;
-    // `fatura` (só nas faixas de cartão, com dois cartões) abre a faixa; igual ao Usado — nada
-    // confirmado em faturas seguintes —, ela sozinha já diz o uso e o Usado não se repete.
-    const usadoELivre = (nome, usado, livre, teto, fatura = null) => (nome ? pedaco(nome) : '') +
-        (fatura == null ? '' : pedaco(`<span class=limiteRotulo>Fatura</span> <b class="${corSoma(fatura)}">${brl(Math.abs(fatura))}</b>`)) +
-        (fatura != null && Math.abs(Math.abs(fatura) - usado) < TOLERANCIA_FINANCEIRA ? ''
-            : pedaco(`<span class=limiteRotulo>Usado</span> <b class=limiteUsado>${brl(usado)}</b>`)) +
+    // Toda faixa tem os mesmos pedaços — Fatura, Usado, Livre, teto —, mesmo quando Fatura e
+    // Usado coincidem: assim Hoje e Futuro sempre têm a mesma estrutura e ficam alinhados
+    // coluna a coluna (alinharResumosDosTitulos desiste de faixas com pedaços diferentes).
+    const usadoELivre = (nome, usado, livre, teto, fatura) => (nome ? pedaco(nome) : '') +
+        pedaco(`<span class=limiteRotulo>Fatura</span> <b class="${corSoma(fatura)}">${brl(Math.abs(fatura))}</b>`) +
+        pedaco(`<span class=limiteRotulo>Usado</span> <b class=limiteUsado>${brl(usado)}</b>`) +
         pedaco(`<span class=limiteRotulo>Livre</span> <b class="${corValor(livre)}">${brl(livre)}</b>`) +
         `<span class="pedaco limiteTeto">de ${teto}</span>`;
-    // Com dois cartões, cada faixa abre pela fatura daquele cartão (a mesma conta do valor do
-    // começo da linha, que é a soma das duas): Hoje só com o confirmado e as antecipações
-    // pagas, Futuro com a fatura exibida inteira. Com um cartão só, o começo da linha já é ela.
+    // Cada faixa abre pela própria fatura: a de cada cartão e, na faixa Total, a soma das duas.
+    // Hoje só com o confirmado e as antecipações já pagas; Futuro com a fatura exibida inteira.
     const FATURA_DA_LINHA = { limiteLivreHoje: 'totalHoje', limiteLivreFuturo: 'totalFuturo' };
-    const faturaDoCartao = (l, chaveLivre) => cartoesNoTitulo.length < 2 ? null : l[FATURA_DA_LINHA[chaveLivre]];
+    const faturaDoCartao = (l, chaveLivre) => l[FATURA_DA_LINHA[chaveLivre]];
+    const faturaTotal = chaveLivre => chaveLivre === 'limiteLivreHoje' ? totalCreditoHoje : totalCreditoExibido;
     const resumoLimiteCartao = (l, chaveLivre) => `<span class="limiteCartao temPedacos">` +
         usadoELivre(nomeNoTitulo(l.cartao), l.limiteTotal - l[chaveLivre], l[chaveLivre],
             tetoSemGarantia(l) ? `<span class=limiteCartaoBase>R$ ${campoAprovado(l)}</span>` : brl(l.limiteTotal),
@@ -391,34 +391,20 @@ function vCiclo() {
         if (limitesDosCartoes.length < 2) return '';
         const livre = limitesDosCartoes.reduce((soma, l) => soma + l[chaveLivre], 0);
         const teto = limitesDosCartoes.reduce((soma, l) => soma + l.limiteTotal, 0);
-        return `<span class="limiteCartao temPedacos">${usadoELivre('<span class="limiteCartaoNome cartao-total">Total</span>', teto - livre, livre, brl(teto))}</span>`;
+        return `<span class="limiteCartao temPedacos">${usadoELivre('<span class="limiteCartaoNome cartao-total">Total</span>', teto - livre, livre, brl(teto), faturaTotal(chaveLivre))}</span>`;
     };
     const resumoLimites = chaveLivre =>
         resumoTotalDosCartoes(chaveLivre) + limitesDosCartoes.map(l => resumoLimiteCartao(l, chaveLivre)).join('');
 
     // Crédito histórico volta ao cabeçalho compacto: só o total da fatura, sem Hoje/Futuro.
-    // O valor da fatura abre a linha só quando diz algo além do Usado da 1ª faixa (Total, ou o
-    // único cartão). Sem parcela confirmada em faturas seguintes os dois são o mesmo número, e
-    // repeti-lo lado a lado ("R$ 1.847,80 Total Usado R$ 1.847,80") só confunde.
-    const usadoNaPrimeiraFaixa = chaveLivre => limitesDosCartoes
-        .reduce((soma, l) => soma + l.limiteTotal - l[chaveLivre], 0);
-    const valorDaFaturaNaLinha = (total, chaveLivre) =>
-        Math.abs(Math.abs(total) - usadoNaPrimeiraFaixa(chaveLivre)) < TOLERANCIA_FINANCEIRA ? ''
-            : `<b class="${corSoma(total)}">${brl(Math.abs(total))}</b>`;
-    // Hoje e Futuro são alinhados coluna a coluna (alinharResumosDosTitulos): quando só uma
-    // das faixas abre com o valor da fatura, a outra ganha uma célula vazia no lugar, pra
-    // Total/Nubank/Mercado Pago continuarem um embaixo do outro.
-    const faturaHoje = valorDaFaturaNaLinha(totalCreditoHoje, 'limiteLivreHoje');
-    const faturaFuturo = valorDaFaturaNaLinha(totalCreditoExibido, 'limiteLivreFuturo');
+    // A fatura não abre mais a linha solta: é o primeiro pedaço de cada faixa (Total ou o único
+    // cartão), com rótulo, igual nas duas linhas.
     const temHoje = !(cicloDebitoFuturo || cicloDebitoPassado);
-    const celulaReservada = '<b class=celulaReservada aria-hidden=true></b>';
     const linhaHojeCredito = !temHoje ? '' :
         `<span class=resumoLinha><span class=resumoRotulo>Hoje</span><span class=resumoDados>` +
-        (faturaHoje || (exibeFuturoCredito && faturaFuturo ? celulaReservada : '')) +
         resumoLimites('limiteLivreHoje') + `</span></span>`;
     const linhaFuturoCredito = exibeFuturoCredito ?
         `<span class=resumoLinha><span class=resumoRotulo>Futuro</span><span class=resumoDados>` +
-        (faturaFuturo || (temHoje && faturaHoje ? celulaReservada : '')) +
         resumoLimites('limiteLivreFuturo') + `</span></span>` : '';
     const resumoCredito = cicloDebitoPassado ? '' :
         `<span class=resumoTitulo>` + linhaHojeCredito + linhaFuturoCredito + `</span>`;

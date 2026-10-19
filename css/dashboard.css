@@ -405,16 +405,7 @@
       min-width: 5ch;
   }
 
-  .resumoDados b.celulaReservada {
-      min-width: 0;
-  }
-
   .resumoDados .limiteRotulo {
-      display: inline-block;
-  }
-
-  /* Lugar do valor da fatura na faixa que não o mostra, pra a outra continuar alinhada. */
-  .celulaReservada {
       display: inline-block;
   }
 
