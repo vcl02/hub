@@ -140,7 +140,7 @@ test('indicadores financeiros ficam no cabeçalho, entre a navegação e os bot�
     assert.match(estilosPainel, /\.indicadorRegra b\.pct \{\s*\n\s*min-width: 5ch;/);
     assert.doesNotMatch(estilosPainel + graficos, /indicadorPercentual/);
     assert.match(graficos, /const valorIndicador = \(texto, classe = 'neutro'\) => `<b class="\$\{texto == '—' \? '' : 'pct '\}\$\{classe\}">\$\{texto\}<\/b>`;/);
-    assert.match(graficos, /`Reserva \$\{valorIndicador\(pct1\(reserva\.percentual\), classeIndicadorReserva\(reserva\)\)\} <span class=limiteRotulo>da meta<\/span>`/);
+    assert.match(graficos, /`Reserva \$\{valorIndicador\(pct1\(reserva\.percentual\), classeIndicadorReserva\(reserva\)\)\} <span class=limiteRotulo>da meta<\/span>\$\{quandoCompleta\}`/);
     assert.match(graficos, /`Comprometido \$\{valorIndicador\(pct1\(comprometido\.percentualFaturamento\), classeIndicadorComprometido\(comprometidos\)\)\} <span class=limiteRotulo>do mês<\/span>`/);
     // Gastos no formato do Comprometido: fatia em Reserva, complemento e variação; Demais só no hover.
     assert.match(graficos, /`Gastos \$\{valorIndicador\(pct1\(proporcaoReserva\.percentualReserva\), classeIndicadorProporcaoReserva\(proporcaoReserva\)\)\} <span class=limiteRotulo>em Reserva<\/span>`/);

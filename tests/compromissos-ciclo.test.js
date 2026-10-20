@@ -46,6 +46,21 @@ test('Comprometido usa crédito e débito contra 50% do faturamento do ciclo', (
     assert.equal(comprometido.excedido, false);
 });
 
+test('parcela de compra parcelada no Crédito entra no Comprometido mesmo sem a marca', () => {
+    const d = contexto.regras.calcular([
+        { nome: 'Faturamento PJ', v: 10000 },
+        { nome: 'Sofá', cred: true, recorrencia_id: 7, freq: null, v: -600 },              // parcela sem marca: entra
+        { nome: 'iPhone', cred: true, recorrencia_id: 3, comprometido: true, v: -400 },    // já marcada: conta uma vez
+        { nome: 'Netflix', cred: true, recorrencia_id: 9, freq: 'Mensal', v: -50 },        // série, não parcela
+        { nome: 'Mercado', cred: true, recorrencia_id: null, v: -300 },                    // compra à vista
+        { nome: 'Academia', cred: false, recorrencia_id: 4, freq: null, v: -120 },         // débito em lote
+    ]);
+    const [comprometido] = d.limites;
+    assert.equal(comprometido.valor, 1000);
+    assert.equal(comprometido.valorParcelasSemMarca, 600);
+    assert.deepEqual(comprometido.linhas.map(r => r.nome), ['Sofá', 'iPhone']);
+});
+
 test('base são todas as entradas do ciclo, sem resgate de investimento nem transferência', () => {
     const d = contexto.regras.calcular([
         { nome: 'Faturamento PJ', v: 8000 },

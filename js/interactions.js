@@ -165,6 +165,62 @@ function encaixarIndicadoresNoDebito(noCicloUnico) {
     el('rowVis').classList.toggle('semIndicadores', !!faixa);
 }
 
+// ===================================================================
+// SIMULAÇÃO: "ANTES → DEPOIS"
+// ===================================================================
+// Com a simulação ligada, cada número do título (Saldo, Guardado, Besteira/Isabella, Fatura,
+// Usado, Livre…) e dos indicadores que ela mudou ganha o valor real na frente, apagado:
+// "71,6% → 83,2%". O real vem do retrato tirado ao ligar a simulação.
+
+// Roda fn com os dados reais no lugar dos simulados. Caches e o que o desenho guarda no
+// Estado voltam como estavam, então o desenho de verdade (simulado) não muda em nada.
+function comDadosAntesDaSimulacao(fn) {
+    const salvo = {
+        lancamentos: Estado.lancamentos, limitesPorCiclo: Estado.limitesPorCiclo,
+        cartoesDoCiclo: Estado.cartoesDoCiclo, fechados: { ...Estado.fechados },
+        cicloQuitadoRecolhido: Estado.cicloQuitadoRecolhido,
+        valorFaturaPorCiclo: { ...Estado.valorFaturaPorCiclo }, linhasVisiveis: { ...Estado.linhasVisiveis },
+    };
+    Estado.lancamentos = Estado.retratoAntesDaSimulacao.lancamentos;
+    Estado.limitesPorCiclo = Estado.retratoAntesDaSimulacao.limitesPorCiclo;
+    limparCachesFinanceiros();
+    try {
+        return fn();
+    } finally {
+        Object.assign(Estado, salvo);
+        limparCachesFinanceiros();
+    }
+}
+
+const INDICADORES_COM_VALOR = ['indicadorReserva', 'indicadorProporcaoReserva', 'indicadorComprometido', 'indicadorLiberdade'];
+// Os valores em negrito de cada faixa de título (bloco + rótulo da faixa) e de cada indicador.
+// Os indicadores encaixados na faixa do Débito ficam fora da faixa: são comparados à parte.
+function valoresEmNegrito(raiz) {
+    const faixas = new Map([...raiz.querySelectorAll('.blk[data-bloco] .resumoLinha')].map(linha => [
+        `${linha.closest('.blk').dataset.bloco}|${linha.querySelector('.resumoRotulo')?.textContent}`,
+        [...linha.querySelectorAll('.resumoDados b')].filter(b => !b.closest('#indicadoresFinanceiros')),
+    ]));
+    const indicadores = new Map(INDICADORES_COM_VALOR.map(id => [id, [...el(id).querySelectorAll('b')]]));
+    return { faixas, indicadores };
+}
+const textosDosValores = raiz => {
+    const { faixas, indicadores } = valoresEmNegrito(raiz);
+    const textos = mapa => new Map([...mapa].map(([chave, bs]) => [chave, bs.map(b => b.textContent)]));
+    return { faixas: textos(faixas), indicadores: textos(indicadores) };
+};
+
+// Compara posição a posição (até onde as duas listas vão: a Reserva pode ganhar ou perder a
+// data de quando completa) e põe o valor real antes de cada um que mudou.
+function marcarAntesDaSimulacao(antes) {
+    const marcar = (bs, textos = []) => bs.forEach((b, i) => {
+        if (i >= textos.length || b.textContent == textos[i]) return;
+        b.insertAdjacentHTML('beforebegin', `<span class=valorAntes title="Sem a simulação">${escapeHtml(textos[i])} →</span> `);
+    });
+    const { faixas, indicadores } = valoresEmNegrito(el('out'));
+    faixas.forEach((bs, chave) => marcar(bs, antes.faixas.get(chave)));
+    indicadores.forEach((bs, id) => marcar(bs, antes.indicadores.get(id)));
+}
+
 // Ao mudar a largura, o que cabe em cada linha muda: refaz o alinhamento Hoje/Futuro.
 let larguraDosResumos = window.innerWidth;
 window.addEventListener('resize', () => {
@@ -239,6 +295,16 @@ function desenhar() {
     // O nó dos indicadores é sempre o mesmo (atualizarIndicadoresFinanceiros escreve pelos ids): volta pro
     // cabeçalho antes de #out ser reescrito, senão iria embora junto com o HTML antigo.
     el('acoesAcompanhamento').append(el('indicadoresFinanceiros'));
+    // Simulação: os mesmos números com os dados reais, pra marcar "antes →" no que mudou.
+    // Vem antes dos indicadores de verdade, que sobrescrevem os textos calculados aqui.
+    const antesDaSimulacao = Estado.simulando && Estado.retratoAntesDaSimulacao && !simples
+        ? comDadosAntesDaSimulacao(() => {
+            if (temCicloParaIndicadores) atualizarIndicadoresFinanceiros(+el('compAte').value);
+            const raiz = document.createElement('div');
+            if (modoBlocos) raiz.innerHTML = vCiclo();
+            return textosDosValores(raiz);
+        })
+        : null;
     el('indicadoresFinanceiros').hidden = !temCicloParaIndicadores;
     if (temCicloParaIndicadores) atualizarIndicadoresFinanceiros(+el('compAte').value);
 
@@ -256,6 +322,7 @@ function desenhar() {
     const scrollsAntigos = [...el('out').querySelectorAll('.wx, .wrap')].map(e => [e.scrollTop, e.scrollLeft]);
     el('out').innerHTML = modoBlocos ? vCiclo() : vComp();
     encaixarIndicadoresNoDebito(temCicloParaIndicadores && modoBlocos);
+    if (antesDaSimulacao) marcarAntesDaSimulacao(antesDaSimulacao);
     alinharResumosDosTitulos();
     atualizarCartoes();
     if (!trocouModo) {

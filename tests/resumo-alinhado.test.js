@@ -77,7 +77,7 @@ test('faixas com estrutura diferente não são mexidas', () => {
 });
 
 test('alinhamento roda a cada desenho; Crédito tem a mesma estrutura em Hoje e Futuro', () => {
-    assert.match(interacoes, /el\('out'\)\.innerHTML = modoBlocos \? vCiclo\(\) : vComp\(\);\s*\n\s*encaixarIndicadoresNoDebito\(temCicloParaIndicadores && modoBlocos\);\s*\n\s*alinharResumosDosTitulos\(\);/);
+    assert.match(interacoes, /el\('out'\)\.innerHTML = modoBlocos \? vCiclo\(\) : vComp\(\);\s*\n\s*encaixarIndicadoresNoDebito\(temCicloParaIndicadores && modoBlocos\);\s*\n\s*if \(antesDaSimulacao\) marcarAntesDaSimulacao\(antesDaSimulacao\);\s*\n\s*alinharResumosDosTitulos\(\);/);
     assert.match(visoes, /<span class=resumoRotulo>Hoje<\/span><span class=resumoDados>` \+\s*\n\s*resumoLimites\('limiteLivreHoje'\)/);
     assert.match(visoes, /<span class=resumoRotulo>Futuro<\/span><span class=resumoDados>` \+\s*\n\s*resumoLimites\('limiteLivreFuturo'\)/);
     assert.match(estilos, /\.resumoDados \{[\s\S]*?font-variant-numeric: tabular-nums;/);

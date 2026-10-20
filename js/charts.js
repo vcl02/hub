@@ -214,6 +214,20 @@ function dadosMetaReservaEmergencia(linhas, idxPeriodo, guardado) {
     };
 }
 
+// Primeiro ciclo seguinte em que o guardado projetado alcança a meta de Reserva DE HOJE
+// (alvo fixo: a meta de cada ciclo futuro só enxerga o que já está cadastrado dali pra
+// frente, e some perto do fim das séries). O guardado dos ciclos futuros já inclui o Aporte
+// sugerido/Resgate necessário de cada um. null quando a meta já está completa (nada a
+// projetar) ou quando não fecha até o último ciclo carregado.
+function cicloEmQueReservaCompleta(idxPeriodo) {
+    const { meta, guardado } = dadosMetaReservaEmergenciaCiclo(idxPeriodo);
+    if (!(meta > TOLERANCIA_FINANCEIRA) || guardado >= meta - TOLERANCIA_FINANCEIRA) return null;
+    for (let i = idxPeriodo + 1; i < Estado.ciclos.length; i++) {
+        if (guardadoAte(i) >= meta - TOLERANCIA_FINANCEIRA) return i;
+    }
+    return null;
+}
+
 function dadosMetaReservaEmergenciaCiclo(idxPeriodo) {
     const periodo = Estado.ciclos[idxPeriodo];
     const gastos = filtrarLancamentos()
@@ -222,9 +236,15 @@ function dadosMetaReservaEmergenciaCiclo(idxPeriodo) {
     return { periodo, ...dadosMetaReservaEmergencia(gastos, idxPeriodo, guardadoAte(idxPeriodo)) };
 }
 
+// Parcela de compra parcelada no Crédito: lote do cadastro (mesmo recorrencia_id, gravado
+// quando Vezes > 1 — real ou simulado) sem Frequência. Série com Frequência (assinatura,
+// conta recorrente) não é parcela: continua dependendo da marca.
+const ehParcelaDeCompra = r => !!r.cred && r.recorrencia_id != null && !r.freq;
+
 // Comprometido é uma leitura do orçamento, não uma mudança de dado: ele lê o bit
 // `comprometido` do lançamento (coluna própria, não mais texto em categ — ver migration 22)
-// e compara ao teto único sobre as entradas do ciclo.
+// e compara ao teto único sobre as entradas do ciclo. Parcela de compra parcelada entra
+// mesmo sem a marca: depois de assumida, ela já é obrigatória todo mês.
 // Base do percentual: toda entrada positiva do ciclo, menos resgate de investimento (é o
 // próprio dinheiro guardado voltando, não renda) e transferências de fatura. O nome continua
 // `faturamento` porque é o que o ciclo ganhou; nenhum lançamento específico é procurado.
@@ -233,11 +253,13 @@ function dadosCompromissosDoCiclo(linhas) {
         .filter(r => r.v > 0 && !r.inv && !r._transferencia)
         .reduce((soma, r) => soma + r.v, 0);
     const resumo = limite => {
-        const gastos = linhas.filter(r => r.v < 0 && !r._transferencia && r.comprometido);
+        const gastos = linhas.filter(r => r.v < 0 && !r._transferencia && (r.comprometido || ehParcelaDeCompra(r)));
         const valor = gastos.reduce((soma, r) => soma + -r.v, 0);
+        // Quanto disso veio só por ser parcela (sem a marca), pro hover explicar o número.
+        const valorParcelasSemMarca = gastos.filter(r => !r.comprometido).reduce((soma, r) => soma + -r.v, 0);
         const teto = faturamento * limite.percentual / 100;
         return {
-            ...limite, valor, teto, linhas: gastos,
+            ...limite, valor, teto, linhas: gastos, valorParcelasSemMarca,
             percentualFaturamento: faturamento ? valor / faturamento * 100 : 0,
             percentualDoTeto: teto ? valor / teto * 100 : 0,
             excedido: valor > teto + TOLERANCIA_FINANCEIRA,
@@ -459,12 +481,20 @@ function atualizarIndicadoresFinanceiros(idxPeriodo) {
 
     // Mesmo padrão dos itens da faixa do Débito (Besteira/Isabella): rótulo, o percentual em
     // negrito com a cor do estado e o complemento apagado.
+    // Meta incompleta: em que ciclo o guardado projetado chega nela ("· dez/32"); sem fechar
+    // até o último ciclo carregado, "· depois de" ele. Completa, não há data.
+    const idxCompleta = reserva.meta > TOLERANCIA_FINANCEIRA && reserva.percentual < 100 ? cicloEmQueReservaCompleta(idxPeriodo) : null;
+    const ultimoCiclo = Estado.ciclos[Estado.ciclos.length - 1];
+    const quandoCompleta = reserva.meta <= TOLERANCIA_FINANCEIRA || reserva.percentual >= 100 ? ''
+        : idxCompleta != null ? ` <span class=limiteRotulo>·</span> <b>${nomePeriodoAbrev(Estado.ciclos[idxCompleta])}</b>`
+            : ` <span class=limiteRotulo>· depois de</span> <b>${nomePeriodoAbrev(ultimoCiclo)}</b>`;
     const indicadorReserva = el('indicadorReserva');
     indicadorReserva.innerHTML = reserva.meta > TOLERANCIA_FINANCEIRA
-        ? `Reserva ${valorIndicador(pct1(reserva.percentual), classeIndicadorReserva(reserva))} <span class=limiteRotulo>da meta</span>`
+        ? `Reserva ${valorIndicador(pct1(reserva.percentual), classeIndicadorReserva(reserva))} <span class=limiteRotulo>da meta</span>${quandoCompleta}`
         : `Reserva ${valorIndicador('—')} <span class=limiteRotulo>sem meta</span>`;
     indicadorReserva.title = reserva.meta > TOLERANCIA_FINANCEIRA
-        ? `${brl(reserva.guardado)} de ${brl(reserva.meta)} para 9 meses`
+        ? `${brl(reserva.guardado)} de ${brl(reserva.meta)} para 9 meses` +
+            (quandoCompleta ? `; no ritmo projetado, a meta ${idxCompleta != null ? `completa em ${nomePeriodo(Estado.ciclos[idxCompleta])}` : 'não completa até o último ciclo carregado'}` : '')
         : 'Sem gastos marcados para a reserva nos próximos 9 ciclos';
     atualizarLinhaVariacao(
         'variacaoReserva', variacaoReserva, variacaoGuardado,
@@ -476,7 +506,8 @@ function atualizarIndicadoresFinanceiros(idxPeriodo) {
         ? `Comprometido ${valorIndicador(pct1(comprometido.percentualFaturamento), classeIndicadorComprometido(comprometidos))} <span class=limiteRotulo>do mês</span>`
         : `Comprometido ${valorIndicador('—')} <span class=limiteRotulo>sem entradas</span>`;
     indicadorComprometido.title = comprometidos.faturamento > TOLERANCIA_FINANCEIRA
-        ? `${brl(comprometido.valor)} de ${brl(comprometidos.faturamento)}; teto ${pct1(comprometido.percentual)}`
+        ? `${brl(comprometido.valor)} de ${brl(comprometidos.faturamento)}; teto ${pct1(comprometido.percentual)}` +
+            (comprometido.valorParcelasSemMarca > TOLERANCIA_FINANCEIRA ? `; inclui ${brl(comprometido.valorParcelasSemMarca)} de parcelas sem a marca` : '')
         : 'Sem entradas no ciclo';
     atualizarLinhaVariacao(
         'variacaoComprometido', variacaoComprometido, variacaoValorComprometido,

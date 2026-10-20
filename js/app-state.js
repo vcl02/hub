@@ -47,6 +47,9 @@ const Estado = {
     selecionados: new Map(), ordenacaoPorTabela: {}, filtroTexto: {}, linhasVisiveis: {},
     fechados: {}, cicloQuitadoRecolhido: null, ordComp: { k: 'total', d: 2 }, simulando: false,
     _proxIdSimulado: 0,
+    // Retrato dos dados reais (lançamentos e escolhas por ciclo) tirado ao ligar a simulação,
+    // pra mostrar "antes → depois" nos números que ela mudou. null fora da simulação.
+    retratoAntesDaSimulacao: null,
     // id do ciclo -> linha de fin_ciclo (escolhas vazias = padrões/herança).
     limitesPorCiclo: new Map(),
     ultimaCarga: 0, ultimaConsolidacao: 0, gravacoes: 0, gravacoesNaUltimaCarga: 0, cargasEmAndamento: 0,

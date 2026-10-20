@@ -124,6 +124,14 @@
       min-width: 5ch;
   }
 
+  /* Simulação: o valor real, apagado, antes do simulado ("71,6% → 83,2%"), nos títulos e
+     nos indicadores (marcarAntesDaSimulacao). */
+  .valorAntes {
+      color: var(--mu);
+      font-weight: 400;
+      white-space: nowrap;
+  }
+
   /* A variação possui cor semântica própria, independente da situação atual do indicador. */
   .variacaoIndicador {
       font-size: .76rem;

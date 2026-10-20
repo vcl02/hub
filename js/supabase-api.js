@@ -215,6 +215,8 @@ async function carregarDados() {
             periodoIdx: periodoDoLancamento(r),
         };
     });
+    // Recarregar no meio da simulação descarta os simulados: o "antes" passa a ser o recarregado.
+    if (Estado.simulando) guardarRetratoAntesDaSimulacao();
     Estado.faturas = [...new Set(Estado.lancamentos.map(r => r.fatura).filter(Boolean))]
         .sort((a, b) => timestamp(a) - timestamp(b)).map(vencimento => ({ vencimento }));
     return { lancamentosCrus, diagnosticoDeDados };

@@ -77,6 +77,8 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 - Simulação existe somente em memória: não cria, atualiza ou exclui linhas no Supabase.
   Além de criar compras hipotéticas, permite editar ou ocultar qualquer lançamento selecionado apenas no array do navegador; os cálculos refletem isso até recarregar ou desativar o modo, quando a carga do banco restaura tudo.
+  **Antes → depois:** ao ligar a simulação, o app guarda um retrato dos dados reais (lançamentos e escolhas por ciclo); enquanto ela está ligada, todo número em negrito dos títulos (Saldo, Guardado, Besteira/Isabella, Fatura, Usado, Livre…) e dos indicadores (Reserva e a data em que completa, Gastos, Comprometido, Liberdade) que a simulação mudou ganha o valor real na frente, apagado: `Comprometido 71,6% → 83,2% do mês`.
+  Recarregar no meio da simulação descarta os simulados e tira um novo retrato.
   Desligar a simulação só sai do modo simulação depois que a recarga do banco der certo; se ela falhar (ex.: sem internet), a simulação continua — com os lançamentos simulados e o aviso "A simulação continua" —, em vez de uma tela "real" com lançamentos hipotéticos que um Materializar poderia gravar de verdade.
 
 ### PWA e título da página
@@ -670,8 +672,11 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   A meta soma os gastos negativos dessa categoria nos nove ciclos a partir dessa referência, respeitando os demais filtros e excluindo transferências de pagamento/antecipação de fatura.
   Para cada nome, um valor cadastrado em um ciclo substitui o anterior; se não houver ocorrência cadastrada naquele ciclo, mantém-se o último valor conhecido como estimativa.
   O texto mostra o percentual já guardado: fica vermelho abaixo de 50%, âmbar de 50% a menos de 100% e verde ao completar a meta; o título curto contém os valores e a referência de nove meses.
+  Com a meta incompleta, depois do percentual vem o ciclo em que ela completa no ritmo projetado (`Reserva 4,1% da meta · Dez/32`): o primeiro ciclo seguinte cujo guardado projetado (com o Aporte sugerido/Resgate necessário de cada ciclo) alcança a meta de hoje, fixa (a meta calculada num ciclo futuro só enxerga o que já está cadastrado dali pra frente); sem fechar até o último ciclo carregado, `· depois de` ele.
 - **Comprometido** é outro texto calculado pelo ciclo em **Até**, ao lado de Reserva e também oculto no Backlog e no modo simples.
   Ele soma todos os lançamentos reais negativos, de Débito e Crédito, marcados com o bit `fin.comprometido` (coluna própria, não mais texto em `categ` — ver migration 22), exceto antecipação/pagamento de fatura por ser transferência.
+  Parcela de compra parcelada no Crédito (lote do cadastro com `recorrencia_id`, sem Frequência) entra mesmo sem a marca: depois de assumida, já é obrigatória todo mês; o hover mostra quanto do valor veio de parcelas sem a marca.
+  Série com Frequência (assinatura, conta recorrente) continua dependendo da marca, e parcelas antigas gravadas sem `recorrencia_id` também.
   O denominador é toda entrada positiva do ciclo (o que ele ganhou), exceto resgate de investimento (dinheiro guardado voltando) e transferências de fatura; nenhum lançamento é procurado pelo nome.
   O texto mostra quanto do mês já está comprometido antes de ele começar: verde até **40%** do faturamento, âmbar acima disso até o teto único de **50%**, e vermelho quando o ultrapassa.
   Na segunda linha, sua seta compara pontos percentuais e o total comprometido em reais com o ciclo imediatamente anterior; cair é verde, subir é vermelho e estabilidade é neutra.

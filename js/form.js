@@ -1288,6 +1288,15 @@ async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, 
 // submeteNovoLancamento() desvia pra simulaLancamentoParcelado() em vez de gravar no
 // banco (ver abreModalNovo, que tambem troca titulo/texto do botao conforme o modo).
 // ===================================================================
+// Cópia (linha a linha) do que está carregado: a simulação edita e oculta direto em
+// Estado.lancamentos e Estado.limitesPorCiclo, então o "antes" precisa de objetos próprios.
+function guardarRetratoAntesDaSimulacao() {
+    Estado.retratoAntesDaSimulacao = {
+        lancamentos: Estado.lancamentos.map(r => ({ ...r })),
+        limitesPorCiclo: new Map([...Estado.limitesPorCiclo].map(([id, linha]) => [id, { ...linha }])),
+    };
+}
+
 function atualizaBotaoSimulacao() {
     el('toggleSimulacao').classList.toggle('ativo', Estado.simulando);
     el('toggleSimulacao').title = Estado.simulando
@@ -1312,6 +1321,7 @@ el('toggleSimulacao').onclick = async () => {
                 return;
             }
             Estado.simulando = false;
+            Estado.retratoAntesDaSimulacao = null;
             atualizaBotaoSimulacao();
             desenhar();
         } finally {
@@ -1319,6 +1329,7 @@ el('toggleSimulacao').onclick = async () => {
         }
     } else {
         Estado.simulando = true;
+        guardarRetratoAntesDaSimulacao();
         atualizaBotaoSimulacao();
         desenhar();
     }
