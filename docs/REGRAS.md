@@ -144,6 +144,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Depois de salvar, a Frequência volta a "sem recorrência" (e Vezes volta a ser editável, com o valor que tinha antes da Frequência), pra o próximo cadastro não gerar outra série sem a pessoa pedir.
   Sem valor, a série sai inteira com valor vazio em cada linha, pra preencher depois.
   **Sem Frequência**, Vezes é editável (compra parcelada comum) e cada parcela escolhe sua própria fatura; Vezes não muda mais a Frequência sozinho.
+  Cada opção de Vezes já mostra quanto fica a parcela com o valor digitado (`12x de R$ 779,17`): com Dividir marcado, o total pelas vezes (o valor das primeiras; a última absorve os centavos); sem Dividir, o próprio valor, que se repete. Sem valor, só `12x`.
   Duplicar herda a Frequência do original — salvar um duplicado de algo Mensal gera a série inteira.
   Passar o mouse no rótulo Frequência resume essa regra num hover (`title`); não há botão nem modal de ajuda (o app é de uso pessoal: no máximo um hover).
   Os rótulos Frequência e Categorias apontam explicitamente pro próprio campo (`for=`): tocar no texto do rótulo foca o campo.

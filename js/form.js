@@ -26,6 +26,7 @@ function atualizaSinalUI() {
     el('fSinal').classList.toggle('pos', sinalPositivo && !semValor);
     el('fSinal').classList.toggle('neutro', semValor);
     el('fSinal').textContent = semValor ? '±' : (sinalPositivo ? '+' : '−');
+    atualizarParcelaNasVezes();   // todo lugar que muda o valor passa por aqui
 }
 el('fSinal').onclick = () => { sinalPositivo = !sinalPositivo; atualizaSinalUI(); };
 
@@ -173,7 +174,23 @@ if (el('fParcelas').options.length < 40) {
 // mesmo valor todo mes) — o usuario pode mudar na hora, o toggle nao trava em nada.
 function sugereModoValorParcelas() {
     el('fDivide').checked = el('fCred').checked;
+    atualizarParcelaNasVezes();
 }
+
+// Cada opção de Vezes já diz quanto fica a parcela ("12x de R$ 779,17"): dividindo, o total
+// pelas vezes (o valor das N−1 primeiras; a última absorve os centavos, ver valorDasParcelas);
+// sem dividir, o próprio valor digitado, que se repete. Sem valor, só "12x". À vista e a
+// contagem da série (com Frequência) ficam como estão.
+function atualizarParcelaNasVezes() {
+    const total = valorMascaraParaNumero(el('fValor').value || '0');
+    const dividir = el('fDivide').checked;
+    [...el('fParcelas').options].forEach(opcao => {
+        const vezes = Number(opcao.value);
+        if (!(vezes > 1)) return;
+        opcao.textContent = total ? `${vezes}x de ${brl(dividir ? valorDasParcelas(total, vezes)[0] : total)}` : `${vezes}x`;
+    });
+}
+el('fDivide').addEventListener('change', atualizarParcelaNasVezes);
 
 function nomeFatura(fatura) {
     return dataBR(fatura.vencimento);
