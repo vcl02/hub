@@ -877,7 +877,9 @@
       border: 1px solid var(--ln);
       border-radius: 18px;
       padding: 1.1rem;
-      width: min(26rem, 92vw);
+      /* Largo o bastante pra Teto, Aprovado e Garantido caberem numa linha só no desktop
+         (~470px com os campos); no celular a tela manda e a linha quebra. */
+      width: min(34rem, 92vw);
       max-height: 88vh;
       max-height: 88dvh;
       overflow-y: auto;

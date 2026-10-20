@@ -208,3 +208,8 @@ test('vencimento sem compra na fatura: o dia do cartão dentro do ciclo, nunca o
     contexto.faturasDoCiclo = () => [{}];
     assert.equal(contexto.f(0, 'nubank'), 'cadastrada');
 });
+
+test('modal largo o bastante pra Teto, Aprovado e Garantido numa linha no desktop', () => {
+    assert.match(fs.readFileSync('css/forms.css', 'utf8'), /dialog#modalCartao \{[\s\S]*?width: min\(34rem, 92vw\);/);
+    assert.match(regras, /numa linha só no desktop \(o modal tem até 34rem de largura; no celular, 92% da tela, e a linha pode quebrar\)/);
+});
