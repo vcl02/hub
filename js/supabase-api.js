@@ -189,8 +189,7 @@ const salvarLimiteDoCiclo = async (cicloId, campo, valor) => comRetentativas(asy
 // Números do PostgREST (numeric vem como texto) e mês como AAAA-MM-DD.
 const numeroOuNulo = v => (v == null ? null : +v);
 const normalizarMeta = m => ({
-    ...m, valor: numeroOuNulo(m.valor), entrada: numeroOuNulo(m.entrada), juros_mensal: numeroOuNulo(m.juros_mensal),
-    custo_mensal: numeroOuNulo(m.custo_mensal), mes: m.mes ? dataISO(m.mes) : null,
+    ...m, valor: numeroOuNulo(m.valor), entrada: numeroOuNulo(m.entrada), mes: m.mes ? dataISO(m.mes) : null,
 });
 
 // Metas (fin_meta, migration 36): sem a tabela (404 do PostgREST), a tela segue sem metas em

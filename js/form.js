@@ -1211,9 +1211,16 @@ function etapasDaCompraDaMeta(meta, plano) {
         const entrada = plano.entrada > TOLERANCIA_FINANCEIRA ? [{ nome: `Entrada · ${meta.nome}`, cred: false, v: -plano.entrada }] : [];
         const resto = -(meta.valor - (plano.entrada || 0));
         if (!plano.parcelas) return entrada;
+        // Cartão: as faturas do plano, a partir da 1ª (as que passam do horizonte seguem mês a mês).
+        // Débito: a série começa no mês da 1ª parcela.
+        const primeiraFatura = plano.linhas.find(r => r.cred)?.fatura;
         return [...entrada, plano.forma === 'cartao'
-            ? { nome: meta.nome, cred: true, v: resto, vezes: plano.parcelas, dividir: true, cartao: plano.cartao }
-            : { nome: meta.nome, cred: false, v: resto, vezes: plano.parcelas, dividir: true, comprometido: true }];
+            ? { nome: meta.nome, cred: true, v: resto, vezes: plano.parcelas, dividir: true, cartao: plano.cartao,
+                faturas: primeiraFatura ? Array.from({ length: plano.parcelas }, (_, p) => somaMeses(primeiraFatura, p)) : null }
+            : { nome: meta.nome, cred: false, v: resto, vezes: plano.parcelas, dividir: true, comprometido: true,
+                // Início do ciclo da 1ª parcela (o dia 1º do mês ainda é do ciclo anterior).
+                data: Estado.ciclos[plano.ciclo + plano.mesesAteParcela]
+                    ? dataISO(Estado.ciclos[plano.ciclo + plano.mesesAteParcela].ini) : somaMeses(plano.mes, plano.mesesAteParcela) }];
     }
     return [{ nome: meta.nome, cred: false, v: -meta.valor }];
 }
@@ -1227,14 +1234,14 @@ function abreCompraDaMeta(meta, plano) {
 function abrirEtapaDaCompraDaMeta(compra) {
     const etapa = compra.etapas[0];
     if (modalNovo.open) modalNovo.close();
-    abreModalNovo({ nome: etapa.nome, categ: '', data: hojeISO(), cred: etapa.cred, v: etapa.v, pago: true, comprometido: !!etapa.comprometido });
+    abreModalNovo({ nome: etapa.nome, categ: '', data: etapa.data || hojeISO(), cred: etapa.cred, v: etapa.v, pago: !etapa.data, comprometido: !!etapa.comprometido });
     Estado._compraDaMeta = compra;
     el('tituloNovo').textContent = `${Estado.simulando ? 'Simular' : 'Comprar'} · ${compra.nome}`;
     if (etapa.vezes > 1) {
         el('fParcelas').value = etapa.vezes;
         el('fDivide').checked = !!etapa.dividir;
     }
-    if (etapa.cred) atualizarFaturasDoFormulario(faturasSugeridasParaParcelas(hojeISO(), etapa.vezes || 1, null, etapa.cartao), etapa.cartao);
+    if (etapa.cred) atualizarFaturasDoFormulario(etapa.faturas || faturasSugeridasParaParcelas(hojeISO(), etapa.vezes || 1, null, etapa.cartao), etapa.cartao);
     atualizaSinalUI();
 }
 

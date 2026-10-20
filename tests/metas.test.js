@@ -46,7 +46,7 @@ function carrega(metas) {
     return contexto.r;
 }
 
-const meta = (id, nome, valor, mes, extra = {}) => ({ id, nome, valor, mes, ancora_meta_id: null, deslocamento: 0, forma: 'auto', parcelas: null, entrada: null, juros_mensal: null, custo_mensal: null, status: 'aberta', ...extra });
+const meta = (id, nome, valor, mes, extra = {}) => ({ id, nome, valor, mes, ancora_meta_id: null, deslocamento: 0, forma: 'auto', parcelas: null, entrada: null, meses_ate_parcela: null, status: 'aberta', ...extra });
 const doPlano = (r, id) => r.plano.find(p => p.meta.id === id);
 
 test('cenário: guardado projetado cresce 2.000 por ciclo (sem metas)', () => {
@@ -68,58 +68,74 @@ test('âncora: meta segue a data dela com deslocamento; ciclo é o que começa n
     assert.equal(r.cicloDoMes(null), -1);
 });
 
-test('cascata: à vista; a seguinte no mesmo mês não cabe e diz quando cabe; cartão; financiado; entrada embutida', () => {
+test('cascata: à vista; a seguinte no mesmo mês não cabe; cartão; débito com entrada e 1ª parcela', () => {
     const r = carrega([
         meta(1, 'Cadeira', 1500, '2026-11-01'),
         meta(2, 'Geladeira', 4000, '2026-11-01'),
         meta(3, 'TV', 2000, '2027-01-01', { forma: 'cartao' }),
-        meta(4, 'Carro', 30000, '2027-03-01', { forma: 'financiamento', entrada: 5000 }),
+        meta(4, 'Carro', 30000, '2027-03-01', { forma: 'financiamento', entrada: 5000, parcelas: 24, meses_ate_parcela: 2 }),
         meta(5, 'Fogão', 3000, '2027-05-01', { forma: 'cartao', entrada: 1000 }),
     ]);
     const cadeira = doPlano(r, 1), geladeira = doPlano(r, 2), tv = doPlano(r, 3), carro = doPlano(r, 4), fogao = doPlano(r, 5);
-    assert.equal(cadeira.forma, 'avista');
+    assert.equal(cadeira.forma, 'avista');                 // "auto" vale como à vista
     assert.equal(cadeira.cabe, true);
     assert.equal(cadeira.disponivel, 4000);
-    // 4.000 − 1.500 da Cadeira = 2.500 < 4.000; Nubank (3.350) e MP (1.100) não comportam.
+    // Nov/26: 4.000 de guardado − 1.500 da Cadeira − 4.000 = −1.500. Em Dez/26 (6.000) caberia.
     assert.equal(geladeira.cabe, false);
     assert.equal(geladeira.falta, 1500);
+    assert.equal(geladeira.cicloFalta, 1);
     assert.equal(geladeira.cabeEm, 2);
-    assert.equal(geladeira.forma, 'avista');                 // fica no mês pedido, à vista
+    // TV: compra em Jan/27 (1ª parcela no mês seguinte), Nubank 10x de 200.
     assert.equal(tv.forma, 'cartao');
     assert.equal(tv.cartao, 'nubank');
-    assert.equal(tv.parcelas, 10);
-    assert.equal(tv.parcela, 200);
-    assert.ok(tv.linhas.every(l => l.cred && l.recorrencia_id === 'meta-3' && l.fatura.endsWith('-12')));
-    // Carro: entrada 5.000 (parte do total) e 25.000 financiados sem juros. 18x (R$ 1.388,89)
-    // passaria do teto com a TV (200): o menor prazo que cabe em 50% de 3.000 é 24x (R$ 1.041,67).
-    assert.equal(carro.forma, 'financiamento');
-    assert.equal(carro.entrada, 5000);
-    assert.equal(carro.parcelas, 24);
-    assert.equal(carro.parcela, 1041.67);
-    assert.ok(carro.comprometidoMax <= 50);
-    const entradaCarro = carro.linhas.filter(l => l.nome === 'Entrada · Carro');
-    assert.deepEqual(JSON.parse(JSON.stringify(entradaCarro.map(l => [l.periodoIdx, l.v, l.cred]))), [[5, -5000, false]]);
-    assert.ok(carro.linhas.filter(l => l.comprometido).every(l => !l.cred && l.periodoIdx > 5));
-    // Fogão: entrada 1.000 à vista e só o resto (2.000) no cartão: Nubank tem 3.350 menos 4
-    // parcelas da TV ainda não cobradas (800) = 2.550, que comporta os 2.000.
-    assert.equal(fogao.forma, 'cartao');
-    assert.equal(fogao.entrada, 1000);
-    assert.equal(fogao.parcela, 200);
+    assert.equal(tv.cabe, true);
+    assert.deepEqual([tv.parcelas, tv.parcela, tv.mesesAteParcela], [10, 200, 1]);
+    assert.ok(tv.linhas.every(l => l.cred && l.recorrencia_id === 'meta-3' && l.fatura.endsWith('-12') && l.periodoIdx >= 4));
+    // Carro: entrada 5.000 em Mar/27 (ciclo 5), 25.000 em 24x de 1.041,67 a partir de Mai/27 (7).
+    assert.equal(carro.cabe, true);
+    assert.deepEqual([carro.entrada, carro.parcelas, carro.parcela, carro.mesesAteParcela], [5000, 24, 1041.67, 2]);
+    assert.deepEqual(JSON.parse(JSON.stringify(carro.linhas.filter(l => l.nome === 'Entrada · Carro').map(l => [l.periodoIdx, l.v, l.cred]))), [[5, -5000, false]]);
+    assert.equal(Math.min(...carro.linhas.filter(l => l.comprometido).map(l => l.periodoIdx)), 7);
+    assert.ok(carro.comprometidoMax > 0);                   // informativo
+    // Fogão: entrada 1.000 e só o resto (2.000) no cartão: o Nubank tem 3.350 menos 4 parcelas
+    // da TV ainda não cobradas em Mai/27 (800) = 2.550, que comporta os 2.000.
+    assert.equal(fogao.cabe, true);
+    assert.deepEqual([fogao.forma, fogao.cartao, fogao.entrada, fogao.parcela], ['cartao', 'nubank', 1000, 200]);
     assert.equal(fogao.linhas.filter(l => l.cred).reduce((s, l) => s - l.v, 0), 800);   // 4 de 10 no horizonte (jun a set/27)
     assert.equal(fogao.linhas.filter(l => !l.cred).reduce((s, l) => s - l.v, 0), 1000);
     assert.equal(new Set(fogao.linhas.map(l => l.id)).size, fogao.linhas.length);
 });
 
+test('parcelado no débito: confere o dinheiro em cada parcela e diz quando caberia', () => {
+    // Móveis 40.000: entrada 10.000 em Mar/27 (5) e 10x de 3.000 a partir de Abr/27 (6). O
+    // guardado cresce 2.000 por mês e as parcelas levam 3.000: Mar 2.000, Abr 1.000, Mai 0,
+    // Jun −1.000 … Set/27 −4.000. Com a entrada em Mai/27 (7), tudo cabe até o fim do horizonte.
+    const moveis = doPlano(carrega([meta(1, 'Móveis planejados', 40000, '2027-03-01', { forma: 'financiamento', entrada: 10000 })]), 1);
+    assert.equal(moveis.cabe, false);
+    assert.deepEqual([moveis.parcelas, moveis.parcela, moveis.falta, moveis.cicloFalta, moveis.cabeEm], [10, 3000, 4000, 8, 7]);
+    assert.deepEqual(JSON.parse(JSON.stringify(moveis.linhas.map(l => [l.periodoIdx, l.v]))),
+        [[5, -10000], [6, -3000], [7, -3000], [8, -3000], [9, -3000], [10, -3000], [11, -3000]]);   // só o horizonte
+    // 1ª parcela no mesmo mês da entrada (0 meses).
+    const junto = doPlano(carrega([meta(1, 'Mesa', 1000, '2027-03-01', { forma: 'financiamento', entrada: 400, parcelas: 2, meses_ate_parcela: 0 })]), 1);
+    assert.deepEqual(JSON.parse(JSON.stringify(junto.linhas.map(l => [l.periodoIdx, l.v]))), [[5, -400], [5, -300], [6, -300]]);
+});
+
+test('parcelado no meu cartão sem limite em nenhum cartão: não cabe e o plano diz por quê', () => {
+    const sofa = doPlano(carrega([meta(1, 'Sofá', 5000, '2027-01-01', { forma: 'cartao' })]), 1);
+    assert.deepEqual([sofa.cabe, sofa.semLimite, sofa.cartao, sofa.cabeEm], [false, true, 'nubank', null]);
+    // Cartão nunca cobra no mesmo mês da compra: 0 meses vira 1.
+    const tv = doPlano(carrega([meta(1, 'TV', 2000, '2027-01-01', { forma: 'cartao', meses_ate_parcela: 0 })]), 1);
+    assert.equal(tv.mesesAteParcela, 1);
+    assert.equal(Math.min(...tv.linhas.map(l => l.periodoIdx)), 4);
+});
+
 test('linhas do plano entram na base como previstas (id negativo, _meta) e só no horizonte', () => {
-    const r = carrega([meta(3, 'TV', 2000, '2027-01-01', { forma: 'cartao' }), meta(5, 'Seguro', 500, '2027-08-01', { custo_mensal: 150 })]);
+    const r = carrega([meta(3, 'TV', 2000, '2027-01-01', { forma: 'cartao' })]);
     const linhas = r.base.filter(l => l._meta != null);
-    assert.ok(linhas.length > 0);
     assert.ok(linhas.every(l => l.id < 0 && l._prev === 1 && l.periodoIdx != null && l.pago === false));
     assert.equal(new Set(linhas.map(l => l.id)).size, linhas.length);   // ids distintos
     // TV comprada em jan/27 (ciclo 3): parcelas de fev/27 (ciclo 4) até set/27 (11) → 8 no horizonte.
-    assert.equal(linhas.filter(l => l._meta === 3).length, 8);
-    // Custo/mês: Comprometido em todo ciclo depois da compra (ago/27 = 10 → só set/27).
-    assert.deepEqual(JSON.parse(JSON.stringify(linhas.filter(l => l.nome === 'Custo · Seguro').map(l => [l.periodoIdx, l.v, l.comprometido]))), [[11, -150, true]]);
+    assert.equal(linhas.length, 8);
 });
 
 test('meta comprada, desistida ou sem data não gera plano nem linha', () => {
@@ -162,8 +178,10 @@ test('migration 36: tabela com RLS do dono, histórico e DataGrip-safe', () => {
 test('REGRAS.md documenta metas', () => {
     assert.match(regras, /## Metas/);
     assert.match(regras, /\*\*Âncora\*\* é uma data com nome/);
-    assert.match(regras, /Se nada cabe no mês pedido, a meta fica nele, à vista/);
-    assert.match(regras, /\*\*Entrada\*\* é parte do total \(móveis de R\$ 40\.000 = R\$ 10\.000 de entrada \+ R\$ 30\.000 parcelados\)/);
+    assert.match(regras, /Sem caber, a meta fica no mês pedido mesmo/);
+    assert.match(regras, /\*\*Cabe\*\* quando, em cada mês de pagamento \(entrada, parcelas ou faturas\)/);
+    assert.match(regras, /O Comprometido aparece no plano só como informação/);
+    assert.match(regras, /o valor é o \*\*total\*\*; a \*\*entrada\*\* \(parte dele\) sai no mês da meta e o resto se divide nas \*\*vezes\*\*/);
     assert.match(regras, /Sem juros por enquanto: a parcela é o resto dividido pelas vezes/);
     assert.doesNotMatch(regras, /3% a\.m\./);
     assert.match(regras, /As metas podem usar o guardado abaixo da meta da Reserva/);
@@ -171,13 +189,30 @@ test('REGRAS.md documenta metas', () => {
 
 test('juros fora por enquanto e só três formas (À vista, Parcelado no meu cartão, Parcelado no débito)', () => {
     const financas = ler('js/finance.js');
-    assert.doesNotMatch(financas + visoes, /juros_mensal|JUROS_PADRAO|prestacao\(/);
+    assert.doesNotMatch(financas + visoes, /juros_mensal|custo_mensal|Custo\/mês|JUROS_PADRAO|prestacao\(/);
     // Só três formas, sempre a escolhida; "auto" (padrão antigo da tabela) vale como À vista.
     assert.match(visoes, /const FORMAS_DA_META = \{ avista: 'À vista', cartao: 'Parcelado no meu cartão', financiamento: 'Parcelado no débito' \};/);
     assert.match(ler('js/finance.js'), /const formaDaMeta = meta => \(\['cartao', 'financiamento'\]\.includes\(meta\.forma\) \? meta\.forma : 'avista'\);/);
     assert.doesNotMatch(visoes + ler('js/finance.js'), /Automático/);
     assert.match(interacoes, /\{ nome: 'Nova meta', valor: 1000, mes: proximoMesISO\(\), forma: 'avista' \}/);
-    assert.match(regras, /A forma é sempre a escolhida \(\*\*À vista\*\*, \*\*Parcelado no meu cartão\*\* ou \*\*Parcelado no débito\*\*\)/);
+    assert.match(regras, /sempre na forma escolhida — \*\*À vista\*\*, \*\*Parcelado no meu cartão\*\* ou \*\*Parcelado no débito\*\*/);
     // Comprar com entrada: primeiro a entrada (débito), depois o resto parcelado.
     assert.match(formulario, /const resto = -\(meta\.valor - \(plano\.entrada \|\| 0\)\);/);
+});
+
+test('1ª parcela: campo de mês nos parcelados, gravado como meses depois da entrada (migration 37)', () => {
+    const migration37 = ler('migrations/37-metas-primeira-parcela.sql');
+    assert.match(migration37, /add column if not exists meses_ate_parcela integer\s*\n\s*check \(meses_ate_parcela is null or meses_ate_parcela between 0 and 120\)/);
+    assert.match(migration37, /drop column if exists juros_mensal;/);
+    assert.match(migration37, /drop column if exists custo_mensal;/);
+    assert.match(migration37, /select 'public\.fin_meta'::regclass;/);
+    const codigo = migration37.split('\n').filter(l => !l.trim().startsWith('--')).join('\n');
+    assert.doesNotMatch(codigo, /\$\$/);
+    assert.ok(migration37.split('\n').filter(l => l.trim().startsWith('--')).every(l => !l.includes(';')));
+    assert.match(visoes, /<label>1ª parcela \$\{campo\(m, 'primeira_parcela', primeira, 'type=month aria-label="Mês da 1ª parcela"'\)\}<\/label>/);
+    assert.match(interacoes, /campo = 'meses_ate_parcela';/);
+    assert.match(interacoes, /A 1ª parcela não pode vir antes da entrada\./);
+    // Comprar no débito: a série começa no mês da 1ª parcela.
+    assert.match(formulario, /data: Estado\.ciclos\[plano\.ciclo \+ plano\.mesesAteParcela\]\s*\n\s*\? dataISO\(Estado\.ciclos\[plano\.ciclo \+ plano\.mesesAteParcela\]\.ini\)/);
+    assert.match(regras, /A 1ª parcela fica guardada como meses depois da entrada \(migration 37\)/);
 });
