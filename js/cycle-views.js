@@ -424,7 +424,6 @@ function vCiclo() {
                 fatura: l.totalFuturo, usado: l.limiteTotal - l.limiteLivreFuturo, livre: l.limiteLivreFuturo,
                 antecipado: abatimentoDoCartao(abatido, l.cartao)[idxCreditoExibido] || 0,
             },
-            compras: doCartao(creditosExibidos, l.cartao),
             bruto: doCartao(creditosExibidos, l.cartao).reduce((soma, r) => soma + r.v, 0),
         }])),
     };
@@ -829,8 +828,8 @@ function vencimentoDoCartaoNoCiclo(idx, cartao) {
 
 // Modal de um cartão (botões Nubank/Mercado Pago do cabeçalho): o desenho do cartão com a
 // fatura em destaque e, abaixo, Hoje e Futuro (Fatura, Usado, Livre e a barra de uso do
-// teto), o limite (Aprovado e Garantido editáveis, os mesmos campos que ficavam no título)
-// e as compras da fatura. Só lê o que vCiclo já calculou em Estado.cartoesDoCiclo.
+// teto) e o limite (Aprovado e Garantido editáveis, os mesmos campos que ficavam no título).
+// As compras ficam só na tabela Crédito. Só lê o que vCiclo já calculou em Estado.cartoesDoCiclo.
 function htmlModalCartao(dados, cartao) {
     const c = dados?.cartoes?.[cartao];
     if (!c) return '<p class=empty>Sem compras deste cartão no ciclo exibido.</p>';
@@ -852,11 +851,6 @@ function htmlModalCartao(dados, cartao) {
         `<span class="cartaoUso${x.livre < -TOLERANCIA_FINANCEIRA ? ' acima' : ''}" title="${Math.round(uso(x))}% do teto"><span style="width:${uso(x).toFixed(1)}%"></span></span>` +
         (x.antecipado > TOLERANCIA_FINANCEIRA ? `<small class=cartaoAntecipado>Já antecipado ${brl(x.antecipado)}</small>` : '') +
         `</div>`;
-    const compras = [...c.compras].sort((a, b) => timestamp(b.data) - timestamp(a.data) || (+b.id - +a.id));
-    const itemCompra = r => `<li${r._prev ? ' class=prevista' : ''}>` +
-        `<span class=cartaoCompraData>${r.data ? dataBR(r.data).slice(0, 5) : '—'}</span>` +
-        `<span class=cartaoCompraNome>${escapeHtml(r.nome ?? '')}${!r._prev && r.pago === false ? ' <small>aberto</small>' : ''}</span>` +
-        `<b class="${corSoma(r.v)}">${brl(Math.abs(r.v))}</b></li>`;
     // Desenho no estilo do cartão de verdade de cada emissor (logotipos simplificados): Nubank
     // roxo com os dois círculos da bandeira e o "nu" em traço fino; Mercado Pago grafite com
     // "MER CADO PAGO" apagado na vertical e "VISA" em pé. No lugar do nome impresso, a fatura.
@@ -881,8 +875,5 @@ function htmlModalCartao(dados, cartao) {
         `<div class=cartaoLimite><span>Teto <b>${brl(c.teto)}</b></span>` +
         `<span class=limiteCartaoBase>Aprovado R$ ${c.campoAprovado}</span>` +
         (c.campoGarantia ? `<span class=limiteCartaoBase>Garantido + R$ ${c.campoGarantia}</span>` : '') +
-        `</div>` +
-        `<details class=cartaoCompras><summary>Compras da fatura <span>${compras.length}</span></summary>` +
-        (compras.length ? `<ul>${compras.map(itemCompra).join('')}</ul>` : '<p class=empty>Nenhuma compra.</p>') +
-        `</details>`;
+        `</div>`;
 }

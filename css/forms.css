@@ -194,7 +194,6 @@
   }
 
   #fechaNovo,
-  #fechaCartao,
   #fechaVisualizacoes,
   #fechaVisualizacao,
   #voltaVisualizacoes,
@@ -213,7 +212,6 @@
   }
 
   #fechaNovo:hover,
-  #fechaCartao:hover,
   #fechaVisualizacoes:hover,
   #fechaVisualizacao:hover,
   #voltaVisualizacoes:hover,
@@ -886,13 +884,6 @@
       box-shadow: 0 20px 60px var(--shadow);
   }
 
-  /* O cartão desenhado já diz qual é: o nome fica só pra leitor de tela (.srOnly) e o
-     fechar vai pro canto direito, sozinho na linha. */
-  #modalCartao .modalHead {
-      justify-content: flex-end;
-      margin-bottom: .5rem;
-  }
-
   /* Deslizar pros lados troca de fatura (interactions.js): o navegador fica só com a rolagem
      vertical, o cartão mostra que pode ser arrastado e entra deslizando do lado certo. */
   #modalCartao {
@@ -1195,89 +1186,4 @@
 
   .cartaoLimite b {
       color: var(--fg);
-  }
-
-  /* Compras da fatura: um botão em pílula que abre a lista, com a contagem e uma seta que
-     gira ao abrir. */
-  .cartaoCompras {
-      margin-top: .9rem;
-  }
-
-  .cartaoCompras summary {
-      display: flex;
-      align-items: center;
-      gap: .5rem;
-      padding: .55rem .9rem;
-      list-style: none;
-      font-size: .85rem;
-      font-weight: 600;
-      background: var(--field);
-      border: 1px solid var(--ln);
-      border-radius: 999px;
-      cursor: pointer;
-  }
-
-  .cartaoCompras summary::-webkit-details-marker {
-      display: none;
-  }
-
-  .cartaoCompras summary:hover {
-      background: var(--field-hover);
-      border-color: var(--line-strong);
-  }
-
-  .cartaoCompras summary span {
-      margin-left: auto;
-      padding: 0 .5rem;
-      color: var(--mu);
-      background: var(--bg);
-      border-radius: 999px;
-  }
-
-  .cartaoCompras summary::after {
-      content: '▾';
-      color: var(--mu);
-      transition: transform .2s;
-  }
-
-  .cartaoCompras[open] summary::after {
-      transform: rotate(180deg);
-  }
-
-  .cartaoCompras ul {
-      max-height: 16rem;
-      margin: .5rem 0 0;
-      padding: 0;
-      overflow-y: auto;
-      list-style: none;
-  }
-
-  .cartaoCompras li {
-      display: grid;
-      grid-template-columns: 3rem minmax(0, 1fr) auto;
-      gap: .6rem;
-      padding: .4rem .2rem;
-      font-size: .85rem;
-      border-bottom: 1px solid var(--ln);
-  }
-
-  .cartaoCompras li.prevista {
-      color: var(--mu);
-      font-style: italic;
-  }
-
-  .cartaoCompraData {
-      color: var(--mu);
-      font-variant-numeric: tabular-nums;
-  }
-
-  .cartaoCompraNome {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-  }
-
-  .cartaoCompraNome small {
-      color: var(--mu);
-      font-style: normal;
   }

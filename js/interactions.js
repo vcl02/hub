@@ -669,9 +669,11 @@ Object.entries(BOTAO_DO_CARTAO).forEach(([cartao, id]) => {
         el('modalCartao').dataset.cartao = cartao;
         preencherModalCartao();
         el('modalCartao').showModal();
+        // Sem botão de fechar, o 1º foco seria o campo Aprovado: no celular abriria o teclado
+        // e o Esc só desfaria o campo, em vez de fechar o modal.
+        el('modalCartao').focus();
     };
 });
-el('fechaCartao').onclick = () => el('modalCartao').close();
 
 // Deslizar no modal do cartão troca de fatura: pra esquerda a seguinte, pra direita a
 // anterior. É a mesma navegação do ‹ › do topo (navegaCiclo), então o ciclo da tela anda

@@ -34,11 +34,6 @@ const dados = {
             campoAprovado: '<input data-limite-cartao="mp">', campoGarantia: '',
             hoje: { fatura: -54.48, usado: 54.48, livre: 1045.52, antecipado: 0 },
             futuro: { fatura: -1200, usado: 1200, livre: -100, antecipado: 30 },
-            compras: [
-                { id: 1, data: '2026-10-14', nome: 'Meli+', v: -9.9, pago: true },
-                { id: 2, data: '2026-10-19', nome: 'Livro <b>', v: -44.58, pago: false },
-                { id: -6, data: '2026-11-04', nome: 'Besteira prevista', v: -10, pago: false, _prev: 1 },
-            ],
         },
     },
 };
@@ -67,13 +62,19 @@ test('limite com Aprovado editável e sem Garantido no Mercado Pago', () => {
     assert.doesNotMatch(html, /Garantido/);
 });
 
-test('compras da fatura: mais recente primeiro, aberta e prevista marcadas, nome escapado', () => {
+test('modal limpo: sem lista de compras e sem botão de fechar', () => {
     const html = carrega()(dados, 'mp');
-    assert.match(html, /<summary>Compras da fatura <span>3<\/span><\/summary>/);
-    const ordem = [...html.matchAll(/<span class=cartaoCompraNome>([^<]*)/g)].map(m => m[1].trim());
-    assert.deepEqual(ordem, ['Besteira prevista', 'Livro &lt;b&gt;', 'Meli+']);
-    assert.match(html, /<li class=prevista><span class=cartaoCompraData>04\/11<\/span><span class=cartaoCompraNome>Besteira prevista<\/span>/);
-    assert.match(html, /Livro &lt;b&gt; <small>aberto<\/small>/);
+    assert.doesNotMatch(html, /cartaoCompras|Compras da fatura|<summary>/);
+    assert.doesNotMatch(pagina, /id=fechaCartao/);
+    // Sem o ×, o 1º foco seria o campo Aprovado (teclado no celular, Esc só desfaria o campo).
+    assert.match(pagina, /<dialog id=modalCartao tabindex=-1>/);
+    assert.match(interacoes, /el\('modalCartao'\)\.showModal\(\);\s*\n(\s*\/\/.*\n)*\s*el\('modalCartao'\)\.focus\(\);/);
+    assert.doesNotMatch(interacoes, /fechaCartao/);
+    assert.doesNotMatch(fs.readFileSync('css/forms.css', 'utf8'), /fechaCartao|cartaoCompras|#modalCartao \.modalHead/);
+    // Continua fechando com Esc (nativo do <dialog>) e com o clique fora do cartão.
+    assert.match(interacoes, /if \(e\.target == el\('modalCartao'\) && Date\.now\(\) - ultimoArrasteCartao > 300\) el\('modalCartao'\)\.close\(\);/);
+    assert.match(regras, /sem botão de fechar: o cartão começa no topo do modal, que fecha com Esc ou tocando fora dele/);
+    assert.match(regras, /a lista de compras não entra no modal, elas ficam só na tabela Crédito/);
 });
 
 test('ciclo futuro (sem Hoje): o cartão destaca a fatura e só há a linha Futuro', () => {
@@ -89,10 +90,9 @@ test('sem dados do cartão no ciclo exibido, o modal avisa em vez de quebrar', (
 test('botões no cabeçalho, desativados sem dados, escondidos na conta restrita; modal refeito a cada desenho', () => {
     assert.match(pagina, /<button type=button id=btNubank class="btIcone btCartao cartao-nubank" data-cartao=nubank title="Nubank"\s*\n\s*aria-label="Cartão Nubank" disabled>/);
     assert.match(pagina, /<button type=button id=btMercadoPago class="btIcone btCartao cartao-mp" data-cartao=mp title="Mercado Pago"\s*\n\s*aria-label="Cartão Mercado Pago" disabled>/);
-    assert.match(pagina, /<dialog id=modalCartao>/);
+    assert.match(pagina, /<dialog id=modalCartao tabindex=-1>/);
     // Sem título visível: o nome do cartão fica só pra leitor de tela.
     assert.match(pagina, /<h2 id=tituloCartao class=srOnly>Cartão<\/h2>/);
-    assert.match(fs.readFileSync('css/forms.css', 'utf8'), /#modalCartao \.modalHead \{\s*\n\s*justify-content: flex-end;/);
     assert.match(interacoes, /el\(id\)\.hidden = restrito;\s*\n\s*el\(id\)\.disabled = restrito \|\| !Estado\.cartoesDoCiclo\?\.cartoes\?\.\[cartao\];/);
     assert.match(interacoes, /if \(el\('modalCartao'\)\.open\) preencherModalCartao\(\);/);
     assert.match(interacoes, /Estado\.cartoesDoCiclo = null;/);
@@ -127,7 +127,7 @@ test('cartão Nubank no estilo do de verdade: círculos da bandeira e o "nu"; o 
         vm.runInContext(`${visoesFonte.slice(visoesFonte.indexOf('function htmlModalCartao('))}\nglobalThis.f = htmlModalCartao;`, contexto);
         return contexto.f;
     })();
-    const base = { teto: 100, campoAprovado: '', campoGarantia: '', vencimento: '2026-11-12', compras: [],
+    const base = { teto: 100, campoAprovado: '', campoGarantia: '', vencimento: '2026-11-12',
         hoje: { fatura: -1, usado: 1, livre: 99, antecipado: 0 }, futuro: { fatura: -1, usado: 1, livre: 99, antecipado: 0 } };
     const nubank = f({ temHoje: true, cartoes: { nubank: { ...base, nome: 'Nubank' } } }, 'nubank');
     assert.match(nubank, /<svg class=cartaoBandeira /);

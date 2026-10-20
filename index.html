@@ -402,11 +402,10 @@
 
     <!-- Modal de um cartão (botões Nubank/Mercado Pago do cabeçalho): htmlModalCartao em
          cycle-views.js preenche #corpoCartao a cada abertura e a cada redesenho com ele aberto. -->
-    <dialog id=modalCartao>
-      <div class=modalHead>
-        <h2 id=tituloCartao class=srOnly>Cartão</h2>
-        <button type=button id=fechaCartao aria-label="Fechar" title="Fechar">×</button>
-      </div>
+    <!-- Sem botão de fechar: fecha com Esc ou tocando fora do cartão. O foco ao abrir vai pro
+         próprio modal (tabindex -1, ver interactions.js), não pro campo Aprovado. -->
+    <dialog id=modalCartao tabindex=-1>
+      <h2 id=tituloCartao class=srOnly>Cartão</h2>
       <div id=corpoCartao></div>
     </dialog>
 
