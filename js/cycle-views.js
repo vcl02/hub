@@ -363,14 +363,19 @@ function vCiclo() {
     // Cada faixa vai em pedaços que nunca se partem (nome; Usado; Livre; "de" teto; Aprovado;
     // Garantido): com a tela estreita, a faixa quebra entre eles, nunca no meio de um valor.
     const pedaco = html => `<span class=pedaco>${html}</span>`;
-    // Toda faixa tem os mesmos pedaços — Fatura, Usado, Livre, teto —, mesmo quando Fatura e
-    // Usado coincidem: assim Hoje e Futuro sempre têm a mesma estrutura e ficam alinhados
-    // coluna a coluna (alinharResumosDosTitulos desiste de faixas com pedaços diferentes).
+    // Toda faixa tem os mesmos pedaços — Fatura, Usado, Livre —, mesmo quando Fatura e Usado
+    // coincidem: assim Hoje e Futuro sempre têm a mesma estrutura e ficam alinhados coluna a
+    // coluna (alinharResumosDosTitulos desiste de faixas com pedaços diferentes). O teto vem
+    // por último e só na primeira faixa (tetoNaFaixa).
     const usadoELivre = (nome, usado, livre, teto, fatura) => (nome ? pedaco(nome) : '') +
         pedaco(`<span class=limiteRotulo>Fatura</span> <b class="${corSoma(fatura)}">${brl(Math.abs(fatura))}</b>`) +
         pedaco(`<span class=limiteRotulo>Usado</span> <b class=limiteUsado>${brl(usado)}</b>`) +
         pedaco(`<span class=limiteRotulo>Livre</span> <b class="${corValor(livre)}">${brl(livre)}</b>`) +
-        `<span class="pedaco limiteTeto">de ${teto}</span>`;
+        (teto ? `<span class="pedaco limiteTeto">de ${teto}</span>` : '');
+    // O teto (com Aprovado e Garantido) é o mesmo nas duas faixas: fica só na primeira (Hoje;
+    // num ciclo futuro, a única, Futuro), em vez de repetido embaixo. Por ser o último
+    // pedaço, as colunas de Fatura, Usado e Livre continuam alinhadas entre Hoje e Futuro.
+    const tetoNaFaixa = chaveLivre => chaveLivre === 'limiteLivreHoje' || !temHoje;
     // Cada faixa abre pela própria fatura: a de cada cartão e, na faixa Total, a soma das duas.
     // Hoje só com o confirmado e as antecipações já pagas; Futuro com a fatura exibida inteira.
     const FATURA_DA_LINHA = { limiteLivreHoje: 'totalHoje', limiteLivreFuturo: 'totalFuturo' };
@@ -378,11 +383,12 @@ function vCiclo() {
     const faturaTotal = chaveLivre => chaveLivre === 'limiteLivreHoje' ? totalCreditoHoje : totalCreditoExibido;
     const resumoLimiteCartao = (l, chaveLivre) => `<span class="limiteCartao temPedacos">` +
         usadoELivre(nomeNoTitulo(l.cartao), l.limiteTotal - l[chaveLivre], l[chaveLivre],
-            tetoSemGarantia(l) ? `<span class=limiteCartaoBase>R$ ${campoAprovado(l)}</span>` : brl(l.limiteTotal),
+            !tetoNaFaixa(chaveLivre) ? ''
+                : tetoSemGarantia(l) ? `<span class=limiteCartaoBase>R$ ${campoAprovado(l)}</span>` : brl(l.limiteTotal),
             faturaDoCartao(l, chaveLivre)) +
-        (tetoSemGarantia(l) ? ''
+        (tetoSemGarantia(l) || !tetoNaFaixa(chaveLivre) ? ''
             : pedaco(`<span class=limiteTeto><span class=limiteCartaoBase>R$ ${campoAprovado(l)}<span class=limiteCartaoRotulo>Aprovado</span></span></span>`)) +
-        (l.cartao === CARTAO_NUBANK && mostraGarantia ? `<span class="pedaco limiteGarantido">+ R$ ${campoGarantia()} Garantido</span>` : '') +
+        (l.cartao === CARTAO_NUBANK && mostraGarantia && tetoNaFaixa(chaveLivre) ? `<span class="pedaco limiteGarantido">+ R$ ${campoGarantia()} Garantido</span>` : '') +
         `</span>`;
     // Com dois cartões, a primeira faixa soma os dois: quanto ainda dá pra gastar no crédito
     // inteiro e o teto somado (com a garantia do Nubank, como o teto dele).
@@ -390,7 +396,7 @@ function vCiclo() {
         if (limitesDosCartoes.length < 2) return '';
         const livre = limitesDosCartoes.reduce((soma, l) => soma + l[chaveLivre], 0);
         const teto = limitesDosCartoes.reduce((soma, l) => soma + l.limiteTotal, 0);
-        return `<span class="limiteCartao temPedacos">${usadoELivre('<span class="limiteCartaoNome cartao-total">Total</span>', teto - livre, livre, brl(teto), faturaTotal(chaveLivre))}</span>`;
+        return `<span class="limiteCartao temPedacos">${usadoELivre('<span class="limiteCartaoNome cartao-total">Total</span>', teto - livre, livre, tetoNaFaixa(chaveLivre) ? brl(teto) : '', faturaTotal(chaveLivre))}</span>`;
     };
     // Com dois cartões, o título fica só com a faixa Total; tudo de cada cartão (a fatura
     // inclusive) fica no modal dele (botões Nubank/Mercado Pago do cabeçalho). Com um cartão

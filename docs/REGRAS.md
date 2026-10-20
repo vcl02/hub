@@ -350,6 +350,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Quando o teto de um cartão é igual ao Aprovado (Mercado Pago sempre; Nubank sem garantia), o próprio campo editável fica depois de "de" ("Livre R$ 1.090,10 de R$ [1.100,00]"), sem repetir o mesmo valor nem o rótulo Aprovado.
   **No título**, com dois cartões, Hoje e Futuro ficam enxutos: só a faixa **Total** — **Fatura** (a soma das duas), **Usado** e **Livre** do teto somado (com a garantia do Nubank); tudo de cada cartão, a fatura dele inclusive, fica no modal do cartão.
   Com um cartão só, a única faixa é completa: Fatura, Usado, Livre, teto e os campos de Aprovado/Garantido.
+  O teto ("de R$ 5.020,00", e com ele Aprovado/Garantido) é o mesmo em Hoje e Futuro, então aparece só na primeira faixa — Hoje; num ciclo futuro, que só tem Futuro, nela —, sem repetir embaixo.
   Usado = teto − Livre: em Hoje, as compras confirmadas que ainda ocupam o cartão; em Futuro, a fatura exibida inteira mais o uso confirmado posterior.
   Hoje, a Fatura é só compras confirmadas menos as antecipações já pagas; em Futuro, a fatura exibida inteira (paga e aberta, líquida das antecipações). Não há valor solto no começo de Hoje/Futuro.
   As faixas ficam separadas por um divisor vertical; o nome de cada cartão tem cor própria (Total neutro, Nubank roxo, Mercado Pago azul), rótulos discretos, valores em negrito e o teto ("de R$ …") e a garantia em itálico.
