@@ -888,13 +888,13 @@ function htmlModalCartao(dados, cartao) {
 
 // Modal de Metas (botão do cabeçalho): âncoras (datas com nome) no topo e as metas abertas
 // na ordem do plano, cada uma editável na própria linha (nome, valor, quando, forma e, só
-// quando fazem sentido, parcelas, entrada, juros e custo/mês) com o plano calculado ao lado
+// quando fazem sentido, vezes, entrada e custo/mês) com o plano calculado ao lado
 // (planoDasMetas em finance.js). Compradas e desistidas não aparecem: já viraram lançamento
 // ou saíram da conta. Só leitura do Estado; os handlers ficam em interactions.js.
 const ICONE_ANCORA = '<svg viewBox="0 0 24 24" width=15 height=15 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true><circle cx=12 cy=5 r=2.5 /><path d="M12 7.5V21M5 13a7 7 0 0 0 14 0M8 11h8" /></svg>';
 const ICONE_COMPRAR = '<svg viewBox="0 0 24 24" width=16 height=16 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true><circle cx=9 cy=20 r=1.4 /><circle cx=18 cy=20 r=1.4 /><path d="M2 3h3l2.6 12.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L21 8H6" /></svg>';
 const ICONE_EXCLUIR = '<svg viewBox="0 0 24 24" width=16 height=16 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>';
-const FORMAS_DA_META = { auto: 'Automático', avista: 'À vista', cartao: 'Cartão', financiamento: 'Financiamento' };
+const FORMAS_DA_META = { auto: 'Automático', avista: 'À vista', cartao: 'Cartão', financiamento: 'Financiado' };
 
 // Texto do plano de uma meta: o mês e como pagar; sem caber, quanto falta e quando caberia.
 function textoDoPlanoDaMeta(p) {
@@ -910,15 +910,14 @@ function textoDoPlanoDaMeta(p) {
         };
     }
     const comprometido = p.comprometidoMax != null ? ` · Comprometido até ${pct1(p.comprometidoMax)}` : '';
+    // Entrada embutida no total: "entrada R$ 10.000,00 + Nubank 10x R$ 3.000,00".
+    const entrada = p.entrada > 0 ? `entrada ${brl(p.entrada)}${p.parcelas ? ' + ' : ''}` : '';
     if (p.forma === 'cartao') {
-        return { texto: `${mes} · ${NOME_CARTAO[p.cartao]} ${p.parcelas}x ${brl(p.parcela)}${comprometido}${custo}`, classe: 'vd' };
+        return { texto: `${mes} · ${entrada}${NOME_CARTAO[p.cartao]} ${p.parcelas}x ${brl(p.parcela)}${comprometido}${custo}`, classe: 'vd' };
     }
     if (p.forma === 'financiamento') {
-        const parcelas = p.parcelas ? ` + ${p.parcelas}x ${brl(p.parcela)}` : '';
-        return {
-            texto: `${mes} · entrada ${brl(p.entrada)}${parcelas}${comprometido}${custo}`, classe: 'vd',
-            dica: p.parcelas ? `Juros de ${String(p.juros).replace('.', ',')}% a.m.: ${brl(p.jurosTotal)} a mais no total` : '',
-        };
+        const parcelas = p.parcelas ? `${p.parcelas}x ${brl(p.parcela)}` : '';
+        return { texto: `${mes} · ${entrada}${parcelas}${comprometido}${custo}`, classe: 'vd' };
     }
     return { texto: `${mes} · à vista${custo}`, classe: 'vd', dica: `Guardado projetado disponível em ${mes}: ${brl(p.disponivel)}` };
 }
@@ -944,13 +943,13 @@ function htmlModalMetas(planos) {
             : campo(m, 'mes', m.mes ? m.mes.slice(0, 7) : '', 'type=month aria-label="Mês da meta"');
         const formas = Object.entries(FORMAS_DA_META).map(([valor, rotulo]) =>
             `<option value=${valor}${(m.forma || 'auto') === valor ? ' selected' : ''}>${rotulo}</option>`).join('');
-        // Parcelas: cartão (vezes sem juros) e financiamento (prazo); entrada e juros só no
-        // financiamento; custo/mês sempre (seguro de carro, condomínio…).
-        const extras = (m.forma === 'cartao' || m.forma === 'financiamento'
-            ? `<label>Vezes ${campo(m, 'parcelas', m.parcelas, `inputmode=numeric class=metaCurto placeholder="${m.forma === 'cartao' ? PARCELAS_SEM_JUROS_PADRAO_METAS : 'auto'}"`)}</label>` : '') +
-            (m.forma === 'financiamento'
-                ? `<label>Entrada R$ ${campo(m, 'entrada', emReais(m.entrada), 'inputmode=decimal class=metaMedio placeholder="guardado"')}</label>` +
-                  `<label>Juros ${campo(m, 'juros_mensal', m.juros_mensal == null ? '' : String(m.juros_mensal).replace('.', ','), `inputmode=decimal class=metaCurto placeholder="${JUROS_PADRAO_METAS}"`)}% a.m.</label>` : '') +
+        // Vezes: cartão e financiado; entrada (parte do total) em tudo que não é à vista;
+        // custo/mês sempre (seguro de carro, condomínio…).
+        const parcelado = m.forma === 'cartao' || m.forma === 'financiamento';
+        const extras = (parcelado
+            ? `<label>Vezes ${campo(m, 'parcelas', m.parcelas, `inputmode=numeric class=metaCurto placeholder="${m.forma === 'cartao' ? PARCELAS_PADRAO_CARTAO_METAS : 'auto'}"`)}</label>` : '') +
+            (m.forma !== 'avista'
+                ? `<label title="Parte do total paga à vista no mês da meta; o resto vai parcelado">Entrada R$ ${campo(m, 'entrada', emReais(m.entrada), 'inputmode=decimal class=metaMedio placeholder="0,00"')}</label>` : '') +
             `<label>Custo/mês R$ ${campo(m, 'custo_mensal', emReais(m.custo_mensal), 'inputmode=decimal class=metaMedio placeholder="0,00"')}</label>`;
         return `<div class=metaLinha data-meta=${m.id}>` +
             `<div class=metaPrincipal>` +

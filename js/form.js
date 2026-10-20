@@ -1201,20 +1201,19 @@ async function submeteNovoLancamento() {
 }
 
 // ---- comprar uma meta: o mesmo cadastro, já preenchido com o plano ----
-// À vista: um débito. Cartão: crédito em N vezes, dividido, nas faturas do cartão do plano.
-// Financiamento: duas etapas — a entrada (débito) e depois as parcelas (débito em N vezes,
-// sem dividir, Comprometido). A pessoa confere, escolhe a categoria e salva cada uma; depois
+// À vista: um débito. Com entrada (parte do total), ela vem primeiro, como débito; depois o
+// resto — cartão: crédito em N vezes, dividido, nas faturas do cartão do plano; financiado:
+// débito em N vezes, dividido, Comprometido. A pessoa confere, escolhe a categoria e salva cada uma; depois
 // da última, a meta vira "comprada" (some da lista e das projeções: agora é lançamento).
 // Sem plano que caiba, parte do à vista, e a pessoa ajusta o que quiser.
 function etapasDaCompraDaMeta(meta, plano) {
-    if (plano?.forma === 'cartao') {
-        return [{ nome: meta.nome, cred: true, v: -meta.valor, vezes: plano.parcelas, dividir: true, cartao: plano.cartao }];
-    }
-    if (plano?.forma === 'financiamento') {
-        return [
-            ...(plano.entrada > TOLERANCIA_FINANCEIRA ? [{ nome: `Entrada · ${meta.nome}`, cred: false, v: -plano.entrada }] : []),
-            ...(plano.parcelas ? [{ nome: meta.nome, cred: false, v: -plano.parcela, vezes: plano.parcelas, dividir: false, comprometido: true }] : []),
-        ];
+    if (plano?.forma === 'cartao' || plano?.forma === 'financiamento') {
+        const entrada = plano.entrada > TOLERANCIA_FINANCEIRA ? [{ nome: `Entrada · ${meta.nome}`, cred: false, v: -plano.entrada }] : [];
+        const resto = -(meta.valor - (plano.entrada || 0));
+        if (!plano.parcelas) return entrada;
+        return [...entrada, plano.forma === 'cartao'
+            ? { nome: meta.nome, cred: true, v: resto, vezes: plano.parcelas, dividir: true, cartao: plano.cartao }
+            : { nome: meta.nome, cred: false, v: resto, vezes: plano.parcelas, dividir: true, comprometido: true }];
     }
     return [{ nome: meta.nome, cred: false, v: -meta.valor }];
 }

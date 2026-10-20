@@ -42,7 +42,7 @@ function carrega(metas) {
     const limites = graficos.slice(graficos.indexOf('const LIMITES_COMPROMISSOS'), graficos.indexOf('\n];\n', graficos.indexOf('const LIMITES_COMPROMISSOS')) + 4);
     vm.runInContext(limites + graficos.slice(graficos.indexOf('const ehParcelaDeCompra'), graficos.indexOf('function dadosCompromissosCiclo(')), contexto);
     vm.runInContext(`limparCachesFinanceiros();
-        globalThis.r = { plano: planoDasMetas(), base: lancamentosComPrevistas(), mesDaMeta, cicloDoMes, prestacao, guardadoAte };`, contexto);
+        globalThis.r = { plano: planoDasMetas(), base: lancamentosComPrevistas(), mesDaMeta, cicloDoMes, guardadoAte };`, contexto);
     return contexto.r;
 }
 
@@ -68,20 +68,15 @@ test('âncora: meta segue a data dela com deslocamento; ciclo é o que começa n
     assert.equal(r.cicloDoMes(null), -1);
 });
 
-test('prestação Price: 10.000 em 12x a 3% a.m.', () => {
-    const r = carrega([]);
-    assert.ok(Math.abs(r.prestacao(10000, 3, 12) - 1004.62) < 0.01);
-    assert.equal(r.prestacao(1200, 0, 12), 100);
-});
-
-test('cascata: à vista; a seguinte no mesmo mês não cabe e diz quando cabe; cartão; financiamento', () => {
+test('cascata: à vista; a seguinte no mesmo mês não cabe e diz quando cabe; cartão; financiado; entrada embutida', () => {
     const r = carrega([
         meta(1, 'Cadeira', 1500, '2026-11-01'),
         meta(2, 'Geladeira', 4000, '2026-11-01'),
         meta(3, 'TV', 2000, '2027-01-01', { forma: 'cartao' }),
         meta(4, 'Carro', 30000, '2027-03-01', { forma: 'financiamento', entrada: 5000 }),
+        meta(5, 'Fogão', 3000, '2027-05-01', { forma: 'cartao', entrada: 1000 }),
     ]);
-    const cadeira = doPlano(r, 1), geladeira = doPlano(r, 2), tv = doPlano(r, 3), carro = doPlano(r, 4);
+    const cadeira = doPlano(r, 1), geladeira = doPlano(r, 2), tv = doPlano(r, 3), carro = doPlano(r, 4), fogao = doPlano(r, 5);
     assert.equal(cadeira.forma, 'avista');
     assert.equal(cadeira.cabe, true);
     assert.equal(cadeira.disponivel, 4000);
@@ -95,14 +90,24 @@ test('cascata: à vista; a seguinte no mesmo mês não cabe e diz quando cabe; c
     assert.equal(tv.parcelas, 10);
     assert.equal(tv.parcela, 200);
     assert.ok(tv.linhas.every(l => l.cred && l.recorrencia_id === 'meta-3' && l.fatura.endsWith('-12')));
-    // Carro: entrada 5.000; 25.000 financiados a 3%. 24x (R$ 1.476) passaria do teto com a TV
-    // (200): o menor prazo que cabe em 50% de 3.000 é 36x (R$ 1.145,09 + 200).
+    // Carro: entrada 5.000 (parte do total) e 25.000 financiados sem juros. 18x (R$ 1.388,89)
+    // passaria do teto com a TV (200): o menor prazo que cabe em 50% de 3.000 é 24x (R$ 1.041,67).
     assert.equal(carro.forma, 'financiamento');
     assert.equal(carro.entrada, 5000);
-    assert.equal(carro.parcelas, 36);
-    assert.ok(Math.abs(carro.parcela - 1145.09) < 0.01);
+    assert.equal(carro.parcelas, 24);
+    assert.equal(carro.parcela, 1041.67);
     assert.ok(carro.comprometidoMax <= 50);
-    assert.ok(carro.linhas.filter(l => l.comprometido).every(l => !l.cred && l.v === -carro.parcela));
+    const entradaCarro = carro.linhas.filter(l => l.nome === 'Entrada · Carro');
+    assert.deepEqual(JSON.parse(JSON.stringify(entradaCarro.map(l => [l.periodoIdx, l.v, l.cred]))), [[5, -5000, false]]);
+    assert.ok(carro.linhas.filter(l => l.comprometido).every(l => !l.cred && l.periodoIdx > 5));
+    // Fogão: entrada 1.000 à vista e só o resto (2.000) no cartão: Nubank tem 3.350 menos 4
+    // parcelas da TV ainda não cobradas (800) = 2.550, que comporta os 2.000.
+    assert.equal(fogao.forma, 'cartao');
+    assert.equal(fogao.entrada, 1000);
+    assert.equal(fogao.parcela, 200);
+    assert.equal(fogao.linhas.filter(l => l.cred).reduce((s, l) => s - l.v, 0), 800);   // 4 de 10 no horizonte (jun a set/27)
+    assert.equal(fogao.linhas.filter(l => !l.cred).reduce((s, l) => s - l.v, 0), 1000);
+    assert.equal(new Set(fogao.linhas.map(l => l.id)).size, fogao.linhas.length);
 });
 
 test('linhas do plano entram na base como previstas (id negativo, _meta) e só no horizonte', () => {
@@ -156,6 +161,16 @@ test('REGRAS.md documenta metas', () => {
     assert.match(regras, /## Metas/);
     assert.match(regras, /\*\*Âncora\*\* é uma data com nome/);
     assert.match(regras, /Se nada cabe no mês pedido, a meta fica nele, à vista/);
-    assert.match(regras, /juros da meta ou \*\*3% a\.m\.\*\*/);
+    assert.match(regras, /\*\*Entrada\*\* é parte do total \(móveis de R\$ 40\.000 = R\$ 10\.000 de entrada \+ R\$ 30\.000 parcelados\)/);
+    assert.match(regras, /Sem juros por enquanto: a parcela é o resto dividido pelas vezes/);
+    assert.doesNotMatch(regras, /3% a\.m\./);
     assert.match(regras, /As metas podem usar o guardado abaixo da meta da Reserva/);
+});
+
+test('juros fora por enquanto: nenhum cálculo nem campo de juros nas metas', () => {
+    const financas = ler('js/finance.js');
+    assert.doesNotMatch(financas + visoes, /juros_mensal|JUROS_PADRAO|prestacao\(/);
+    assert.match(visoes, /financiamento: 'Financiado'/);
+    // Comprar com entrada: primeiro a entrada (débito), depois o resto parcelado.
+    assert.match(formulario, /const resto = -\(meta\.valor - \(plano\.entrada \|\| 0\)\);/);
 });

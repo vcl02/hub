@@ -149,15 +149,17 @@ function lancamentosComPrevistas() {
 // data da Reserva, fatura, Livre Futuro e Comprometido já enxergam as metas. Formas:
 //   - à vista (débito no ciclo), se o guardado projetado, menos o que as metas anteriores já
 //     usaram, cobre o valor (as metas podem usar o guardado abaixo da meta da Reserva)
-//   - cartão parcelado sem juros, se o Livre do cartão naquele ciclo comporta a compra
-//     inteira (o banco bloqueia tudo na hora) e as parcelas não levam o Comprometido acima
-//     do teto em nenhum ciclo
-//   - entrada + financiamento, só quando a meta pede: entrada à vista, parcelas com juros
-//     (Price) marcadas Comprometido
+//   - cartão parcelado, se o Livre do cartão naquele ciclo comporta a compra inteira (o
+//     banco bloqueia tudo na hora) e as parcelas não levam o Comprometido acima do teto em
+//     nenhum ciclo
+//   - financiado (carnê, boleto, financiamento da loja), só quando a meta pede: parcelas
+//     mensais marcadas Comprometido
+// A entrada é parte do total (móveis de 40 mil = 10 mil de entrada + 30 mil parcelados): sai à
+// vista do guardado no mês da meta, e só o resto vai pro cartão ou pro financiado. Sem juros
+// por enquanto: a parcela é o resto dividido pelas vezes.
 // "auto" tenta à vista e depois cartão. Se nada cabe no mês pedido, a meta fica nele mesmo
 // (o buraco aparece no saldo daquele ciclo) e o plano diz o 1º ciclo em que caberia.
-const JUROS_PADRAO_METAS = 3;                  // % a.m. quando a meta financiada não diz o seu
-const PARCELAS_SEM_JUROS_PADRAO_METAS = 10;    // vezes no cartão quando a meta não diz
+const PARCELAS_PADRAO_CARTAO_METAS = 10;       // vezes no cartão quando a meta não diz
 const PRAZOS_FINANCIAMENTO_METAS = [6, 12, 18, 24, 36, 48, 60];
 
 // Mês da meta (AAAA-MM-01): o próprio, ou o da âncora ± deslocamento. Um nível só: a âncora
@@ -170,12 +172,6 @@ function mesDaMeta(meta, porId) {
 
 // Ciclo do mês: o que começa naquele mês (o mesmo nome que a navegação mostra, ex.: Mar/27).
 const cicloDoMes = mes => (mes ? Estado.ciclos.findIndex(c => dataISO(c.ini).slice(0, 7) === mes.slice(0, 7)) : -1);
-
-// Parcela fixa (tabela Price) de `valor` em `n` vezes a `jurosPct` % ao mês.
-function prestacao(valor, jurosPct, n) {
-    const i = jurosPct / 100;
-    return i ? valor * i / (1 - (1 + i) ** -n) : valor / n;
-}
 
 // Linha prevista de uma meta: não existe no banco (id negativo, _prev), aparece nas tabelas
 // como as previstas de Besteira/Isabella e entra em todo cálculo como um lançamento aberto.
@@ -234,46 +230,50 @@ function formasDaMeta(meta, c, anteriores, ctx) {
     const valor = meta.valor;
     const gasto = anteriores.filter(r => r.periodoIdx != null && r.periodoIdx <= c).reduce((s, r) => s - r.v, 0);
     const disponivel = ctx.guardado(c) - gasto;
+    // Entrada embutida no total, à vista no mês da meta (nunca acima do valor).
+    const entrada = centavos(Math.min(valor, meta.entrada > 0 ? meta.entrada : 0));
+    const resto = centavos(valor - entrada);
+    const linhasDaEntrada = entrada > TOLERANCIA_FINANCEIRA
+        ? [linhaDaMeta(meta, 900, { nome: `Entrada · ${meta.nome}`, data: dataDoCiclo(c), v: -entrada })] : [];
+    const comEntrada = (plano, linhas) => {
+        const todas = [...linhasDaEntrada, ...linhas];
+        const teto = ctx.cabeNoTeto(todas, [...anteriores, ...todas]);
+        return teto.ok ? { ...plano, entrada, linhas: todas, comprometidoMax: teto.maximo } : null;
+    };
     const formas = {
         avista() {
             if (disponivel < valor - TOLERANCIA_FINANCEIRA) return null;
             return { forma: 'avista', linhas: [linhaDaMeta(meta, 0, { data: dataDoCiclo(c), v: -valor })] };
         },
         cartao() {
-            const n = meta.parcelas || PARCELAS_SEM_JUROS_PADRAO_METAS;
+            if (entrada > disponivel + TOLERANCIA_FINANCEIRA) return null;
+            const n = meta.parcelas || PARCELAS_PADRAO_CARTAO_METAS;
             for (const cartao of CARTOES) {
                 const fatura = primeiraFaturaDaCompra(c, cartao);
                 if (!fatura) continue;
                 // Compras das metas anteriores feitas até c e cobradas depois dele ocupam o cartão.
                 const ocupado = anteriores.filter(r => r.cred && r._compra <= c && r.periodoIdx > c && cartaoDaFatura(r.fatura) === cartao)
                     .reduce((s, r) => s - r.v, 0);
-                if (ctx.livre(c, cartao) - ocupado < valor - TOLERANCIA_FINANCEIRA) continue;
-                const linhas = partesIguais(valor, n).map((v, p) => linhaDaMeta(meta, p, {
+                if (ctx.livre(c, cartao) - ocupado < resto - TOLERANCIA_FINANCEIRA) continue;
+                const linhas = partesIguais(resto, n).map((v, p) => linhaDaMeta(meta, p + 1, {
                     data: dataDoCiclo(c), cred: true, fatura: somaMeses(fatura, p), v: -v,
                     recorrencia_id: n > 1 ? `meta-${meta.id}` : null,
                 })).filter(r => r.periodoIdx != null).map(r => ({ ...r, _compra: c }));
-                const teto = ctx.cabeNoTeto(linhas, [...anteriores, ...linhas]);
-                if (!teto.ok) continue;
-                return { forma: 'cartao', cartao, parcelas: n, parcela: linhas[0]?.valor ? -linhas[0].valor : valor / n, linhas, comprometidoMax: teto.maximo };
+                const plano = comEntrada({ forma: 'cartao', cartao, parcelas: n, parcela: partesIguais(resto, n)[0] }, linhas);
+                if (plano) return plano;
             }
             return null;
         },
         financiamento() {
-            const entrada = Math.min(valor, meta.entrada != null ? meta.entrada : Math.max(0, disponivel));
             if (entrada > disponivel + TOLERANCIA_FINANCEIRA) return null;
-            const financiado = centavos(valor - entrada);
-            const juros = meta.juros_mensal != null ? meta.juros_mensal : JUROS_PADRAO_METAS;
-            const entradaLinhas = entrada > TOLERANCIA_FINANCEIRA
-                ? [linhaDaMeta(meta, 0, { nome: `Entrada · ${meta.nome}`, data: dataDoCiclo(c), v: -centavos(entrada) })] : [];
-            if (financiado <= TOLERANCIA_FINANCEIRA) return { forma: 'financiamento', entrada, financiado: 0, parcelas: 0, parcela: 0, juros, jurosTotal: 0, linhas: entradaLinhas };
+            if (resto <= TOLERANCIA_FINANCEIRA) return comEntrada({ forma: 'financiamento', parcelas: 0, parcela: 0 }, []);
+            // Vezes da meta ou o menor prazo que não leva o Comprometido acima do teto.
             for (const n of meta.parcelas ? [meta.parcelas] : PRAZOS_FINANCIAMENTO_METAS) {
-                const parcela = centavos(prestacao(financiado, juros, n));
-                const linhas = [...entradaLinhas, ...Array.from({ length: n }, (_, p) => c + 1 + p)
-                    .filter(j => Estado.ciclos[j])
-                    .map((j, p) => linhaDaMeta(meta, p + 1, { data: dataDoCiclo(j), v: -parcela, comprometido: true }))];
-                const teto = ctx.cabeNoTeto(linhas, [...anteriores, ...linhas]);
-                if (!teto.ok) continue;
-                return { forma: 'financiamento', entrada, financiado, parcelas: n, parcela, juros, jurosTotal: centavos(parcela * n - financiado), linhas, comprometidoMax: teto.maximo };
+                const partes = partesIguais(resto, n);
+                const linhas = partes.map((v, p) => [c + 1 + p, v]).filter(([j]) => Estado.ciclos[j])
+                    .map(([j, v], p) => linhaDaMeta(meta, p + 1, { data: dataDoCiclo(j), v: -v, comprometido: true }));
+                const plano = comEntrada({ forma: 'financiamento', parcelas: n, parcela: partes[0] }, linhas);
+                if (plano) return plano;
             }
             return null;
         },
