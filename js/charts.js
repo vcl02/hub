@@ -412,11 +412,12 @@ function atualizarIndicadoresFinanceiros(idxPeriodo) {
     const reserva = dadosMetaReservaEmergenciaCiclo(idxPeriodo);
     const comprometidos = dadosCompromissosCiclo(idxPeriodo);
     const comprometido = comprometidos.limites[0];
-    const proporcaoReserva = dadosProporcaoReservaDoCiclo(
+    const proporcaoDoCiclo = idx => dadosProporcaoReservaDoCiclo(
         Estado.lancamentos
-            .filter(r => r.periodoIdx == idxPeriodo)
+            .filter(r => r.periodoIdx == idx)
             .map(r => ({ ...r, _transferencia: ehTransferenciaFatura(r) }))
     );
+    const proporcaoReserva = proporcaoDoCiclo(idxPeriodo);
     const liberdade = dadosLiberdadeFinanceira(
         Estado.lancamentos.map(r => ({ ...r, _transferencia: ehTransferenciaFatura(r) })),
         idxPeriodo,
@@ -445,6 +446,16 @@ function atualizarIndicadoresFinanceiros(idxPeriodo) {
         && comprometidosAnterior?.faturamento > TOLERANCIA_FINANCEIRA
         ? variacaoValorIndicador(comprometido.valor, comprometidosAnterior.limites[0].valor, false)
         : null;
+    // Gastos em Reserva varia como Comprometido: mais fatia (e mais R$) em Reserva é pior,
+    // pela mesma leitura da cor (até 40% é saudável).
+    const proporcaoAnterior = idxPeriodo > 0 ? proporcaoDoCiclo(idxPeriodo - 1) : null;
+    const comparaGastos = proporcaoReserva.total > TOLERANCIA_FINANCEIRA && proporcaoAnterior?.total > TOLERANCIA_FINANCEIRA;
+    const variacaoProporcaoReserva = comparaGastos
+        ? variacaoPercentualIndicador(proporcaoReserva.percentualReserva, proporcaoAnterior.percentualReserva, false)
+        : null;
+    const variacaoValorProporcaoReserva = comparaGastos
+        ? variacaoValorIndicador(proporcaoReserva.reserva, proporcaoAnterior.reserva, false)
+        : null;
 
     // Mesmo padrão dos itens da faixa do Débito (Besteira/Isabella): rótulo, o percentual em
     // negrito com a cor do estado e o complemento apagado.
@@ -472,15 +483,19 @@ function atualizarIndicadoresFinanceiros(idxPeriodo) {
         'Variação do valor comprometido sobre o ciclo anterior'
     );
 
-    // A cor é da fatia em Reserva (é ela que a faixa avalia); Demais é só o complemento.
+    // Mesmo formato do Comprometido: a fatia em Reserva, o complemento e a variação. Demais
+    // (o resto, 100% − Reserva) fica só no hover.
     const indicadorProporcaoReserva = el('indicadorProporcaoReserva');
-    const temGastos = proporcaoReserva.total > TOLERANCIA_FINANCEIRA;
-    indicadorProporcaoReserva.innerHTML = `Gastos <span class=limiteRotulo>Reserva</span> ` +
-        valorIndicador(temGastos ? pct1(proporcaoReserva.percentualReserva) : '—', classeIndicadorProporcaoReserva(proporcaoReserva)) +
-        ` <span class=limiteRotulo>· Demais</span> ${valorIndicador(temGastos ? pct1(proporcaoReserva.percentualDemais) : '—')}`;
+    indicadorProporcaoReserva.innerHTML = proporcaoReserva.total > TOLERANCIA_FINANCEIRA
+        ? `Gastos ${valorIndicador(pct1(proporcaoReserva.percentualReserva), classeIndicadorProporcaoReserva(proporcaoReserva))} <span class=limiteRotulo>em Reserva</span>`
+        : `Gastos ${valorIndicador('—')} <span class=limiteRotulo>sem gastos</span>`;
     indicadorProporcaoReserva.title = proporcaoReserva.total > TOLERANCIA_FINANCEIRA
         ? `Reserva ${brl(proporcaoReserva.reserva)} de ${brl(proporcaoReserva.total)} em gastos; demais ${brl(proporcaoReserva.demais)}`
         : 'Sem gastos no ciclo';
+    atualizarLinhaVariacao(
+        'variacaoProporcaoReserva', variacaoProporcaoReserva, variacaoValorProporcaoReserva,
+        'Variação do gasto em Reserva sobre o ciclo anterior'
+    );
 
     const indicadorLiberdade = el('indicadorLiberdade');
     indicadorLiberdade.innerHTML = `Liberdade ${valorIndicador(liberdade.meta > TOLERANCIA_FINANCEIRA ? pct1(liberdade.percentual) : '—')}`;

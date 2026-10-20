@@ -654,19 +654,19 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Na comparação (De ≠ Até) não há Débito, então ficam no cabeçalho, na mesma linha da navegação de ciclo e dos botões de ação (entre os dois), lendo o Até.
   Em fluxo: **Reserva**, **Comprometido**, **Gastos** e **Liberdade** ficam numa linha quando cabem; quando não, os que não couberem quebram pra linha de baixo, cada um inteiro; só um item maior que a linha inteira (celular) quebra entre palavras, nunca no meio de um valor.
   Nenhum tem linha própria fixa.
-  Seguem o padrão dos itens da faixa (Besteira/Isabella): rótulo sem dois-pontos, o percentual em negrito com a cor do estado e com a largura de `100%`, e o complemento apagado (ex.: `Reserva 3,4% da meta`; `Gastos Reserva 57,7% · Demais 42,3%`, só a fatia em Reserva colorida; `Liberdade 2,1%`, sem cor).
-  A variação de Reserva e de Comprometido vem em texto miúdo, sem fundo, logo depois do próprio indicador, no mesmo item (ex.: `Reserva 3,4% da meta ↑2,2 p.p. · ↑R$ 900,00`), pra nunca parecer de outro indicador ao quebrar a linha.
+  Seguem o padrão dos itens da faixa (Besteira/Isabella): rótulo sem dois-pontos, o percentual em negrito com a cor do estado e com a largura de `100%`, e o complemento apagado (ex.: `Reserva 3,4% da meta`; `Gastos 57,7% em Reserva`; `Liberdade 2,1%`, sem cor).
+  A variação de Reserva, de Comprometido e de Gastos vem em texto miúdo, sem fundo, logo depois do próprio indicador, no mesmo item (ex.: `Reserva 3,4% da meta ↑2,2 p.p. · ↑R$ 900,00`), pra nunca parecer de outro indicador ao quebrar a linha.
   No cabeçalho, quando a janela é estreita demais pra caber ao lado da navegação e dos botões nem o maior indicador (até 1250px de largura, e no mobile), o bloco desce pra uma linha própria logo abaixo deles, que continuam juntos em cima; com os indicadores no Débito, essa linha não aparece.
   Não há olho para esconder indicador: os quatro aparecem sempre.
   Os itens são separados pelo mesmo divisor vertical da faixa, que nunca aparece no começo de uma linha.
-  **Gastos:** mostra a proporção das despesas reais negativas do ciclo marcadas com o bit `reserva` e a proporção complementar **Demais**; Débito e Crédito entram uma vez cada, categoria composta continua sendo uma única despesa e antecipação/pagamento de fatura fica fora por ser transferência.
+  **Gastos:** mostra, no mesmo formato do Comprometido, a proporção das despesas reais negativas do ciclo marcadas com o bit `reserva` (`Gastos 48,6% em Reserva`); a proporção complementar, **Demais**, fica só no tooltip; Débito e Crédito entram uma vez cada, categoria composta continua sendo uma única despesa e antecipação/pagamento de fatura fica fora por ser transferência.
   Seu tooltip traz os valores absolutos.
   Como Reserva é patrimônio, não padrão de consumo, a cor é o inverso de Comprometido: até 40% dos gastos em Reserva é verde, acima de 40% até 50% é âmbar e acima de 50% é vermelho; portanto mais **Demais** é melhor.
   **Liberdade:** é uma leitura sem cor de objetivo de longo prazo: divide o patrimônio realmente investido que exceder a meta atual de Reserva pela meta de liberdade.
   Essa meta é a média dos últimos doze ciclos disponíveis de despesas negativas reais, incluindo Débito e Crédito uma vez cada, menos investimento, antecipação/pagamento de fatura e categorias `Reembolso` ou `Rendimento`; o gasto mensal médio é anualizado e dividido pela taxa fixa de retirada de **3,5% ao ano**.
   O tooltip informa capital livre, meta, média e quantidade de ciclos.
-  Na variação depois de Reserva e de Comprometido, a seta mostra a variação em pontos percentuais e em reais contra o ciclo imediatamente anterior: para Reserva, o valor real é o Guardado; subir é verde e cair é vermelho; sem mudança fica neutra.
-  A variação só aparece quando ambos os ciclos possuem meta válida.
+  Na variação depois de Reserva, de Comprometido e de Gastos, a seta mostra a variação em pontos percentuais e em reais contra o ciclo imediatamente anterior: para Reserva, o valor real é o Guardado (subir é verde e cair é vermelho); para Gastos, é o total gasto em itens de Reserva, e como em Comprometido subir é vermelho e cair é verde (a fatia em Reserva e o valor); sem mudança fica neutra.
+  A variação só aparece quando ambos os ciclos possuem meta válida (em Gastos, quando ambos têm gastos).
   A meta soma os gastos negativos dessa categoria nos nove ciclos a partir dessa referência, respeitando os demais filtros e excluindo transferências de pagamento/antecipação de fatura.
   Para cada nome, um valor cadastrado em um ciclo substitui o anterior; se não houver ocorrência cadastrada naquele ciclo, mantém-se o último valor conhecido como estimativa.
   O texto mostra o percentual já guardado: fica vermelho abaixo de 50%, âmbar de 50% a menos de 100% e verde ao completar a meta; o título curto contém os valores e a referência de nove meses.
