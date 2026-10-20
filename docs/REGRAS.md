@@ -348,7 +348,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Vão para o banco, e não só para o navegador, para valer igual em qualquer aparelho.
 - O Mercado Pago tem limite contratado próprio (`LIMITE_CARTAO_MP`, inicialmente **R$ 1.100,00**), editável no modal dele igual ao do Nubank, e nunca tem garantia: o teto dele é só o Aprovado.
   Quando o teto de um cartão é igual ao Aprovado (Mercado Pago sempre; Nubank sem garantia), o próprio campo editável fica depois de "de" ("Livre R$ 1.090,10 de R$ [1.100,00]"), sem repetir o mesmo valor nem o rótulo Aprovado.
-  **No título**, com dois cartões, Hoje e Futuro ficam enxutos: a faixa **Total** completa — **Fatura** (a soma das duas), **Usado** e **Livre** do teto somado (com a garantia do Nubank) — e, de cada cartão, só o nome e a **Fatura** dele; Usado, Livre, teto, Aprovado e Garantido de cada um ficam no modal do cartão.
+  **No título**, com dois cartões, Hoje e Futuro ficam enxutos: só a faixa **Total** — **Fatura** (a soma das duas), **Usado** e **Livre** do teto somado (com a garantia do Nubank); tudo de cada cartão, a fatura dele inclusive, fica no modal do cartão.
   Com um cartão só, a única faixa é completa: Fatura, Usado, Livre, teto e os campos de Aprovado/Garantido.
   Usado = teto − Livre: em Hoje, as compras confirmadas que ainda ocupam o cartão; em Futuro, a fatura exibida inteira mais o uso confirmado posterior.
   Hoje, a Fatura é só compras confirmadas menos as antecipações já pagas; em Futuro, a fatura exibida inteira (paga e aberta, líquida das antecipações). Não há valor solto no começo de Hoje/Futuro.

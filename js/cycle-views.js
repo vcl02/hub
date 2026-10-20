@@ -392,16 +392,12 @@ function vCiclo() {
         const teto = limitesDosCartoes.reduce((soma, l) => soma + l.limiteTotal, 0);
         return `<span class="limiteCartao temPedacos">${usadoELivre('<span class="limiteCartaoNome cartao-total">Total</span>', teto - livre, livre, brl(teto), faturaTotal(chaveLivre))}</span>`;
     };
-    // Com dois cartões, o título fica enxuto: a faixa Total completa e, de cada cartão, só a
-    // Fatura. Usado, Livre, teto, Aprovado e Garantido de cada um ficam no modal do cartão
-    // (botões Nubank/Mercado Pago do cabeçalho). Com um cartão só, a faixa dele é completa.
-    const faturaSoDoCartao = (l, chaveLivre) => `<span class="limiteCartao temPedacos">` +
-        pedaco(nomeNoTitulo(l.cartao)) +
-        pedaco(`<span class=limiteRotulo>Fatura</span> <b class="${corSoma(faturaDoCartao(l, chaveLivre))}">${brl(Math.abs(faturaDoCartao(l, chaveLivre)))}</b>`) +
-        `</span>`;
+    // Com dois cartões, o título fica só com a faixa Total; tudo de cada cartão (a fatura
+    // inclusive) fica no modal dele (botões Nubank/Mercado Pago do cabeçalho). Com um cartão
+    // só, a faixa dele é completa.
     const resumoLimites = chaveLivre => limitesDosCartoes.length < 2
         ? limitesDosCartoes.map(l => resumoLimiteCartao(l, chaveLivre)).join('')
-        : resumoTotalDosCartoes(chaveLivre) + limitesDosCartoes.map(l => faturaSoDoCartao(l, chaveLivre)).join('');
+        : resumoTotalDosCartoes(chaveLivre);
 
     // Crédito histórico volta ao cabeçalho compacto: só o total da fatura, sem Hoje/Futuro.
     // A fatura não abre mais a linha solta: é o primeiro pedaço de cada faixa (Total ou o único

@@ -178,8 +178,8 @@ test('com dois cartões, Hoje e Futuro começam pelo Total somado dos dois', () 
     assert.match(visoes, /const livre = limitesDosCartoes\.reduce\(\(soma, l\) => soma \+ l\[chaveLivre\], 0\);/);
     assert.match(visoes, /const teto = limitesDosCartoes\.reduce\(\(soma, l\) => soma \+ l\.limiteTotal, 0\);/);
     assert.match(visoes, /<span class="limiteCartao temPedacos">\$\{usadoELivre\('<span class="limiteCartaoNome cartao-total">Total<\/span>', teto - livre, livre, brl\(teto\), faturaTotal\(chaveLivre\)\)\}<\/span>/);
-    assert.match(visoes, /: resumoTotalDosCartoes\(chaveLivre\) \+ limitesDosCartoes\.map\(l => faturaSoDoCartao\(l, chaveLivre\)\)\.join\(''\);/);
-    assert.match(regras, /\*\*No título\*\*, com dois cartões, Hoje e Futuro ficam enxutos: a faixa \*\*Total\*\* completa/);
+    assert.match(visoes, /: resumoTotalDosCartoes\(chaveLivre\);/);
+    assert.match(regras, /\*\*No título\*\*, com dois cartões, Hoje e Futuro ficam enxutos: só a faixa \*\*Total\*\*/);
     assert.match(regras, /o próprio campo editável fica depois de "de"/);
 });
 
@@ -225,10 +225,7 @@ test('nas faixas do Crédito o valor fica colado no próprio rótulo, com respir
     assert.match(regras, /Cada valor fica colado no próprio rótulo \("Fatura R\$ 54,48"\)/);
 });
 
-test('com dois cartões, o título mostra a faixa Total completa e só a Fatura de cada cartão', () => {
-    assert.match(visoes, /const resumoLimites = chaveLivre => limitesDosCartoes\.length < 2\s*\n\s*\? limitesDosCartoes\.map\(l => resumoLimiteCartao\(l, chaveLivre\)\)\.join\(''\)/);
-    const inicio = visoes.indexOf('const faturaSoDoCartao');
-    const trecho = visoes.slice(inicio, visoes.indexOf('const resumoLimites', inicio));
-    assert.match(trecho, /<span class=limiteRotulo>Fatura<\/span>/);
-    assert.doesNotMatch(trecho, />(Usado|Livre)<|campoAprovado|campoGarantia/);
+test('com dois cartões, o título mostra só a faixa Total; nada de cada cartão (nem a fatura)', () => {
+    assert.match(visoes, /const resumoLimites = chaveLivre => limitesDosCartoes\.length < 2\s*\n\s*\? limitesDosCartoes\.map\(l => resumoLimiteCartao\(l, chaveLivre\)\)\.join\(''\)\s*\n\s*: resumoTotalDosCartoes\(chaveLivre\);/);
+    assert.doesNotMatch(visoes, /faturaSoDoCartao/);
 });
