@@ -936,7 +936,8 @@ function htmlModalMetas(planos) {
     const linhaMeta = p => {
         const m = p.meta;
         const plano = textoDoPlanoDaMeta(p);
-        const opcoesAncora = `<option value="">Mês</option>` + ancoras.map(a =>
+        // "Mês próprio": a meta tem data dela (campo de mês ao lado); senão segue uma âncora.
+        const opcoesAncora = `<option value="">Mês próprio</option>` + ancoras.map(a =>
             `<option value=${a.id}${a.id === m.ancora_meta_id ? ' selected' : ''}>${escapeHtml(a.nome)}</option>`).join('');
         const quando = m.ancora_meta_id != null && ancoras.some(a => a.id === m.ancora_meta_id)
             ? campo(m, 'deslocamento', m.deslocamento || 0, 'type=number step=1 class=metaCurto title="Meses depois (+) ou antes (−) da âncora" aria-label="Meses em relação à âncora"')

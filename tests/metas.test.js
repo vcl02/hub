@@ -138,6 +138,8 @@ test('Comprometido do ciclo enxerga as linhas das metas; cadastro e tela ligados
     assert.match(interacoes, /el\('btMetas'\)\.hidden = !Estado\.temMetas \|\| modoRestrito\(\);/);
     assert.match(interacoes, /if \(!confirm\(`Excluir "\$\{meta\.nome\}"\?/);
     assert.match(visoes, /function htmlModalMetas\(planos\) \{/);
+    assert.match(visoes, /<option value="">Mês próprio<\/option>/);
+    assert.match(regras, /quando \(\*\*Mês próprio\*\*, com o campo de mês ao lado, ou uma âncora ± meses\)/);
     // Comprar: cadastro preenchido; depois da última etapa, a meta vira comprada.
     assert.match(formulario, /if \(Estado\._compraDaMeta\) await avancarCompraDaMeta\(\);/);
     assert.match(formulario, /await gravarMudancaDaMeta\('atualizar', compra\.metaId, \{ status: 'comprada' \}\);/);

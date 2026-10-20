@@ -661,7 +661,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   **Custo/mês** (seguro, condomínio) entra como Comprometido em todos os ciclos depois da compra.
 - O plano vira **linhas previstas** (id negativo, como as de Besteira/Isabella, nunca gravadas): entram nas tabelas, no saldo, no Aporte sugerido/Resgate, no guardado, na data da Reserva, na fatura e no Livre Futuro, e — diferente das previstas de Besteira/Isabella — também no **Comprometido**, porque parcela e financiamento futuros já são compromisso.
 - No modal, cada meta mostra o plano ao lado: `Mar/27 · Nubank 10x R$ 400,00 · Comprometido até 46,0%`, `Mar/27 · à vista`, `Ago/27 · entrada R$ 10.000,00 + 12x R$ 2.500,00` ou, em vermelho, `Mar/27 · não cabe, faltam R$ 1.200,00 · cabe em Jun/27`; o hover traz o guardado disponível.
-  Os campos editam na própria linha: nome, valor, quando (Mês ou uma âncora ± meses), forma; Vezes só em Cartão e Financiado; Entrada em tudo que não é À vista; Custo/mês sempre.
+  Os campos editam na própria linha: nome, valor, quando (**Mês próprio**, com o campo de mês ao lado, ou uma âncora ± meses), forma; Vezes só em Cartão e Financiado; Entrada em tudo que não é À vista; Custo/mês sempre.
 - **Comprar** abre o cadastro já preenchido com o plano, pra conferir, escolher a categoria e salvar: à vista, um débito; com entrada, primeiro ela (débito) e depois o resto — cartão: crédito em N vezes dividido nas faturas do cartão do plano; financiado: débito em N vezes dividido, Comprometido.
   Depois da última etapa, a meta vira **comprada** e sai da lista e das projeções (agora é lançamento).
 - Na simulação, criar, editar, excluir e comprar metas fica só na memória, como todo o resto.
