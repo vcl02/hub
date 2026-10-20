@@ -24,7 +24,8 @@ function rodar(faixas) {
     const inicio = interacoes.indexOf('function alinharResumosDosTitulos() {');
     const fim = interacoes.indexOf('\n}\n', inicio) + 3;
     const antigos = rodar.antigos || [];
-    const ctx = { el: () => ({ querySelectorAll: sel => (sel == '.resumoTitulo' ? [titulo] : antigos) }), Math };
+    // Os divisores dos indicadores têm teste próprio (indicadores-no-debito.test.js).
+    const ctx = { el: () => ({ querySelectorAll: sel => (sel == '.resumoTitulo' ? [titulo] : antigos) }), Math, alinharDivisoresDosIndicadores: () => {} };
     vm.runInNewContext(`${interacoes.slice(inicio, fim)}\nalinharResumosDosTitulos();`, ctx);
 }
 

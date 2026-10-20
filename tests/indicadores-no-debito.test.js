@@ -65,3 +65,62 @@ test('REGRAS.md documenta o lugar dos indicadores', () => {
     assert.match(regras, /Eles não entram no alinhamento Hoje\/Futuro das faixas/);
     assert.match(regras, /com os indicadores no Débito, essa linha não aparece/);
 });
+
+// Layout falso em linha: cada lista quebra quando passa da largura; minWidth vale como largura.
+function alinharDivisores({ cima, futuro, baixo, larguraCima = 1000, larguraBaixo = 1000 }) {
+    const inicio = interacoes.indexOf('function alinharDivisoresDosIndicadores() {');
+    const fim = interacoes.indexOf('\n}\n', inicio) + 3;
+    const largura = e => Math.max(e.w, parseFloat(e.style.minWidth) || 0);
+    const posicoes = (lista, limite) => {
+        let x = 0, linha = 0;
+        return lista.map(e => {
+            if (x > 0 && x + largura(e) > limite) { x = 0; linha++; }
+            const caixa = { left: x, top: linha * 20, height: 20, width: largura(e) };
+            x += largura(e);
+            return caixa;
+        });
+    };
+    const item = (w, divisor = false) => ({ w, divisor, style: { minWidth: '' }, classList: { contains: () => false } });
+    const faixa = lista => ({ children: lista });
+    const deCima = cima.map(([w, d]) => item(w, d)), deFuturo = futuro.map(([w, d]) => item(w, d));
+    const itens = baixo.map(w => item(w, true));
+    const indicadores = { hidden: false, querySelectorAll: () => itens, classList: { contains: () => false } };
+    const hoje = faixa([...deCima, indicadores]), proxima = faixa(deFuturo);
+    const titulo = { querySelectorAll: () => [hoje, proxima] };
+    hoje.closest = () => titulo;
+    indicadores.closest = () => hoje;
+    [[deCima, larguraCima], [deFuturo, larguraCima], [itens, larguraBaixo]].forEach(([lista, limite]) =>
+        lista.forEach((e, i) => { e.getBoundingClientRect = () => posicoes(lista, limite)[i]; }));
+    const ctx = {
+        el: () => indicadores,
+        getComputedStyle: e => ({ borderLeftColor: e.divisor ? 'rgb(59, 65, 71)' : 'rgba(0, 0, 0, 0)' }),
+    };
+    vm.runInNewContext(`${interacoes.slice(inicio, fim)}\nalinharDivisoresDosIndicadores();`, ctx);
+    return { deCima, deFuturo, itens };
+}
+
+const linhaDeCima = [[100], [120], [300, true], [300, true]];   // Saldo, Guardado | Besteira | Isabella
+
+test('divisores de baixo embaixo dos de cima: estica quem ficou pra trás', () => {
+    const r = alinharDivisores({ cima: linhaDeCima, futuro: linhaDeCima, baixo: [150, 330, 280, 120] });
+    // 1º par: Besteira em 220, Comprometido em 150 → Reserva cresce 70.
+    assert.equal(r.itens[0].style.minWidth, '220px');
+    // 2º par: Isabella em 520, Gastos em 550 → a coluna Besteira cresce 30, em Hoje e Futuro.
+    assert.equal(r.deCima[2].style.minWidth, '330px');
+    assert.equal(r.deFuturo[2].style.minWidth, '330px');
+    assert.equal(r.deCima[1].style.minWidth, '');
+    assert.equal(r.itens[1].style.minWidth, '');
+});
+
+test('se esticar fizer um item descer de linha, desfaz e para', () => {
+    // Reserva precisaria crescer 70, mas aí Liberdade não cabe mais nos 900 da linha de baixo.
+    const r = alinharDivisores({ cima: linhaDeCima, futuro: linhaDeCima, baixo: [150, 330, 280, 120], larguraBaixo: 900 });
+    assert.ok(r.itens.every(e => e.style.minWidth === ''));
+    assert.ok(r.deCima.every(e => e.style.minWidth === ''));
+});
+
+test('alinhamento dos divisores roda junto com o das faixas (desenho, largura e fonte)', () => {
+    assert.match(interacoes, /igualarLarguras\(colunas\);\s*\n\s*\}\);\s*\n\s*alinharDivisoresDosIndicadores\(\);\s*\n\}/);
+    assert.match(interacoes, /document\.fonts\?\.ready\.then\(\(\) => requestAnimationFrame\(alinharResumosDosTitulos\)\);/);
+    assert.match(regras, /os divisores da linha dos indicadores ficam embaixo dos da linha de cima/);
+});

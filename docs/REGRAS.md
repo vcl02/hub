@@ -647,6 +647,9 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   No começo da barra de indicadores, **Reserva** é um texto calculado pelo ciclo escolhido em **Até** (no ciclo único, De e Até são iguais), não um botão.
   No ciclo único, os indicadores ficam **dentro da faixa Hoje do Débito**, numa linha própria dela, abaixo de Saldo, Guardado, Besteira e Isabella (no ciclo passado ou futuro, que só tem uma faixa, entram nela: Passado ou Futuro); o texto segue o tamanho da faixa.
   Eles não entram no alinhamento Hoje/Futuro das faixas: o Futuro não tem esses itens.
+  Na faixa, os divisores da linha dos indicadores ficam embaixo dos da linha de cima: o de antes de Comprometido embaixo do de antes de Besteira, o de antes de Gastos embaixo do de antes de Isabella.
+  O divisor que ficou pra trás é empurrado esticando o item anterior (em cima, a mesma coluna em Hoje e Futuro, que continuam alinhados); refeito a cada desenho, ao mudar a largura e quando a fonte carrega.
+  Se esticar fizer algum item descer de linha (janela estreita, celular), aquele par fica sem alinhar.
   Na comparação (De ≠ Até) não há Débito, então ficam no cabeçalho, na mesma linha da navegação de ciclo e dos botões de ação (entre os dois), lendo o Até.
   Em fluxo: **Reserva**, **Comprometido**, **Gastos** e **Liberdade** ficam numa linha quando cabem; quando não, os que não couberem quebram pra linha de baixo, cada um inteiro; só um item maior que a linha inteira (celular) quebra entre palavras, nunca no meio de um valor.
   Nenhum tem linha própria fixa.

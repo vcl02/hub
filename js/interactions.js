@@ -99,6 +99,49 @@ function alinharResumosDosTitulos() {
         });
         igualarLarguras(colunas);
     });
+    alinharDivisoresDosIndicadores();
+}
+
+// Na faixa do Débito, os divisores da linha dos indicadores ficam embaixo dos da linha de
+// cima: o 1º de baixo (antes de Comprometido) embaixo do 1º de cima (antes de Besteira), o 2º
+// embaixo do 2º, e assim por diante. Em cada par, o divisor que ficou pra trás é empurrado:
+// o item antes dele ganha a largura que falta — em cima, a coluna inteira (Hoje e Futuro
+// juntos, pra não desalinhar as faixas). Só vale pra pares na primeira linha de cada lado;
+// se esticar fizer algum item descer de linha, desfaz e para (ex.: celular, janela estreita).
+function alinharDivisoresDosIndicadores() {
+    const indicadores = el('indicadoresFinanceiros');
+    const faixa = indicadores.hidden ? null : indicadores.closest('.resumoDados');
+    if (!faixa) return;
+    const caixa = e => e.getBoundingClientRect();
+    const colunasDa = f => [...f.children].filter(c => !c.classList.contains('resumoMeta') && c !== indicadores);
+    const faixas = [...faixa.closest('.resumoTitulo').querySelectorAll(':scope > .resumoLinha > .resumoDados')].map(colunasDa);
+    const mesmaEstrutura = faixas.every(f => f.length == faixas[0].length);
+    const deCima = colunasDa(faixa);
+    const itens = [...indicadores.querySelectorAll('.indicadorItem')];
+    if (!deCima.length || itens.length < 2) return;
+    // Mesma linha: topo a menos de meia altura do primeiro (itens alinhados pela base variam uns px).
+    const mesmaLinha = (primeiro, e) => Math.abs(caixa(e).top - caixa(primeiro).top) < caixa(primeiro).height / 2;
+    const naPrimeiraLinha = lista => lista.filter(e => mesmaLinha(lista[0], e)).length;
+    const contagem = () => [...faixas.map(naPrimeiraLinha), naPrimeiraLinha(itens)].join();
+    const temDivisor = e => !/^(transparent|rgba\(0, 0, 0, 0\))$/.test(getComputedStyle(e).borderLeftColor);
+    const divisoresDeCima = deCima.filter((e, i) => i > 0 && temDivisor(e) && mesmaLinha(deCima[0], e));
+    for (let par = 0; par < divisoresDeCima.length && par + 1 < itens.length; par++) {
+        const cima = divisoresDeCima[par], baixo = itens[par + 1];
+        if (!mesmaLinha(itens[0], baixo)) return;
+        const diferenca = caixa(cima).left - caixa(baixo).left;
+        if (Math.abs(diferenca) < .5) continue;
+        const coluna = deCima.indexOf(cima) - 1;
+        const alvos = diferenca > 0 ? [itens[par]]
+            : mesmaEstrutura ? faixas.map(f => f[coluna]) : [deCima[coluna]];
+        const antes = contagem();
+        const larguras = alvos.map(e => caixa(e).width);
+        const estilos = alvos.map(e => e.style.minWidth);
+        alvos.forEach((e, i) => { e.style.minWidth = `${larguras[i] + Math.abs(diferenca)}px`; });
+        if (contagem() != antes) {
+            alvos.forEach((e, i) => { e.style.minWidth = estilos[i]; });
+            return;
+        }
+    }
 }
 
 // Reserva, Comprometido, Gastos e Liberdade são leituras do ciclo exibido: no ciclo único
@@ -119,6 +162,8 @@ window.addEventListener('resize', () => {
     larguraDosResumos = window.innerWidth;
     requestAnimationFrame(alinharResumosDosTitulos);
 });
+// A fonte da página pode chegar depois do primeiro desenho e mudar as larguras medidas.
+document.fonts?.ready.then(() => requestAnimationFrame(alinharResumosDosTitulos));
 
 function desenhar() {
     Estado.redesenhoPendente = false;   // este desenho já mostra os dados (ver desenharQuandoLivre)
