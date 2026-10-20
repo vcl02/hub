@@ -903,7 +903,7 @@ function valorDoCampoDaMeta(campo, texto) {
 async function gravarMudancaDaMeta(acao, id, campos) {
     try {
         if (Estado.simulando) {
-            if (acao === 'inserir') Estado.metas.push({ id: -(++Estado._proxIdSimulado), forma: 'auto', deslocamento: 0, status: 'aberta', valor: null, mes: null, ancora_meta_id: null, ...campos });
+            if (acao === 'inserir') Estado.metas.push({ id: -(++Estado._proxIdSimulado), forma: 'avista', deslocamento: 0, status: 'aberta', valor: null, mes: null, ancora_meta_id: null, ...campos });
             if (acao === 'atualizar') Object.assign(Estado.metas.find(m => m.id === id), campos);
             if (acao === 'excluir') {
                 Estado.metas = Estado.metas.filter(m => m.id !== id);
@@ -955,7 +955,7 @@ el('corpoMetas').addEventListener('click', e => {
     const botao = e.target.closest('[data-acao]');
     if (!botao) return;
     const acao = botao.dataset.acao;
-    if (acao === 'novaMeta') return gravarMudancaDaMeta('inserir', null, { nome: 'Nova meta', valor: 1000, mes: proximoMesISO() });
+    if (acao === 'novaMeta') return gravarMudancaDaMeta('inserir', null, { nome: 'Nova meta', valor: 1000, mes: proximoMesISO(), forma: 'avista' });
     if (acao === 'novaAncora') return gravarMudancaDaMeta('inserir', null, { nome: 'Nova âncora', mes: proximoMesISO() });
     const id = +botao.closest('[data-meta]').dataset.meta;
     const meta = Estado.metas.find(m => m.id === id);

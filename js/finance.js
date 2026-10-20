@@ -157,9 +157,12 @@ function lancamentosComPrevistas() {
 // A entrada é parte do total (móveis de 40 mil = 10 mil de entrada + 30 mil parcelados): sai à
 // vista do guardado no mês da meta, e só o resto vai pro cartão ou pro financiado. Sem juros
 // por enquanto: a parcela é o resto dividido pelas vezes.
-// "auto" tenta à vista e depois cartão. Se nada cabe no mês pedido, a meta fica nele mesmo
-// (o buraco aparece no saldo daquele ciclo) e o plano diz o 1º ciclo em que caberia.
+// A forma é sempre a escolhida pelo mantenedor (À vista, Parcelado no meu cartão, Parcelado no
+// débito); "auto" (o padrão da tabela, de antes) vale como À vista. Se não cabe no mês pedido,
+// a meta fica nele mesmo (o buraco aparece no saldo daquele ciclo) e o plano diz o 1º ciclo em
+// que caberia.
 const PARCELAS_PADRAO_CARTAO_METAS = 10;       // vezes no cartão quando a meta não diz
+const formaDaMeta = meta => (['cartao', 'financiamento'].includes(meta.forma) ? meta.forma : 'avista');
 const PRAZOS_FINANCIAMENTO_METAS = [6, 12, 18, 24, 36, 48, 60];
 
 // Mês da meta (AAAA-MM-01): o próprio, ou o da âncora ± deslocamento. Um nível só: a âncora
@@ -278,12 +281,8 @@ function formasDaMeta(meta, c, anteriores, ctx) {
             return null;
         },
     };
-    const ordem = meta.forma === 'auto' || !meta.forma ? ['avista', 'cartao'] : [meta.forma];
-    for (const forma of ordem) {
-        const plano = formas[forma]();
-        if (plano) return { ...plano, disponivel };
-    }
-    return null;
+    const plano = formas[formaDaMeta(meta)]();
+    return plano ? { ...plano, disponivel } : null;
 }
 
 // Custo depois da compra (seguro, IPVA rateado): uma linha Comprometido por ciclo seguinte.
