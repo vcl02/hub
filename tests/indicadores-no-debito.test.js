@@ -75,7 +75,7 @@ function alinharDivisores({ cima, futuro, baixo, larguraCima = 1000, larguraBaix
         let x = 0, linha = 0;
         return lista.map(e => {
             if (x > 0 && x + largura(e) > limite) { x = 0; linha++; }
-            const caixa = { left: x, top: linha * 20, height: 20, width: largura(e) };
+            const caixa = { left: x, right: x + largura(e), top: linha * 20, height: 20, width: largura(e) };
             x += largura(e);
             return caixa;
         });
@@ -110,6 +110,15 @@ test('divisores de baixo embaixo dos de cima: estica quem ficou pra trás', () =
     assert.equal(r.deFuturo[2].style.minWidth, '330px');
     assert.equal(r.deCima[1].style.minWidth, '');
     assert.equal(r.itens[1].style.minWidth, '');
+    // Último divisor de baixo (antes de Liberdade) logo depois do fim de Isabella (550 + 300):
+    // Comprometido começa em 550 e tem 280 → cresce 20.
+    assert.equal(r.itens[2].style.minWidth, '300px');
+});
+
+test('último divisor de baixo já depois do fim da linha de cima: fica onde está', () => {
+    const r = alinharDivisores({ cima: [[100], [120], [300, true], [200, true]], futuro: [[100], [120], [300, true], [200, true]], baixo: [220, 300, 400, 120] });
+    // Pares: Besteira 220 × Gastos 220; Isabella 520 × Comprometido 520. Liberdade em 920 > fim de Isabella (720).
+    assert.ok([...r.itens, ...r.deCima, ...r.deFuturo].every(e => e.style.minWidth === ''));
 });
 
 test('se esticar fizer um item descer de linha, desfaz e para', () => {
@@ -123,4 +132,5 @@ test('alinhamento dos divisores roda junto com o das faixas (desenho, largura e 
     assert.match(interacoes, /igualarLarguras\(colunas\);\s*\n\s*\}\);\s*\n\s*alinharDivisoresDosIndicadores\(\);\s*\n\}/);
     assert.match(interacoes, /document\.fonts\?\.ready\.then\(\(\) => requestAnimationFrame\(alinharResumosDosTitulos\)\);/);
     assert.match(regras, /os divisores da linha dos indicadores ficam embaixo dos da linha de cima/);
+    assert.match(regras, /o de antes de Liberdade logo depois do fim de Isabella \(o último item de cima\)/);
 });

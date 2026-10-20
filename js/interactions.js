@@ -106,8 +106,10 @@ function alinharResumosDosTitulos() {
 // cima: o 1º de baixo (antes de Gastos) embaixo do 1º de cima (antes de Besteira), o 2º
 // embaixo do 2º, e assim por diante. Em cada par, o divisor que ficou pra trás é empurrado:
 // o item antes dele ganha a largura que falta — em cima, a coluna inteira (Hoje e Futuro
-// juntos, pra não desalinhar as faixas). Só vale pra pares na primeira linha de cada lado;
-// se esticar fizer algum item descer de linha, desfaz e para (ex.: celular, janela estreita).
+// juntos, pra não desalinhar as faixas). O divisor de baixo que sobra depois dos pares (antes
+// de Liberdade) vai logo depois do último item da linha de cima (fim dele + o vão entre itens);
+// se ele já estiver mais à direita, fica onde está. Só vale pra pares na primeira linha de
+// cada lado; se esticar fizer algum item descer de linha, desfaz e para (ex.: celular).
 function alinharDivisoresDosIndicadores() {
     const indicadores = el('indicadoresFinanceiros');
     const faixa = indicadores.hidden ? null : indicadores.closest('.resumoDados');
@@ -125,12 +127,20 @@ function alinharDivisoresDosIndicadores() {
     const contagem = () => [...faixas.map(naPrimeiraLinha), naPrimeiraLinha(itens)].join();
     const temDivisor = e => !/^(transparent|rgba\(0, 0, 0, 0\))$/.test(getComputedStyle(e).borderLeftColor);
     const divisoresDeCima = deCima.filter((e, i) => i > 0 && temDivisor(e) && mesmaLinha(deCima[0], e));
-    for (let par = 0; par < divisoresDeCima.length && par + 1 < itens.length; par++) {
-        const cima = divisoresDeCima[par], baixo = itens[par + 1];
+    const ultimoDeCima = deCima.filter(e => mesmaLinha(deCima[0], e)).pop();
+    const vao = parseFloat(getComputedStyle(faixa).columnGap) || 0;
+    // Onde cada divisor de baixo deve ficar (medido de novo a cada passo, porque esticar anda
+    // com o que vem depois) e qual coluna de cima esticar quando é o de baixo que passou.
+    const marcas = [
+        ...divisoresDeCima.map(e => ({ posicao: () => caixa(e).left, coluna: deCima.indexOf(e) - 1 })),
+        { posicao: () => caixa(ultimoDeCima).right + vao, coluna: null },
+    ];
+    for (let par = 0; par < marcas.length && par + 1 < itens.length; par++) {
+        const baixo = itens[par + 1];
         if (!mesmaLinha(itens[0], baixo)) return;
-        const diferenca = caixa(cima).left - caixa(baixo).left;
-        if (Math.abs(diferenca) < .5) continue;
-        const coluna = deCima.indexOf(cima) - 1;
+        const { posicao, coluna } = marcas[par];
+        const diferenca = posicao() - caixa(baixo).left;
+        if (Math.abs(diferenca) < .5 || (diferenca < 0 && coluna == null)) continue;
         const alvos = diferenca > 0 ? [itens[par]]
             : mesmaEstrutura ? faixas.map(f => f[coluna]) : [deCima[coluna]];
         const antes = contagem();
