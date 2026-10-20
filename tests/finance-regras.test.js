@@ -167,8 +167,24 @@ test('Livre Futuro subtrai a fatura inteira exibida e o uso confirmado posterior
     ];
     // Fatura do ciclo 1 já reúne R$ 900,00 (inclui R$ 450,00 ainda aberto); só R$ 250,00
     // do ciclo 2 continua sendo uma compra confirmada além dela.
-    assert.equal(r.limiteCartaoLivreFuturo(linhas, {}, 0, 1, -900), 2600);
-    assert.equal(r.limiteCartaoLivreFuturo(linhas, {}, 0, 1, 100), 3500);
+    assert.equal(r.limiteCartaoLivreFuturo(linhas, 0, 1, -900), 2600);
+    assert.equal(r.limiteCartaoLivreFuturo(linhas, 0, 1, 100), 3500);
+});
+
+test('Livre Futuro: antecipação de fatura seguinte não alivia o limite (só conta no ciclo dela)', () => {
+    const r = regrasFinanceiras([]);
+    // Parcela confirmada de R$ 133,33 em cada uma das duas faturas seguintes, cada uma com uma
+    // antecipação de R$ 199,90 (planejada) no próprio ciclo. A projeção da fatura do ciclo 1
+    // não usa essas antecipações: as duas parcelas ocupam o limite por inteiro.
+    const linhas = [
+        { cred: true, pago: true, periodoIdx: 1, v: -2728.90 },
+        { cred: true, pago: true, periodoIdx: 2, v: -133.33 },
+        { cred: true, pago: true, periodoIdx: 3, v: -133.33 },
+    ];
+    const livre = r.limiteCartaoLivreFuturo(linhas, 0, 1, -2719.14);
+    assert.equal(Math.round((3750 - livre) * 100) / 100, 2985.80);
+    // A assinatura nem recebe mais a alocação: nada de fora pode reduzir o uso posterior.
+    assert.equal(r.limiteCartaoLivreFuturo.length, 1);
 });
 
 test('garantia Nubank só com aporte/resgate pago; Liberdade usa também os abertos', () => {

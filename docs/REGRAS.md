@@ -326,8 +326,9 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Num ciclo passado, o modal mostra a fatura fechada: as compras brutas, o que foi pago/antecipado e o que restou, sem Hoje/Futuro nem barra de uso.
   Os botões ficam desativados em Comparar, no Backlog e quando o cartão não existe no título; a conta restrita não os vê.
   O alerta de limite acende se qualquer um dos dois estourar.
-  O limite livre de cada cartão em **Hoje** retrata o cartão real: crédito com `pago = false` é projeção e não ocupa limite; crédito com `pago = true` ocupa; antecipação **já paga** alocada à mesma fatura libera somente o que ela abate, até zero; antecipação em aberto ainda não saiu da conta e não libera nada em Hoje (mesma base de pago do resto de Hoje), só em Futuro.
-  Em **Futuro**, a fatura exibida inteira (paga e aberta, líquida das antecipações) é subtraída do teto; faturas anteriores são tratadas como quitadas e compras confirmadas de faturas posteriores também continuam consumindo limite.
+  O limite livre de cada cartão em **Hoje** retrata o cartão real: crédito com `pago = false` é projeção e não ocupa limite; crédito com `pago = true` ocupa; antecipação **já paga** alocada à mesma fatura libera somente o que ela abate, até zero; antecipação em aberto ainda não saiu da conta e não libera nada em Hoje (mesma base de pago do resto de Hoje), só em Futuro e só na fatura dela.
+  Em **Futuro**, a fatura exibida inteira (paga e aberta, líquida das antecipações) é subtraída do teto; faturas anteriores são tratadas como quitadas e compras confirmadas de faturas posteriores também continuam consumindo limite, **por inteiro**.
+  Antecipação só conta no ciclo da própria fatura: a fatura exibida já vem líquida das antecipações dela, e a antecipação de uma fatura seguinte (paga ou planejada) não alivia o limite da projeção de outra fatura.
   Portanto, o Livre Futuro é `Total − fatura exibida − uso confirmado posterior`; antecipação acima da fatura não cria limite extra.
 - `LIMITE_CARTAO` é o limite contratado-base do Nubank, inicialmente **R$ 3.350,00** quando este navegador ainda não possui uma preferência salva.
   Depois de “de R$”, o título exibe o teto utilizável (contratado-base mais garantia positiva) apenas para consulta.

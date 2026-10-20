@@ -429,8 +429,11 @@ function limiteCartaoLivre(linhas, abatidoPorCiclo = {}, guardadoDoCiclo = 0, ci
 // No Futuro, a fatura exibida é uma obrigação inteira (paga e aberta), então ela precisa
 // consumir o limite mesmo que uma parte ainda não esteja marcada como `pago`. As faturas até
 // ela já são descontadas como quitadas por `limiteCartaoLivre`; créditos confirmados depois
-// dela continuam ocupando. Antecipação acima do total não gera limite extra nesta projeção.
-function limiteCartaoLivreFuturo(linhas, abatidoPorCiclo = {}, guardadoDoCiclo = 0, idxFatura, totalFatura = 0, cartao = CARTAO_NUBANK, aprovado) {
+// dela continuam ocupando por inteiro: antecipação só conta no ciclo da própria fatura (a
+// exibida já vem líquida das dela, em totalFatura), então a de uma fatura seguinte — paga
+// ou planejada — não alivia o limite desta projeção. Antecipação acima do total não gera
+// limite extra.
+function limiteCartaoLivreFuturo(linhas, guardadoDoCiclo = 0, idxFatura, totalFatura = 0, cartao = CARTAO_NUBANK, aprovado) {
     const faturaExibida = Math.max(0, -(+totalFatura || 0));
-    return limiteCartaoLivre(linhas, abatidoPorCiclo, guardadoDoCiclo, idxFatura, cartao, aprovado) - faturaExibida;
+    return limiteCartaoLivre(linhas, {}, guardadoDoCiclo, idxFatura, cartao, aprovado) - faturaExibida;
 }

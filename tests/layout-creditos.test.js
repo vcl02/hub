@@ -52,7 +52,7 @@ test('o único título de Crédito exibe o limite livre de cada cartão, com a g
     assert.match(visoes, /limiteTotal: limiteCartaoTotal\(garantidoDoCartao, cartao, aprovado\),/);
     assert.match(visoes, /limiteLivreHoje: limiteCartaoLivre\(Estado\.lancamentos, abatimentoDoCartao\(abatidoPagoDoCartao, cartao\), garantidoDoCartao, -Infinity, cartao, aprovado\),/);
     assert.match(visoes, /limiteLivreFuturo: limiteCartaoLivreFuturo\(/);
-    assert.match(visoes, /Estado\.lancamentos, abatidoNoCartao, garantidoDoCartao, idxCreditoExibido, totalExibidoDoCartao, cartao/);
+    assert.match(visoes, /Estado\.lancamentos, garantidoDoCartao, idxCreditoExibido, totalExibidoDoCartao, cartao/);
     assert.match(visoes, /data-limite-cartao/);
     // Garantia editável no próprio título (quanto do guardado vira garantia no ciclo).
     assert.match(visoes, /data-garantia-cartao data-ciclo="\$\{i\}"/);

@@ -286,8 +286,8 @@ function vCiclo() {
     // 1ª compra nele: antes disso a tela fica exatamente como era com um cartão só.
     // Hoje libera limite só com antecipação JÁ PAGA (mesma base de "pago" do resto de Hoje);
     // as compras continuam todas na alocação, pra antecipação abater a mesma fatura de sempre.
-    // Futuro usa todas as antecipações, pagas e abertas, como a fatura exibida.
-    const abatidoDoCartao = alocacaoAntecipacoes(Estado.lancamentos);
+    // Futuro: só as antecipações da própria fatura exibida (já líquidas no total dela); as de
+    // faturas seguintes não aliviam o limite (ver limiteCartaoLivreFuturo).
     const abatidoPagoDoCartao = alocacaoAntecipacoes(Estado.lancamentos.filter(r => !ehTransferenciaFatura(r) || r.pago));
     const guardadoGarantido = guardadoGarantidoAte(Estado.lancamentos, i);
     const cartoesNoTitulo = CARTOES.filter(cartao => cartao === CARTAO_NUBANK ||
@@ -303,7 +303,6 @@ function vCiclo() {
     const limitesDosCartoes = cartoesNoTitulo.map(cartao => {
         const garantidoDoCartao = cartao === CARTAO_NUBANK ? garantiaNubank.efetiva : 0;
         const aprovado = aprovadoDoCiclo(i, cartao);
-        const abatidoNoCartao = abatimentoDoCartao(abatidoDoCartao, cartao);
         const totalExibidoDoCartao = totalCreditoExibidoAposAntecipacoes(
             doCartao(creditosExibidos, cartao), abatimentoDoCartao(abatido, cartao)[idxCreditoExibido] || 0
         );
@@ -317,7 +316,7 @@ function vCiclo() {
             totalFuturo: totalExibidoDoCartao,
             limiteLivreHoje: limiteCartaoLivre(Estado.lancamentos, abatimentoDoCartao(abatidoPagoDoCartao, cartao), garantidoDoCartao, -Infinity, cartao, aprovado),
             limiteLivreFuturo: limiteCartaoLivreFuturo(
-                Estado.lancamentos, abatidoNoCartao, garantidoDoCartao, idxCreditoExibido, totalExibidoDoCartao, cartao, aprovado
+                Estado.lancamentos, garantidoDoCartao, idxCreditoExibido, totalExibidoDoCartao, cartao, aprovado
             ),
         };
     });
