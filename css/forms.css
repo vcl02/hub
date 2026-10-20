@@ -867,6 +867,20 @@
       margin-top: .1rem;
   }
 
+  /* Cadastro no Crédito: Livre Hoje do cartão antes → depois da compra, discreto sob a
+     Fatura; sem limite, a linha inteira fica vermelha. */
+  .limiteNoCadastro {
+      display: block;
+      margin-top: .35rem;
+      color: var(--mu);
+      font-size: .8rem;
+      font-variant-numeric: tabular-nums;
+  }
+
+  .limiteNoCadastro.semLimite {
+      color: var(--vm);
+  }
+
   /* =========================================================
        MODAL — CARTÃO (botões Nubank/Mercado Pago do cabeçalho)
        ========================================================= */

@@ -426,6 +426,16 @@ function limiteCartaoLivre(linhas, abatidoPorCiclo = {}, guardadoDoCiclo = 0, ci
     return limiteCartaoTotal(guardadoDoCiclo, cartao, aprovado) - limiteCartaoOcupado(linhas, abatidoPorCiclo, cicloQuitadoAte, cartao);
 }
 
+// Livre Hoje de um cartão no ciclo idx, a mesma conta do título do Crédito: teto (Aprovado e,
+// no Nubank, a garantia do guardado já pago) menos as compras confirmadas que ainda ocupam o
+// cartão, e só antecipação JÁ PAGA libera. Regra única: o título e a conferência do cadastro
+// (quanto sobra depois de uma compra nova) usam esta função.
+function limiteLivreHojeDoCartao(linhas, idx, cartao) {
+    const garantido = cartao === CARTAO_NUBANK ? garantiaDoCiclo(idx, guardadoGarantidoAte(linhas, idx)).efetiva : 0;
+    const abatidoPago = alocacaoAntecipacoes(linhas.filter(r => !ehTransferenciaFatura(r) || r.pago));
+    return limiteCartaoLivre(linhas, abatimentoDoCartao(abatidoPago, cartao), garantido, -Infinity, cartao, aprovadoDoCiclo(idx, cartao));
+}
+
 // No Futuro, a fatura exibida é uma obrigação inteira (paga e aberta), então ela precisa
 // consumir o limite mesmo que uma parte ainda não esteja marcada como `pago`. As faturas até
 // ela já são descontadas como quitadas por `limiteCartaoLivre`; créditos confirmados depois

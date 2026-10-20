@@ -54,7 +54,9 @@ test('um Materializar/Consolidar por vez: o clique e o Consolidar tudo dividem a
 });
 
 test('Livre Hoje do cartão só libera limite com antecipação já paga; Futuro só com as da fatura exibida', () => {
-    assert.match(visoes, /const abatidoPagoDoCartao = alocacaoAntecipacoes\(Estado\.lancamentos\.filter\(r => !ehTransferenciaFatura\(r\) \|\| r\.pago\)\);/);
+    // Regra única em finance.js (limiteLivreHojeDoCartao), usada pelo título e pelo cadastro.
+    assert.match(financas, /const abatidoPago = alocacaoAntecipacoes\(linhas\.filter\(r => !ehTransferenciaFatura\(r\) \|\| r\.pago\)\);/);
+    assert.match(visoes, /limiteLivreHoje: limiteLivreHojeDoCartao\(Estado\.lancamentos, i, cartao\),/);
     assert.match(visoes, /limiteLivreFuturo: limiteCartaoLivreFuturo\(\s*\n\s*Estado\.lancamentos, garantidoDoCartao, idxCreditoExibido,/);
     assert.doesNotMatch(visoes, /abatidoNoCartao|abatidoDoCartao/);
 });

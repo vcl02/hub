@@ -27,6 +27,30 @@ function atualizaSinalUI() {
     el('fSinal').classList.toggle('neutro', semValor);
     el('fSinal').textContent = semValor ? '±' : (sinalPositivo ? '+' : '−');
     atualizarParcelaNasVezes();   // todo lugar que muda o valor passa por aqui
+    conferirLimiteNoCadastro();
+}
+
+// Compra nova no Crédito: o Livre Hoje do cartão da 1ª fatura (a mesma conta do título,
+// limiteLivreHojeDoCartao, no ciclo atual) antes → depois dela. O banco bloqueia a compra
+// inteira na hora, então "depois" desconta o total — parcelado ou não, pago ou aberto; com
+// Frequência, só a 1ª ocorrência (as seguintes entram mês a mês). Negativo: sem limite.
+// Só leitura e só no cadastro novo: editar mexe numa linha que já está na conta.
+function conferirLimiteNoCadastro() {
+    const aviso = el('fLimiteCartao');
+    const total = valorMascaraParaNumero(el('fValor').value || '0');
+    const fatura = idsFaturasDoFormulario()[0];
+    const freq = el('fFreq').value;
+    const vezes = freq ? 1 : (+el('fParcelas').value || 1);
+    aviso.hidden = !el('fCred').checked || sinalPositivo || !total || !fatura || !!el('modalNovo').dataset.editandoId || !(Estado.idxHoje >= 0);
+    if (aviso.hidden) return;
+    const cartao = cartaoDaFatura(fatura);
+    const compra = freq || el('fDivide').checked ? total : total * vezes;
+    const livre = limiteLivreHojeDoCartao(Estado.lancamentos, Estado.idxHoje, cartao);
+    const depois = livre - compra;
+    aviso.className = `limiteNoCadastro ${depois < -TOLERANCIA_FINANCEIRA ? 'semLimite' : ''}`;
+    aviso.title = 'Livre Hoje do cartão antes e depois desta compra (o banco bloqueia o valor inteiro na hora)';
+    aviso.innerHTML = `Livre ${NOME_CARTAO[cartao]} ${brl(livre)} → <b class="${corValor(depois)}">${brl(depois)}</b>` +
+        (depois < -TOLERANCIA_FINANCEIRA ? ' · sem limite' : '');
 }
 el('fSinal').onclick = () => { sinalPositivo = !sinalPositivo; atualizaSinalUI(); };
 
@@ -175,6 +199,7 @@ if (el('fParcelas').options.length < 40) {
 function sugereModoValorParcelas() {
     el('fDivide').checked = el('fCred').checked;
     atualizarParcelaNasVezes();
+    conferirLimiteNoCadastro();
 }
 
 // Cada opção de Vezes já diz quanto fica a parcela ("12x de R$ 779,17"): dividindo, o total
@@ -191,6 +216,9 @@ function atualizarParcelaNasVezes() {
     });
 }
 el('fDivide').addEventListener('change', atualizarParcelaNasVezes);
+// Qualquer mudança no cadastro (Crédito, fatura, Vezes, Dividir, Frequência…) pode mudar o
+// cartão ou o total: os handlers de cada campo rodam antes deste, que vem pelo borbulhar.
+el('formNovo').addEventListener('change', () => conferirLimiteNoCadastro());
 
 function nomeFatura(fatura) {
     return dataBR(fatura.vencimento);

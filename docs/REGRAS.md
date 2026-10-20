@@ -161,6 +161,9 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   No Débito comum (fora antecipação), Fatura vira um seletor desativado "—", que nunca conta como fatura escolhida.
   Assim, com Vezes alto (compra em muitas prestações), o cadastro não estica no mobile e o botão Salvar continua à vista.
   Salvar com a fatura de alguma parcela 2..N em branco mostra o erro e abre esse modal direto.
+- **Limite na hora da compra:** num cadastro novo no Crédito, com valor (saída) e a 1ª fatura escolhida, aparece sob a Fatura o Livre Hoje do cartão daquela fatura antes → depois da compra (`Livre Nubank R$ 2.094,20 → R$ 1.315,03`), a mesma conta do título do Crédito no ciclo atual.
+  Como o banco bloqueia a compra inteira na hora, o "depois" desconta o total (dividido ou o valor × Vezes), pago ou aberto; com Frequência, só a 1ª ocorrência.
+  Abaixo de zero, a linha fica vermelha com "sem limite"; é só aviso, não impede salvar. Em Editar não aparece (a linha já está na conta).
 - Reserva e Comprometido (`fin.reserva`/`fin.comprometido`, bits próprios desde a migration 22) têm checkbox próprio no cadastro, ao lado de Crédito/Pago — mas abrem **desmarcados** por padrão, diferente dos três de cima: são marcas raras, não o caso comum.
   Editar/Duplicar herdam os dois do lançamento de origem.
   Também aparecem como coluna própria em qualquer tabela (Débito, Crédito, Backlog), clicável igual ao badge Pago/Aberto — mas, por serem a exceção e não a regra, mostram apenas o rótulo (`Reserva`/`Comprometido`) quando marcados e "—" quando não, em vez de repetir um texto negativo em toda linha.

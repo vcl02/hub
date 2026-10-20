@@ -50,7 +50,7 @@ test('o único título de Crédito exibe o limite livre de cada cartão, com a g
     assert.match(visoes, /const garantidoDoCartao = cartao === CARTAO_NUBANK \? garantiaNubank\.efetiva : 0;/);
     assert.match(visoes, /const aprovado = aprovadoDoCiclo\(i, cartao\);/);
     assert.match(visoes, /limiteTotal: limiteCartaoTotal\(garantidoDoCartao, cartao, aprovado\),/);
-    assert.match(visoes, /limiteLivreHoje: limiteCartaoLivre\(Estado\.lancamentos, abatimentoDoCartao\(abatidoPagoDoCartao, cartao\), garantidoDoCartao, -Infinity, cartao, aprovado\),/);
+    assert.match(visoes, /limiteLivreHoje: limiteLivreHojeDoCartao\(Estado\.lancamentos, i, cartao\),/);
     assert.match(visoes, /limiteLivreFuturo: limiteCartaoLivreFuturo\(/);
     assert.match(visoes, /Estado\.lancamentos, garantidoDoCartao, idxCreditoExibido, totalExibidoDoCartao, cartao/);
     assert.match(visoes, /data-limite-cartao/);
