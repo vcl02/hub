@@ -433,8 +433,8 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Mesma regra de despesa das demais leituras de orçamento (`dadosCompromissosDoCiclo`): só `valor < 0`, exclui antecipação de fatura, valor absoluto.
   A cor do percentual segue a folga: verde até 70%, laranja de 70% a 100% e vermelho acima do teto (`corDoLimiteCategoria` em `js/charts.js`).
   Ao lado do percentual, cada indicador mostra também quanto ainda cabe no teto ou, se já passou, quanto está acima — calculado com o mesmo valor da linha (Hoje: só pago; Futuro: pago + aberto).
-  Para não confundir o rótulo de um número com o do outro, cada número vem com o próprio rótulo depois dele: `Besteira 74% Usado · R$ 64,02 Livre de R$ 250,00`.
-  Acima do teto, o percentual passa a ser o quanto ultrapassou (127% do teto → 27%): `Isabella 27% Ultrapassado · R$ 13,41 Acima dos R$ 50,00`; sem teto (zero), o percentual fica `—`.
+  Para não confundir o rótulo de um número com o do outro, cada número vem com o próprio rótulo logo antes dele, como Saldo/Fatura/Livre no resto das faixas: `Besteira Usado 74% · Livre R$ 64,02 de R$ 250,00` (com o rótulo depois, `0% Usado · R$ 100,00 Livre` era lido como "Usado R$ 100,00").
+  Acima do teto, o percentual passa a ser o quanto ultrapassou (127% do teto → 27%): `Isabella Ultrapassado 27% · Acima R$ 13,41 dos R$ 50,00`; sem teto (zero), o percentual fica `—`.
   Hoje existem dois indicadores, cada um com seu próprio teto fixo em código (`js/domain.js`, não editável pela tela): `Besteira` (cafés, milkshakes, lanches/doces, Uber não essencial — feitos **sozinho**) contra `LIMITE_BESTEIRA`, R$ 250; e o rótulo `Isabella` contra `LIMITE_ISABELLA`, R$ 700 (`ehGastoIsabella` em `js/charts.js`).
   A categoria `Besteira Isabella` (antigo par do `Besteira` solo) foi descontinuada e substituída por `Lazer`+`Isabella`; não há mais rastro dela em código — um lançamento antigo ainda taggeado assim precisa ser corrigido pela edição inline de Categoria pra voltar a contar em algum teto.
   `Besteira` também é comparada como **item inteiro** da lista de categorias (sem acento/caixa): `Besteira` e `Lazer, Besteira` contam; `Besteira Isabella` ou `Besteiras` não.
@@ -488,7 +488,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 - Nas faixas **Hoje** e **Futuro** (ou Passado) dos títulos de Débito e Crédito, cada item fica exatamente embaixo do correspondente da outra faixa: cada item, e cada valor ou rótulo variável dentro dele (`Usado`/`Ultrapassado`, `Livre`/`Acima`), ocupa a largura do maior entre as faixas, com números de largura uniforme e alinhados à direita.
   Esse alinhamento é refeito quando a largura da janela muda.
-  Com a tela estreita, um item que não cabe na linha desce inteiro; se nem sozinho couber, quebra só entre seus pedaços — Besteira/Isabella em `nome % Usado/Ultrapassado`, `· valor Livre/Acima` e `de/dos teto`; o Total (e o único cartão) em `nome`, `Fatura valor`, `Usado valor`, `Livre valor`, `de teto`, `Aprovado` e `Garantido` —, nunca no meio de um valor ou separando "de" do teto.
+  Com a tela estreita, um item que não cabe na linha desce inteiro; se nem sozinho couber, quebra só entre seus pedaços — Besteira/Isabella em `nome Usado/Ultrapassado %`, `· Livre/Acima valor` e `de/dos teto`; o Total (e o único cartão) em `nome`, `Fatura valor`, `Usado valor`, `Livre valor`, `de teto`, `Aprovado` e `Garantido` —, nunca no meio de um valor ou separando "de" do teto.
   O divisor vertical entre itens nunca aparece no começo de uma linha.
   Em todas as faixas (Saldo, Guardado, Besteira/Isabella e cartões), cada valor fica colado no próprio rótulo ("Saldo R$ 0,00"), com a sobra de largura depois dele; só o percentual reserva a largura de `100%`, pra o rótulo seguinte não andar quando o número muda.
   Só alinha quando as faixas têm a mesma estrutura.

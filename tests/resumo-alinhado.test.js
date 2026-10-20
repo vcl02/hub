@@ -88,7 +88,7 @@ test('em todas as faixas o valor fica colado no rótulo; só o percentual reserv
     assert.match(estilos, /\.resumoDados b \{\s*\n\s*display: inline-block;\s*\n\s*text-align: left;\s*\n\s*\}/);
     assert.doesNotMatch(estilos, /min-width: 13ch/);
     assert.match(estilos, /\.resumoDados b\.pct \{\s*\n\s*min-width: 5ch;/);
-    assert.match(visoes, /\$\{rotulo\} <b class="pct \$\{cor\}">/);
+    assert.match(visoes, /'Ultrapassado'\}<\/span> <b class="pct \$\{cor\}">/);
     assert.match(regras, /Em todas as faixas \(Saldo, Guardado, Besteira\/Isabella e cartões\), cada valor fica colado no próprio rótulo/);
     assert.doesNotMatch(regras, /reserva esse lugar vazio/);
 });
@@ -98,7 +98,7 @@ test('faixa estreita quebra entre pedaços inteiros, sem divisor no começo da l
     assert.match(estilos, /\.pedaco \{\s*\n\s*white-space: nowrap;/);
     // Recuo de borda+folga cortado pelo clip: o divisor do item que abre a linha some.
     assert.match(estilos, /margin-left: calc\(-\.8rem - 1px\);\s*\n\s*clip-path: inset\(0 0 0 calc\(\.8rem \+ 1px\)\);/);
-    assert.match(visoes, /<span class="besteiraIndicador temPedacos"><span class=pedaco>\$\{rotulo\} <b class="pct \$\{cor\}">/);
+    assert.match(visoes, /<span class="besteiraIndicador temPedacos"><span class=pedaco>\$\{rotulo\} ` \+/);
     assert.match(visoes, /`<span class="pedaco limiteTeto">\$\{dentro \? 'de' : 'dos'\} \$\{tetoDoIndicador\(limite\)\}<\/span><\/span>`/);
     assert.match(regras, /quebra só entre seus pedaços[^.]*nunca no meio de um valor ou separando "de" do teto\.\s+O divisor vertical entre itens nunca aparece no começo de uma linha\./);
 });

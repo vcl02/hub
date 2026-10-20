@@ -125,7 +125,9 @@ test('aparece no título Débito de qualquer ciclo (inclusive passados), com o C
     assert.match(visoes, /const cor = corDoLimiteCategoria\(limite\[chave\]\);/);
     // Além do %, quanto ainda cabe no teto (Hoje: pago; Futuro: pago + aberto) ou quanto passou.
     assert.match(visoes, /const restante = limite\.teto - \(chave === 'percentualPago' \? limite\.valorPago : limite\.valorTotal\);/);
-    assert.match(visoes, /<b class="\$\{dentro \? cor : 'vm'\}">\$\{brl\(dentro \? Math\.max\(0, restante\) : -restante\)\}<\/b> <span class=limiteRotulo>\$\{dentro \? 'Livre' : 'Acima'\}<\/span>/);
+    assert.match(visoes, /<span class=limiteRotulo>\$\{dentro \? 'Livre' : 'Acima'\}<\/span> <b class="\$\{dentro \? cor : 'vm'\}">\$\{brl\(dentro \? Math\.max\(0, restante\) : -restante\)\}<\/b>/);
+    // Rótulo antes do número: "Usado 0%" e "Livre R$ 100,00", nunca "0% Usado · R$ 100,00 Livre".
+    assert.match(visoes, /<span class=limiteRotulo>\$\{dentro \? 'Usado' : 'Ultrapassado'\}<\/span> <b class="pct \$\{cor\}">\$\{percentual\}<\/b><\/span>/);
     // Teto do próprio ciclo (linha âncora) e indicador do ciclo atual em diante.
     assert.match(visoes, /const tetosDoCiclo = limitesCategoriaDoCiclo\(i\);/);
     assert.match(visoes, /const limitesCategoria = i >= 0 && !modoRestrito\(\) \? \[/);
@@ -176,8 +178,8 @@ test('cor do indicador: verde com folga, laranja a partir de 70%, vermelho acima
     assert.equal(contexto.cor(100.1), 'vm');
     assert.match(fs.readFileSync('css/dashboard.css', 'utf8'), /\.am \{\s*\n\s*color: #F0A83A;/);
     assert.match(regras, /verde até 70%, laranja de 70% a 100% e vermelho acima do teto/);
-    assert.match(regras, /cada número vem com o próprio rótulo depois dele: `Besteira 74% Usado · R\$ 64,02 Livre de R\$ 250,00`/);
-    assert.match(regras, /`Isabella 27% Ultrapassado · R\$ 13,41 Acima dos R\$ 50,00`/);
+    assert.match(regras, /cada número vem com o próprio rótulo logo antes dele, como Saldo\/Fatura\/Livre no resto das faixas: `Besteira Usado 74% · Livre R\$ 64,02 de R\$ 250,00`/);
+    assert.match(regras, /`Isabella Ultrapassado 27% · Acima R\$ 13,41 dos R\$ 50,00`/);
 });
 
 test('nome de Besteira e Isabella no título explica o que entra no teto (tooltip)', () => {
