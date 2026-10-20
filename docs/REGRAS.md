@@ -83,7 +83,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 - A PWA só guarda a casca estática da interface para instalação e contingência sem rede.
   Quando há conexão, o service worker busca a versão publicada antes de responder, atualizando a cópia local; dados, autenticação e operações do Supabase continuam dependentes de rede e nunca entram no cache.
-  Os ícones instaláveis são PNGs nítidos de 192 e 512 px; o SVG é reservado ao favicon.
+  Os ícones instaláveis são PNGs nítidos de 192 e 512 px; o único SVG (`icons/fin-192.svg`) é o favicon.
 - O título da página (aba do navegador) é só `.` — discreto; vazio faria o navegador mostrar a URL no lugar.
   O nome do app instalado continua vindo do manifest (`fin`).
 

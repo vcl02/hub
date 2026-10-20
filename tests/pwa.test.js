@@ -33,13 +33,13 @@ test('ícones instaláveis são PNGs nos tamanhos declarados e mantêm a arte ve
         assert.equal(png.readUInt32BE(16), tamanho);
         assert.equal(png.readUInt32BE(20), tamanho);
     });
-    ['icons/fin-192.svg', 'icons/fin-512.svg'].forEach(arquivo => {
-        const svg = fs.readFileSync(arquivo, 'utf8');
-        assert.match(svg, /viewBox="0 0 192 192"/);
-        // Caixa total: x 41–151 e y 50–142; ambos os centros são exatamente 96.
-        assert.match(svg, /M41 142V58h63/);
-        assert.match(svg, /M115 112h8v30h-8zm14-22h8v52h-8zm14-40h8v92h-8z/);
-    });
+    // Um SVG só, o do favicon: o app instalado usa os PNGs do manifest.
+    const svg = fs.readFileSync('icons/fin-192.svg', 'utf8');
+    assert.match(svg, /viewBox="0 0 192 192"/);
+    // Caixa total: x 41–151 e y 50–142; ambos os centros são exatamente 96.
+    assert.match(svg, /M41 142V58h63/);
+    assert.match(svg, /M115 112h8v30h-8zm14-22h8v52h-8zm14-40h8v92h-8z/);
+    assert.deepEqual(fs.readdirSync('icons').sort(), ['fin-192.png', 'fin-192.svg', 'fin-512.png']);
 });
 
 test('registra service worker que atualiza a interface pela rede e cacheia só arquivos próprios', () => {
