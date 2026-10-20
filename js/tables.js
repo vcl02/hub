@@ -250,6 +250,10 @@ const celData = r => {
         : '';
     return `${texto}${corrige}`;
 };
+// Compra do Mercado Pago na tabela única de Crédito: a linha inteira ganha um fundo azul
+// bem apagado com contorno (classe "mp" no <tr>), no lugar de um selo "MP"; o Nubank (todo o
+// histórico) fica sem marca, pra tabela de um cartão só continuar igual.
+const ehCompraMercadoPago = r => !!r.cred && !!r.fatura && cartaoDaFatura(r.fatura) === CARTAO_MERCADO_PAGO;
 const celNome = r => {
     const sim = r._sim ? '<span class=simIco title="Simulado">✦</span> ' : '';
     const nome = escapeHtml(textoOuTraco(r.nome));
@@ -258,10 +262,6 @@ const celNome = r => {
     const badgeFatura = (ehTransferenciaFatura(r) && fatRef)
         ? ` <span class="tagFatura" title="Abate fatura${ehMercadoPago ? ' do Mercado Pago' : ''}">↳ Fat. ${nomePeriodoAbrev({ ini: fatRef })}${ehMercadoPago ? ' MP' : ''}</span>`
         : '';
-    // Compra do Mercado Pago na tabela única de Crédito: o próprio nome ganha um fundo azul
-    // bem apagado com contorno (sem selo "MP"); o Nubank (todo o histórico) fica sem marca,
-    // pra tabela de um cartão só continuar igual.
-    const nomeMp = r.cred && ehMercadoPago ? ' nomeMp" title="Mercado Pago' : '';
     // Resgate que levou todo o guardado (ou foi diminuído pra não deixá-lo negativo): na linha
     // calculada vem marcado pelo ajuste; no Resgate real, o guardado do ciclo terminou em zero.
     const resgatouTudo = r._res ? r._resgatouTudo
@@ -272,8 +272,8 @@ const celNome = r => {
     // Só o nome é cortado com "…" quando não cabe; as marcas ficam sempre inteiras ao lado
     // (senão o aviso "Resgatou tudo" sumia dentro das reticências).
     const textoNome = ehLinhaReal(r) && !modoRestrito()
-        ? `<span class="nomeTexto togNome${nomeMp}" data-tog-nome="${escapeHtml(String(r.id))}">${nome}</span>`
-        : `<span class="nomeTexto${nomeMp}">${nome}</span>`;
+        ? `<span class="nomeTexto togNome" data-tog-nome="${escapeHtml(String(r.id))}">${nome}</span>`
+        : `<span class=nomeTexto>${nome}</span>`;
     return `<span class=nomeLinha>${sim}${textoNome}${badgeFatura}${badgeResgate}</span>`;
 };
 // Categoria e Frequência (colunas de texto livre/vocabulário controlado): mesmo esquema de
@@ -419,7 +419,7 @@ const renderTabela = (linhasBrutas, idTabela, selecionavel) => {
     return `<div class=wrap><table class=larguraFixa><colgroup>${colunas}</colgroup><thead><tr>${cabecalhoTabela(idTabela)}</thead><tbody>` +
         ordenadas.map(r => {
             const chave = chaveSelecao(r), marcada = podeSelecionar && chave && Estado.selecionados.has(chave);
-            return `<tr class="${r._fat ? 'fat ' : ''}${r._sal ? 'sal ' : ''}${r._res ? 'res ' : ''}${r._sug != null ? 'sug ' : ''}${r._prev ? 'prev ' : ''}${r._sim ? 'sim ' : ''}${marcada ? 'on' : ''}${podeSelecionar && chave ? ' pick' : ''}" data-sid="${podeSelecionar ? chave : ''}">` + celulasDaLinha(r, idTabela);
+            return `<tr class="${r._fat ? 'fat ' : ''}${r._sal ? 'sal ' : ''}${r._res ? 'res ' : ''}${r._sug != null ? 'sug ' : ''}${r._prev ? 'prev ' : ''}${r._sim ? 'sim ' : ''}${ehCompraMercadoPago(r) ? 'mp ' : ''}${marcada ? 'on' : ''}${podeSelecionar && chave ? ' pick' : ''}" data-sid="${podeSelecionar ? chave : ''}">` + celulasDaLinha(r, idTabela);
         }).join('') + '</tbody></table></div>';
 };
 

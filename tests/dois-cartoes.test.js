@@ -132,7 +132,7 @@ test('Débito, saldo diário e gráfico usam uma linha de fatura por cartão', (
 });
 
 test('tabela única marca só o que é do Mercado Pago', () => {
-    assert.match(tabelas, /const nomeMp = r\.cred && ehMercadoPago \? ' nomeMp" title="Mercado Pago' : '';/);
+    assert.match(tabelas, /const ehCompraMercadoPago = r => !!r\.cred && !!r\.fatura && cartaoDaFatura\(r\.fatura\) === CARTAO_MERCADO_PAGO;/);
     assert.match(tabelas, /\$\{ehMercadoPago \? ' MP' : ''\}<\/span>/);
 });
 

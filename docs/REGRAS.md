@@ -310,7 +310,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Dia 13 é **Mercado Pago**; qualquer outro dia é **Nubank**, que fica com todo o histórico (vence dia 12).
   Crédito ou antecipação sem `fatura` é Nubank.
   Nomes e categorias não identificam cartão.
-  Na tela continua existindo uma única tabela de Crédito por ciclo, com as compras dos dois cartões juntas e o total somado; compra do Mercado Pago tem o próprio nome num fundo azul (o do cartão) bem claro e apagado, com contorno suave e "Mercado Pago" no hover, sem selo "MP"; a antecipação do Mercado Pago continua com "MP" na tag `↳ Fat.`, e o Nubank fica sem marca.
+  Na tela continua existindo uma única tabela de Crédito por ciclo, com as compras dos dois cartões juntas e o total somado; compra do Mercado Pago tem a linha inteira num fundo azul (o do cartão) bem claro e apagado, com contorno suave, sem selo "MP" (a cor de seleção sobressai por cima); a antecipação do Mercado Pago continua com "MP" na tag `↳ Fat.`, e o Nubank fica sem marca.
   O bloco Crédito mostra só a quantidade de registros ("17 registros"), sem as datas das faturas.
   No Débito, a linha calculada de fatura vira uma por cartão — **Fatura Nubank** e **Fatura Mercado Pago**, cada uma no próprio vencimento e líquida das antecipações do próprio cartão —, e o saldo por dia e o gráfico de evolução seguem as mesmas duas linhas.
 - O total no título dessa prévia de Crédito usa a mesma base e os mesmos abatimentos por antecipação da linha dinâmica da fatura; a tabela abaixo continua detalhando as compras brutas.

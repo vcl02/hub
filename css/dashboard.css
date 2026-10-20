@@ -661,15 +661,6 @@
       white-space: nowrap;
   }
 
-  /* Compra do Mercado Pago: fundo azul (o do cartão) quase transparente e contorno suave
-     no próprio nome, no lugar do antigo selo "MP". */
-  .nomeLinha > .nomeTexto.nomeMp {
-      padding: 0 .35rem;
-      background: rgba(108, 197, 238, .07);
-      border: 1px solid rgba(108, 197, 238, .3);
-      border-radius: 5px;
-  }
-
   .nomeLinha .tagAviso,
   .nomeLinha .tagFatura {
       margin-left: 0;
@@ -1129,6 +1120,25 @@
 
   tbody tr.fat:hover td {
       background: var(--red-hover);
+  }
+
+  /* =========================================================
+       COMPRA DO MERCADO PAGO
+       ========================================================= */
+
+  /* A linha inteira com o azul do cartão quase transparente e um contorno suave (sem selo
+     "MP"). Vem antes da seleção: o verde do clique sobressai por cima. */
+  tbody tr.mp td {
+      background: rgba(108, 197, 238, .06);
+  }
+
+  tbody tr.mp:hover td {
+      background: rgba(108, 197, 238, .1);
+  }
+
+  tbody tr.mp {
+      outline: 1px solid rgba(108, 197, 238, .22);
+      outline-offset: -1px;
   }
 
   /* =========================================================
