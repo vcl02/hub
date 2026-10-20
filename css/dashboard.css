@@ -78,10 +78,11 @@
       gap: .55rem;
   }
 
-  /* Indicadores em fluxo: cabem todos numa linha quando há espaço; senão os itens quebram
-     pra linha de baixo, cada um inteiro (com a variação entre parênteses logo depois dele).
-     O divisor é a borda esquerda de cada item; a lista recua uma borda+folga e o contêiner
-     corta o que sobra, então o primeiro item de cada linha nunca começa com divisor. */
+  /* Indicadores em fluxo, no mesmo desenho dos itens da faixa do Débito (onde moram no
+     ciclo único): rótulo, valor em negrito colorido e complemento apagado; se não couberem
+     todos numa linha, quebram pra baixo, cada um inteiro. O divisor é a borda esquerda de
+     cada item; a lista recua uma borda+folga e o contêiner corta o que sobra, então o
+     primeiro item de cada linha nunca começa com divisor. */
   #indicadoresFinanceiros {
       min-width: 0;
       overflow: hidden;
@@ -90,63 +91,37 @@
   .listaIndicadores {
       display: flex;
       flex-wrap: wrap;
-      align-items: center;
-      row-gap: .15rem;
-      margin-left: calc(-.55rem - 1px);
+      align-items: baseline;
+      gap: .15rem .4rem;
+      margin-left: calc(-.8rem - 1px);
+      font-variant-numeric: tabular-nums;
   }
 
+  /* Item maior que a linha inteira (celular) quebra entre palavras e antes da variação,
+     nunca no meio de um valor (os <b> são inline-block); senão desce inteiro. */
   .indicadorItem {
       display: inline-flex;
-      align-items: center;
-      gap: .3rem;
-      padding: 0 .55rem;
-      white-space: nowrap;
-      border-left: 1px solid var(--line-strong);
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0 .4rem;
+      padding-left: .8rem;
+      border-left: 1px solid var(--ln);
   }
 
-  /* Indicador fechado: só o olho e o nome; aberto, o nome some (o próprio texto já o traz). */
-  .indicadorItem.fechado > :not(.btOlho, .nomeOlho) {
-      display: none;
-  }
-
-  .indicadorItem:not(.fechado) > .nomeOlho {
-      display: none;
-  }
-
-  .nomeOlho {
-      font-size: .84rem;
-      color: var(--mu);
-  }
-
-  /* Olho que mostra/esconde cada indicador: só o ícone, sem caixa de botão. */
-  .btOlho {
-      display: inline-flex;
-      align-items: center;
-      padding: 0;
-      color: var(--mu);
-      background: none;
-      border: 0;
-      cursor: pointer;
-  }
-
-  .btOlho:hover {
-      color: var(--fg);
-  }
-
-  /* Reserva e Comprometido são leituras do ciclo, não comandos: ficam como texto
-     compacto e colorido para não competir com os controles reais da barra. */
+  /* normal: a faixa do Débito herda nowrap nos seus itens e cortaria o fim no celular. */
   .indicadorRegra {
       font-size: .84rem;
-      font-weight: 400;
-      white-space: nowrap;
+      white-space: normal;
   }
 
-  /* Reserva seis caracteres para 100,0%; números usam a mesma largura. */
-  .indicadorPercentual {
+  /* Percentual com a largura de "100%" (como Besteira/Isabella), colado no rótulo. */
+  .indicadorRegra b {
       display: inline-block;
-      width: 6ch;
-      text-align: right;
-      font-variant-numeric: tabular-nums;
+      text-align: left;
+  }
+
+  .indicadorRegra b.pct {
+      min-width: 5ch;
   }
 
   /* A variação possui cor semântica própria, independente da situação atual do indicador. */
@@ -159,19 +134,11 @@
   .variacaoIndicador.vd { color: var(--vd); }
   .variacaoIndicador.vm { color: var(--vm); }
   .separadorVariacao { color: var(--mu); }
-  /* Selo da variação, colado no indicador: fundo levemente mais claro que o cabeçalho e
-     cantos arredondados, no lugar de parênteses. */
+  /* Variação logo depois do próprio indicador, no mesmo item, como texto miúdo: nunca
+     parece de outro indicador quando os itens quebram de linha. */
   .variacaoLinha {
       white-space: nowrap;
-      padding: .05rem .4rem;
-      background: var(--field);
-      border-radius: 6px;
   }
-
-  .indicadorRegra.neutro { color: var(--mu); }
-  .indicadorRegra.vd { color: var(--vd); }
-  .indicadorRegra.am { color: #F0A83A; }
-  .indicadorRegra.vm { color: var(--vm); }
 
   select {
       font: inherit;
@@ -427,8 +394,7 @@
       flex: 1 1 100%;
   }
 
-  .resumoDados .indicadorRegra,
-  .resumoDados .nomeOlho {
+  .resumoDados .indicadorRegra {
       font-size: inherit;
   }
 

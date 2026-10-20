@@ -110,8 +110,6 @@ function encaixarIndicadoresNoDebito(noCicloUnico) {
     const faixa = noCicloUnico && el('out').querySelector('.blk[data-bloco=db] .resumoDados');
     if (faixa) faixa.append(el('indicadoresFinanceiros'));
     el('rowVis').classList.toggle('semIndicadores', !!faixa);
-    // A largura disponível mudou de lugar: refaz a escolha de quais olhos cabem abertos.
-    ajustarOlhosIndicadores();
 }
 
 // Ao mudar a largura, o que cabe em cada linha muda: refaz o alinhamento Hoje/Futuro.
@@ -183,7 +181,7 @@ function desenhar() {
     // Reserva e Comprometido são leituras do ciclo final (Até), inclusive quando há
     // comparação. No Backlog e no modo simples não há uma referência financeira válida.
     const temCicloParaIndicadores = !simples && !noBacklog && !!el('compAte').value;
-    // O nó dos indicadores é sempre o mesmo (olhos ligados uma vez em charts.js): volta pro
+    // O nó dos indicadores é sempre o mesmo (atualizarIndicadoresFinanceiros escreve pelos ids): volta pro
     // cabeçalho antes de #out ser reescrito, senão iria embora junto com o HTML antigo.
     el('acoesAcompanhamento').append(el('indicadoresFinanceiros'));
     el('indicadoresFinanceiros').hidden = !temCicloParaIndicadores;

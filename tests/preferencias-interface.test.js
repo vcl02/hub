@@ -130,17 +130,20 @@ test('indicadores financeiros ficam no cabeçalho, entre a navegação e os bot�
     const estilosPainel = fs.readFileSync('css/dashboard.css', 'utf8');
     assert.match(estilosPainel, /\.tool > \.row\s*\{[\s\S]*flex-wrap:\s*nowrap/);
     // Cada variação mora no mesmo item do seu indicador, logo depois dele.
-    assert.match(pagina, /<span class=nomeOlho aria-hidden=true>Reserva<\/span>\s*\n\s*<span id=indicadorReserva [^>]*>Reserva —<\/span>\s*\n\s*<span id=variacaoReserva class=variacaoLinha hidden><\/span>/);
-    assert.match(pagina, /<span class=nomeOlho aria-hidden=true>Comprometido<\/span>\s*\n\s*<span id=indicadorComprometido [^>]*>Comprometido —<\/span>\s*\n\s*<span id=variacaoComprometido class=variacaoLinha hidden><\/span>/);
+    assert.match(pagina, /<span class=indicadorItem id=itemReserva>\s*\n\s*<span id=indicadorReserva [^>]*>Reserva —<\/span>\s*\n\s*<span id=variacaoReserva class=variacaoLinha hidden><\/span>/);
+    assert.match(pagina, /<span class=indicadorItem id=itemComprometido>\s*\n\s*<span id=indicadorComprometido [^>]*>Comprometido —<\/span>\s*\n\s*<span id=variacaoComprometido class=variacaoLinha hidden><\/span>/);
     assert.doesNotMatch(pagina, /indicadorPipe|indicadoresResumo|indicadoresVariacao/);
     assert.match(pagina, /id=variacaoReserva class=variacaoLinha hidden/);
     assert.match(pagina, /id=variacaoComprometido class=variacaoLinha hidden/);
-    assert.match(estilosPainel, /\.indicadorRegra\s*\{[\s\S]*font-weight:\s*400/);
-    assert.match(estilosPainel, /\.indicadorPercentual\s*\{[\s\S]*width:\s*6ch[\s\S]*font-variant-numeric:\s*tabular-nums/);
-    assert.match(graficos, /Reserva: <span class=indicadorPercentual>/);
-    assert.match(graficos, /Comprometido: <span class=indicadorPercentual>/);
-    assert.match(graficos, /Gastos: Reserva <span class=indicadorPercentual>/);
-    assert.match(graficos, /Liberdade: <span class=indicadorPercentual>/);
+    // Mesmo desenho dos itens da faixa: rótulo, percentual em negrito (largura de 100%) e complemento apagado.
+    assert.match(estilosPainel, /\.indicadorRegra b\.pct \{\s*\n\s*min-width: 5ch;/);
+    assert.doesNotMatch(estilosPainel + graficos, /indicadorPercentual/);
+    assert.match(graficos, /const valorIndicador = \(texto, classe = 'neutro'\) => `<b class="\$\{texto == '—' \? '' : 'pct '\}\$\{classe\}">\$\{texto\}<\/b>`;/);
+    assert.match(graficos, /`Reserva \$\{valorIndicador\(pct1\(reserva\.percentual\), classeIndicadorReserva\(reserva\)\)\} <span class=limiteRotulo>da meta<\/span>`/);
+    assert.match(graficos, /`Comprometido \$\{valorIndicador\(pct1\(comprometido\.percentualFaturamento\), classeIndicadorComprometido\(comprometidos\)\)\} <span class=limiteRotulo>do mês<\/span>`/);
+    assert.match(graficos, /`Gastos <span class=limiteRotulo>Reserva<\/span> ` \+/);
+    assert.match(graficos, /`Liberdade \$\{valorIndicador\(/);
+    assert.doesNotMatch(graficos, /[`'](Reserva|Comprometido|Gastos|Liberdade): /);
     assert.match(estilosPainel, /\.variacaoIndicador\.vd\s*\{\s*color:\s*var\(--vd\)/);
     assert.match(estilosPainel, /\.variacaoIndicador\.vm\s*\{\s*color:\s*var\(--vm\)/);
     assert.match(graficos, /variacaoValorIndicador\(reserva\.guardado, reservaAnterior\.guardado, true\)/);
@@ -154,13 +157,13 @@ test('indicadores financeiros ficam no cabeçalho, entre a navegação e os bot�
     );
     // Fluxo com quebra de linha: itens inteiros, divisor na borda esquerda cortado no início da linha.
     assert.match(estilosPainel, /\.listaIndicadores \{\s*\n\s*display: flex;\s*\n\s*flex-wrap: wrap;/);
-    assert.match(estilosPainel, /\.indicadorItem \{[\s\S]*?white-space: nowrap;\s*\n\s*border-left: 1px solid/);
+    assert.match(estilosPainel, /\.indicadorItem \{[\s\S]*?flex-wrap: wrap;[\s\S]*?border-left: 1px solid var\(--ln\);/);
     assert.match(estilosPainel, /#indicadoresFinanceiros \{\s*\n\s*min-width: 0;\s*\n\s*overflow: hidden;/);
-    assert.match(estilosPainel, /margin-left: calc\(-\.55rem - 1px\);/);
+    assert.match(estilosPainel, /\.listaIndicadores \{[\s\S]*?margin-left: calc\(-\.8rem - 1px\);/);
     assert.match(estilosPainel, /#rowVis \{\s*\n\s*display: flex;\s*\n\s*flex: 1 1 0;/);
-    // Variação num selo (.variacaoLinha) colado no indicador, sem parênteses.
+    // Variação em texto miúdo colado no indicador, sem parênteses nem fundo.
     assert.match(graficos, /return `<span class="variacaoIndicador \$\{percentual\.classe\}"[\s\S]*?\$\{brl\(valor\.diferenca\)\}<\/span>`;/);
-    assert.match(estilosPainel, /\.variacaoLinha \{\s*\n\s*white-space: nowrap;\s*\n\s*padding: \.05rem \.4rem;\s*\n\s*background: var\(--field\);\s*\n\s*border-radius: 6px;/);
+    assert.match(estilosPainel, /\.variacaoLinha \{\s*\n\s*white-space: nowrap;\s*\n\s*\}/);
     // Sem divisor nem folga antes da tabela Débito.
     assert.doesNotMatch(estilosPainel.slice(estilosPainel.indexOf('  .tool {'), estilosPainel.indexOf('  .row {')), /border-bottom/);
     assert.match(estilosPainel, /\.tool:not\(:has\(\.f:not\(\[hidden\]\)\)\) \{\s*\n\s*display: none;/);
@@ -270,77 +273,13 @@ test('conta restrita fica só no Débito, ciclo atual/próximo, somente leitura 
     assert.match(regras, /só vê o bloco Débito \(sem Crédito\), e só navega entre o ciclo atual e o próximo/);
 });
 
-test('cada indicador tem um olho; abre na ordem enquanto couber e o clique prevalece', () => {
-    for (const [item, nome, alvo] of [['itemReserva', 'Reserva', 'indicadorReserva'], ['itemComprometido', 'Comprometido', 'indicadorComprometido'],
-        ['itemProporcaoReserva', 'Gastos', 'indicadorProporcaoReserva'], ['itemLiberdade', 'Liberdade', 'indicadorLiberdade']]) {
-        assert.match(pagina, new RegExp(`<span class=indicadorItem id=${item} data-nome=${nome}>\\s*\\n\\s*<button type=button class=btOlho title="Ocultar ${nome}" aria-label="Ocultar ${nome}" aria-pressed=true\\s*\\n\\s*aria-controls=${alvo}>`));
-        assert.match(pagina, new RegExp(`<span class=nomeOlho aria-hidden=true>${nome}</span>`));
-    }
-    const vm = require('node:vm');
-    const inicio = graficos.indexOf('const ICONE_OLHO_FECHADO');
-    const codigo = graficos.slice(inicio, graficos.indexOf('\n});', graficos.indexOf('ITENS_COM_OLHO.forEach')) + 4);
-    // Layout falso: largura de cada item aberto/fechado; a linha cabe enquanto a soma não
-    // passa da largura da lista (Liberdade também, sem linha própria).
-    const larguras = { itemReserva: [300, 80], itemComprometido: [330, 120], itemProporcaoReserva: [260, 70], itemLiberdade: [140, 90] };
-    const lista = { clientWidth: 0, get scrollWidth() { return 0; } };
-    const itens = {};
-    for (const id of Object.keys(larguras)) {
-        const classes = new Set();
-        const svg = { innerHTML: '' };
-        const atributos = {};
-        itens[id] = {
-            id, dataset: { nome: id }, parentElement: lista, offsetParent: {}, offsetHeight: 20, atributos, svg,
-            classList: { toggle: (c, ligar) => (ligar ? classes.add(c) : classes.delete(c)), contains: c => classes.has(c) },
-            botao: null,
-            querySelector: sel => (sel == '.btOlho' ? itens[id].botao : svg),
-            get aberto() { return !classes.has('fechado'); },
-            get offsetTop() {
-                const ordem = ['itemReserva', 'itemComprometido', 'itemProporcaoReserva', 'itemLiberdade'];
-                const ate = ordem.slice(0, ordem.indexOf(id) + 1).reduce((s, i) => s + larguras[i][itens[i].aberto ? 0 : 1], 0);
-                // Na mesma linha o topo varia ~2px (alturas diferentes, centralizadas): não é quebra.
-                return ate > lista.clientWidth ? 50 : (itens[id].aberto ? 0 : 2);
-            },
-        };
-        itens[id].botao = { title: '', setAttribute: (k, v) => { atributos[k] = v; }, querySelector: () => svg };
-    }
-    const ctx = { el: id => itens[id], window: { innerWidth: 1000, addEventListener() {} }, requestAnimationFrame: f => f() };
-    vm.runInNewContext(`${codigo}\nthis.ajustar = ajustarOlhosIndicadores;`, ctx);
-    const abertos = () => Object.keys(itens).filter(id => itens[id].aberto);
-
-    lista.clientWidth = 1100;   // desktop largo: todos abertos (300+330+260+140 = 1030)
-    ctx.ajustar();
-    assert.deepEqual(abertos(), ['itemReserva', 'itemComprometido', 'itemProporcaoReserva', 'itemLiberdade']);
-    assert.equal(itens.itemReserva.botao.title, 'Ocultar itemReserva');
-    assert.match(itens.itemReserva.svg.innerHTML, /<circle cx=12 cy=12 r=3 \/>/);
-
-    lista.clientWidth = 790;    // Reserva + Comprometido abertos (630) + Gastos e Liberdade fechados (160) = 790
-    ctx.ajustar();
-    assert.deepEqual(abertos(), ['itemReserva', 'itemComprometido']);   // o 1º que não cabe e os seguintes fecham
-    assert.equal(itens.itemProporcaoReserva.atributos['aria-pressed'], 'false');
-    assert.equal(itens.itemLiberdade.botao.title, 'Mostrar itemLiberdade');
-    assert.match(itens.itemLiberdade.svg.innerHTML, /M3 3l18 18/);
-
-    lista.clientWidth = 360;    // celular: todos fechados (360) cabem, mas nem Reserva aberta
-    ctx.ajustar();
-    assert.deepEqual(abertos(), []);
-
-    itens.itemLiberdade.botao.onclick();   // clique do usuário prevalece sobre o ajuste
-    ctx.ajustar();
-    assert.deepEqual(abertos(), ['itemLiberdade']);
-    lista.clientWidth = 1100;
-    itens.itemReserva.botao.onclick();     // fechada no celular: o clique abre
-    itens.itemReserva.botao.onclick();     // e outro fecha, por escolha
-    ctx.ajustar();
-    // Reserva fica fechada por escolha; os automáticos seguintes abrem porque cabem (80+330+260+140).
-    assert.deepEqual(abertos(), ['itemComprometido', 'itemProporcaoReserva', 'itemLiberdade']);
-    assert.match(regras, /Cada indicador tem um \*\*olho\*\* antes: aberto mostra o indicador; fechado deixa só o olho fechado e o nome/);
-    assert.match(regras, /no desktop todos começam abertos e, conforme a tela estreita, vão fechando a partir da Liberdade/);
+test('indicadores sem olho: os quatro sempre visíveis, no padrão da faixa', () => {
+    assert.doesNotMatch(pagina, /btOlho|nomeOlho/);
+    assert.doesNotMatch(graficos + interacoes, /Olho|olhosEscolhidos/);
+    assert.doesNotMatch(fs.readFileSync('css/dashboard.css', 'utf8'), /btOlho|nomeOlho|\.indicadorItem\.fechado/);
+    assert.match(regras, /Não há olho para esconder indicador: os quatro aparecem sempre\./);
+    assert.match(regras, /Seguem o padrão dos itens da faixa \(Besteira\/Isabella\): rótulo sem dois-pontos/);
     assert.match(regras, /\*\*Gastos\*\* e \*\*Liberdade\*\* ficam numa linha quando cabem[^.]*\.\s+Nenhum tem linha própria fixa\./);
-    const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
-    assert.doesNotMatch(estilos, /#itemLiberdade/);
-    assert.match(estilos, /\.indicadorItem\.fechado > :not\(\.btOlho, \.nomeOlho\) \{\s*\n\s*display: none;/);
-    // Textos novos mudam a largura dos itens: o ajuste roda ao fim de cada atualização.
-    assert.match(graficos, /Sem gastos suficientes para calcular a meta';\s*\n(\s*\/\/.*\n)?\s*ajustarOlhosIndicadores\(\);\s*\n\}/);
 });
 
 test('ícone Todas/Diferentes: sempre visível, só funciona com 2 ciclos e alterna o filtro', () => {

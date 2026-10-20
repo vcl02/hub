@@ -55,62 +55,24 @@
       <!-- Indicadores na mesma linha dos botões do cabeçalho, entre a navegação e as ações. -->
       <div id=rowVis>
         <div id=acoesAcompanhamento>
-          <!-- Indicadores calculados do ciclo Até; o JS atualiza texto, cor e variação. Cada item
-               fica inteiro numa linha; se não couberem todos, os itens quebram pra linha de baixo.
-               A variação vai num selo logo depois do próprio indicador. -->
+          <!-- Indicadores calculados do ciclo Até; o JS atualiza texto, cor e variação. No ciclo
+               único o bloco inteiro vai pra faixa Hoje do Débito (encaixarIndicadoresNoDebito).
+               Cada item fica inteiro numa linha; se não couberem todos, quebram pra baixo. -->
           <div id=indicadoresFinanceiros>
-            <!-- Cada indicador tem um olho que fecha/abre (handler em charts.js). Abertos na ordem
-                 enquanto couberem numa linha; fechado, fica só o olho e o nome. -->
             <div class=listaIndicadores>
-              <span class=indicadorItem id=itemReserva data-nome=Reserva>
-                <button type=button class=btOlho title="Ocultar Reserva" aria-label="Ocultar Reserva" aria-pressed=true
-                  aria-controls=indicadorReserva>
-                  <svg viewBox="0 0 24 24" width=15 height=15 fill=none stroke=currentColor stroke-width=2.2
-                    stroke-linecap=round stroke-linejoin=round aria-hidden=true>
-                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-                    <circle cx=12 cy=12 r=3 />
-                  </svg>
-                </button>
-                <span class=nomeOlho aria-hidden=true>Reserva</span>
-                <span id=indicadorReserva class="indicadorRegra neutro" title="Reserva de emergência">Reserva —</span>
+              <span class=indicadorItem id=itemReserva>
+                <span id=indicadorReserva class=indicadorRegra title="Reserva de emergência">Reserva —</span>
                 <span id=variacaoReserva class=variacaoLinha hidden></span>
               </span>
-              <span class=indicadorItem id=itemComprometido data-nome=Comprometido>
-                <button type=button class=btOlho title="Ocultar Comprometido" aria-label="Ocultar Comprometido" aria-pressed=true
-                  aria-controls=indicadorComprometido>
-                  <svg viewBox="0 0 24 24" width=15 height=15 fill=none stroke=currentColor stroke-width=2.2
-                    stroke-linecap=round stroke-linejoin=round aria-hidden=true>
-                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-                    <circle cx=12 cy=12 r=3 />
-                  </svg>
-                </button>
-                <span class=nomeOlho aria-hidden=true>Comprometido</span>
-                <span id=indicadorComprometido class="indicadorRegra neutro" title="Gastos comprometidos">Comprometido —</span>
+              <span class=indicadorItem id=itemComprometido>
+                <span id=indicadorComprometido class=indicadorRegra title="Gastos comprometidos">Comprometido —</span>
                 <span id=variacaoComprometido class=variacaoLinha hidden></span>
               </span>
-              <span class=indicadorItem id=itemProporcaoReserva data-nome=Gastos>
-                <button type=button class=btOlho title="Ocultar Gastos" aria-label="Ocultar Gastos" aria-pressed=true
-                  aria-controls=indicadorProporcaoReserva>
-                  <svg viewBox="0 0 24 24" width=15 height=15 fill=none stroke=currentColor stroke-width=2.2
-                    stroke-linecap=round stroke-linejoin=round aria-hidden=true>
-                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-                    <circle cx=12 cy=12 r=3 />
-                  </svg>
-                </button>
-                <span class=nomeOlho aria-hidden=true>Gastos</span>
-                <span id=indicadorProporcaoReserva class="indicadorRegra neutro" title="Proporção dos gastos em Reserva">Gastos —</span>
+              <span class=indicadorItem id=itemProporcaoReserva>
+                <span id=indicadorProporcaoReserva class=indicadorRegra title="Proporção dos gastos em Reserva">Gastos —</span>
               </span>
-              <span class=indicadorItem id=itemLiberdade data-nome=Liberdade>
-                <button type=button class=btOlho title="Ocultar Liberdade" aria-label="Ocultar Liberdade" aria-pressed=true
-                  aria-controls=indicadorLiberdade>
-                  <svg viewBox="0 0 24 24" width=15 height=15 fill=none stroke=currentColor stroke-width=2.2
-                    stroke-linecap=round stroke-linejoin=round aria-hidden=true>
-                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-                    <circle cx=12 cy=12 r=3 />
-                  </svg>
-                </button>
-                <span class=nomeOlho aria-hidden=true>Liberdade</span>
-                <span id=indicadorLiberdade class="indicadorRegra neutro" title="Progresso para liberdade financeira">Liberdade —</span>
+              <span class=indicadorItem id=itemLiberdade>
+                <span id=indicadorLiberdade class=indicadorRegra title="Progresso para liberdade financeira">Liberdade —</span>
               </span>
             </div>
           </div>

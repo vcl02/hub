@@ -644,28 +644,24 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 - **Gráfico** (ícone de barras) é botão só de ícone, com o nome no `title` e `aria-label`, no mesmo tamanho dos botões de navegação de ciclo, no bloco de botões à direita do cabeçalho, junto dos demais.
   O botão **Gráfico** é fixo: abre a pizza no ciclo único e a evolução ao comparar vários ciclos.
-  No começo da barra de indicadores, **Reserva:** é um texto calculado pelo ciclo escolhido em **Até** (no ciclo único, De e Até são iguais), não um botão.
+  No começo da barra de indicadores, **Reserva** é um texto calculado pelo ciclo escolhido em **Até** (no ciclo único, De e Até são iguais), não um botão.
   No ciclo único, os indicadores ficam **dentro da faixa Hoje do Débito**, numa linha própria dela, abaixo de Saldo, Guardado, Besteira e Isabella (no ciclo passado ou futuro, que só tem uma faixa, entram nela: Passado ou Futuro); o texto segue o tamanho da faixa.
   Eles não entram no alinhamento Hoje/Futuro das faixas: o Futuro não tem esses itens.
   Na comparação (De ≠ Até) não há Débito, então ficam no cabeçalho, na mesma linha da navegação de ciclo e dos botões de ação (entre os dois), lendo o Até.
-  Em fluxo: **Reserva**, **Comprometido**, **Gastos** e **Liberdade** ficam numa linha quando cabem; quando não, os que não couberem quebram pra linha de baixo, cada um inteiro (nunca cortado no meio).
+  Em fluxo: **Reserva**, **Comprometido**, **Gastos** e **Liberdade** ficam numa linha quando cabem; quando não, os que não couberem quebram pra linha de baixo, cada um inteiro; só um item maior que a linha inteira (celular) quebra entre palavras, nunca no meio de um valor.
   Nenhum tem linha própria fixa.
-  A variação de Reserva e de Comprometido vem num selo discreto (fundo levemente mais claro, cantos arredondados) colado logo depois do próprio indicador, no mesmo item (ex.: `Reserva: 3,4% da meta` `↑2,2 p.p. · ↑R$ 900,00`), pra nunca parecer de outro indicador ao quebrar a linha.
+  Seguem o padrão dos itens da faixa (Besteira/Isabella): rótulo sem dois-pontos, o percentual em negrito com a cor do estado e com a largura de `100%`, e o complemento apagado (ex.: `Reserva 3,4% da meta`; `Gastos Reserva 57,7% · Demais 42,3%`, só a fatia em Reserva colorida; `Liberdade 2,1%`, sem cor).
+  A variação de Reserva e de Comprometido vem em texto miúdo, sem fundo, logo depois do próprio indicador, no mesmo item (ex.: `Reserva 3,4% da meta ↑2,2 p.p. · ↑R$ 900,00`), pra nunca parecer de outro indicador ao quebrar a linha.
   No cabeçalho, quando a janela é estreita demais pra caber ao lado da navegação e dos botões nem o maior indicador (até 1250px de largura, e no mobile), o bloco desce pra uma linha própria logo abaixo deles, que continuam juntos em cima; com os indicadores no Débito, essa linha não aparece.
-  Cada indicador tem um **olho** antes: aberto mostra o indicador; fechado deixa só o olho fechado e o nome (ex.: `Reserva`), e um clique alterna.
-  Ao abrir a página e ao mudar a largura da janela, os olhos abrem na ordem Reserva, Comprometido, Gastos, Liberdade enquanto couberem sem quebrar a linha; o primeiro que não couber e os seguintes começam fechados.
-  Assim, no desktop todos começam abertos e, conforme a tela estreita, vão fechando a partir da Liberdade; no celular, em geral, todos começam fechados.
-  O que o usuário clicar prevalece sobre esse ajuste até recarregar a página.
-  É só apresentação, sem gravar nada.
-  Os itens são separados por um divisor vertical (`|`), que nunca aparece no começo de uma linha; nenhum usa negrito: a cor é o único sinal de estado.
-  Cada percentual ocupa seis caracteres de largura fixa — inclusive `100,0%` — para não deslocar os textos quando seu valor muda.
+  Não há olho para esconder indicador: os quatro aparecem sempre.
+  Os itens são separados pelo mesmo divisor vertical da faixa, que nunca aparece no começo de uma linha.
   **Gastos:** mostra a proporção das despesas reais negativas do ciclo marcadas com o bit `reserva` e a proporção complementar **Demais**; Débito e Crédito entram uma vez cada, categoria composta continua sendo uma única despesa e antecipação/pagamento de fatura fica fora por ser transferência.
   Seu tooltip traz os valores absolutos.
   Como Reserva é patrimônio, não padrão de consumo, a cor é o inverso de Comprometido: até 40% dos gastos em Reserva é verde, acima de 40% até 50% é âmbar e acima de 50% é vermelho; portanto mais **Demais** é melhor.
   **Liberdade:** é uma leitura sem cor de objetivo de longo prazo: divide o patrimônio realmente investido que exceder a meta atual de Reserva pela meta de liberdade.
   Essa meta é a média dos últimos doze ciclos disponíveis de despesas negativas reais, incluindo Débito e Crédito uma vez cada, menos investimento, antecipação/pagamento de fatura e categorias `Reembolso` ou `Rendimento`; o gasto mensal médio é anualizado e dividido pela taxa fixa de retirada de **3,5% ao ano**.
   O tooltip informa capital livre, meta, média e quantidade de ciclos.
-  No selo depois de Reserva e de Comprometido, a seta mostra a variação em pontos percentuais e em reais contra o ciclo imediatamente anterior: para Reserva, o valor real é o Guardado; subir é verde e cair é vermelho; sem mudança fica neutra.
+  Na variação depois de Reserva e de Comprometido, a seta mostra a variação em pontos percentuais e em reais contra o ciclo imediatamente anterior: para Reserva, o valor real é o Guardado; subir é verde e cair é vermelho; sem mudança fica neutra.
   A variação só aparece quando ambos os ciclos possuem meta válida.
   A meta soma os gastos negativos dessa categoria nos nove ciclos a partir dessa referência, respeitando os demais filtros e excluindo transferências de pagamento/antecipação de fatura.
   Para cada nome, um valor cadastrado em um ciclo substitui o anterior; se não houver ocorrência cadastrada naquele ciclo, mantém-se o último valor conhecido como estimativa.

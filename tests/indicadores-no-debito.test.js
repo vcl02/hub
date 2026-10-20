@@ -17,15 +17,14 @@ function encaixar(noCicloUnico, faixaDoDebito) {
     const indicadores = { id: 'indicadoresFinanceiros' };
     const classes = new Set();
     const consultas = [];
-    let ajustes = 0;
     const nos = {
         indicadoresFinanceiros: indicadores,
         rowVis: { classList: { toggle: (c, ligar) => (ligar ? classes.add(c) : classes.delete(c)) } },
         out: { querySelector: sel => { consultas.push(sel); return faixaDoDebito; } },
     };
-    const ctx = { el: id => nos[id], ajustarOlhosIndicadores: () => { ajustes++; } };
+    const ctx = { el: id => nos[id] };
     vm.runInNewContext(`${interacoes.slice(inicio, fim)}\nencaixarIndicadoresNoDebito(${noCicloUnico});`, ctx);
-    return { classes, consultas, ajustes, indicadores };
+    return { classes, consultas, indicadores };
 }
 
 test('ciclo único: os indicadores entram na primeira faixa do Débito', () => {
@@ -35,14 +34,12 @@ test('ciclo único: os indicadores entram na primeira faixa do Débito', () => {
     assert.deepEqual(r.consultas, ['.blk[data-bloco=db] .resumoDados']);
     assert.deepEqual(recebidos, [r.indicadores]);
     assert.ok(r.classes.has('semIndicadores'));   // a linha própria do cabeçalho some
-    assert.equal(r.ajustes, 1);                    // olhos recalculados no novo lugar
 });
 
 test('comparação (ou sem Débito na tela): ficam no cabeçalho', () => {
     const r = encaixar(false, { append: () => assert.fail('não deveria encaixar') });
     assert.deepEqual(r.consultas, []);
     assert.ok(!r.classes.has('semIndicadores'));
-    assert.equal(r.ajustes, 1);
     assert.ok(!encaixar(true, null).classes.has('semIndicadores'));
 });
 
@@ -57,7 +54,9 @@ test('o nó volta pro cabeçalho antes de #out ser reescrito, e é encaixado dep
 
 test('estilo: linha própria dentro da faixa; sem linha vazia no cabeçalho estreito', () => {
     assert.match(estilos, /\.resumoDados > #indicadoresFinanceiros \{\s*\n\s*flex: 1 1 100%;/);
-    assert.match(estilos, /\.resumoDados \.indicadorRegra,\s*\n\s*\.resumoDados \.nomeOlho \{\s*\n\s*font-size: inherit;/);
+    assert.match(estilos, /\.resumoDados \.indicadorRegra \{\s*\n\s*font-size: inherit;/);
+    // A faixa herda nowrap; o texto do indicador volta a quebrar pra não cortar no celular.
+    assert.match(estilos, /\.indicadorRegra \{\s*\n\s*font-size: \.84rem;\s*\n\s*white-space: normal;/);
     assert.match(estilos, /@media \(max-width: 1250px\) \{[\s\S]*?#rowVis\.semIndicadores \{\s*\n\s*display: none;/);
 });
 

@@ -139,65 +139,6 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && !el('visMenu').hidden) { fecharMenuVis(); el('btVis').focus(); }
 });
 
-// Olho em cada indicador: aberto mostra o valor; fechado deixa só o olho e o nome. Na carga
-// e ao mudar a largura, abre na ordem (Reserva, Comprometido, Gastos, Liberdade) enquanto
-// couber sem quebrar a linha; o primeiro que não couber fecha, e os seguintes também — no
-// desktop todos abrem, e vão fechando conforme a tela estreita. O clique do usuário vale
-// até recarregar a página e não é desfeito pelo ajuste. Só apresentação, sem gravar.
-const ICONE_OLHO_FECHADO = '<path d="M3 3l18 18" /><path d="M10.6 5.1A10.9 10.9 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.2M6.6 6.6C3.9 8.4 2 12 2 12s3.5 7 10 7a9.9 9.9 0 0 0 5.4-1.6" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />';
-const ICONE_OLHO_ABERTO = '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx=12 cy=12 r=3 />';
-const ITENS_COM_OLHO = ['itemReserva', 'itemComprometido', 'itemProporcaoReserva', 'itemLiberdade'];
-const olhosEscolhidos = new Map();   // id do item -> aberto, escolhido no clique
-
-function definirOlhoIndicador(item, aberto) {
-    item.classList.toggle('fechado', !aberto);
-    const botao = item.querySelector('.btOlho');
-    const rotulo = `${aberto ? 'Ocultar' : 'Mostrar'} ${item.dataset.nome}`;
-    botao.title = rotulo;
-    botao.setAttribute('aria-label', rotulo);
-    botao.setAttribute('aria-pressed', String(aberto));
-    botao.querySelector('svg').innerHTML = aberto ? ICONE_OLHO_ABERTO : ICONE_OLHO_FECHADO;
-}
-
-// Cabe = todos os itens seguem na mesma linha e nenhum passa da largura da lista. Itens da mesma linha podem diferir uns 2px
-// no topo (o selo de variação é mais alto, e a linha centraliza); meia altura de tolerância.
-function indicadoresCabemNaLinha(itens) {
-    const lista = itens[0].parentElement;
-    const topo = itens[0].offsetTop;
-    const tolerancia = itens[0].offsetHeight / 2;
-    return itens.every(item => Math.abs(item.offsetTop - topo) < tolerancia)
-        && lista.scrollWidth <= lista.clientWidth + 1;
-}
-
-function ajustarOlhosIndicadores() {
-    const itens = ITENS_COM_OLHO.map(el);
-    if (!itens[0].offsetParent) return;   // escondidos (conta restrita, sem ciclo): nada a medir
-    const automaticos = itens.filter(item => !olhosEscolhidos.has(item.id));
-    itens.forEach(item => definirOlhoIndicador(item, olhosEscolhidos.get(item.id) ?? false));
-    for (const item of automaticos) {
-        definirOlhoIndicador(item, true);
-        if (!indicadoresCabemNaLinha(itens)) {
-            definirOlhoIndicador(item, false);
-            break;
-        }
-    }
-}
-
-ITENS_COM_OLHO.forEach(id => {
-    const item = el(id);
-    item.querySelector('.btOlho').onclick = () => {
-        const aberto = item.classList.contains('fechado');
-        olhosEscolhidos.set(id, aberto);
-        definirOlhoIndicador(item, aberto);
-    };
-});
-// Reajusta só quando a largura muda (no celular, a barra de endereço mexe só na altura).
-let larguraDosOlhos = window.innerWidth;
-window.addEventListener('resize', () => {
-    if (window.innerWidth == larguraDosOlhos) return;
-    larguraDosOlhos = window.innerWidth;
-    requestAnimationFrame(ajustarOlhosIndicadores);
-});
 el('fechaVisualizacao').onclick = () => el('modalVisualizacao').close();
 el('modalVisualizacao').addEventListener('click', e => {
     if (e.target == el('modalVisualizacao')) el('modalVisualizacao').close();
@@ -463,6 +404,10 @@ function atualizarLinhaVariacao(id, percentual, valor, tituloValor) {
     linha.hidden = !percentual || !valor;
 }
 
+// Percentual em negrito com a largura de "100%" (b.pct), como Besteira/Isabella na faixa.
+// Sem valor ("—"), sem essa largura: sobraria um vão antes de "sem meta".
+const valorIndicador = (texto, classe = 'neutro') => `<b class="${texto == '—' ? '' : 'pct '}${classe}">${texto}</b>`;
+
 function atualizarIndicadoresFinanceiros(idxPeriodo) {
     const reserva = dadosMetaReservaEmergenciaCiclo(idxPeriodo);
     const comprometidos = dadosCompromissosCiclo(idxPeriodo);
@@ -501,13 +446,12 @@ function atualizarIndicadoresFinanceiros(idxPeriodo) {
         ? variacaoValorIndicador(comprometido.valor, comprometidosAnterior.limites[0].valor, false)
         : null;
 
+    // Mesmo padrão dos itens da faixa do Débito (Besteira/Isabella): rótulo, o percentual em
+    // negrito com a cor do estado e o complemento apagado.
     const indicadorReserva = el('indicadorReserva');
-    indicadorReserva.className = `indicadorRegra ${classeIndicadorReserva(reserva)}`;
-    // O percentual tem slot próprio de largura fixa: mudanças de 1,3% para 100,0%
-    // não deslocam o rótulo nem o indicador de Comprometido ao redesenhar a tela.
     indicadorReserva.innerHTML = reserva.meta > TOLERANCIA_FINANCEIRA
-        ? `Reserva: <span class=indicadorPercentual>${pct1(reserva.percentual)}</span> da meta`
-        : 'Reserva: <span class=indicadorPercentual>—</span> sem meta';
+        ? `Reserva ${valorIndicador(pct1(reserva.percentual), classeIndicadorReserva(reserva))} <span class=limiteRotulo>da meta</span>`
+        : `Reserva ${valorIndicador('—')} <span class=limiteRotulo>sem meta</span>`;
     indicadorReserva.title = reserva.meta > TOLERANCIA_FINANCEIRA
         ? `${brl(reserva.guardado)} de ${brl(reserva.meta)} para 9 meses`
         : 'Sem gastos marcados para a reserva nos próximos 9 ciclos';
@@ -517,10 +461,9 @@ function atualizarIndicadoresFinanceiros(idxPeriodo) {
     );
 
     const indicadorComprometido = el('indicadorComprometido');
-    indicadorComprometido.className = `indicadorRegra ${classeIndicadorComprometido(comprometidos)}`;
     indicadorComprometido.innerHTML = comprometidos.faturamento > TOLERANCIA_FINANCEIRA
-        ? `Comprometido: <span class=indicadorPercentual>${pct1(comprometido.percentualFaturamento)}</span> do mês`
-        : 'Comprometido: <span class=indicadorPercentual>—</span> sem entradas';
+        ? `Comprometido ${valorIndicador(pct1(comprometido.percentualFaturamento), classeIndicadorComprometido(comprometidos))} <span class=limiteRotulo>do mês</span>`
+        : `Comprometido ${valorIndicador('—')} <span class=limiteRotulo>sem entradas</span>`;
     indicadorComprometido.title = comprometidos.faturamento > TOLERANCIA_FINANCEIRA
         ? `${brl(comprometido.valor)} de ${brl(comprometidos.faturamento)}; teto ${pct1(comprometido.percentual)}`
         : 'Sem entradas no ciclo';
@@ -529,25 +472,21 @@ function atualizarIndicadoresFinanceiros(idxPeriodo) {
         'Variação do valor comprometido sobre o ciclo anterior'
     );
 
+    // A cor é da fatia em Reserva (é ela que a faixa avalia); Demais é só o complemento.
     const indicadorProporcaoReserva = el('indicadorProporcaoReserva');
-    indicadorProporcaoReserva.className = `indicadorRegra ${classeIndicadorProporcaoReserva(proporcaoReserva)}`;
-    indicadorProporcaoReserva.innerHTML = proporcaoReserva.total > TOLERANCIA_FINANCEIRA
-        ? `Gastos: Reserva <span class=indicadorPercentual>${pct1(proporcaoReserva.percentualReserva)}</span> · Demais <span class=indicadorPercentual>${pct1(proporcaoReserva.percentualDemais)}</span>`
-        : 'Gastos: Reserva <span class=indicadorPercentual>—</span> · Demais <span class=indicadorPercentual>—</span>';
+    const temGastos = proporcaoReserva.total > TOLERANCIA_FINANCEIRA;
+    indicadorProporcaoReserva.innerHTML = `Gastos <span class=limiteRotulo>Reserva</span> ` +
+        valorIndicador(temGastos ? pct1(proporcaoReserva.percentualReserva) : '—', classeIndicadorProporcaoReserva(proporcaoReserva)) +
+        ` <span class=limiteRotulo>· Demais</span> ${valorIndicador(temGastos ? pct1(proporcaoReserva.percentualDemais) : '—')}`;
     indicadorProporcaoReserva.title = proporcaoReserva.total > TOLERANCIA_FINANCEIRA
         ? `Reserva ${brl(proporcaoReserva.reserva)} de ${brl(proporcaoReserva.total)} em gastos; demais ${brl(proporcaoReserva.demais)}`
         : 'Sem gastos no ciclo';
 
     const indicadorLiberdade = el('indicadorLiberdade');
-    indicadorLiberdade.className = 'indicadorRegra neutro';
-    indicadorLiberdade.innerHTML = liberdade.meta > TOLERANCIA_FINANCEIRA
-        ? `Liberdade: <span class=indicadorPercentual>${pct1(liberdade.percentual)}</span>`
-        : 'Liberdade: <span class=indicadorPercentual>—</span>';
+    indicadorLiberdade.innerHTML = `Liberdade ${valorIndicador(liberdade.meta > TOLERANCIA_FINANCEIRA ? pct1(liberdade.percentual) : '—')}`;
     indicadorLiberdade.title = liberdade.meta > TOLERANCIA_FINANCEIRA
         ? `${brl(liberdade.patrimonioLivre)} de ${brl(liberdade.meta)}; média ${brl(liberdade.gastoMensal)}/mês em ${liberdade.mesesObservados} ciclos; retirada de 3,5% ao ano`
         : 'Sem gastos suficientes para calcular a meta';
-    // Os textos novos mudam a largura de cada item: refaz a escolha de quais cabem abertos.
-    ajustarOlhosIndicadores();
 }
 
 function dadosDoGraficoCiclo(idxPeriodo) {
