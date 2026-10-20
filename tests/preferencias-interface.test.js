@@ -169,7 +169,7 @@ test('indicadores financeiros ficam no cabeçalho, entre a navegação e os bot�
     // Janela estreita: o bloco desce pra uma linha própria, navegação e botões seguem juntos.
     assert.match(estilosPainel, /@media \(max-width: 1250px\) \{\s*\n\s*#rowVis \{\s*\n\s*order: 1;\s*\n\s*flex-basis: 100%;/);
     assert.match(fs.readFileSync('css/base.css', 'utf8'), /\.head \{\s*\n\s*display: flex;\s*\n\s*flex-wrap: wrap;/);
-    assert.match(regras, /Os indicadores ficam no cabeçalho, na mesma linha da navegação de ciclo e dos botões de ação/);
+    assert.match(regras, /Na comparação \(De ≠ Até\) não há Débito, então ficam no cabeçalho, na mesma linha da navegação de ciclo e dos botões de ação/);
     assert.match(interacoes, /atualizarIndicadoresFinanceiros\(\+el\('compAte'\)\.value\)/);
     assert.doesNotMatch(pagina, /id=btMetaReservaEmergencia|id=btCompromissos/);
     assert.match(interacoes, /if \(modoBlocos\) abrirGraficoGastos/);

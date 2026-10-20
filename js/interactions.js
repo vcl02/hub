@@ -72,7 +72,8 @@ async function confirmarLimiteDoCiclo(input) {
 // números de largura diferente (R$ 617,32 × R$ 2.043,52) empurravam tudo o que vinha
 // depois, desalinhando as duas faixas. Aqui cada item (e cada valor/rótulo dentro dele)
 // ganha a largura do maior entre as faixas, então ficam um embaixo do outro. Só alinha
-// quando as faixas têm a mesma estrutura; "N registros" (.resumoMeta) fica de fora.
+// quando as faixas têm a mesma estrutura; "N registros" (.resumoMeta) e os indicadores
+// (só na faixa Hoje do Débito) ficam de fora.
 function alinharResumosDosTitulos() {
     // Refeito do zero a cada chamada (inclusive ao redimensionar): larguras da largura
     // anterior da janela não podem forçar quebras erradas na nova.
@@ -87,7 +88,7 @@ function alinharResumosDosTitulos() {
     el('out').querySelectorAll('.resumoTitulo').forEach(titulo => {
         const faixas = [...titulo.querySelectorAll(':scope > .resumoLinha > .resumoDados')];
         if (faixas.length < 2) return;
-        const celulas = faixas.map(f => [...f.children].filter(c => !c.classList.contains('resumoMeta')));
+        const celulas = faixas.map(f => [...f.children].filter(c => !c.classList.contains('resumoMeta') && c.id != 'indicadoresFinanceiros'));
         if (celulas.some(c => c.length != celulas[0].length)) return;
         const colunas = emColunas(celulas);
         // Primeiro os valores e rótulos variáveis de dentro de cada item ("Livre"/"Acima"),
@@ -98,6 +99,19 @@ function alinharResumosDosTitulos() {
         });
         igualarLarguras(colunas);
     });
+}
+
+// Reserva, Comprometido, Gastos e Liberdade são leituras do ciclo exibido: no ciclo único
+// entram no fim da primeira faixa do Débito (Hoje; Passado ou Futuro quando é a única).
+// Na comparação não há Débito, então ficam no cabeçalho, lendo o Até. Sem lugar no Débito,
+// o #rowVis vazio continua só empurrando os botões pra direita (e some quando desceria
+// pra uma linha própria, ver .semIndicadores no CSS).
+function encaixarIndicadoresNoDebito(noCicloUnico) {
+    const faixa = noCicloUnico && el('out').querySelector('.blk[data-bloco=db] .resumoDados');
+    if (faixa) faixa.append(el('indicadoresFinanceiros'));
+    el('rowVis').classList.toggle('semIndicadores', !!faixa);
+    // A largura disponível mudou de lugar: refaz a escolha de quais olhos cabem abertos.
+    ajustarOlhosIndicadores();
 }
 
 // Ao mudar a largura, o que cabe em cada linha muda: refaz o alinhamento Hoje/Futuro.
@@ -169,6 +183,9 @@ function desenhar() {
     // Reserva e Comprometido são leituras do ciclo final (Até), inclusive quando há
     // comparação. No Backlog e no modo simples não há uma referência financeira válida.
     const temCicloParaIndicadores = !simples && !noBacklog && !!el('compAte').value;
+    // O nó dos indicadores é sempre o mesmo (olhos ligados uma vez em charts.js): volta pro
+    // cabeçalho antes de #out ser reescrito, senão iria embora junto com o HTML antigo.
+    el('acoesAcompanhamento').append(el('indicadoresFinanceiros'));
     el('indicadoresFinanceiros').hidden = !temCicloParaIndicadores;
     if (temCicloParaIndicadores) atualizarIndicadoresFinanceiros(+el('compAte').value);
 
@@ -185,6 +202,7 @@ function desenhar() {
     // de verdade (blocos <-> matriz), onde nao ha posicao antiga que faca sentido.
     const scrollsAntigos = [...el('out').querySelectorAll('.wx, .wrap')].map(e => [e.scrollTop, e.scrollLeft]);
     el('out').innerHTML = modoBlocos ? vCiclo() : vComp();
+    encaixarIndicadoresNoDebito(temCicloParaIndicadores && modoBlocos);
     alinharResumosDosTitulos();
     atualizarCartoes();
     if (!trocouModo) {

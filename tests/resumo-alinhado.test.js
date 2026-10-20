@@ -11,9 +11,9 @@ const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 
 // Elemento falso: largura fixa, filhos e consulta por seletor simples (só o que a função usa).
-function elemento(largura, { classes = [], internos = [], filhos = [] } = {}) {
+function elemento(largura, { classes = [], internos = [], filhos = [], id = '' } = {}) {
     return {
-        style: {}, children: filhos, classList: { contains: c => classes.includes(c) },
+        id, style: {}, children: filhos, classList: { contains: c => classes.includes(c) },
         getBoundingClientRect: () => ({ width: largura }),
         querySelectorAll: () => internos,
     };
@@ -47,6 +47,16 @@ test('itens e valores das duas faixas ficam com a largura do maior', () => {
     assert.equal(meta.style.minWidth, undefined);
 });
 
+test('indicadores na faixa Hoje do Débito não desfazem o alinhamento com o Futuro', () => {
+    const hoje = [elemento(200), elemento(100)];
+    const futuro = [elemento(180), elemento(120)];
+    const indicadores = elemento(900, { id: 'indicadoresFinanceiros' });
+    rodar([[...hoje, indicadores], futuro]);
+    assert.equal(futuro[0].style.minWidth, '200px');
+    assert.equal(hoje[1].style.minWidth, '120px');
+    assert.equal(indicadores.style.minWidth, undefined);
+});
+
 test('larguras da janela anterior são apagadas antes de medir de novo', () => {
     const antigo = { style: { minWidth: '300px' } };
     rodar.antigos = [antigo];
@@ -66,7 +76,7 @@ test('faixas com estrutura diferente não são mexidas', () => {
 });
 
 test('alinhamento roda a cada desenho; Crédito tem a mesma estrutura em Hoje e Futuro', () => {
-    assert.match(interacoes, /el\('out'\)\.innerHTML = modoBlocos \? vCiclo\(\) : vComp\(\);\s*\n\s*alinharResumosDosTitulos\(\);/);
+    assert.match(interacoes, /el\('out'\)\.innerHTML = modoBlocos \? vCiclo\(\) : vComp\(\);\s*\n\s*encaixarIndicadoresNoDebito\(temCicloParaIndicadores && modoBlocos\);\s*\n\s*alinharResumosDosTitulos\(\);/);
     assert.match(visoes, /<span class=resumoRotulo>Hoje<\/span><span class=resumoDados>` \+\s*\n\s*resumoLimites\('limiteLivreHoje'\)/);
     assert.match(visoes, /<span class=resumoRotulo>Futuro<\/span><span class=resumoDados>` \+\s*\n\s*resumoLimites\('limiteLivreFuturo'\)/);
     assert.match(estilos, /\.resumoDados \{[\s\S]*?font-variant-numeric: tabular-nums;/);

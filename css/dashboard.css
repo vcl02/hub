@@ -65,6 +65,11 @@
           flex-basis: 100%;
           margin-left: 0;
       }
+
+      /* Com os indicadores na faixa do Débito, a linha própria ficaria vazia. */
+      #rowVis.semIndicadores {
+          display: none;
+      }
   }
 
   #acoesAcompanhamento {
@@ -413,6 +418,18 @@
   .resumoDados > .besteiraIndicador {
       border-left-color: var(--ln);
       color: var(--mu);
+  }
+
+  /* Indicadores na faixa Hoje do Débito (encaixarIndicadoresNoDebito), numa linha própria
+     dela: só o que sobrava depois de Isabella não cabia nem um olho aberto. O texto
+     acompanha o tamanho da faixa, em vez do tamanho do cabeçalho. */
+  .resumoDados > #indicadoresFinanceiros {
+      flex: 1 1 100%;
+  }
+
+  .resumoDados .indicadorRegra,
+  .resumoDados .nomeOlho {
+      font-size: inherit;
   }
 
   /* Faixas do Crédito: respiro maior entre os pares rótulo+valor (Fatura, Usado, Livre). */

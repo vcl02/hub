@@ -439,7 +439,8 @@ function blocoCasca(tituloHtml, subtitulo, n, idTabela, corpoFn, metaNoTitulo = 
     const btnTog = `<button type=button class=tog onclick="alternarBloco('${idTabela}')" aria-label="${fechado ? 'Expandir' : 'Recolher'}">${fechado ? '▸' : '▾'}</button>`;
     const corpo = fechado ? '' : corpoFn();
     const meta = metaNoTitulo ? '' : `<p class=meta>${textoMetaBloco(n, subtitulo)}</p>`;
-    return `<div class=blk><h3>${btnTog}${tituloHtml}</h3>${meta}${corpo}</div>`;
+    // data-bloco localiza o bloco depois de desenhado (ex.: os indicadores entram no Débito).
+    return `<div class=blk data-bloco=${idTabela}><h3>${btnTog}${tituloHtml}</h3>${meta}${corpo}</div>`;
 }
 
 // Fecho comum de todo resumo de título: </span> do .resumoDados, da .resumoLinha e do

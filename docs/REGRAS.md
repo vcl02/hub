@@ -528,7 +528,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - Essa conta só vê o bloco Débito (sem Crédito), e só navega entre o ciclo atual e o próximo (sem Backlog, sem ciclos mais antigos ou mais distantes, sem Comparar por intervalo — `atualizarCombos()` em `js/data-ui.js` nem oferece essas opções nos seletores).
 - A interface fica somente leitura: tabelas sem edição inline, sem Editar/Duplicar/Excluir/Materializar na barra de seleção (só soma e Limpar), sem cadastro de novo lançamento (`#abreNovo` escondido) e sem simulação (`#toggleSimulacao` escondido).
   Tocar uma linha ainda seleciona/desmarca pra somar valores — isso não grava nada.
-- Os indicadores financeiros (`#rowVis` inteiro), Gráfico, Visualizações, os indicadores de teto **Besteira**/**Isabella** nas faixas Hoje/Futuro do Débito, o botão de **diagnóstico** e o botão **Recarregar** ficam escondidos; não há filtro por coluna nas tabelas.
+- Os indicadores financeiros (no Débito e no cabeçalho), Gráfico, Visualizações, os indicadores de teto **Besteira**/**Isabella** nas faixas Hoje/Futuro do Débito, o botão de **diagnóstico** e o botão **Recarregar** ficam escondidos; não há filtro por coluna nas tabelas.
   As tabelas dessa conta não têm as colunas **ID**, **Reserva**, **Comprometido** e **Pra sempre**.
   Dados novos chegam só pela recarga automática de 5 minutos (que nunca consolida nessa conta).
 - A casca somente leitura é só a interface; a garantia real vem do RLS de `fin` (migration 20): somente o mantenedor grava — `INSERT`, `UPDATE` e `DELETE` exigem o `auth.uid()` dele —, qualquer outra conta logada (inclusive a restrita) apenas lê e o papel anônimo não tem nenhum acesso.
@@ -640,15 +640,18 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 - `fin.reserva` é um bit próprio (não mais texto dentro de `categ` — ver migration 22) usado pela meta; pode coexistir com qualquer categoria no mesmo lançamento, sem nenhuma relação com ela.
 
-### Indicadores do cabeçalho e Gráfico
+### Indicadores e Gráfico
 
 - **Gráfico** (ícone de barras) é botão só de ícone, com o nome no `title` e `aria-label`, no mesmo tamanho dos botões de navegação de ciclo, no bloco de botões à direita do cabeçalho, junto dos demais.
   O botão **Gráfico** é fixo: abre a pizza no ciclo único e a evolução ao comparar vários ciclos.
   No começo da barra de indicadores, **Reserva:** é um texto calculado pelo ciclo escolhido em **Até** (no ciclo único, De e Até são iguais), não um botão.
-  Os indicadores ficam no cabeçalho, na mesma linha da navegação de ciclo e dos botões de ação (entre os dois), em fluxo: **Reserva**, **Comprometido**, **Gastos** e **Liberdade** ficam numa linha quando cabem; quando não, os que não couberem quebram pra linha de baixo, cada um inteiro (nunca cortado no meio).
+  No ciclo único, os indicadores ficam **dentro da faixa Hoje do Débito**, numa linha própria dela, abaixo de Saldo, Guardado, Besteira e Isabella (no ciclo passado ou futuro, que só tem uma faixa, entram nela: Passado ou Futuro); o texto segue o tamanho da faixa.
+  Eles não entram no alinhamento Hoje/Futuro das faixas: o Futuro não tem esses itens.
+  Na comparação (De ≠ Até) não há Débito, então ficam no cabeçalho, na mesma linha da navegação de ciclo e dos botões de ação (entre os dois), lendo o Até.
+  Em fluxo: **Reserva**, **Comprometido**, **Gastos** e **Liberdade** ficam numa linha quando cabem; quando não, os que não couberem quebram pra linha de baixo, cada um inteiro (nunca cortado no meio).
   Nenhum tem linha própria fixa.
   A variação de Reserva e de Comprometido vem num selo discreto (fundo levemente mais claro, cantos arredondados) colado logo depois do próprio indicador, no mesmo item (ex.: `Reserva: 3,4% da meta` `↑2,2 p.p. · ↑R$ 900,00`), pra nunca parecer de outro indicador ao quebrar a linha.
-  Quando a janela é estreita demais pra caber ao lado da navegação e dos botões nem o maior indicador (até 1250px de largura, e no mobile), o bloco desce pra uma linha própria logo abaixo deles, que continuam juntos em cima.
+  No cabeçalho, quando a janela é estreita demais pra caber ao lado da navegação e dos botões nem o maior indicador (até 1250px de largura, e no mobile), o bloco desce pra uma linha própria logo abaixo deles, que continuam juntos em cima; com os indicadores no Débito, essa linha não aparece.
   Cada indicador tem um **olho** antes: aberto mostra o indicador; fechado deixa só o olho fechado e o nome (ex.: `Reserva`), e um clique alterna.
   Ao abrir a página e ao mudar a largura da janela, os olhos abrem na ordem Reserva, Comprometido, Gastos, Liberdade enquanto couberem sem quebrar a linha; o primeiro que não couber e os seguintes começam fechados.
   Assim, no desktop todos começam abertos e, conforme a tela estreita, vão fechando a partir da Liberdade; no celular, em geral, todos começam fechados.
