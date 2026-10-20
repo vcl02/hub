@@ -1,4 +1,4 @@
-// Reserva, Comprometido, Gastos e Liberdade moram na faixa Hoje do Débito no ciclo único e
+// Reserva, Gastos, Comprometido e Liberdade moram na faixa Hoje do Débito no ciclo único e
 // voltam ao cabeçalho na comparação; o nó é sempre o mesmo e sobrevive ao redesenho.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');

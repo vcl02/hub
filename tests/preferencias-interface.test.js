@@ -118,9 +118,10 @@ test('visualizações usam um único dropdown com acompanhamentos fixos', () => 
 
 test('indicadores financeiros ficam no cabeçalho, entre a navegação e os botões, separados por pipe', () => {
     const acoes = pagina.slice(pagina.indexOf('id=rowVis'));
-    assert.ok(acoes.indexOf('id=indicadorReserva') < acoes.indexOf('id=indicadorComprometido'));
-    assert.ok(acoes.indexOf('id=indicadorComprometido') < acoes.indexOf('id=indicadorProporcaoReserva'));
-    assert.ok(acoes.indexOf('id=indicadorProporcaoReserva') < acoes.indexOf('id=indicadorLiberdade'));
+    // Ordem: Reserva, Gastos (em Reserva), Comprometido, Liberdade.
+    assert.ok(acoes.indexOf('id=indicadorReserva') < acoes.indexOf('id=indicadorProporcaoReserva'));
+    assert.ok(acoes.indexOf('id=indicadorProporcaoReserva') < acoes.indexOf('id=indicadorComprometido'));
+    assert.ok(acoes.indexOf('id=indicadorComprometido') < acoes.indexOf('id=indicadorLiberdade'));
     // No cabeçalho: depois da navegação de ciclo e antes dos botões de ação.
     const cabecalho = pagina.slice(pagina.indexOf('<div class=head>'), pagina.indexOf('<p class=sub>'));
     assert.ok(cabecalho.indexOf('id=fciclNav') < cabecalho.indexOf('id=rowVis'));
@@ -286,7 +287,7 @@ test('indicadores sem olho: os quatro sempre visíveis, no padrão da faixa', ()
     assert.doesNotMatch(fs.readFileSync('css/dashboard.css', 'utf8'), /btOlho|nomeOlho|\.indicadorItem\.fechado/);
     assert.match(regras, /Não há olho para esconder indicador: os quatro aparecem sempre\./);
     assert.match(regras, /Seguem o padrão dos itens da faixa \(Besteira\/Isabella\): rótulo sem dois-pontos/);
-    assert.match(regras, /\*\*Gastos\*\* e \*\*Liberdade\*\* ficam numa linha quando cabem[^.]*\.\s+Nenhum tem linha própria fixa\./);
+    assert.match(regras, /\*\*Comprometido\*\* e \*\*Liberdade\*\* ficam numa linha quando cabem[^.]*\.\s+Nenhum tem linha própria fixa\./);
 });
 
 test('ícone Todas/Diferentes: sempre visível, só funciona com 2 ciclos e alterna o filtro', () => {

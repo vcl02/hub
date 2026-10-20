@@ -103,7 +103,7 @@ function alinharResumosDosTitulos() {
 }
 
 // Na faixa do Débito, os divisores da linha dos indicadores ficam embaixo dos da linha de
-// cima: o 1º de baixo (antes de Comprometido) embaixo do 1º de cima (antes de Besteira), o 2º
+// cima: o 1º de baixo (antes de Gastos) embaixo do 1º de cima (antes de Besteira), o 2º
 // embaixo do 2º, e assim por diante. Em cada par, o divisor que ficou pra trás é empurrado:
 // o item antes dele ganha a largura que falta — em cima, a coluna inteira (Hoje e Futuro
 // juntos, pra não desalinhar as faixas). Só vale pra pares na primeira linha de cada lado;
@@ -144,7 +144,7 @@ function alinharDivisoresDosIndicadores() {
     }
 }
 
-// Reserva, Comprometido, Gastos e Liberdade são leituras do ciclo exibido: no ciclo único
+// Reserva, Gastos, Comprometido e Liberdade são leituras do ciclo exibido: no ciclo único
 // entram no fim da primeira faixa do Débito (Hoje; Passado ou Futuro quando é a única).
 // Na comparação não há Débito, então ficam no cabeçalho, lendo o Até. Sem lugar no Débito,
 // o #rowVis vazio continua só empurrando os botões pra direita (e some quando desceria
