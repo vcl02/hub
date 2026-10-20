@@ -132,10 +132,12 @@ test('cartão Nubank no estilo do de verdade: círculos da bandeira e o "nu"; o 
     const nubank = f({ temHoje: true, cartoes: { nubank: { ...base, nome: 'Nubank' } } }, 'nubank');
     assert.match(nubank, /<svg class=cartaoBandeira /);
     assert.match(nubank, /<svg class=cartaoLogoNu /);
+    // n e u com a mesma altura (5,5 a 23) e traço grosso.
+    assert.match(nubank, /stroke-width=4\.2 [^>]*><path d="M4 23V12\.5a7 7 0 0 1 14 0V23M26 5\.5V16a7 7 0 0 0 14 0V5\.5"\/>/);
     assert.doesNotMatch(nubank, /cartaoVisa|cartaoMarcaDagua/);
     const mp = f({ temHoje: true, cartoes: { mp: { ...base, nome: 'Mercado Pago' } } }, 'mp');
     assert.doesNotMatch(mp, /cartaoBandeira|cartaoLogoNu/);
-    assert.match(regras, /Nubank roxo com os círculos da bandeira e o "nu" em traço fino; Mercado Pago grafite com "MER CADO PAGO" apagado na vertical e "VISA" em pé/);
+    assert.match(regras, /Nubank roxo com os círculos da bandeira e o "nu" em traço grosso, n e u da mesma altura; Mercado Pago grafite com "MER CADO PAGO" apagado na vertical e "VISA" em pé/);
 });
 
 test('ciclo passado: fatura fechada com compras brutas, pago/antecipado e o que restou, sem barra de uso', () => {

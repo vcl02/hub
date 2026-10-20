@@ -852,7 +852,7 @@ function htmlModalCartao(dados, cartao) {
         (x.antecipado > TOLERANCIA_FINANCEIRA ? `<small class=cartaoAntecipado>Já antecipado ${brl(x.antecipado)}</small>` : '') +
         `</div>`;
     // Desenho no estilo do cartão de verdade de cada emissor (logotipos simplificados): Nubank
-    // roxo com os dois círculos da bandeira e o "nu" em traço fino; Mercado Pago grafite com
+    // roxo com os dois círculos da bandeira e o "nu" em traço grosso; Mercado Pago grafite com
     // "MER CADO PAGO" apagado na vertical e "VISA" em pé. No lugar do nome impresso, a fatura.
     const contato = `<svg class=cartaoContato viewBox="0 0 24 24" fill=none stroke=currentColor stroke-width=2 stroke-linecap=round aria-hidden=true>` +
         `<path d="M8.5 8.5a5 5 0 0 1 0 7M12 6a8.5 8.5 0 0 1 0 12M15.5 3.5a12 12 0 0 1 0 17"/></svg>`;
@@ -864,8 +864,9 @@ function htmlModalCartao(dados, cartao) {
         : `<span class=cartaoMarcaDagua aria-hidden=true><span>MER</span><span>CADO</span><span>PAGO</span></span>` +
           `<span class=cartaoVisa aria-hidden=true>VISA</span>`;
     const logoNu = cartao === CARTAO_NUBANK
-        ? `<svg class=cartaoLogoNu viewBox="0 0 34 22" fill=none stroke=currentColor stroke-width=1.6 stroke-linecap=round aria-hidden=true>` +
-          `<path d="M2 21V9.5a6.5 6.5 0 0 1 13 0V21M19 1v11.5a6.5 6.5 0 0 0 13 0V1"/></svg>` : '';
+        // "nu" em traço grosso, n e u com a mesma altura e a mesma linha de base.
+        ? `<svg class=cartaoLogoNu viewBox="0 0 44 26" fill=none stroke=currentColor stroke-width=4.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true>` +
+          `<path d="M4 23V12.5a7 7 0 0 1 14 0V23M26 5.5V16a7 7 0 0 0 14 0V5.5"/></svg>` : '';
     return `<div class="cartaoArte cartao-${cartao}" title="Arraste para os lados para trocar de fatura">` + enfeites + chip + contato +
         `<div class=cartaoArteRodape><span class=cartaoTitular>${logoNu}` +
         `<span><small>${rotuloNoDesenho}</small><b>${brl(Math.abs(faturaDoCartaoNoDesenho))}</b></span></span>` +
