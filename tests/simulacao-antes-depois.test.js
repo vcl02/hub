@@ -18,13 +18,15 @@ const trecho = (fonte, assinatura) => {
 
 test('retrato ao ligar copia linha a linha (a simulação edita os objetos no lugar)', () => {
     const linha = { id: 1, v: -10 };
-    const ctx = { Estado: { lancamentos: [linha], limitesPorCiclo: new Map([[5, { teto_besteira: 100 }]]) } };
+    const ctx = { Estado: { lancamentos: [linha], metas: [{ id: 1, valor: 500 }], limitesPorCiclo: new Map([[5, { teto_besteira: 100 }]]) } };
     vm.runInNewContext(`${trecho(formulario, 'function guardarRetratoAntesDaSimulacao() {')}\nguardarRetratoAntesDaSimulacao();`, ctx);
     const retrato = ctx.Estado.retratoAntesDaSimulacao;
     linha.v = -999;
     ctx.Estado.limitesPorCiclo.get(5).teto_besteira = 0;
     assert.equal(retrato.lancamentos[0].v, -10);
     assert.equal(retrato.limitesPorCiclo.get(5).teto_besteira, 100);
+    ctx.Estado.metas[0].valor = 1;
+    assert.equal(retrato.metas[0].valor, 500);   // metas editadas na simulação também
     // Liga → retrato; desliga (recarga ok) → descarta; recarregar no meio → novo retrato.
     assert.match(formulario, /Estado\.simulando = true;\s*\n\s*guardarRetratoAntesDaSimulacao\(\);/);
     assert.match(formulario, /Estado\.simulando = false;\s*\n\s*Estado\.retratoAntesDaSimulacao = null;/);

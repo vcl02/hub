@@ -310,9 +310,11 @@ function corDoLimiteCategoria(percentual) {
     return percentual >= 70 ? 'am' : 'vd';
 }
 
+// Lançamentos reais mais as linhas do plano das metas (parcelas e financiamentos futuros já
+// são compromisso); as previstas de Besteira/Isabella ficam fora, como sempre.
 function dadosCompromissosCiclo(idxPeriodo) {
     const periodo = Estado.ciclos[idxPeriodo];
-    const linhas = Estado.lancamentos
+    const linhas = [...Estado.lancamentos, ...linhasDasMetas()]
         .filter(r => r.periodoIdx == idxPeriodo)
         .map(r => ({ ...r, _transferencia: ehTransferenciaFatura(r) }));
     return { periodo, ...dadosCompromissosDoCiclo(linhas) };

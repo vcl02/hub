@@ -469,6 +469,7 @@ el('fParcelas').addEventListener('change', () => atualizarFaturasDoFormulario())
 
 
 function abreModalNovo(prefill, modoEdicao) {
+    Estado._compraDaMeta = null;   // cadastro comum; abrirEtapaDaCompraDaMeta põe de volta
     el('formNovo').reset();
     popularCategoriasNoForm();
     popularNomesNoForm();
@@ -1188,6 +1189,7 @@ async function submeteNovoLancamento() {
         el('fCateg').value = '';   // categoria vinha do nome; sem nome, nao faz sentido manter
         popularCategoriasNoForm();   // recalcula popularidade com o lancamento recem-criado
         popularNomesNoForm();        // a próxima digitação já oferece o novo nome e categoria
+        if (Estado._compraDaMeta) await avancarCompraDaMeta();
         desenhar();
         el('fNome').focus();
     } catch (err) {
@@ -1196,6 +1198,54 @@ async function submeteNovoLancamento() {
         el('salvaNovo').disabled = false;
         el('salvaNovo').textContent = Estado.simulando ? 'Simular' : 'Salvar';
     }
+}
+
+// ---- comprar uma meta: o mesmo cadastro, já preenchido com o plano ----
+// À vista: um débito. Cartão: crédito em N vezes, dividido, nas faturas do cartão do plano.
+// Financiamento: duas etapas — a entrada (débito) e depois as parcelas (débito em N vezes,
+// sem dividir, Comprometido). A pessoa confere, escolhe a categoria e salva cada uma; depois
+// da última, a meta vira "comprada" (some da lista e das projeções: agora é lançamento).
+// Sem plano que caiba, parte do à vista, e a pessoa ajusta o que quiser.
+function etapasDaCompraDaMeta(meta, plano) {
+    if (plano?.forma === 'cartao') {
+        return [{ nome: meta.nome, cred: true, v: -meta.valor, vezes: plano.parcelas, dividir: true, cartao: plano.cartao }];
+    }
+    if (plano?.forma === 'financiamento') {
+        return [
+            ...(plano.entrada > TOLERANCIA_FINANCEIRA ? [{ nome: `Entrada · ${meta.nome}`, cred: false, v: -plano.entrada }] : []),
+            ...(plano.parcelas ? [{ nome: meta.nome, cred: false, v: -plano.parcela, vezes: plano.parcelas, dividir: false, comprometido: true }] : []),
+        ];
+    }
+    return [{ nome: meta.nome, cred: false, v: -meta.valor }];
+}
+
+function abreCompraDaMeta(meta, plano) {
+    const etapas = etapasDaCompraDaMeta(meta, plano);
+    if (!etapas.length) return;
+    abrirEtapaDaCompraDaMeta({ metaId: meta.id, nome: meta.nome, etapas });
+}
+
+function abrirEtapaDaCompraDaMeta(compra) {
+    const etapa = compra.etapas[0];
+    if (modalNovo.open) modalNovo.close();
+    abreModalNovo({ nome: etapa.nome, categ: '', data: hojeISO(), cred: etapa.cred, v: etapa.v, pago: true, comprometido: !!etapa.comprometido });
+    Estado._compraDaMeta = compra;
+    el('tituloNovo').textContent = `${Estado.simulando ? 'Simular' : 'Comprar'} · ${compra.nome}`;
+    if (etapa.vezes > 1) {
+        el('fParcelas').value = etapa.vezes;
+        el('fDivide').checked = !!etapa.dividir;
+    }
+    if (etapa.cred) atualizarFaturasDoFormulario(faturasSugeridasParaParcelas(hojeISO(), etapa.vezes || 1, null, etapa.cartao), etapa.cartao);
+    atualizaSinalUI();
+}
+
+// Depois de salvar uma etapa: abre a próxima ou marca a meta como comprada.
+async function avancarCompraDaMeta() {
+    const compra = Estado._compraDaMeta;
+    compra.etapas.shift();
+    if (compra.etapas.length) { abrirEtapaDaCompraDaMeta(compra); return; }
+    Estado._compraDaMeta = null;
+    if (Estado.metas.some(m => m.id === compra.metaId)) await gravarMudancaDaMeta('atualizar', compra.metaId, { status: 'comprada' });
 }
 
 // Editar (ver el('seledit')): a MESMA linha, nunca gera lançamento novo. Principal uso é
@@ -1338,6 +1388,7 @@ async function salvaLancamentoParceladoNoBanco({ nome, categ, freq, data, cred, 
 function guardarRetratoAntesDaSimulacao() {
     Estado.retratoAntesDaSimulacao = {
         lancamentos: Estado.lancamentos.map(r => ({ ...r })),
+        metas: Estado.metas.map(m => ({ ...m })),
         limitesPorCiclo: new Map([...Estado.limitesPorCiclo].map(([id, linha]) => [id, { ...linha }])),
     };
 }

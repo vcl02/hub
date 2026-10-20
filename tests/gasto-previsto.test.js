@@ -167,6 +167,7 @@ test('previstas e faturas: Mensal, Aberto, Comprometido e Pra sempre só na exib
     // Marcado em linha só leitura fica na mesma cor das linhas reais.
     assert.match(ler('js/tables.js'), /: \(marcado \? `<span class=\$\{COR_FLAG\[chave\]\}>\$\{texto\}<\/span>` : texto\);/);
     // O indicador Comprometido continua lendo só lançamentos reais.
-    assert.match(graficos, /const linhas = Estado\.lancamentos\s*\n\s*\.filter\(r => r\.periodoIdx == idxPeriodo\)/);
+    // Comprometido: lançamentos reais e as linhas do plano das metas — nunca as previstas de Besteira/Isabella.
+    assert.match(graficos, /const linhas = \[\.\.\.Estado\.lancamentos, \.\.\.linhasDasMetas\(\)\]\s*\n\s*\.filter\(r => r\.periodoIdx == idxPeriodo\)/);
     assert.match(regras, /Mostram Frequência \*\*Mensal\*\*, Pago \*\*Aberto\*\*, \*\*Comprometido\*\* e \*\*Pra sempre\*\*/);
 });

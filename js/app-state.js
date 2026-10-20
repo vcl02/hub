@@ -9,6 +9,7 @@ const TABELA_FIN = 'fin';
 // Ciclos (inicio/fim) e as escolhas de cada um (tetos Besteira/Isabella, Aprovado,
 // Garantia), uma linha por ciclo (migrations 25 e 26).
 const TABELA_FIN_CICLO = 'fin_ciclo';
+const TABELA_FIN_META = 'fin_meta';   // metas e âncoras (migration 36)
 
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 // Marco histórico: ciclos anteriores não entram na cascata do saldo, para não misturar
@@ -50,6 +51,8 @@ const Estado = {
     // Retrato dos dados reais (lançamentos e escolhas por ciclo) tirado ao ligar a simulação,
     // pra mostrar "antes → depois" nos números que ela mudou. null fora da simulação.
     retratoAntesDaSimulacao: null,
+    // Metas e âncoras (fin_meta, migration 36). Vazio sem a tabela: o resto do app segue igual.
+    metas: [], temMetas: false,
     // id do ciclo -> linha de fin_ciclo (escolhas vazias = padrões/herança).
     limitesPorCiclo: new Map(),
     ultimaCarga: 0, ultimaConsolidacao: 0, gravacoes: 0, gravacoesNaUltimaCarga: 0, cargasEmAndamento: 0,

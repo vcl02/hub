@@ -176,13 +176,14 @@ function encaixarIndicadoresNoDebito(noCicloUnico) {
 // Estado voltam como estavam, então o desenho de verdade (simulado) não muda em nada.
 function comDadosAntesDaSimulacao(fn) {
     const salvo = {
-        lancamentos: Estado.lancamentos, limitesPorCiclo: Estado.limitesPorCiclo,
+        lancamentos: Estado.lancamentos, limitesPorCiclo: Estado.limitesPorCiclo, metas: Estado.metas,
         cartoesDoCiclo: Estado.cartoesDoCiclo, fechados: { ...Estado.fechados },
         cicloQuitadoRecolhido: Estado.cicloQuitadoRecolhido,
         valorFaturaPorCiclo: { ...Estado.valorFaturaPorCiclo }, linhasVisiveis: { ...Estado.linhasVisiveis },
     };
     Estado.lancamentos = Estado.retratoAntesDaSimulacao.lancamentos;
     Estado.limitesPorCiclo = Estado.retratoAntesDaSimulacao.limitesPorCiclo;
+    Estado.metas = Estado.retratoAntesDaSimulacao.metas || Estado.metas;
     limparCachesFinanceiros();
     try {
         return fn();
@@ -325,6 +326,7 @@ function desenhar() {
     if (antesDaSimulacao) marcarAntesDaSimulacao(antesDaSimulacao);
     alinharResumosDosTitulos();
     atualizarCartoes();
+    atualizarMetas();
     if (!trocouModo) {
         [...el('out').querySelectorAll('.wx, .wrap')].forEach((e, i) => {
             if (!scrollsAntigos[i]) return;
@@ -860,6 +862,114 @@ el('modalCartao').addEventListener('keydown', e => {
 let ultimoArrasteCartao = 0;
 el('modalCartao').addEventListener('click', e => {
     if (e.target == el('modalCartao') && Date.now() - ultimoArrasteCartao > 300) el('modalCartao').close();
+});
+
+// ===================================================================
+// METAS (botão do cabeçalho → #modalMetas)
+// ===================================================================
+// Botão só com a tabela (migration 36) e fora da conta restrita. O modal é refeito a cada
+// desenho com ele aberto: um campo salvo redesenha a tela, e o plano de todas as metas muda.
+function atualizarMetas() {
+    el('btMetas').hidden = !Estado.temMetas || modoRestrito();
+    if (el('modalMetas').open) el('corpoMetas').innerHTML = htmlModalMetas(planoDasMetas());
+}
+el('btMetas').onclick = () => {
+    el('corpoMetas').innerHTML = htmlModalMetas(planoDasMetas());
+    el('modalMetas').showModal();
+    el('modalMetas').focus();   // não abre o teclado do celular num campo
+};
+el('modalMetas').addEventListener('click', e => {
+    if (e.target == el('modalMetas')) el('modalMetas').close();
+});
+
+// Valor de cada campo como vai pro banco. Vazio vira null (valor e mês vazios: a meta fica
+// sem plano). Devolve undefined quando o texto é inválido.
+function valorDoCampoDaMeta(campo, texto) {
+    const t = String(texto ?? '').trim();
+    if (campo === 'nome') return t || undefined;
+    if (campo === 'forma') return t in FORMAS_DA_META ? t : undefined;
+    if (campo === 'mes') return t ? (/^\d{4}-\d{2}$/.test(t) ? `${t}-01` : undefined) : null;
+    if (campo === 'ancora_meta_id') return t ? +t : null;
+    if (campo === 'deslocamento') return /^[-−]?\d+$/.test(t) ? +t.replace('−', '-') : t ? undefined : 0;
+    if (campo === 'parcelas') return t ? (/^\d+$/.test(t) && +t >= 1 && +t <= 120 ? +t : undefined) : null;
+    if (!t) return null;
+    const n = Math.round(numeroDoLimiteDigitado(t) * 100) / 100;
+    if (!Number.isFinite(n) || n < 0 || (campo === 'valor' && n <= 0)) return undefined;
+    return n;
+}
+
+// Grava uma mudança (ou insere/exclui): no banco, ou só na memória durante a simulação, como
+// toda edição simulada. A tela recarrega pelo aposGravar; a memória já reflete na hora.
+async function gravarMudancaDaMeta(acao, id, campos) {
+    try {
+        if (Estado.simulando) {
+            if (acao === 'inserir') Estado.metas.push({ id: -(++Estado._proxIdSimulado), forma: 'auto', deslocamento: 0, status: 'aberta', valor: null, mes: null, ancora_meta_id: null, ...campos });
+            if (acao === 'atualizar') Object.assign(Estado.metas.find(m => m.id === id), campos);
+            if (acao === 'excluir') {
+                Estado.metas = Estado.metas.filter(m => m.id !== id);
+                Estado.metas.forEach(m => { if (m.ancora_meta_id === id) m.ancora_meta_id = null; });   // como o on delete set null
+            }
+        } else if (acao === 'inserir') {
+            Estado.metas.push(normalizarMeta(await inserirMeta(campos)));
+        } else if (acao === 'atualizar') {
+            // Já na memória antes de gravar: um segundo "change" igual no meio do caminho não
+            // manda outro PATCH. Falhou, volta ao que era.
+            const meta = Estado.metas.find(m => m.id === id);
+            const antes = Object.fromEntries(Object.keys(campos).map(k => [k, meta[k]]));
+            Object.assign(meta, campos);
+            try {
+                Object.assign(meta, normalizarMeta(await atualizarMeta(id, campos)));
+            } catch (err) {
+                Object.assign(meta, antes);
+                throw err;
+            }
+        } else {
+            await excluirMeta(id);
+            Estado.metas = Estado.metas.filter(m => m.id !== id);
+            Estado.metas.forEach(m => { if (m.ancora_meta_id === id) m.ancora_meta_id = null; });
+        }
+    } catch (err) {
+        mostrarToast('Meta não salva', err.message);
+    }
+    desenhar();
+}
+
+const proximoMesISO = () => `${somaMeses(hojeISO(), 1).slice(0, 7)}-01`;
+el('corpoMetas').addEventListener('change', e => {
+    const input = e.target.closest('[data-campo]');
+    const linha = e.target.closest('[data-meta]');
+    if (!input || !linha) return;
+    const id = +linha.dataset.meta;
+    const meta = Estado.metas.find(m => m.id === id);
+    const campo = input.dataset.campo;
+    const valor = valorDoCampoDaMeta(campo, input.value);
+    if (!meta || valor === undefined) { mostrarToast('Valor inválido', 'Confira o campo e tente de novo.'); desenhar(); return; }
+    if ((meta[campo] ?? null) === valor) return;
+    // Ligar a uma âncora começa no mesmo mês dela; voltar pra "Mês" parte do mês que a âncora dava.
+    const campos = { [campo]: valor };
+    if (campo === 'ancora_meta_id' && valor == null && !meta.mes) campos.mes = mesDaMeta(meta, new Map(Estado.metas.map(m => [m.id, m]))) || proximoMesISO();
+    if (campo === 'ancora_meta_id' && valor != null) campos.deslocamento = 0;
+    gravarMudancaDaMeta('atualizar', id, campos);
+});
+el('corpoMetas').addEventListener('click', e => {
+    const botao = e.target.closest('[data-acao]');
+    if (!botao) return;
+    const acao = botao.dataset.acao;
+    if (acao === 'novaMeta') return gravarMudancaDaMeta('inserir', null, { nome: 'Nova meta', valor: 1000, mes: proximoMesISO() });
+    if (acao === 'novaAncora') return gravarMudancaDaMeta('inserir', null, { nome: 'Nova âncora', mes: proximoMesISO() });
+    const id = +botao.closest('[data-meta]').dataset.meta;
+    const meta = Estado.metas.find(m => m.id === id);
+    if (!meta) return;
+    if (acao === 'excluir') {
+        const ligadas = Estado.metas.filter(m => m.ancora_meta_id === id).length;
+        if (!confirm(`Excluir "${meta.nome}"?${ligadas ? ` ${ligadas} meta(s) ligada(s) a ela ficam sem data.` : ''}`)) return;
+        return gravarMudancaDaMeta('excluir', id);
+    }
+    if (acao === 'comprar') {
+        const plano = planoDasMetas().find(p => p.meta.id === id);
+        el('modalMetas').close();
+        abreCompraDaMeta(meta, plano);
+    }
 });
 
 // Recalcula em qual ciclo um lancamento cai, com a MESMA regra da carga inicial

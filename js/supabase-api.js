@@ -186,8 +186,52 @@ const salvarLimiteDoCiclo = async (cicloId, campo, valor) => comRetentativas(asy
     return aposGravar(linhas[0]);
 });
 
+// Números do PostgREST (numeric vem como texto) e mês como AAAA-MM-DD.
+const numeroOuNulo = v => (v == null ? null : +v);
+const normalizarMeta = m => ({
+    ...m, valor: numeroOuNulo(m.valor), entrada: numeroOuNulo(m.entrada), juros_mensal: numeroOuNulo(m.juros_mensal),
+    custo_mensal: numeroOuNulo(m.custo_mensal), mes: m.mes ? dataISO(m.mes) : null,
+});
+
+// Metas (fin_meta, migration 36): sem a tabela (404 do PostgREST), a tela segue sem metas em
+// vez de travar a carga — o botão Metas só aparece com ela (Estado.temMetas). Qualquer outro
+// erro derruba a carga como as outras tabelas: sumir com as metas mudaria as projeções calado.
+async function carregarMetas() {
+    try {
+        Estado.metas = (await buscar(TABELA_FIN_META)).map(normalizarMeta);
+        Estado.temMetas = true;
+    } catch (err) {
+        if (!/: 404 |PGRST205/.test(err.message)) throw err;
+        Estado.metas = [];
+        Estado.temMetas = false;
+    }
+}
+
+// Grava metas: mesma forma das outras tabelas (PATCH/DELETE por id exato, POST devolvendo a
+// linha). O id vai sempre por encodeURIComponent no filtro.
+const gravarMeta = async (metodo, id, campos) => {
+    const filtro = id == null ? '' : `?id=eq.${encodeURIComponent(id)}`;
+    const executar = async () => {
+        const r = await fetchComLimite(`${API}/rest/v1/${TABELA_FIN_META}${filtro}`, {
+            method: metodo,
+            headers: { apikey: KEY, Authorization: 'Bearer ' + await tokenAtual(), 'Content-Type': 'application/json', Prefer: 'return=representation' },
+            body: campos ? JSON.stringify(campos) : undefined,
+        }, 'gravar meta');
+        if (!r.ok) throw Error(`gravar meta: ${r.status} ${r.texto}`);
+        const linhas = JSON.parse(r.texto);
+        if (!linhas.length) throw Error('meta não gravada (RLS/policy do Supabase pode estar bloqueando)');
+        return aposGravar(linhas[0]);
+    };
+    // PATCH e DELETE são idempotentes; POST nunca repete sozinho (duplicaria a meta).
+    return metodo === 'POST' ? executar() : comRetentativas(executar);
+};
+const inserirMeta = campos => gravarMeta('POST', null, campos);
+const atualizarMeta = (id, campos) => gravarMeta('PATCH', id, campos);
+const excluirMeta = id => gravarMeta('DELETE', id, null);
+
 async function carregarDados() {
     const lancamentosCrus = await buscar(TABELA_FIN);
+    await carregarMetas();
     // fin.pra_sempre vem da migration 31: sem ela, o app não mostra nem grava o campo.
     Estado.temPraSempre = lancamentosCrus.some(r => 'pra_sempre' in r);
     // Os ciclos são as linhas de fin_ciclo (inicio/fim, migration 26). Sem a tabela nesse

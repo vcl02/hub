@@ -867,6 +867,115 @@
       margin-top: .1rem;
   }
 
+  /* =========================================================
+       MODAL — METAS (botão do cabeçalho)
+       ========================================================= */
+
+  dialog#modalMetas {
+      color: var(--fg);
+      background: var(--pa);
+      border: 1px solid var(--ln);
+      border-radius: 14px;
+      padding: 1rem;
+      width: min(56rem, 94vw);
+      max-height: 88vh;
+      max-height: 88dvh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px var(--shadow);
+  }
+
+  /* O foco ao abrir vai pro próprio modal (não abre o teclado): sem contorno nele. */
+  dialog#modalMetas:focus {
+      outline: none;
+  }
+
+  /* Comprar e Excluir sempre juntos, no fim da linha. */
+  .metaBotoes {
+      display: inline-flex;
+      gap: .4rem;
+      margin-left: auto;
+  }
+
+  .metasAcoes {
+      display: flex;
+      justify-content: flex-end;
+      gap: .5rem;
+      margin-bottom: .6rem;
+  }
+
+  /* Uma meta por bloco: a linha principal (nome, valor, quando, forma, ações) e, embaixo,
+     os campos que só valem pra forma escolhida e o plano calculado. */
+  .metaLinha {
+      padding: .55rem .6rem;
+      margin-bottom: .45rem;
+      background: var(--bg-soft);
+      border: 1px solid var(--ln);
+      border-radius: 9px;
+  }
+
+  .metaLinha.metaAncora {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+  }
+
+  .metaPrincipal,
+  .metaDetalhe {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: .4rem .5rem;
+  }
+
+  .metaDetalhe {
+      margin-top: .4rem;
+      color: var(--mu);
+      font-size: .82rem;
+  }
+
+  .metaLinha input,
+  .metaLinha select {
+      padding: .3rem .45rem;
+      font: inherit;
+      font-size: .88rem;
+      color: var(--fg);
+      background: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 6px;
+  }
+
+  .metaLinha .metaNome {
+      flex: 1 1 11rem;
+      min-width: 0;
+      font-weight: 600;
+  }
+
+  .metaValor input { width: 7.5rem; }
+  .metaLinha .metaCurto { width: 4rem; }
+  .metaLinha .metaMedio { width: 6.5rem; }
+
+  .metaDetalhe label {
+      display: inline-flex;
+      align-items: center;
+      gap: .3rem;
+  }
+
+  .metaIcone {
+      display: inline-flex;
+      color: var(--mu);
+  }
+
+  /* O plano empurra pra direita e quebra inteiro pra linha de baixo quando não cabe. */
+  .metaPlano {
+      margin-left: auto;
+      font-size: .84rem;
+      font-weight: 600;
+  }
+
+  .metaPlano.vd { color: var(--vd); }
+  .metaPlano.vm { color: var(--vm); }
+  .metaPlano.neutro { color: var(--mu); }
+
   /* Cadastro no Crédito: Livre Hoje do cartão antes → depois da compra, discreto sob a
      Fatura; sem limite, a linha inteira fica vermelha. */
   .limiteNoCadastro {

@@ -91,6 +91,14 @@ O celular lê as notificações do Nubank no Tasker (`tasker/*.xml`) e envia cad
 - Sem o secret (ou com menos de 32 caracteres) a função recusa tudo (503); token errado dá 401. A comparação é feita pelos hashes, em tempo constante.
 - **Trocar o token:** gerar um novo (ex.: no DataGrip, `select replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '')`, que mostra o valor só no resultado), gravá-lo no secret `FIN_TOKEN` e em `%FINTOKEN`. A troca do secret vale na hora, sem deploy, e o token antigo para de funcionar.
 
+## Metas (migration 36)
+
+- *Tabela própria, só com o que o mantenedor decide:* `fin_meta` guarda nome, valor médio, mês (ou âncora ± meses), forma, vezes, entrada, juros, custo/mês e status. O plano não é gravado: é recalculado a cada desenho, porque depende de tudo o que muda todo dia (guardado projetado, limite, Comprometido).
+- *Âncora na mesma tabela:* uma meta sem valor é uma data com nome (ex.: Chaves do AP). Evita outra tabela e mantém tudo editável no DataGrip. A coluna se chama `ancora_meta_id`, e não `ancora_id`, porque um teste antigo proíbe `ancora_id` no código (era a âncora de ciclo, extinta na migration 26).
+- *Escolhas do mantenedor (20/10/2026):* as metas entram nas projeções como linhas previstas; podem usar o guardado abaixo da meta da Reserva (o atraso aparece na data dela); financiamento sem taxa informada usa 3% a.m.; âncora já na 1ª versão.
+- *Plano em cascata, não otimização:* cada meta, pela data, fica com a primeira forma que cabe (à vista, depois cartão sem juros em 10x; financiamento só quando a meta pede). É previsível e explicável no próprio texto do plano; uma busca pela "melhor combinação" de todas as metas mudaria o plano de uma meta por causa de outra sem que isso fique claro na tela.
+- *Plano calculado com os caches zerados:* `limparCachesFinanceiros` refaz o plano na hora. Se ele nascesse no meio de um saldo em cálculo (a memoização trava o ciclo com 0 enquanto calcula), o guardado projetado sairia errado.
+
 ## Documentação de produto
 
 As regras financeiras vivem em `docs/REGRAS.md`, junto das decisões e do checklist de publicação. O `AGENTS.md` na raiz continua curto e operacional, para orientar manutenção e automação.

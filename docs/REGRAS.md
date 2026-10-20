@@ -218,7 +218,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 - Erros operacionais usam toast, sem interromper a tela com `alert()`.
   Cada toast tenta tocar um tom curto e baixo, sem arquivo externo; bloqueio de autoplay do navegador nunca impede o aviso visual.
-  As únicas caixas nativas (`confirm()`) permitidas são: a confirmação antes de excluir um lançamento real ou simulado, porque essa ação não pode ser desfeita; a confirmação ao marcar como pago um Débito cuja data cai fora do ciclo atual (ver regra do badge Pago abaixo), porque é o mesmo padrão da recorrência que nasce paga sem querer; e a confirmação ao corrigir a data de uma recorrência duplicada no ciclo (ver regra logo abaixo) — nos três casos, por alterar dado real sem volta fácil.
+  As únicas caixas nativas (`confirm()`) permitidas são: a confirmação antes de excluir um lançamento real ou simulado, porque essa ação não pode ser desfeita; a confirmação ao marcar como pago um Débito cuja data cai fora do ciclo atual (ver regra do badge Pago abaixo), porque é o mesmo padrão da recorrência que nasce paga sem querer; a confirmação ao corrigir a data de uma recorrência duplicada no ciclo (ver regra logo abaixo); e a confirmação antes de excluir uma meta ou âncora (ver **Metas**) — nos quatro casos, por alterar dado real sem volta fácil.
 
 ### Recorrência duplicada no mesmo ciclo
 
@@ -642,6 +642,27 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - A separação entre modal de inconsistências, toast operacional e resumo único de métricas no Console é coberta por `node --test tests/diagnosticos-interface.test.js`.
 - `.editorconfig` padroniza edição futura, e `node scripts/check.mjs` bloqueia tabs, espaços finais e arquivos sem newline final; o contrato é coberto por `node --test tests/estilo-editorconfig.test.js`.
 - A suíte inteira deve rodar com `node --test tests/*.test.js`. Ela é local e não cria lançamentos de teste nem valida uma sessão real do Supabase.
+
+## Metas
+
+- **Metas** (botão-ícone de alvo no cabeçalho, tabela `fin_meta`, migration 36) são compras futuras que se sabe que vão acontecer (carro, móveis, geladeira, vistoria do AP): só **nome**, **valor médio** e **quando** são obrigatórios; o resto o app calcula.
+  O botão só aparece com a tabela no banco e nunca na conta restrita.
+  **Âncora** é uma data com nome (ex.: "Chaves do AP"), sem valor: uma meta pode seguir uma âncora com deslocamento em meses (antes, negativo; depois, positivo), e mudar a data da âncora move todas as metas ligadas a ela.
+  Um nível só: a âncora vale pelo mês dela. Excluir a âncora deixa as metas dela sem data (sem plano) até ganharem um mês.
+  O mês de uma meta é o ciclo que começa naquele mês (o mesmo nome da navegação, ex.: Mar/27); fora dos ciclos carregados, não há plano.
+- **Plano**, recalculado a cada desenho, em cascata pela data (as metas disputam o mesmo guardado e o mesmo limite; empate, a mais antiga):
+  **À vista**, se o guardado projetado do ciclo (com o Aporte sugerido/Resgate de cada ciclo), menos o que as metas anteriores já usaram até ele, cobre o valor. As metas podem usar o guardado abaixo da meta da Reserva: o atraso aparece na data da Reserva.
+  **Cartão** parcelado sem juros (10x, ou as vezes da meta), no primeiro cartão (Nubank, depois Mercado Pago) cujo Livre naquele ciclo — faturas até ele quitadas, compras confirmadas cobradas depois e compras de metas anteriores ainda não cobradas ocupando — comporta a compra inteira, e desde que as parcelas não levem o Comprometido acima do teto de 50% em nenhum ciclo.
+  **Financiamento**, só quando a meta pede: entrada (a da meta ou, sem ela, todo o guardado disponível) à vista e o resto em parcelas fixas (Price) com os juros da meta ou **3% a.m.**, no menor prazo (6 a 60 meses, ou o da meta) que não leva o Comprometido acima do teto; as parcelas são Comprometido.
+  **Automático** tenta à vista e depois cartão; as demais formas forçam a escolhida.
+  Se nada cabe no mês pedido, a meta fica nele, à vista (o buraco aparece no saldo e no Resgate daquele ciclo), e o plano diz quanto falta e o primeiro ciclo em que caberia.
+  **Custo/mês** (seguro, condomínio) entra como Comprometido em todos os ciclos depois da compra.
+- O plano vira **linhas previstas** (id negativo, como as de Besteira/Isabella, nunca gravadas): entram nas tabelas, no saldo, no Aporte sugerido/Resgate, no guardado, na data da Reserva, na fatura e no Livre Futuro, e — diferente das previstas de Besteira/Isabella — também no **Comprometido**, porque parcela e financiamento futuros já são compromisso.
+- No modal, cada meta mostra o plano ao lado: `Mar/27 · Nubank 10x R$ 400,00 · Comprometido até 46,0%`, `Mar/27 · à vista`, `Ago/27 · entrada R$ 8.000,00 + 36x R$ 1.004,60` ou, em vermelho, `Mar/27 · não cabe, faltam R$ 1.200,00 · cabe em Jun/27`; o hover traz o guardado disponível e os juros do financiamento.
+  Os campos editam na própria linha: nome, valor, quando (Mês ou uma âncora ± meses), forma; Vezes só em Cartão e Financiamento; Entrada e Juros só em Financiamento; Custo/mês sempre.
+- **Comprar** abre o cadastro já preenchido com o plano, pra conferir, escolher a categoria e salvar: à vista, um débito; cartão, crédito em N vezes dividido nas faturas do cartão do plano; financiamento, duas etapas (a entrada e depois as parcelas, débito em N vezes, Comprometido).
+  Depois da última etapa, a meta vira **comprada** e sai da lista e das projeções (agora é lançamento).
+- Na simulação, criar, editar, excluir e comprar metas fica só na memória, como todo o resto.
 
 ## Reserva emergência
 
