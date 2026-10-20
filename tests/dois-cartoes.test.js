@@ -220,7 +220,7 @@ test('toda faixa tem Fatura e Usado, nas duas linhas, mesmo quando coincidem (al
 
 test('nas faixas do Crédito o valor fica colado no próprio rótulo, com respiro entre os pares', () => {
     const estilos = ler('css/dashboard.css');
-    assert.match(estilos, /\.resumoDados \.limiteCartao b \{\s*\n\s*min-width: 0;\s*\n\s*text-align: left;/);
+    assert.match(estilos, /\.resumoDados b \{\s*\n\s*display: inline-block;\s*\n\s*text-align: left;/);
     assert.match(estilos, /\.resumoDados > \.limiteCartao\.temPedacos \{\s*\n\s*column-gap: \.9em;/);
     assert.match(regras, /Cada valor fica colado no próprio rótulo \("Fatura R\$ 54,48"\)/);
 });

@@ -489,8 +489,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Esse alinhamento é refeito quando a largura da janela muda.
   Com a tela estreita, um item que não cabe na linha desce inteiro; se nem sozinho couber, quebra só entre seus pedaços — Besteira/Isabella em `nome % Usado/Ultrapassado`, `· valor Livre/Acima` e `de/dos teto`; o Total (e o único cartão) em `nome`, `Fatura valor`, `Usado valor`, `Livre valor`, `de teto`, `Aprovado` e `Garantido` —, nunca no meio de um valor ou separando "de" do teto.
   O divisor vertical entre itens nunca aparece no começo de uma linha.
-  Os valores também têm tamanho fixo: todo valor em reais nas faixas reserva a largura de `-R$ 99.999,99` e todo percentual a de `100%`, então a faixa não muda de largura quando os números mudam (outro ciclo, um lançamento novo).
-  Quando só uma faixa do Crédito abre com o valor da fatura, a outra reserva esse lugar vazio.
+  Em todas as faixas (Saldo, Guardado, Besteira/Isabella e cartões), cada valor fica colado no próprio rótulo ("Saldo R$ 0,00"), com a sobra de largura depois dele; só o percentual reserva a largura de `100%`, pra o rótulo seguinte não andar quando o número muda.
   Só alinha quando as faixas têm a mesma estrutura.
 - Nos blocos com título em faixas (Débito e Crédito), "N registros · período" fica encaixado no fim da faixa **Futuro**, à direita, em vez de ocupar uma linha própria entre o título e a tabela; sem a faixa Futuro (ciclo quitado, ciclo passado), vai no fim da única faixa.
   Blocos de título compacto (Crédito histórico, Backlog, Comparar) mantêm a linha própria.

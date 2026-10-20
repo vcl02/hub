@@ -73,11 +73,13 @@ test('alinhamento roda a cada desenho; Crédito tem a mesma estrutura em Hoje e 
     assert.match(regras, /cada item fica exatamente embaixo do correspondente da outra faixa/);
 });
 
-test('valores das faixas têm tamanho fixo: reais e percentuais reservam a largura do maior possível', () => {
-    assert.match(estilos, /\.resumoDados b \{\s*\n\s*display: inline-block;\s*\n\s*min-width: 13ch;\s*\n\s*text-align: right;/);
+test('em todas as faixas o valor fica colado no rótulo; só o percentual reserva a largura de 100%', () => {
+    assert.match(estilos, /\.resumoDados b \{\s*\n\s*display: inline-block;\s*\n\s*text-align: left;\s*\n\s*\}/);
+    assert.doesNotMatch(estilos, /min-width: 13ch/);
     assert.match(estilos, /\.resumoDados b\.pct \{\s*\n\s*min-width: 5ch;/);
     assert.match(visoes, /\$\{rotulo\} <b class="pct \$\{cor\}">/);
-    assert.match(regras, /todo valor em reais nas faixas reserva a largura de `-R\$ 99\.999,99` e todo percentual a de `100%`/);
+    assert.match(regras, /Em todas as faixas \(Saldo, Guardado, Besteira\/Isabella e cartões\), cada valor fica colado no próprio rótulo/);
+    assert.doesNotMatch(regras, /reserva esse lugar vazio/);
 });
 
 test('faixa estreita quebra entre pedaços inteiros, sem divisor no começo da linha', () => {

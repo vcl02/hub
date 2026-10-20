@@ -389,18 +389,17 @@
       white-space: nowrap;
   }
 
-  /* Larguras igualadas entre Hoje e Futuro (alinharResumosDosTitulos): os valores em negrito
-     viram blocos de largura mínima, alinhados à direita como numa tabela. */
+  /* Em todas as faixas (Saldo, Guardado, Besteira/Isabella, cartões) o valor em negrito fica
+     colado no próprio rótulo ("Saldo R$ 0,00"). Com uma largura fixa alinhada à direita,
+     sobrava um vão entre o rótulo e o valor, e o valor encostava no rótulo seguinte. Hoje e
+     Futuro continuam um embaixo do outro: alinharResumosDosTitulos iguala as larguras e a
+     sobra vai depois do valor. */
   .resumoDados b {
       display: inline-block;
-      min-width: 13ch;
-      text-align: right;
+      text-align: left;
   }
 
-  /* Tamanho fixo dos valores nas faixas: todo valor em reais reserva a largura de
-     "-R$ 99.999,99" e todo percentual a de "100%", então o layout não muda de largura quando
-     os números mudam (outro ciclo, um lançamento novo). O que passar disso ainda cabe: é
-     mínimo, e alinharResumosDosTitulos iguala as duas faixas. */
+  /* Percentual com a largura de "100%", pra o rótulo depois dele não andar quando o número muda. */
   .resumoDados b.pct {
       min-width: 5ch;
   }
@@ -416,23 +415,7 @@
       color: var(--mu);
   }
 
-  /* Em Besteira/Isabella o rótulo vem DEPOIS do número ("R$ 60,00 Livre"): o valor fica
-     colado no "·" e no próprio rótulo, sem a largura fixa alinhada à direita das demais
-     faixas — que soltava o "·" longe do número. O alinhamento Hoje/Futuro ainda iguala. */
-  .resumoDados .besteiraIndicador b:not(.pct) {
-      min-width: 0;
-      text-align: left;
-  }
-
-  /* Faixas do Crédito: cada valor colado no próprio rótulo ("Fatura R$ 54,48"), como em
-     Besteira/Isabella. Com a largura fixa alinhada à direita, o valor encostava no rótulo
-     SEGUINTE e "R$ 2.578,62 Usado" parecia um par só. Hoje e Futuro continuam alinhados por
-     alinharResumosDosTitulos (a sobra vai depois do valor); o respiro maior separa os pares. */
-  .resumoDados .limiteCartao b {
-      min-width: 0;
-      text-align: left;
-  }
-
+  /* Faixas do Crédito: respiro maior entre os pares rótulo+valor (Fatura, Usado, Livre). */
   .resumoDados > .limiteCartao.temPedacos {
       column-gap: .9em;
   }

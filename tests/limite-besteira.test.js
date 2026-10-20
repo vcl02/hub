@@ -191,6 +191,6 @@ test('nome de Besteira e Isabella no título explica o que entra no teto (toolti
     assert.match(regras, /Passar o mouse no nome \*\*Besteira\*\* ou \*\*Isabella\*\* do indicador mostra o que entra naquele teto/);
 });
 
-test('em Besteira/Isabella o valor fica colado no rótulo, sem a largura fixa das outras faixas', () => {
-    assert.match(estilos, /\.resumoDados \.besteiraIndicador b:not\(\.pct\) \{\s*\n\s*min-width: 0;\s*\n\s*text-align: left;/);
+test('em Besteira/Isabella o valor fica colado no rótulo (regra geral das faixas)', () => {
+    assert.match(estilos, /\.resumoDados b \{\s*\n\s*display: inline-block;\s*\n\s*text-align: left;/);
 });
