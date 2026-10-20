@@ -258,11 +258,10 @@ const celNome = r => {
     const badgeFatura = (ehTransferenciaFatura(r) && fatRef)
         ? ` <span class="tagFatura" title="Abate fatura${ehMercadoPago ? ' do Mercado Pago' : ''}">↳ Fat. ${nomePeriodoAbrev({ ini: fatRef })}${ehMercadoPago ? ' MP' : ''}</span>`
         : '';
-    // Compra do Mercado Pago na tabela única de Crédito: o Nubank (todo o histórico) fica
-    // sem marca, pra tabela de um cartão só continuar igual.
-    const badgeCartao = r.cred && ehMercadoPago
-        ? ' <span class="tagCartao" title="Mercado Pago" aria-label="Mercado Pago">MP</span>'
-        : '';
+    // Compra do Mercado Pago na tabela única de Crédito: o próprio nome ganha um fundo azul
+    // bem apagado com contorno (sem selo "MP"); o Nubank (todo o histórico) fica sem marca,
+    // pra tabela de um cartão só continuar igual.
+    const nomeMp = r.cred && ehMercadoPago ? ' nomeMp" title="Mercado Pago' : '';
     // Resgate que levou todo o guardado (ou foi diminuído pra não deixá-lo negativo): na linha
     // calculada vem marcado pelo ajuste; no Resgate real, o guardado do ciclo terminou em zero.
     const resgatouTudo = r._res ? r._resgatouTudo
@@ -273,9 +272,9 @@ const celNome = r => {
     // Só o nome é cortado com "…" quando não cabe; as marcas ficam sempre inteiras ao lado
     // (senão o aviso "Resgatou tudo" sumia dentro das reticências).
     const textoNome = ehLinhaReal(r) && !modoRestrito()
-        ? `<span class="nomeTexto togNome" data-tog-nome="${escapeHtml(String(r.id))}">${nome}</span>`
-        : `<span class=nomeTexto>${nome}</span>`;
-    return `<span class=nomeLinha>${sim}${textoNome}${badgeFatura}${badgeCartao}${badgeResgate}</span>`;
+        ? `<span class="nomeTexto togNome${nomeMp}" data-tog-nome="${escapeHtml(String(r.id))}">${nome}</span>`
+        : `<span class="nomeTexto${nomeMp}">${nome}</span>`;
+    return `<span class=nomeLinha>${sim}${textoNome}${badgeFatura}${badgeResgate}</span>`;
 };
 // Categoria e Frequência (colunas de texto livre/vocabulário controlado): mesmo esquema de
 // clique-pra-editar do Nome/Data, só pra linha REAL e fora da conta restrita.

@@ -218,7 +218,7 @@ test('aviso "Resgatou tudo" na linha de resgate, calculada ou real', () => {
 test('no Nome só o texto é cortado com "…"; as marcas ficam inteiras', () => {
     const tabelas = fs.readFileSync('js/tables.js', 'utf8');
     const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
-    assert.match(tabelas, /return `<span class=nomeLinha>\$\{sim\}\$\{textoNome\}\$\{badgeFatura\}\$\{badgeCartao\}\$\{badgeResgate\}<\/span>`;/);
+    assert.match(tabelas, /return `<span class=nomeLinha>\$\{sim\}\$\{textoNome\}\$\{badgeFatura\}\$\{badgeResgate\}<\/span>`;/);
     assert.match(estilos, /\.nomeLinha > \.nomeTexto \{\s*\n\s*flex: 0 1 auto;\s*\n\s*min-width: 0;\s*\n\s*overflow: hidden;\s*\n\s*text-overflow: ellipsis;/);
     assert.match(estilos, /\.nomeLinha > \* \{\s*\n\s*flex: none;/);
 });

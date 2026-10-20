@@ -640,7 +640,7 @@
       overflow-wrap: anywhere;
   }
 
-  /* No Nome, só o texto encolhe e ganha "…"; as marcas (MP, ↳ Fat., ⚠ Resgatou tudo) ficam
+  /* No Nome, só o texto encolhe e ganha "…"; as marcas (↳ Fat., ⚠ Resgatou tudo) ficam
      inteiras ao lado. */
   .nomeLinha {
       display: flex;
@@ -661,9 +661,17 @@
       white-space: nowrap;
   }
 
+  /* Compra do Mercado Pago: fundo azul (o do cartão) quase transparente e contorno suave
+     no próprio nome, no lugar do antigo selo "MP". */
+  .nomeLinha > .nomeTexto.nomeMp {
+      padding: 0 .35rem;
+      background: rgba(108, 197, 238, .07);
+      border: 1px solid rgba(108, 197, 238, .3);
+      border-radius: 5px;
+  }
+
   .nomeLinha .tagAviso,
-  .nomeLinha .tagFatura,
-  .nomeLinha .tagCartao {
+  .nomeLinha .tagFatura {
       margin-left: 0;
   }
 
