@@ -1087,6 +1087,15 @@ function htmlOpcoesDeVezes(p) {
     return pilulas.length ? `<div class=metaPlano>${pilulas.join(' ')}</div>` : '';
 }
 
+// Até quando vão as parcelas de uma meta com n vezes (vazio = o padrão): a última parcela no
+// débito (a 1ª é o mês da meta) e a última fatura no cartão (a 1ª é a do mês seguinte à compra).
+// Mostrado dentro da caixa de Vezes e atualizado a cada dígito (interactions.js), antes de gravar.
+function fimDasVezes(m, n) {
+    const vezes = Number.isInteger(+n) && +n >= 1 ? +n : PARCELAS_PADRAO_METAS;
+    if (!m.mes) return '';
+    return `até ${mesAbrev(somaMeses(m.mes, vezes - 1 + (formaDaMeta(m) === 'cartao' ? 1 : 0)))}`;
+}
+
 // Rótulo do mês da meta: o que ele é pra cada forma (a entrada tem o mês dela, embaixo).
 function rotuloDoMesDaMeta(m) {
     return { avista: 'Pagamento', cartao: 'Compra', financiamento: '1ª parcela' }[formaDaMeta(m)];
@@ -1114,7 +1123,8 @@ function htmlModalMetas(planos) {
             `<div class=metaGrade>` +
             campo('mcNome', 'Nome', entrada('nome', m.nome, 'class=metaNome')) +
             campo('mcValor', 'Valor total', dinheiro('valor', m.valor)) +
-            (parcelado ? campo('mcVezes', 'Vezes', entrada('parcelas', m.parcelas, `inputmode=numeric placeholder="${PARCELAS_PADRAO_METAS}"`)) : '') +
+            (parcelado ? campo('mcVezes', 'Vezes', `<span class=vezesCaixa>${entrada('parcelas', m.parcelas, `inputmode=numeric placeholder="${PARCELAS_PADRAO_METAS}"`)}` +
+                `<span class=vezesFim>${fimDasVezes(m, m.parcelas)}</span></span>`) : '') +
             campo('mcMes', rotuloDoMesDaMeta(m), entrada('mes', m.mes ? m.mes.slice(0, 7) : '', 'type=month')) +
             campo('mcForma', 'Forma', `<select data-campo=forma>${formas}</select>`) +
             `<span class=metaBotoes>${botao('mesAMes', ICONE_MES_A_MES, 'Mês a mês')}${botao('comprar', ICONE_COMPRAR, 'Comprar')}${botao('excluir', ICONE_EXCLUIR, 'Excluir')}</span>` +

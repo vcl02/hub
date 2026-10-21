@@ -28,7 +28,7 @@ test('metas: Valor total e Entrada com "R$" e máscara de caixa eletrônico; vaz
     assert.match(visoes, /const dinheiro = \(nome, valor\) => `<span class=dinheiro><span class=dinheiroPrefixo aria-hidden=true>R\$<\/span>` \+/);
     assert.match(visoes, /campo\('mcValor', 'Valor total', dinheiro\('valor', m\.valor\)\)/);
     assert.match(visoes, /campo\('mcEntrada', 'Entrada', dinheiro\('entrada', m\.entrada\), /);
-    assert.match(interacoes, /el\('corpoMetas'\)\.addEventListener\('input', e => \{\s*\n\s*const input = e\.target\.closest\('\[data-dinheiro\]'\);/);
+    assert.match(interacoes, /el\('corpoMetas'\)\.addEventListener\('input', e => \{[\s\S]*?const input = e\.target\.closest\('\[data-dinheiro\]'\);/);
     assert.match(interacoes, /input\.value = input\.value\.replace\(\/\\D\/g, ''\) \? formataMascaraDinheiro\(input\.value\) : '';/);
     // O valor mascarado ("1.500,00") volta a número pela mesma leitura dos limites.
     const trecho = interacoes.slice(interacoes.indexOf('function numeroDoLimiteDigitado('), interacoes.indexOf('\n}\n', interacoes.indexOf('function numeroDoLimiteDigitado(')) + 3);

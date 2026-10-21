@@ -290,7 +290,7 @@ test('modal: todo campo com rótulo em cima, numa grade de colunas fixas', () =>
     }
     assert.match(visoes, /return \{ avista: 'Pagamento', cartao: 'Compra', financiamento: '1ª parcela' \}\[formaDaMeta\(m\)\];/);
     const css = ler('css/forms.css');
-    assert.match(css, /grid-template-columns: minmax\(0, 1fr\) 7\.5rem 4rem 10rem 10\.5rem auto;/);
+    assert.match(css, /grid-template-columns: minmax\(0, 1fr\) 7\.5rem 6\.5rem 10rem 10\.5rem auto;/);
     assert.match(css, /\.mcEntrada \{ grid-column: 2; grid-row: 2; \}/);
     assert.match(css, /\.mcMesEntrada \{ grid-column: 4; grid-row: 2; \}/);
     assert.match(ler('css/mobile.css'), /\.metaGrade \{ grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\); \}/);
@@ -531,4 +531,25 @@ test('"Cabe começando em …" é um botão que muda o mês da meta (a entrada v
     assert.match(ajustar, /const campos = \{ mes: botao\.dataset\.mes \};\s*\n\s*if \(meta\.entrada > 0 && meta\.meses_ate_parcela !== 1\) campos\.meses_ate_parcela = 1;/);
     assert.match(interacoes, /const ajuste = e\.target\.closest\('\[data-acao=usarMes\], \[data-acao=usarVezes\]'\);\s*\n\s*if \(ajuste\) return ajustarMeta\(\+el\('modalPlanoMeta'\)\.dataset\.meta, ajuste\);/);
     assert.match(regras, /\*\*Cabe começando em\*\* \(e "Cabe comprando em", "Cabe em"\) é um botão/);
+});
+
+test('Vezes mostra até quando vão as parcelas, na própria caixa, já enquanto digita', () => {
+    const trecho = visoes.slice(visoes.indexOf('const mesAbrev'), visoes.indexOf('function htmlModalMetas('));
+    const contexto = vm.createContext({ MESES: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'] });
+    ['js/domain.js', 'js/shared.js'].forEach(arquivo => vm.runInContext(ler(arquivo), contexto));
+    contexto.Estado = { ciclos: CICLOS.map(c => ({ ...c })) };
+    vm.runInContext(`const PARCELAS_PADRAO_METAS = 10;
+        const formaDaMeta = meta => (['cartao', 'financiamento'].includes(meta.forma) ? meta.forma : 'avista');
+        ${trecho} globalThis.t = { fimDasVezes };`, contexto);
+    const { fimDasVezes } = contexto.t;
+    // Débito: 1ª parcela no mês da meta. 24x de Mar/27 → Fev/29.
+    assert.equal(fimDasVezes({ mes: '2027-03-01', forma: 'financiamento' }, 24), 'até Fev/29');
+    // Cartão: faturas a partir do mês seguinte à compra. 10x comprando em Jan/27 → Nov/27.
+    assert.equal(fimDasVezes({ mes: '2027-01-01', forma: 'cartao' }, 10), 'até Nov/27');
+    // Vazio usa o padrão (10x); sem mês, nada.
+    assert.equal(fimDasVezes({ mes: '2027-03-01', forma: 'financiamento' }, null), 'até Dez/27');
+    assert.equal(fimDasVezes({ mes: null, forma: 'financiamento' }, 24), '');
+    assert.match(visoes, /<span class=vezesFim>\$\{fimDasVezes\(m, m\.parcelas\)\}<\/span><\/span>/);
+    assert.match(interacoes, /if \(meta && fim\) fim\.textContent = fimDasVezes\(meta, vezes\.value\.trim\(\) \|\| null\);/);
+    assert.match(regras, /a caixa de \*\*Vezes\*\* mostra até quando vão as parcelas/);
 });

@@ -1099,7 +1099,7 @@
      valores, meses com meses. À vista, a coluna das vezes fica vazia. */
   .metaGrade {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 7.5rem 4rem 10rem 10.5rem auto;
+      grid-template-columns: minmax(0, 1fr) 7.5rem 6.5rem 10rem 10.5rem auto;
       gap: .45rem .5rem;
       align-items: end;
   }
@@ -1142,6 +1142,40 @@
   }
 
   .metaLinha .metaNome { font-weight: 600; }
+
+  /* Vezes: o número e, na mesma caixa, até quando vão as parcelas ("24 até Fev/29"). */
+  .metaLinha .vezesCaixa {
+      display: flex;
+      align-items: center;
+      gap: .2rem;
+      width: 100%;
+      height: 2.1rem;
+      padding: 0 .45rem;
+      box-sizing: border-box;
+      font-size: .88rem;
+      color: var(--fg);
+      background: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 6px;
+  }
+
+  .metaLinha .vezesCaixa:focus-within { outline: 2px solid var(--fg); outline-offset: -1px; }
+
+  .metaLinha .vezesCaixa > input {
+      flex: 0 0 1.6rem;
+      width: 1.6rem;
+      height: auto;
+      padding: 0;
+      background: transparent;
+      border: 0;
+      outline: none;
+  }
+
+  .vezesFim {
+      color: var(--mu);
+      font-size: .8em;
+      white-space: nowrap;
+  }
 
   /* Valor e entrada: a caixa (com o "R$") tem o desenho dos outros campos da meta. */
   .metaLinha .dinheiro {

@@ -676,6 +676,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Os campos editam na própria linha, **todos com rótulo em cima**, numa grade de colunas fixas igual em todas as metas: **Nome**, **Valor total**, **Vezes** (só nos parcelados, junto do valor porque dividem o total), o mês — rotulado **Pagamento** (à vista), **1ª parcela** (débito) ou **Compra** (crédito) —, **Forma** e as ações.
   Embaixo, nos parcelados, **Entrada** sob o valor e **Mês da entrada** sob o mês (só com entrada; depois do mês da meta não vale, vazio volta ao padrão).
   No celular, a mesma grade em duas colunas, com os mesmos campos.
+  Nos parcelados, a caixa de **Vezes** mostra até quando vão as parcelas (`24 até Fev/29`: a última parcela no débito, a última fatura no cartão; vazio conta o padrão de 10x), já enquanto o número é digitado, antes de gravar.
   Campo de mês só grava mês completo, de 2000 em diante: enquanto o ano é digitado (o navegador manda 0002, 0020, 0202…) ou o mês da meta é apagado pra redigitar, nada vai pro banco.
   Não há âncora (data com nome que outras metas seguiam): saiu a pedido do mantenedor (migration 38).
 - **Opções de vezes** (só parcelado), numa linha embaixo do plano de cada meta, só quando diferentes do número escolhido: o **Mínimo** (o menor número de vezes que cabe) e o **Ideal** (o menor que cabe com o mês típico sobrando o que a Reserva ou a Liberdade pedem), cada um com a prévia curta — `Ideal 40x R$ 750,00 até Ago/30` — e clicável pra usar aquele número de vezes; sem opção, `Mínimo nenhum` / `Ideal nenhum`.

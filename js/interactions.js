@@ -997,6 +997,14 @@ const proximoMesISO = () => `${somaMeses(hojeISO(), 1).slice(0, 7)}-01`;
 // Valor e entrada: a máscara de caixa eletrônico do cadastro enquanto digita; apagar tudo
 // deixa vazio (entrada vazia = sem entrada), nunca "0,00".
 el('corpoMetas').addEventListener('input', e => {
+    // Vezes: a data final aparece na caixa enquanto digita, antes de gravar.
+    const vezes = e.target.closest('[data-campo=parcelas]');
+    if (vezes) {
+        const meta = Estado.metas.find(m => m.id === +vezes.closest('[data-meta]').dataset.meta);
+        const fim = vezes.parentElement.querySelector('.vezesFim');
+        if (meta && fim) fim.textContent = fimDasVezes(meta, vezes.value.trim() || null);
+        return;
+    }
     const input = e.target.closest('[data-dinheiro]');
     if (!input) return;
     const cursorNoFim = input.selectionEnd == input.value.length;
