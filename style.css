@@ -248,10 +248,6 @@ button,a,summary{touch-action:manipulation}
 .ex-head{display:flex;gap:12px;align-items:flex-start}
 .ex-fig{flex:none;width:96px;height:68px;border-radius:12px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;overflow:hidden}
 .ex-fig img{width:100%;height:100%;object-fit:cover}
-.desenho{width:100%;height:100%;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-.desenho .maq{stroke:var(--muted);stroke-width:2.5}
-.desenho .corpo{stroke:var(--fg)}
-.desenho .halter{stroke:var(--blue);stroke-width:4}
 .ex-tit{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .ex-desc{font-style:italic;color:var(--muted);font-size:var(--t-sm)}
 .equip{display:flex;align-items:center;gap:6px;font-size:var(--t-sm);color:var(--muted)}

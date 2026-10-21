@@ -537,31 +537,8 @@ function grafico(box, P, unidade, rotulo) {   // P = [{ data, valor }] em ordem 
   </svg>`;
 }
 
-// ===== Desenho do exercício (ou foto da máquina) =====
-const L = (a, b, c, d) => `<line x1="${a}" y1="${b}" x2="${c}" y2="${d}"/>`, C = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r}"/>`;
-const DESENHOS = {   // [máquina, corpo]
-  legpress: [L(18, 34, 34, 64) + L(34, 64, 58, 64) + L(84, 8, 100, 32) + L(48, 74, 106, 18), C(24, 27, 5) + L(28, 33, 40, 60) + L(40, 60, 62, 42) + L(62, 42, 90, 22) + L(32, 42, 44, 58)],
-  agachamento: [L(20, 74, 100, 74), C(54, 10, 5) + L(54, 16, 48, 40) + L(48, 40, 66, 50) + L(66, 50, 60, 72) + L(60, 72, 70, 72) + L(52, 24, 62, 30)],
-  flexora: [L(24, 58, 20, 18) + L(24, 58, 62, 58) + L(30, 58, 30, 76) + L(44, 46, 64, 46) + C(70, 72, 4), C(22, 12, 5) + L(23, 18, 27, 56) + L(27, 56, 62, 54) + L(62, 54, 68, 68) + L(25, 30, 40, 44)],
-  stiff: [L(20, 74, 100, 74), C(78, 26, 5) + L(73, 30, 46, 38) + L(46, 38, 48, 72) + L(48, 72, 58, 72) + L(66, 33, 66, 58)],
-  supino: [L(28, 14, 28, 60) + L(28, 60, 52, 60) + L(30, 60, 30, 76) + L(84, 8, 84, 76) + L(78, 22, 78, 36), C(34, 12, 5) + L(34, 18, 36, 56) + L(36, 56, 58, 58) + L(58, 58, 60, 76) + L(36, 28, 56, 30) + L(56, 30, 78, 29)],
-  puxada: [L(40, 60, 64, 60) + L(52, 60, 52, 76) + L(60, 46, 72, 46) + L(20, 3, 92, 3) + L(56, 3, 56, 10) + L(30, 11, 82, 11), C(52, 30, 5) + L(52, 36, 52, 58) + L(52, 58, 68, 56) + L(68, 56, 70, 76) + L(52, 40, 40, 26) + L(40, 26, 38, 11) + L(52, 40, 64, 26) + L(64, 26, 72, 11)],
-  remada: [L(30, 62, 56, 62) + L(40, 62, 40, 76) + L(74, 28, 74, 52) + L(94, 14, 94, 76) + L(88, 38, 88, 50), C(66, 22, 5) + L(64, 28, 50, 60) + L(50, 60, 70, 62) + L(70, 62, 72, 76) + L(62, 36, 76, 44) + L(76, 44, 88, 44)],
-  desenvolvimento: [L(28, 18, 28, 62) + L(28, 62, 52, 62) + L(30, 62, 30, 76) + L(38, 5, 64, 5), C(34, 14, 5) + L(34, 20, 36, 58) + L(36, 58, 56, 60) + L(56, 60, 58, 76) + L(35, 28, 46, 24) + L(46, 24, 50, 6)]
-};
-function tipoDesenho(e, v) {
-  const t = (e.grupo + ' ' + v.nome).toLowerCase();
-  return /stiff/.test(t) ? 'stiff' : /agach/.test(t) ? 'agachamento' : /leg|perna/.test(t) ? 'legpress' : /flexor|posterior/.test(t) ? 'flexora'
-    : /remad|remar/.test(t) ? 'remada' : /puxad|puxar|graviton|pullover|barra/.test(t) ? 'puxada' : /desenvol|ombro/.test(t) ? 'desenvolvimento'
-    : /supino|voador|peito|crucifixo/.test(t) ? 'supino' : null;
-}
-function desenho(e, v) {
-  const foto = store.get('carga.foto.' + v.id);
-  if (foto) return `<img src="${foto}" alt="Foto da máquina">`;
-  const d = DESENHOS[tipoDesenho(e, v)]; if (!d) return '';
-  const halter = /halter/i.test(v.nome) ? `<g class="halter">${L(94, 66, 110, 66)}${L(95, 60, 95, 72)}${L(109, 60, 109, 72)}</g>` : '';
-  return `<svg viewBox="0 0 120 80" class="desenho" role="img" aria-label="Desenho do exercício"><g class="maq">${d[0]}</g><g class="corpo">${d[1]}</g>${halter}</svg>`;
-}
+// ===== Foto da máquina (só aparece quando você tira uma) =====
+function foto(v) { const f = store.get('carga.foto.' + v.id); return f ? `<img src="${f}" alt="Foto da máquina">` : ''; }
 $('e-foto').addEventListener('change', async ev => {
   const f = ev.target.files[0], v = varAtual(); ev.target.value = ''; if (!f || !v) return;
   try {
@@ -590,7 +567,7 @@ telas.exercicio = () => {
   $('e-grupo').textContent = e.grupo;
   $('e-variacoes').innerHTML = e.variacoes.map((x, i) => x.nome ? `<button type="button" class="seg" role="radio" aria-checked="${i === e.ativo}" data-var="${i}"><span class="seg-k">${TIPOS[i]}</span><span class="seg-n">${esc(x.nome)}</span></button>` : '').join('');
   $('e-variacoes').hidden = e.variacoes.filter(x => x.nome).length < 2;
-  $('e-fig').innerHTML = desenho(e, v); $('e-fig').hidden = !$('e-fig').innerHTML;
+  $('e-fig').innerHTML = foto(v); $('e-fig').hidden = !$('e-fig').innerHTML;
   $('e-nome').textContent = v.nome;
   $('e-desc').textContent = guia?.[0] || ''; $('e-desc').hidden = !guia;
   $('e-equip').value = v.equip || '';
