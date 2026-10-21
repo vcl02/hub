@@ -296,9 +296,10 @@ function guardarRascunho() {
 }
 $('e-carga').addEventListener('input', guardarRascunho);
 $('e-reps').addEventListener('input', guardarRascunho);
+function podeTrocar(dir) { const j = db.exercicios.findIndex(e => e.id === atual) + dir; return j >= 0 && j < db.exercicios.length; }   // sem dar a volta
 function trocarExercicio(dir) {
-  const n = db.exercicios.length, i = db.exercicios.findIndex(e => e.id === atual);
-  atual = db.exercicios[(i + dir + n) % n].id;
+  if (!podeTrocar(dir)) return;
+  atual = db.exercicios[db.exercicios.findIndex(e => e.id === atual) + dir].id;
   telas.exercicio(); salvarSessao(); tick(); window.scrollTo(0, 0);
   store.set('carga.arrastou', '1'); $('e-dica').hidden = true;
 }
@@ -324,12 +325,12 @@ function trocarExercicio(dir) {
     if (!ativo) return;
     const dx = ev.touches[0].clientX - x0, dy = ev.touches[0].clientY - y0;
     if (!eixo && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) eixo = Math.abs(dx) > Math.abs(dy) * 1.3 ? 'x' : 'y';
-    if (eixo === 'x' && !semMovimento) { tela.style.transform = `translateX(${dx * .5}px)`; tela.style.opacity = String(1 - Math.min(Math.abs(dx) / 600, .4)); }
+    if (eixo === 'x' && !semMovimento) { tela.style.transform = `translateX(${dx * (podeTrocar(dx < 0 ? 1 : -1) ? .5 : .15)}px)`;   /* resiste na ponta */ tela.style.opacity = String(1 - Math.min(Math.abs(dx) / 600, .4)); }
   }, { passive: true });
   document.addEventListener('touchend', ev => {
     if (!ativo) return; ativo = false;
     const dx = ev.changedTouches[0].clientX - x0, rapido = Date.now() - t0 < 300;
-    const trocar = eixo === 'x' && (Math.abs(dx) > 80 || (rapido && Math.abs(dx) > 40)), dir = dx < 0 ? 1 : -1;
+    const dir = dx < 0 ? 1 : -1, trocar = eixo === 'x' && (Math.abs(dx) > 80 || (rapido && Math.abs(dx) > 40)) && podeTrocar(dir);
     if (!trocar || semMovimento) { soltar(); if (trocar) trocarExercicio(dir); return; }
     tela.classList.add('slide'); tela.style.transform = `translateX(${-dir * 40}%)`; tela.style.opacity = '0';
     pendente = { dir, t: setTimeout(() => {
