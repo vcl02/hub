@@ -4,612 +4,162 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#2445b5">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Diário de Carga</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>Diário de Carga</title>
-<meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
-<style>
-/* Layout: uma coluna estreita de cartões de exercício; números de carga em fonte condensada, como anilhas */
-:root{
-  --bg:#eef1f4; --surface:#ffffff; --line:#d5dbe3; --fg:#121821; --muted:#586474;
-  --accent:#2445b5; --accent-fg:#ffffff; --soft:#e3e9f6;
-  --ok:#17784a; --ok-soft:#ddf2e7; --warn:#9a5600; --warn-soft:#fbecd6; --danger:#b42318;
-  --display:'Barlow Condensed','Arial Narrow','Roboto Condensed',sans-serif;
-  --body:'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
-  --r:14px;
-}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0e1217; --surface:#161b22; --line:#29313c; --fg:#e7ebf0; --muted:#94a0b0;
-  --accent:#8aa4ff; --accent-fg:#0a0f1f; --soft:#1c2433;
-  --ok:#57cf92; --ok-soft:#143225; --warn:#f2a94b; --warn-soft:#3a2a12; --danger:#ff8173; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0e1217; --surface:#161b22; --line:#29313c; --fg:#e7ebf0; --muted:#94a0b0;
-  --accent:#8aa4ff; --accent-fg:#0a0f1f; --soft:#1c2433;
-  --ok:#57cf92; --ok-soft:#143225; --warn:#f2a94b; --warn-soft:#3a2a12; --danger:#ff8173; color-scheme:dark}
-*{box-sizing:border-box}
-html,body{background:var(--bg);color:var(--fg)}
-body{font-family:var(--body);font-size:16px;line-height:1.4;-webkit-tap-highlight-color:transparent}
-button,input,select,textarea{font:inherit;color:inherit}
-button{cursor:pointer}
-:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.wrap{max-width:560px;margin:0 auto;padding-block:12px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.view{display:flex;flex-direction:column;gap:14px}
-h1,h2{font-family:var(--display);font-weight:700;letter-spacing:.01em;line-height:1.05;margin:0;text-wrap:balance}
-h1{font-size:2rem} h2{font-size:1.75rem}
-h3.sec{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:10px 0 0;font-weight:600}
-p{margin:0}
-.eyebrow{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
-.muted{color:var(--muted)} .small{font-size:.875rem}
-.en{color:var(--muted);font-style:italic}
-.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding-top:6px}
-.icon-btn{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-size:1.4rem;line-height:1;flex:none}
-.bar{display:flex;align-items:center;min-height:44px}
-.back{background:none;border:0;padding:8px 0;color:var(--accent);font-weight:600;font-size:1rem}
-.progress{display:flex;flex-direction:column;gap:6px}
-.progress-row{display:flex;justify-content:space-between;font-size:.9rem;color:var(--muted)}
-.progress-row b{color:var(--fg);font-variant-numeric:tabular-nums}
-.track{height:6px;border-radius:6px;background:var(--line);overflow:hidden}
-.track span{display:block;height:100%;width:0;background:var(--ok);transition:width .3s}
-.slots{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
-.slot{width:100%;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
-.slot:active{transform:scale(.99)}
-.slot-main{display:flex;flex-direction:column;gap:2px;min-width:0}
-.slot .name{font-weight:600;font-size:1.06rem}
-.slot .en{font-size:.88rem}
-.kind{color:var(--warn)}
-.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
-.chips:empty{display:none}
-.chip{font-size:.75rem;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
-.chip.ok{background:var(--ok-soft);color:var(--ok)}
-.chip.warn{background:var(--warn-soft);color:var(--warn)}
-.slot-load{display:flex;flex-direction:column;align-items:flex-end;text-align:right}
-.w{font-family:var(--display);font-weight:700;font-size:2rem;line-height:1;font-variant-numeric:tabular-nums}
-.w small{font-size:.9rem;margin-left:2px;color:var(--muted);font-family:var(--body);font-weight:500}
-.r{font-size:.82rem;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
-.rule{font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
-.segs{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:6px;background:var(--soft);padding:4px;border-radius:12px}
-.seg{border:0;background:transparent;border-radius:9px;padding:8px 6px;display:flex;flex-direction:column;gap:2px;text-align:center;min-width:0}
-.seg-k{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;font-weight:600;color:var(--muted)}
-.seg-n{font-size:.8rem;line-height:1.2;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.seg[aria-checked="true"]{background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.12)}
-.seg[aria-checked="true"] .seg-k{color:var(--accent)}
-.last{font-size:.95rem;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.log{display:flex;flex-direction:column;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
-.field{display:flex;flex-direction:column;gap:6px}
-.field label{font-size:.85rem;font-weight:600;color:var(--muted)}
-.stepper{display:grid;grid-template-columns:60px 1fr 60px;gap:8px;align-items:stretch}
-.stepper button{border:1px solid var(--line);background:var(--soft);border-radius:12px;font-size:1.6rem;font-weight:600;min-height:56px}
-.mid{display:flex;align-items:baseline;justify-content:center;gap:4px;border:1px solid var(--line);border-radius:12px;padding:0 10px;background:var(--bg)}
-.mid input{width:100%;min-width:0;border:0;background:transparent;text-align:right;font-family:var(--display);font-weight:700;font-size:2.2rem;padding:4px 0;font-variant-numeric:tabular-nums}
-.mid input:focus{outline:none}
-.mid:focus-within{outline:3px solid var(--accent);outline-offset:1px}
-.unit{color:var(--muted);font-weight:500;flex:none;min-width:2.6em}
-.btn{border-radius:12px;border:1px solid var(--line);background:var(--surface);padding:12px 16px;font-weight:600;min-height:48px}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
-.btn.big{min-height:56px;font-size:1.05rem}
-.btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
-.btn:disabled{opacity:.6}
-.chart{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px}
-.chart svg{display:block;width:100%;height:auto}
-.chart p{padding:14px 4px;color:var(--muted);font-size:.9rem}
-.hist{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
-.hist li{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:10px 14px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
-.hist li:first-child{border-top:0}
-.hist .h-d{color:var(--muted);font-size:.9rem}
-.hist .h-v{font-weight:600}
-.hist .empty{display:block;color:var(--muted)}
-.del{border:1px solid var(--line);background:transparent;border-radius:9px;padding:6px 10px;font-size:.82rem;color:var(--muted)}
-.del.armed{border-color:var(--danger);color:var(--danger);font-weight:600}
-.menu{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
-.menu button{border:0;border-top:1px solid var(--line);background:transparent;text-align:left;padding:15px 16px;font-weight:600;display:flex;flex-direction:column;gap:2px}
-.menu button:first-child{border-top:0}
-.menu button span{font-weight:400;font-size:.88rem;color:var(--muted)}
-.danger-text{color:var(--danger)!important}
-.ed{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:12px;margin:0;display:flex;flex-direction:column;gap:10px;min-width:0}
-.ed-head{display:flex;gap:8px}
-.ed-head input{flex:1;min-width:0;font-weight:600}
-.ed-v{display:grid;grid-template-columns:1fr 1fr 78px;gap:6px}
-.ed-k{grid-column:1/-1;font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;font-weight:600;color:var(--muted)}
-.ed input,.ed select,.form input,textarea{width:100%;min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:10px;font-size:.95rem}
-textarea{min-height:120px;font-family:ui-monospace,Menlo,monospace;font-size:.8rem}
-.form{display:flex;flex-direction:column;gap:10px}
-.form label{font-size:.85rem;font-weight:600;color:var(--muted)}
-.check{display:flex!important;gap:10px;align-items:center;color:var(--fg)!important;font-weight:500!important;font-size:.95rem!important}
-.check input{width:22px;height:22px;flex:none}
-.err{color:var(--danger);font-size:.9rem;min-height:1.2em}
-.box{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:10px}
-.box.warn{border-color:var(--danger)}
-.row{display:flex;gap:8px;flex-wrap:wrap}
-.row .btn{flex:1 1 140px}
-.link{background:none;border:0;color:var(--accent);padding:8px 0;font-weight:600}
-.lock{min-height:70vh;justify-content:center}
-.sticky{position:sticky;bottom:0;padding-block:10px calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,var(--bg) 30%)}
-.sticky .btn{width:100%}
-#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;font-size:.92rem;z-index:20;max-width:calc(100% - 32px);text-align:center}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}.slot:active{transform:none}}
-</style>
-<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="wrap">
 
-<section id="v-lock" class="view lock" hidden>
+<!-- Bloqueio: criar senha ou desbloquear -->
+<section id="v-bloqueio" class="view lock" hidden>
   <p class="eyebrow">Diário de Carga</p>
-  <h1 id="l-title">Criar senha mestra</h1>
+  <h1 id="l-titulo">Criar senha mestra</h1>
   <p id="l-sub" class="muted"></p>
   <form id="l-form" class="form box">
-    <label for="l-pw">Senha mestra</label>
-    <input id="l-pw" type="password" autocomplete="current-password" minlength="4" required>
-    <div id="l-pw2-wrap" class="form">
-      <label for="l-pw2">Repita a senha</label>
-      <input id="l-pw2" type="password" autocomplete="new-password" minlength="4">
+    <label for="l-senha">Senha mestra</label>
+    <input id="l-senha" type="password" minlength="4" required>
+    <div id="l-rep-box" class="form">
+      <label for="l-rep">Repita a senha</label>
+      <input id="l-rep" type="password" autocomplete="new-password" minlength="4">
     </div>
-    <label class="check"><input id="l-keep" type="checkbox"> Manter desbloqueado neste aparelho</label>
-    <p id="l-err" class="err" role="alert"></p>
+    <label class="check"><input id="l-manter" type="checkbox"> Manter desbloqueado neste aparelho</label>
+    <p id="l-erro" class="err" role="alert"></p>
     <button class="btn primary big" id="l-btn" type="submit">Criar e entrar</button>
   </form>
-  <div id="l-reset-wrap" hidden>
-    <button type="button" class="link" id="l-forgot">Esqueci a senha</button>
-    <div id="l-reset" class="box warn" hidden>
-      <p>Sem a senha não dá para abrir os dados. Apagar tudo deste aparelho e começar de novo? Se tiver um backup, você restaura depois.</p>
-      <button type="button" class="btn danger" id="l-wipe">Apagar tudo e recomeçar</button>
+  <div id="l-esqueci-box" hidden>
+    <button type="button" class="link" id="l-esqueci">Esqueci a senha</button>
+    <div id="l-apagar-box" class="box warn" hidden>
+      <p>Sem a senha não dá para abrir os dados. Apagar tudo deste aparelho e começar de novo? Se tiver backup, restaure depois.</p>
+      <button type="button" class="btn danger" id="l-apagar">Apagar tudo e recomeçar</button>
     </div>
   </div>
 </section>
 
-<section id="v-home" class="view" hidden>
+<!-- Início: semana + lista de exercícios -->
+<section id="v-inicio" class="view" hidden>
   <header class="top">
-    <div><p class="eyebrow" id="home-date"></p><h1>Full body</h1></div>
-    <button class="icon-btn" type="button" data-go="menu" aria-label="Ajustes">⋯</button>
+    <div><p class="eyebrow" id="i-data"></p><h1>Full body</h1></div>
+    <button class="icon-btn" type="button" data-ir="ajustes" aria-label="Ajustes">⋯</button>
   </header>
+  <ul id="i-semana" class="week" aria-label="Dias de treino desta semana"></ul>
+  <p class="week-msg"><span id="i-msg"></span><b id="i-cont-semana"></b></p>
   <div class="progress">
-    <div class="progress-row"><span>Registrados hoje</span><b id="home-count">0/6</b></div>
-    <div class="track"><span id="home-bar"></span></div>
+    <div class="progress-row"><span>Registrados hoje</span><b id="i-cont">0/6</b></div>
+    <div class="track"><span id="i-barra"></span></div>
   </div>
-  <ul id="home-list" class="slots"></ul>
-  <p class="rule">3 séries × 10–12 reps · descanso 60–90 s. Fez 12 reps em todas as séries? Suba a carga no próximo treino.</p>
+  <ul id="i-lista" class="slots"></ul>
+  <p class="rule">Dias fixos: quarta e quinta. Segunda é o extra sugerido. Bateu o topo da faixa de reps em todas as séries? Suba a carga no próximo treino.</p>
 </section>
 
-<section id="v-detail" class="view" hidden>
-  <div class="bar"><button class="back" type="button" data-back>‹ Treino</button></div>
-  <p class="eyebrow" id="d-group"></p>
-  <div class="segs" id="d-variants" role="radiogroup" aria-label="Variação usada hoje"></div>
-  <div><h2 id="d-name"></h2><p class="en" id="d-en"></p></div>
-  <p class="last" id="d-last"></p>
-  <form id="d-form" class="log">
+<!-- Exercício: variação, descanso, carga, histórico (arraste para trocar) -->
+<section id="v-exercicio" class="view" hidden>
+  <div class="bar nav"><button class="back" type="button" data-voltar>‹ Treino</button>
+    <div class="pn"><span class="pdots" id="e-pontos" aria-hidden="true"></span><b id="e-pos">1/6</b></div></div>
+  <p class="swipe-hint" id="e-dica">Arraste para o lado para trocar de exercício</p>
+  <p class="eyebrow" id="e-grupo"></p>
+  <div class="segs" id="e-variacoes" role="radiogroup" aria-label="Variação usada hoje"></div>
+  <h2 id="e-nome"></h2>
+  <p class="presc" id="e-presc"></p>
+
+  <div class="box timer">
+    <div class="t-top"><span class="t-lbl">Descanso</span><div class="dots" id="t-series" aria-label="Séries feitas"></div></div>
+    <div class="t-clock" id="t-relogio" role="timer">1:15</div>
+    <p class="t-note" id="t-nota"></p>
+    <div class="row" id="t-parado"><button type="button" class="btn primary big" id="t-feita">Série feita · descansar</button></div>
+    <div class="row" id="t-rodando" hidden>
+      <button type="button" class="btn" id="t-menos">−15 s</button>
+      <button type="button" class="btn" id="t-mais">+15 s</button>
+      <button type="button" class="btn" id="t-pular">Pular</button>
+    </div>
+    <button type="button" class="link" id="t-zerar" hidden>Zerar séries</button>
+  </div>
+
+  <p class="last" id="e-ultima"></p>
+  <form id="e-form" class="log">
     <div class="field">
-      <label for="d-w">Carga</label>
+      <label for="e-carga">Carga</label>
       <div class="stepper">
-        <button type="button" data-step="w" data-dir="-1" aria-label="Diminuir carga">−</button>
-        <div class="mid"><input id="d-w" inputmode="decimal" autocomplete="off" placeholder="0"><span class="unit" id="d-unit">kg</span></div>
-        <button type="button" data-step="w" data-dir="1" aria-label="Aumentar carga">+</button>
+        <button type="button" data-passo="carga" data-dir="-1" aria-label="Diminuir carga">−</button>
+        <div class="mid"><input id="e-carga" inputmode="decimal" autocomplete="off" placeholder="0"><span class="unit" id="e-unidade">kg</span></div>
+        <button type="button" data-passo="carga" data-dir="1" aria-label="Aumentar carga">+</button>
       </div>
     </div>
     <div class="field">
-      <label for="d-r">Reps na série mais fraca</label>
+      <label for="e-reps">Reps na série mais fraca</label>
       <div class="stepper">
-        <button type="button" data-step="r" data-dir="-1" aria-label="Diminuir reps">−</button>
-        <div class="mid"><input id="d-r" inputmode="numeric" autocomplete="off" placeholder="10"><span class="unit">reps</span></div>
-        <button type="button" data-step="r" data-dir="1" aria-label="Aumentar reps">+</button>
+        <button type="button" data-passo="reps" data-dir="-1" aria-label="Diminuir reps">−</button>
+        <div class="mid"><input id="e-reps" inputmode="numeric" autocomplete="off" placeholder="10"><span class="unit">reps</span></div>
+        <button type="button" data-passo="reps" data-dir="1" aria-label="Aumentar reps">+</button>
       </div>
     </div>
     <button class="btn primary big" type="submit">Salvar carga de hoje</button>
   </form>
+
   <h3 class="sec">Evolução</h3>
-  <div id="d-chart" class="chart"></div>
+  <div id="e-grafico" class="chart"></div>
   <h3 class="sec">Histórico</h3>
-  <ul id="d-hist" class="hist"></ul>
+  <ul id="e-historico" class="hist"></ul>
 </section>
 
-<section id="v-menu" class="view" hidden>
-  <div class="bar"><button class="back" type="button" data-back>‹ Treino</button></div>
+<!-- Ajustes -->
+<section id="v-ajustes" class="view" hidden>
+  <div class="bar"><button class="back" type="button" data-voltar>‹ Treino</button></div>
   <h2>Ajustes</h2>
   <div class="menu">
-    <button type="button" data-go="edit">Editar exercícios<span>Nomes, substitutos e unidade (kg ou nível)</span></button>
-    <button type="button" data-go="backup">Backup<span>Baixar ou restaurar seus registros</span></button>
-    <button type="button" data-go="pass">Trocar senha mestra</button>
-    <button type="button" id="m-install" hidden>Instalar na tela inicial<span>Funciona offline depois de instalado</span></button>
-    <button type="button" id="m-lock" class="danger-text">Bloquear agora</button>
+    <button type="button" data-ir="editar">Editar exercícios<span>Nomes, substitutos, séries, reps e descanso</span></button>
+    <button type="button" data-ir="backup">Backup<span>Baixar ou restaurar seus registros</span></button>
+    <button type="button" data-ir="senha">Trocar senha mestra</button>
+    <button type="button" id="a-instalar" hidden>Instalar na tela inicial<span>Funciona offline depois de instalado</span></button>
+    <button type="button" id="a-bloquear" class="danger-text">Bloquear agora</button>
   </div>
-  <p class="muted small" id="m-info"></p>
+  <p class="muted small" id="a-info"></p>
 </section>
 
-<section id="v-edit" class="view" hidden>
-  <div class="bar"><button class="back" type="button" data-back>‹ Ajustes</button></div>
+<section id="v-editar" class="view" hidden>
+  <div class="bar"><button class="back" type="button" data-voltar>‹ Ajustes</button></div>
   <h2>Exercícios</h2>
   <p class="muted small">Cada exercício tem principal, substituto em máquina e último recurso com halter. Deixe em branco o que não usar. Use “nível” para máquinas marcadas por número de placa.</p>
-  <form id="e-form" class="view">
-    <div id="e-list" class="view"></div>
-    <button type="button" class="btn" id="e-add">+ Adicionar exercício</button>
+  <form id="ed-form" class="view">
+    <div id="ed-lista" class="view"></div>
+    <button type="button" class="btn" id="ed-novo">+ Adicionar exercício</button>
     <div class="sticky"><button type="submit" class="btn primary big">Salvar exercícios</button></div>
   </form>
 </section>
 
 <section id="v-backup" class="view" hidden>
-  <div class="bar"><button class="back" type="button" data-back>‹ Ajustes</button></div>
+  <div class="bar"><button class="back" type="button" data-voltar>‹ Ajustes</button></div>
   <h2>Backup</h2>
   <div class="box">
     <p>O backup é um arquivo .json <b>sem criptografia</b>. Guarde no Drive ou mande para você mesmo.</p>
-    <div class="row">
-      <button type="button" class="btn primary" id="b-down">Baixar backup</button>
-      <button type="button" class="btn" id="b-copy">Copiar texto</button>
-    </div>
-    <textarea id="b-out" aria-label="Texto do backup" readonly hidden></textarea>
+    <button type="button" class="btn primary" id="b-baixar">Baixar backup</button>
   </div>
   <div class="box">
     <p><b>Restaurar</b> substitui tudo o que está neste aparelho.</p>
-    <label class="small muted" for="b-file">Escolher arquivo .json</label>
-    <input type="file" id="b-file" accept=".json,application/json">
-    <label class="small muted" for="b-in">Ou cole o texto do backup</label>
-    <textarea id="b-in"></textarea>
-    <p id="b-err" class="err" role="alert"></p>
-    <button type="button" class="btn danger" id="b-restore">Restaurar backup</button>
+    <input type="file" id="b-arquivo" accept=".json,application/json" aria-label="Arquivo de backup">
+    <p id="b-erro" class="err" role="alert"></p>
+    <button type="button" class="btn danger" id="b-restaurar">Restaurar backup</button>
   </div>
 </section>
 
-<section id="v-pass" class="view" hidden>
-  <div class="bar"><button class="back" type="button" data-back>‹ Ajustes</button></div>
+<section id="v-senha" class="view" hidden>
+  <div class="bar"><button class="back" type="button" data-voltar>‹ Ajustes</button></div>
   <h2>Trocar senha</h2>
-  <form id="p-form" class="form box">
-    <label for="p-cur">Senha atual</label><input id="p-cur" type="password" autocomplete="current-password" required>
-    <label for="p-new">Nova senha</label><input id="p-new" type="password" autocomplete="new-password" minlength="4" required>
-    <label for="p-new2">Repita a nova senha</label><input id="p-new2" type="password" autocomplete="new-password" minlength="4" required>
-    <p id="p-err" class="err" role="alert"></p>
+  <form id="s-form" class="form box">
+    <label for="s-atual">Senha atual</label><input id="s-atual" type="password" autocomplete="current-password" required>
+    <label for="s-nova">Nova senha</label><input id="s-nova" type="password" autocomplete="new-password" minlength="4" required>
+    <label for="s-rep">Repita a nova senha</label><input id="s-rep" type="password" autocomplete="new-password" minlength="4" required>
+    <p id="s-erro" class="err" role="alert"></p>
     <button class="btn primary" type="submit">Trocar senha</button>
   </form>
 </section>
 
 </div>
 <div id="toast" role="status" hidden></div>
-
-<script>
-(() => {
-'use strict';
-const VAULT = 'carga.vault.v1', KEEP = 'carga.key.v1', ITER = 310000;
-const KIND = ['Principal', 'Substituto', 'Halter'];
-const SEED = [
-  ['Pernas · empurrar', [['Leg press 45°','Leg Press'],['Agachamento no Smith','Smith Machine Squat'],['Agachamento taça com halter','Goblet Squat']]],
-  ['Posterior de coxa', [['Cadeira flexora','Seated Leg Curl'],['Mesa flexora','Lying Leg Curl'],['Stiff com halteres','Dumbbell Romanian Deadlift']]],
-  ['Peito', [['Supino máquina','Chest Press Machine'],['Voador (peck deck)','Pec Deck Fly'],['Supino reto com halteres','Dumbbell Bench Press']]],
-  ['Costas · puxar de cima', [['Puxada alta','Lat Pulldown'],['Barra assistida (graviton)','Assisted Pull-up'],['Pullover com halter','Dumbbell Pullover']]],
-  ['Costas · remar', [['Remada sentada máquina','Seated Row Machine'],['Remada baixa no cabo','Seated Cable Row'],['Remada unilateral (serrote)','One-arm Dumbbell Row']]],
-  ['Ombros', [['Desenvolvimento máquina','Machine Shoulder Press'],['Desenvolvimento no Smith','Smith Machine Shoulder Press'],['Desenvolvimento com halteres','Dumbbell Shoulder Press']]]
-];
-
-let key = null, salt = null, iter = ITER, S = null, cur = null, stack = [], lockMode = 'setup', installEvt = null;
-const el = id => document.getElementById(id);
-const te = new TextEncoder(), td = new TextDecoder();
-const ls = {
-  get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
-  set(k,v){ try { localStorage.setItem(k,v); return true; } catch(e){ return false; } },
-  del(k){ try { localStorage.removeItem(k); } catch(e){} }
-};
-function b64(buf){ const a = new Uint8Array(buf); let s = ''; for (let i = 0; i < a.length; i += 0x8000) s += String.fromCharCode.apply(null, a.subarray(i, i + 0x8000)); return btoa(s); }
-function ub64(s){ const b = atob(s), a = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; }
-const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const pad = n => String(n).padStart(2, '0');
-function today(){ const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
-function fmtN(n){ return (Math.round(n * 100) / 100).toLocaleString('pt-BR'); }
-function dayDiff(iso){ const [y,m,d] = iso.split('-').map(Number); const t = new Date(); return Math.round((new Date(t.getFullYear(), t.getMonth(), t.getDate()) - new Date(y, m - 1, d)) / 864e5); }
-function fmtDate(iso){ const n = dayDiff(iso); if (n === 0) return 'hoje'; if (n === 1) return 'ontem'; if (n > 1 && n < 7) return 'há ' + n + ' dias'; return fmtShort(iso); }
-function fmtShort(iso){ const [y,m,d] = iso.split('-'); return d + '/' + m + (Number(y) !== new Date().getFullYear() ? '/' + y.slice(2) : ''); }
-let tt; function toast(m){ const t = el('toast'); t.textContent = m; t.hidden = false; clearTimeout(tt); tt = setTimeout(() => { t.hidden = true; }, 2400); }
-
-/* ---------- cofre criptografado (PBKDF2 + AES-GCM) ---------- */
-async function derive(pw, saltU8, it){
-  const base = await crypto.subtle.importKey('raw', te.encode(pw), 'PBKDF2', false, ['deriveKey']);
-  return crypto.subtle.deriveKey({ name:'PBKDF2', salt:saltU8, iterations:it, hash:'SHA-256' }, base, { name:'AES-GCM', length:256 }, true, ['encrypt','decrypt']);
-}
-async function seal(){
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const ct = await crypto.subtle.encrypt({ name:'AES-GCM', iv }, key, te.encode(JSON.stringify(S)));
-  return ls.set(VAULT, JSON.stringify({ v:1, it:iter, salt:b64(salt), iv:b64(iv), ct:b64(ct) }));
-}
-async function unseal(k){
-  const v = JSON.parse(ls.get(VAULT));
-  const pt = await crypto.subtle.decrypt({ name:'AES-GCM', iv:ub64(v.iv) }, k, ub64(v.ct));
-  return JSON.parse(td.decode(pt));
-}
-let saving = Promise.resolve();
-function persist(){
-  saving = saving.then(seal).then(ok => { if (!ok) toast('Não consegui gravar no aparelho. Faça um backup.'); }).catch(() => toast('Erro ao gravar'));
-  return saving;
-}
-async function keepKey(on){
-  if (on) ls.set(KEEP, b64(await crypto.subtle.exportKey('raw', key))); else ls.del(KEEP);
-}
-function freshState(){
-  return { v:1, logs:[], slots: SEED.map(([g, vs]) => ({ id:uid(), g, a:0, vs: vs.map(([pt, en]) => ({ id:uid(), pt, en, u:'kg' })) })) };
-}
-function normalize(st){
-  if (!st || !Array.isArray(st.slots) || !Array.isArray(st.logs)) throw new Error('formato');
-  st.slots.forEach(s => {
-    s.vs = (s.vs || []).slice(0, 3);
-    while (s.vs.length < 3) s.vs.push({ id:uid(), pt:'', en:'', u:'kg' });
-    s.vs.forEach(v => { v.id = v.id || uid(); v.pt = v.pt || ''; v.en = v.en || ''; v.u = v.u === 'nível' ? 'nível' : 'kg'; });
-    s.a = activeIdx(s);
-  });
-  st.logs = st.logs.filter(l => l && l.v && /^\d{4}-\d{2}-\d{2}$/.test(l.d) && isFinite(l.w)).map(l => ({ id:l.id || uid(), v:l.v, d:l.d, t:l.t || 0, w:+l.w, r:+l.r || 0 }));
-  return st;
-}
-function activeIdx(s){ if (s.vs[s.a] && s.vs[s.a].pt) return s.a; const i = s.vs.findIndex(v => v.pt); return i < 0 ? 0 : i; }
-async function afterUnlock(){
-  S = normalize(S);
-  try { if (navigator.storage && navigator.storage.persist) await navigator.storage.persist(); } catch(e){}
-  go('home');
-}
-
-/* ---------- navegação ---------- */
-const render = {};
-function show(name){
-  document.querySelectorAll('.view[id^="v-"]').forEach(v => { v.hidden = v.id !== 'v-' + name; });
-  if (render[name]) render[name]();
-  window.scrollTo(0, 0);
-}
-function go(name){
-  if (name === 'home' || name === 'lock'){ stack = [name]; try { history.replaceState({ d:1 }, ''); } catch(e){} show(name); return; }
-  stack.push(name); try { history.pushState({ d:stack.length }, ''); } catch(e){} show(name);
-}
-function back(){ if (stack.length > 1) history.back(); else show('home'); }
-window.addEventListener('popstate', () => { if (stack.length > 1 && S){ stack.pop(); show(stack[stack.length - 1]); } });
-
-/* ---------- tela de bloqueio ---------- */
-function showLock(mode, msg){
-  lockMode = mode; S = null; key = null;
-  const setup = mode === 'setup';
-  el('l-title').textContent = setup ? 'Criar senha mestra' : mode === 'nocrypto' ? 'Abra pelo link seguro' : 'Desbloquear';
-  el('l-sub').textContent = setup ? 'Seus registros ficam criptografados neste aparelho. Não existe recuperação de senha: anote em lugar seguro.' : mode === 'nocrypto' ? 'Este navegador não liberou criptografia nesta página. Abra o app pelo endereço https.' : 'Digite sua senha mestra.';
-  el('l-pw2-wrap').hidden = !setup;
-  el('l-pw2').required = setup;
-  el('l-btn').textContent = setup ? 'Criar e entrar' : 'Entrar';
-  el('l-form').hidden = mode === 'nocrypto';
-  el('l-reset-wrap').hidden = mode !== 'login';
-  el('l-reset').hidden = true;
-  el('l-err').textContent = msg || '';
-  el('l-pw').value = ''; el('l-pw2').value = '';
-  el('l-pw').autocomplete = setup ? 'new-password' : 'current-password';
-  go('lock');
-}
-el('l-form').addEventListener('submit', async e => {
-  e.preventDefault();
-  const pw = el('l-pw').value, btn = el('l-btn'), err = el('l-err');
-  err.textContent = '';
-  if (pw.length < 4){ err.textContent = 'Use pelo menos 4 caracteres.'; return; }
-  if (lockMode === 'setup' && pw !== el('l-pw2').value){ err.textContent = 'As senhas não conferem.'; return; }
-  btn.disabled = true; const label = btn.textContent; btn.textContent = 'Abrindo…';
-  try {
-    if (lockMode === 'setup'){
-      salt = crypto.getRandomValues(new Uint8Array(16)); iter = ITER;
-      key = await derive(pw, salt, iter);
-      S = freshState(); await persist();
-    } else {
-      const v = JSON.parse(ls.get(VAULT)); salt = ub64(v.salt); iter = v.it || ITER;
-      const k = await derive(pw, salt, iter);
-      try { S = await unseal(k); } catch(x){ err.textContent = 'Senha incorreta.'; return; }
-      key = k;
-    }
-    await keepKey(el('l-keep').checked);
-    await afterUnlock();
-  } catch(x){ err.textContent = 'Não foi possível abrir: ' + (x.message || x); }
-  finally { btn.disabled = false; btn.textContent = label; }
-});
-el('l-forgot').addEventListener('click', () => { el('l-reset').hidden = !el('l-reset').hidden; });
-el('l-wipe').addEventListener('click', () => { ls.del(VAULT); ls.del(KEEP); showLock('setup'); toast('Dados apagados'); });
-
-/* ---------- início ---------- */
-function lastLog(vid){ let b = null; for (const l of S.logs) if (l.v === vid && (!b || l.d > b.d || (l.d === b.d && l.t > b.t))) b = l; return b; }
-render.home = () => {
-  const t = today(); let done = 0;
-  el('home-list').innerHTML = S.slots.map(s => {
-    s.a = activeIdx(s); const v = s.vs[s.a]; const last = lastLog(v.id);
-    const did = S.logs.some(l => l.d === t && s.vs.some(x => x.id === l.v)); if (did) done++;
-    const up = last && last.r >= 12;
-    return `<li><button type="button" class="slot" data-slot="${s.id}">
-      <span class="slot-main"><span class="eyebrow">${esc(s.g)}${s.a > 0 ? ` · <span class="kind">${KIND[s.a]}</span>` : ''}</span>
-      <span class="name">${esc(v.pt)}</span>${v.en ? `<span class="en">${esc(v.en)}</span>` : ''}
-      <span class="chips">${did ? '<span class="chip ok">✓ Feito hoje</span>' : ''}${up ? '<span class="chip warn">Subir carga</span>' : ''}</span></span>
-      <span class="slot-load">${last ? `<span class="w">${fmtN(last.w)}<small>${esc(v.u)}</small></span><span class="r">× ${last.r} · ${fmtDate(last.d)}</span>` : '<span class="r">sem registro</span>'}</span>
-    </button></li>`;
-  }).join('');
-  el('home-count').textContent = done + '/' + S.slots.length;
-  el('home-bar').style.width = (S.slots.length ? done / S.slots.length * 100 : 0) + '%';
-  const d = new Date().toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' });
-  el('home-date').textContent = d.charAt(0).toUpperCase() + d.slice(1);
-};
-
-/* ---------- exercício ---------- */
-const curSlot = () => S.slots.find(x => x.id === cur);
-render.detail = () => {
-  const s = curSlot(); if (!s){ back(); return; }
-  s.a = activeIdx(s); const v = s.vs[s.a];
-  el('d-group').textContent = s.g;
-  const opts = s.vs.map((x, i) => x.pt ? `<button type="button" class="seg" role="radio" aria-checked="${i === s.a}" data-vi="${i}"><span class="seg-k">${KIND[i]}</span><span class="seg-n">${esc(x.pt)}</span></button>` : '').join('');
-  el('d-variants').innerHTML = opts; el('d-variants').hidden = s.vs.filter(x => x.pt).length < 2;
-  el('d-name').textContent = v.pt; el('d-en').textContent = v.en;
-  const last = lastLog(v.id);
-  el('d-last').innerHTML = last
-    ? `<span>Última: <b>${fmtN(last.w)} ${esc(v.u)} × ${last.r}</b> · ${fmtDate(last.d)}</span>${last.r >= 12 ? '<span class="chip warn">Fez 12: suba a carga</span>' : ''}`
-    : '<span class="muted">Primeiro registro desta variação. Comece leve.</span>';
-  el('d-unit').textContent = v.u;
-  el('d-w').value = last ? String(last.w).replace('.', ',') : '';
-  el('d-r').value = last ? last.r : 10;
-  const L = S.logs.filter(l => l.v === v.id).sort((a, b) => b.d.localeCompare(a.d) || b.t - a.t);
-  el('d-hist').innerHTML = L.length
-    ? L.map(l => `<li><span class="h-d">${fmtShort(l.d)}</span><span class="h-v">${fmtN(l.w)} ${esc(v.u)} × ${l.r}</span><button type="button" class="del" data-del="${l.id}">Apagar</button></li>`).join('')
-    : '<li class="empty">Nenhum registro ainda.</li>';
-  chart(L.slice(0, 12).reverse(), v.u);
-};
-function chart(P, u){
-  const box = el('d-chart');
-  if (P.length < 2){ box.innerHTML = '<p>O gráfico aparece a partir do 2º registro.</p>'; return; }
-  const W = 320, H = 120, l = 40, r = 12, t = 12, b = 22;
-  let lo = Math.min(...P.map(p => p.w)), hi = Math.max(...P.map(p => p.w));
-  if (lo === hi){ lo -= 1; hi += 1; }
-  const x = i => l + i * (W - l - r) / (P.length - 1);
-  const y = w => t + (hi - w) * (H - t - b) / (hi - lo);
-  const pts = P.map((p, i) => x(i).toFixed(1) + ',' + y(p.w).toFixed(1));
-  const area = `M${x(0)},${H - b} L${pts.join(' L')} L${x(P.length - 1)},${H - b} Z`;
-  const e = P[P.length - 1], ex = x(P.length - 1), ey = y(e.w);
-  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Evolução da carga">
-    <line x1="${l}" x2="${W - r}" y1="${y(hi)}" y2="${y(hi)}" stroke="var(--line)" stroke-dasharray="3 3"/>
-    <line x1="${l}" x2="${W - r}" y1="${y(lo)}" y2="${y(lo)}" stroke="var(--line)" stroke-dasharray="3 3"/>
-    <text x="${l - 6}" y="${y(hi) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${fmtN(hi)}</text>
-    <text x="${l - 6}" y="${y(lo) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${fmtN(lo)}</text>
-    <path d="${area}" fill="var(--accent)" fill-opacity=".12"/>
-    <polyline points="${pts.join(' ')}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-    <circle cx="${ex}" cy="${ey}" r="4.5" fill="var(--accent)"/>
-    <text x="${l}" y="${H - 5}" font-size="11" fill="var(--muted)">${fmtShort(P[0].d)}</text>
-    <text x="${W - r}" y="${H - 5}" text-anchor="end" font-size="11" fill="var(--muted)">${fmtShort(e.d)} · ${fmtN(e.w)} ${esc(u)}</text>
-  </svg>`;
-}
-function num(s){ return parseFloat(String(s).replace(',', '.')); }
-function step(f, dir){
-  const s = curSlot(), v = s.vs[s.a], inp = el(f === 'w' ? 'd-w' : 'd-r');
-  const d = f === 'r' ? 1 : (v.u === 'kg' ? 2.5 : 1);
-  let n = num(inp.value); if (!isFinite(n)) n = 0;
-  n = Math.max(0, Math.round((n + dir * d) * 100) / 100);
-  inp.value = f === 'w' ? String(n).replace('.', ',') : n;
-}
-el('d-form').addEventListener('submit', e => {
-  e.preventDefault();
-  const s = curSlot(), v = s.vs[s.a];
-  const w = num(el('d-w').value), r = parseInt(el('d-r').value, 10);
-  if (!isFinite(w) || w < 0){ toast('Informe a carga'); el('d-w').focus(); return; }
-  if (!(r > 0)){ toast('Informe as reps'); el('d-r').focus(); return; }
-  const t = today(), ex = S.logs.find(l => l.v === v.id && l.d === t);
-  if (ex){ ex.w = w; ex.r = r; ex.t = Date.now(); } else S.logs.push({ id:uid(), v:v.id, d:t, t:Date.now(), w, r });
-  persist(); toast(ex ? 'Registro de hoje atualizado' : 'Salvo: ' + fmtN(w) + ' ' + v.u + ' × ' + r);
-  render.detail();
-});
-function armed(btn, label){
-  if (btn.classList.contains('armed')) return true;
-  const old = btn.textContent; btn.classList.add('armed'); btn.textContent = label;
-  setTimeout(() => { if (btn.isConnected){ btn.classList.remove('armed'); btn.textContent = old; } }, 3000);
-  return false;
-}
-
-document.addEventListener('click', e => {
-  const b = e.target.closest('[data-go],[data-back],[data-slot],[data-vi],[data-step],[data-del]');
-  if (!b || !S) return;
-  if (b.dataset.go) go(b.dataset.go);
-  else if (b.hasAttribute('data-back')) back();
-  else if (b.dataset.slot){ cur = b.dataset.slot; go('detail'); }
-  else if (b.dataset.vi){ curSlot().a = +b.dataset.vi; persist(); render.detail(); }
-  else if (b.dataset.step) step(b.dataset.step, +b.dataset.dir);
-  else if (b.dataset.del){ if (!armed(b, 'Confirmar')) return; S.logs = S.logs.filter(l => l.id !== b.dataset.del); persist(); toast('Registro apagado'); render.detail(); }
-});
-
-/* ---------- ajustes ---------- */
-render.menu = async () => {
-  el('m-install').hidden = !installEvt;
-  let info = `${S.logs.length} registro(s) neste aparelho.`;
-  try { if (navigator.storage && navigator.storage.persisted) info += (await navigator.storage.persisted()) ? ' Armazenamento persistente ativo.' : ' O navegador ainda não garantiu armazenamento persistente: faça backup de vez em quando.'; } catch(e){}
-  el('m-info').textContent = info;
-};
-el('m-lock').addEventListener('click', () => { ls.del(KEEP); showLock('login'); });
-window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; const m = el('m-install'); if (m) m.hidden = false; });
-el('m-install').addEventListener('click', async () => { if (!installEvt) return; installEvt.prompt(); try { await installEvt.userChoice; } catch(e){} installEvt = null; el('m-install').hidden = true; });
-
-/* ---------- editar exercícios ---------- */
-function slotEditor(s){
-  return `<fieldset class="ed" data-id="${s.id || ''}">
-    <div class="ed-head"><input class="ed-g" value="${esc(s.g)}" placeholder="Grupo (ex.: Peito)" aria-label="Grupo muscular"><button type="button" class="del ed-rm">Remover</button></div>
-    ${[0, 1, 2].map(i => { const v = s.vs[i] || {}; return `<div class="ed-v" data-vid="${v.id || ''}">
-      <span class="ed-k">${KIND[i]}${i === 0 ? ' (obrigatório)' : ''}</span>
-      <input class="ed-pt" value="${esc(v.pt)}" placeholder="Nome em português" aria-label="${KIND[i]}: nome em português">
-      <input class="ed-en" value="${esc(v.en)}" placeholder="Name in English" aria-label="${KIND[i]}: nome em inglês">
-      <select class="ed-u" aria-label="${KIND[i]}: unidade"><option value="kg"${v.u !== 'nível' ? ' selected' : ''}>kg</option><option value="nível"${v.u === 'nível' ? ' selected' : ''}>nível</option></select>
-    </div>`; }).join('')}
-  </fieldset>`;
-}
-render.edit = () => { el('e-list').innerHTML = S.slots.map(slotEditor).join(''); };
-el('e-add').addEventListener('click', () => {
-  el('e-list').insertAdjacentHTML('beforeend', slotEditor({ id:'', g:'', vs:[] }));
-  const f = el('e-list').lastElementChild; f.querySelector('.ed-g').focus();
-});
-el('e-list').addEventListener('click', e => {
-  const b = e.target.closest('.ed-rm'); if (!b) return;
-  if (!armed(b, 'Apagar com histórico?')) return;
-  b.closest('fieldset').remove();
-});
-el('e-form').addEventListener('submit', e => {
-  e.preventDefault();
-  const sets = [...el('e-list').querySelectorAll('fieldset')];
-  const slots = [];
-  for (const f of sets){
-    const old = S.slots.find(s => s.id === f.dataset.id);
-    const vs = [...f.querySelectorAll('.ed-v')].map(r => ({ id:r.dataset.vid || uid(), pt:r.querySelector('.ed-pt').value.trim(), en:r.querySelector('.ed-en').value.trim(), u:r.querySelector('.ed-u').value }));
-    if (!vs[0].pt){ toast('Preencha o exercício principal'); f.querySelector('.ed-pt').focus(); return; }
-    slots.push({ id:f.dataset.id || uid(), g:f.querySelector('.ed-g').value.trim() || vs[0].pt, a:old ? old.a : 0, vs });
-  }
-  const keep = new Set(slots.flatMap(s => s.vs.map(v => v.id)));
-  S.slots = slots; S.logs = S.logs.filter(l => keep.has(l.v));
-  S = normalize(S); persist(); toast('Exercícios salvos'); back();
-});
-
-/* ---------- backup ---------- */
-function backupText(){ return JSON.stringify({ app:'diario-de-carga', exportado:new Date().toISOString(), ...S }, null, 1); }
-el('b-down').addEventListener('click', () => {
-  try {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([backupText()], { type:'application/json' }));
-    a.download = 'carga-backup-' + today() + '.json';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    toast('Backup gerado');
-  } catch(x){ toast('Download bloqueado. Use “Copiar texto”.'); }
-});
-el('b-copy').addEventListener('click', async () => {
-  const t = backupText(), out = el('b-out');
-  try { await navigator.clipboard.writeText(t); toast('Backup copiado'); }
-  catch(x){ out.hidden = false; out.value = t; out.focus(); out.select(); toast('Selecionei o texto: copie manualmente'); }
-});
-el('b-file').addEventListener('change', async e => { const f = e.target.files[0]; if (f) el('b-in').value = await f.text(); });
-el('b-restore').addEventListener('click', e => {
-  const err = el('b-err'); err.textContent = '';
-  let st; try { st = normalize(JSON.parse(el('b-in').value)); } catch(x){ err.textContent = 'Texto ou arquivo inválido. Use um backup gerado por este app.'; return; }
-  if (!armed(e.currentTarget, 'Confirmar: substituir tudo')) return;
-  S = { v:1, slots:st.slots, logs:st.logs }; persist(); el('b-in').value = ''; toast('Backup restaurado'); go('home');
-});
-
-/* ---------- trocar senha ---------- */
-el('p-form').addEventListener('submit', async e => {
-  e.preventDefault();
-  const err = el('p-err'); err.textContent = '';
-  const a = el('p-cur').value, n = el('p-new').value;
-  if (n !== el('p-new2').value){ err.textContent = 'As novas senhas não conferem.'; return; }
-  try { await unseal(await derive(a, salt, iter)); } catch(x){ err.textContent = 'Senha atual incorreta.'; return; }
-  salt = crypto.getRandomValues(new Uint8Array(16)); iter = ITER;
-  key = await derive(n, salt, iter); await persist();
-  if (ls.get(KEEP)) await keepKey(true);
-  e.target.reset(); toast('Senha trocada'); back();
-});
-
-/* ---------- início do app ---------- */
-async function boot(){
-  if (!window.crypto || !crypto.subtle){ showLock('nocrypto'); return; }
-  const raw = ls.get(VAULT);
-  if (!raw){ showLock('setup'); return; }
-  try { const v = JSON.parse(raw); salt = ub64(v.salt); iter = v.it || ITER; } catch(x){ showLock('login', 'Dados deste aparelho estão corrompidos. Use “Esqueci a senha” e restaure um backup.'); return; }
-  const kk = ls.get(KEEP);
-  if (kk){
-    try { const k = await crypto.subtle.importKey('raw', ub64(kk), { name:'AES-GCM' }, true, ['encrypt','decrypt']); S = await unseal(k); key = k; await afterUnlock(); return; }
-    catch(x){ ls.del(KEEP); }
-  }
-  showLock('login');
-}
-if ('serviceWorker' in navigator && location.protocol === 'https:'){
-  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
-}
-boot();
-})();
-</script>
+<button type="button" id="mini" hidden><span id="mini-t">0:00</span><span id="mini-n"></span><span>Abrir ›</span></button>
+<script src="app.js"></script>
 </body>
 </html>
