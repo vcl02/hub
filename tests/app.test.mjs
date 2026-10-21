@@ -502,3 +502,25 @@ test('lembrete da garrafinha nos dias de treino', async () => {
   assert.equal(await sexta.pg.isVisible('#i-agua'), false);                                   // dia de descanso
   await sexta.ctx.close();
 });
+
+test('ver o resumo de um treino antigo', async () => {
+  const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-22T19:00:00') });
+  await pg.evaluate(() => {
+    db.registros.push({ variacao: db.exercicios[0].variacoes[0].id, data: '2026-10-21', series: [{ kg: 40, reps: 12 }, { kg: 45, reps: 10 }] });
+    db.treinos.push({ inicio: new Date('2026-10-21T17:43').getTime(), fim: new Date('2026-10-21T18:37').getTime(), fechado: true });
+    gravar(); mostrar('inicio');
+  });
+  await pg.click('#i-treinos li[data-dia="2026-10-21"]');
+  await pg.waitForSelector('#v-fim:not([hidden])');
+  assert.match(await pg.textContent('#f-titulo'), /Resumo do treino/);
+  assert.match(await pg.textContent('#f-data'), /21 de outubro/);
+  assert.match(await pg.textContent('#f-lista'), /Leg press 45°.*40\/45 kg.*12\/10/);
+  assert.match(await pg.textContent('#f-tiles'), /54 min/);
+  await pg.goBack();
+  await pg.click('[data-ir="treinos"]');
+  assert.match(await pg.textContent('#t-dias'), /Qua 21\/10.*1 exercício.*54 min/);
+  await pg.goBack();
+  await pg.click('#i-semana [data-dia="2026-10-21"]');                                       // dia feito na semana também abre
+  await pg.waitForSelector('#v-fim:not([hidden])');
+  assert.deepEqual(erros, []); await ctx.close();
+});

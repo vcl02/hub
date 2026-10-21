@@ -51,7 +51,7 @@
     <div class="track"><span id="i-barra"></span></div>
   </div>
   <ul id="i-lista" class="slots"></ul>
-  <div id="i-hist-box" class="view" hidden><h3 class="sec">Últimos treinos</h3><ul id="i-treinos" class="hist"></ul></div>
+  <div id="i-hist-box" class="view" hidden><h3 class="sec">Últimos treinos</h3><ul id="i-treinos" class="hist"></ul><button type="button" class="link" data-ir="treinos">Ver todos os treinos ›</button></div>
   <p class="rule">Dias fixos: quarta e quinta; segunda é o extra sugerido. Pirâmide: você põe o peso da 1ª série e o app calcula as outras (+10% de peso, −2 reps). O 1º exercício de pernas e o 1º de parte de cima começam com aquecimento. Bateu todas as reps da pirâmide? Suba o peso inicial.</p>
 </section>
 
@@ -134,7 +134,7 @@
 <section id="v-fim" class="view" hidden>
   <div class="fim-top">
     <p class="eyebrow" id="f-data"></p>
-    <h1>Treino concluído!</h1>
+    <h1 id="f-titulo">Treino concluído!</h1>
     <p class="hint" id="f-msg"></p>
   </div>
   <ul class="tiles" id="f-tiles"></ul>
@@ -142,6 +142,13 @@
   <ul class="hist" id="f-lista"></ul>
   <p class="hint">Calorias: estimativa por MET 3,5 (musculação) × seu peso × tempo de treino; inclui o gasto em repouso.</p>
   <button type="button" class="btn primary big wide" data-ir="inicio">Voltar ao início</button>
+</section>
+
+<!-- Todos os treinos (toque num dia para ver o resumo) -->
+<section id="v-treinos" class="view" hidden>
+  <div class="bar"><button class="back" type="button" data-voltar>‹ Treino</button></div>
+  <h2>Treinos</h2>
+  <ul class="hist dias" id="t-dias"></ul>
 </section>
 
 <!-- Peso corporal -->

@@ -516,7 +516,7 @@ function semana() {
     const d = new Date(seg.getFullYear(), seg.getMonth(), seg.getDate() + i), wd = d.getDay(), k = iso(d), feito = dias.has(k);
     const tipo = DIAS_FIXOS.includes(wd) ? 'fix' : DIAS_EXTRA.includes(wd) ? 'sug' : 'off';
     if (feito && tipo === 'fix') fixos++; if (feito && tipo === 'sug') extra = true;
-    html += `<li class="day ${tipo}${k === h ? ' today' : ''}${feito ? ' done' : ''}"><span class="dn">${NOME_DIA[wd]}</span><span class="dd">${d.getDate()}</span><span class="dm">${feito ? '✓' : tipo === 'fix' ? 'fixo' : tipo === 'sug' ? 'extra' : ''}</span></li>`;
+    html += `<li class="day ${tipo}${k === h ? ' today' : ''}${feito ? ' done' : ''}"${feito ? ` data-dia="${k}"` : ''}><span class="dn">${NOME_DIA[wd]}</span><span class="dd">${d.getDate()}</span><span class="dm">${feito ? '✓' : tipo === 'fix' ? 'fixo' : tipo === 'sug' ? 'extra' : ''}</span></li>`;
   }
   $('i-semana').innerHTML = html;
   const wd = agora.getDay(), treino = d => DIAS_FIXOS.includes(d) || DIAS_EXTRA.includes(d);
@@ -778,7 +778,7 @@ function pintarTempo() {
   $('i-hist-box').hidden = !fechados.length;
   $('i-treinos').innerHTML = fechados.map(x => {
     const d = new Date(x.inicio), c = kcal(x);
-    return x.inicio === editTreino ? '' : `<li><i class="h-d">${NOME_DIA[d.getDay()]} ${dataCurta(iso(d))}</i><span class="h-d">${hhmm(x.inicio)}–${hhmm(x.fim)}${c ? ` · ~${c} kcal` : ''}</span><span class="ed-acoes"><span class="h-v">${duracao(x.fim - x.inicio)}</span><button type="button" class="del" data-editar-treino="${x.inicio}">Editar</button></span></li>`;
+    return x.inicio === editTreino ? '' : `<li data-dia="${iso(d)}"><i class="h-d">${NOME_DIA[d.getDay()]} ${dataCurta(iso(d))}</i><span class="h-d">${hhmm(x.inicio)}–${hhmm(x.fim)}${c ? ` · ~${c} kcal` : ''}</span><span class="ed-acoes"><span class="h-v">${duracao(x.fim - x.inicio)}</span><button type="button" class="del" data-editar-treino="${x.inicio}">Editar</button></span></li>`;
   }).join('');
 }
 function abrirEdicaoTreino(inicio) {
@@ -792,15 +792,17 @@ function finalizarTreino() {
   const t = ultimoTreino();
   if (emAndamento(t)) { t.fim = Date.now(); t.fechado = true; gravar(); }
   clearInterval(T.intervalo); T.intervalo = null; T.fim = 0; manterTela(false); salvarSessao();
-  ir('fim');
+  diaVisto = null; ir('fim');
 }
 setInterval(pintarTempo, 15000);
 
-// ===== Tela de fim de treino =====
+// ===== Resumo do treino: no fim do treino de hoje ou ao tocar num dia antigo =====
+let diaVisto = null;   // null = treino que acabou de terminar
 telas.fim = () => {
-  const dia = hoje(), r = resumoDia(dia), { ex, va } = mapas(), t = r.treino;
-  $('f-data').textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-  $('f-msg').textContent = r.recordes ? `${r.recordes} ${r.recordes === 1 ? 'recorde' : 'recordes'} hoje. Mandou bem!` : r.regs.length ? 'Mais um treino na conta. Constância é o que dá resultado.' : 'Nenhum exercício registrado hoje.';
+  const dia = diaVisto || hoje(), antigo = !!diaVisto, r = resumoDia(dia), { ex, va } = mapas(), t = r.treino;
+  $('f-data').textContent = deIso(dia).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  $('f-titulo').textContent = antigo ? 'Resumo do treino' : 'Treino concluído!';
+  $('f-msg').textContent = !r.regs.length ? 'Nenhum exercício registrado neste dia.' : r.recordes ? `${r.recordes} ${r.recordes === 1 ? 'recorde' : 'recordes'}${antigo ? '' : ' hoje. Mandou bem!'}` : antigo ? '' : 'Mais um treino na conta. Constância é o que dá resultado.';
   const tiles = [
     ['Duração', t ? duracao(t.fim - t.inicio) : '—', t ? `${hhmm(t.inicio)}–${hhmm(t.fim)}` : ''],
     ['Calorias', r.kcal != null ? '~' + r.kcal : '—', r.kcal != null ? 'kcal, estimativa' : 'registre seu peso para estimar'],
@@ -811,7 +813,14 @@ telas.fim = () => {
   $('f-tiles').innerHTML = tiles.map(([k, v, s]) => `<li><span>${k}</span><b>${v}</b><small>${s}</small></li>`).join('');
   const rec = recordesAte(dia);
   $('f-lista').innerHTML = r.regs.map(x => { const v = va.get(x.variacao); return `<li><span class="h-v">${esc(v?.nome || '')}${rec.has(x) ? ' <span class="chip ok">Recorde</span>' : ''}</span><span class="h-d">${kgsTxt(x)} ${esc(v ? unidadeTxt(v) : '')} × ${repsTxt(x)}</span></li>`; }).join('') || '<li class="empty">Nada registrado.</li>';
-  vibrar([60, 80, 60]);
+  if (!antigo) vibrar([60, 80, 60]);
+};
+telas.treinos = () => {
+  const dias = [...diasTreinados()].sort().reverse();
+  $('t-dias').innerHTML = dias.map(dia => {
+    const r = resumoDia(dia), d = deIso(dia);
+    return `<li data-dia="${dia}"><i class="h-d">${NOME_DIA[d.getDay()]} ${dataCurta(dia)}</i><span class="h-d">${r.regs.length} ${r.regs.length === 1 ? 'exercício' : 'exercícios'}${r.recordes ? ` · ${r.recordes} ${r.recordes === 1 ? 'recorde' : 'recordes'}` : ''}</span><span class="h-v">${r.treino ? duracao(r.treino.fim - r.treino.inicio) : ''} ›</span></li>`;
+  }).join('') || '<li class="empty">Nenhum treino ainda.</li>';
 };
 
 // ===== Arrastar para o lado = próximo / anterior (sem dar a volta) =====
@@ -1010,11 +1019,12 @@ document.addEventListener('change', ev => {   // peso/reps digitados no editor d
 
 // ===== Cliques gerais =====
 document.addEventListener('click', ev => {
-  const b = ev.target.closest('[data-ir],[data-voltar],[data-ex],[data-var],[data-passo],[data-apagar],[data-apagar-medida],[data-modo],[data-aj],[data-linha],[data-finalizar],[data-reabrir],[data-editar-treino],[data-salvar-treino],[data-excluir-treino],[data-editar-medida],[data-salvar-medida],[data-cancelar]');
+  const b = ev.target.closest('[data-ir],[data-voltar],[data-ex],[data-var],[data-passo],[data-apagar],[data-apagar-medida],[data-modo],[data-aj],[data-linha],[data-finalizar],[data-reabrir],[data-editar-treino],[data-salvar-treino],[data-excluir-treino],[data-editar-medida],[data-salvar-medida],[data-cancelar],[data-dia]');
   if (!b || !db) return;
   const d = b.dataset;
   if (travadoHoje() && !$('v-exercicio').hidden && (d.var || d.passo === 'carga' || d.modo || d.aj || d.linha !== undefined)) return;   // dia travado
-  if (d.ir) ir(d.ir);
+  if (d.dia) { if (editTreino) return; diaVisto = d.dia; ir('fim'); }
+  else if (d.ir) ir(d.ir);
   else if ('voltar' in d) voltar();
   else if (d.ex) { atual = d.ex; ir('exercicio'); }
   else if (d.var) { const e = exAtual(); e.ativo = +d.var; gravar(); telas.exercicio(); if (seriesDeTrabalho(e)) autoSalvar(e); marcarAtividade(); }
@@ -1164,7 +1174,7 @@ $('s-form').addEventListener('submit', async ev => {
 // Ao abrir, ao voltar para o app e a cada 10 min, compara os arquivos publicados com os que estão rodando.
 // Se mudaram, recarrega sozinho (a sessão do dia está salva). Espera o treino acabar e não age em telas com formulário.
 const ARQUIVOS_APP = ['index.html', 'app.js', 'style.css'];
-const TELAS_SEGURAS = ['inicio', 'exercicio', 'conquistas', 'ajustes', 'fim'];
+const TELAS_SEGURAS = ['inicio', 'exercicio', 'conquistas', 'ajustes', 'fim', 'treinos'];
 let versaoAtual = null, atualizacaoPendente = false, ultimaChecagem = 0;
 const hash = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36); };
 async function checarAtualizacao(forcar = false) {
