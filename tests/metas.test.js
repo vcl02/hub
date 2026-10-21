@@ -120,6 +120,51 @@ test('parcelado no débito: confere o dinheiro em cada parcela e diz quando cabe
     assert.deepEqual(JSON.parse(JSON.stringify(junto.linhas.map(l => [l.periodoIdx, l.v]))), [[5, -400], [5, -300], [6, -300]]);
 });
 
+test('parcelado sem entrada: um mês só (débito começa nele, cartão compra nele)', () => {
+    // meses_ate_parcela guardado de antes (3) fica sem efeito sem entrada.
+    const r = carrega([
+        meta(1, 'PS5', 4000, '2026-11-01', { forma: 'financiamento', parcelas: 4, meses_ate_parcela: 3 }),
+        meta(2, 'TV', 1000, '2027-01-01', { forma: 'cartao', parcelas: 2, meses_ate_parcela: 3 }),
+    ]);
+    const ps5 = doPlano(r, 1), tv = doPlano(r, 2);
+    assert.equal(ps5.mesesAteParcela, 0);
+    assert.deepEqual(JSON.parse(JSON.stringify(ps5.linhas.map(l => [l.periodoIdx, l.v]))), [[1, -1000], [2, -1000], [3, -1000], [4, -1000]]);
+    assert.equal(tv.mesesAteParcela, 1);
+    assert.ok(tv.linhas.every(l => l._compra === 3));        // compra em Jan/27, 1ª fatura no seguinte
+    // Com entrada, a 1ª parcela volta a valer.
+    const comEntrada = doPlano(carrega([meta(1, 'PS5', 4000, '2026-11-01', { forma: 'financiamento', entrada: 1000, parcelas: 3, meses_ate_parcela: 3 })]), 1);
+    assert.deepEqual(JSON.parse(JSON.stringify(comEntrada.linhas.map(l => [l.periodoIdx, l.v]))), [[1, -1000], [4, -1000], [5, -1000], [6, -1000]]);
+});
+
+test('texto do plano: débito sem entrada sem mês repetido; falta é o maior buraco a partir do 1º mês', () => {
+    // Só o trecho do texto (cycle-views.js), com domain/shared reais e 12 ciclos.
+    const trecho = visoes.slice(visoes.indexOf('const mesAbrev'), visoes.indexOf('function htmlModalMetas('));
+    const contexto = vm.createContext({ MESES: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'] });
+    ['js/domain.js', 'js/shared.js'].forEach(arquivo => vm.runInContext(ler(arquivo), contexto));
+    contexto.Estado = { ciclos: CICLOS.map(c => ({ ...c })) };
+    vm.runInContext(`const pct1 = n => n.toFixed(1).replace('.', ',') + '%';
+        const formaDaMeta = meta => (['cartao', 'financiamento'].includes(meta.forma) ? meta.forma : 'avista');
+        ${trecho} globalThis.t = { textoDoPlanoDaMeta, tituloDoMesDaMeta };`, contexto);
+    const { textoDoPlanoDaMeta, tituloDoMesDaMeta } = contexto.t;
+    const base = { mes: '2026-11-01', ciclo: 1, disponivel: 0, forma: 'financiamento', entrada: 0, parcelas: 21, parcela: 190.48, mesesAteParcela: 0 };
+    const nbsp = s => s.replace(/ /g, ' ');
+    assert.equal(nbsp(textoDoPlanoDaMeta({ ...base, cabe: true }).texto), '21x R$ 190,48 de Nov/26 a Jul/28');
+    assert.equal(nbsp(textoDoPlanoDaMeta({ ...base, cabe: false, falta: 4000, cicloFalta: 3, cabeEm: 5 }).texto),
+        '21x R$ 190,48 de Nov/26 a Jul/28 · não cabe: faltam até R$ 4.000,00 a partir de Jan/27 · cabe começando em Mar/27');
+    assert.match(nbsp(textoDoPlanoDaMeta({ ...base, entrada: 1000, mesesAteParcela: 1, cabe: false, falta: 10, cicloFalta: 3, cabeEm: 5 }).texto),
+        /^Nov\/26 · entrada R\$ 1\.000,00 \+ 21x .* · cabe com entrada em Mar\/27$/);
+    assert.match(nbsp(textoDoPlanoDaMeta({ ...base, forma: 'cartao', cartao: 'nubank', mesesAteParcela: 1, cabe: false, semLimite: true, cabeEm: 5 }).texto),
+        /^Nov\/26 · Nubank 21x .* de Dez\/26 a Ago\/28 · não cabe: sem limite no cartão · cabe comprando em Mar\/27$/);
+    assert.match(nbsp(textoDoPlanoDaMeta({ ...base, forma: 'avista', cabe: false, falta: 10, cicloFalta: 1, cabeEm: 5 }).texto), / · cabe em Mar\/27$/);
+    assert.equal(tituloDoMesDaMeta({ forma: 'financiamento', entrada: null }), 'Mês da 1ª parcela');
+    assert.equal(tituloDoMesDaMeta({ forma: 'cartao', entrada: 0 }), 'Mês da compra (1ª fatura no seguinte)');
+    assert.equal(tituloDoMesDaMeta({ forma: 'financiamento', entrada: 500 }), 'Mês da entrada');
+    assert.equal(tituloDoMesDaMeta({ forma: 'auto' }), 'Mês do pagamento');
+    // O campo 1ª parcela só aparece com entrada.
+    assert.match(visoes, /\(m\.entrada > 0 \? `<label>1ª parcela /);
+    assert.match(regras, /\*\*Sem entrada, um mês só:\*\* o mês da meta é o da 1ª parcela no débito e o da compra no cartão/);
+});
+
 test('parcelado no meu cartão sem limite em nenhum cartão: não cabe e o plano diz por quê', () => {
     const sofa = doPlano(carrega([meta(1, 'Sofá', 5000, '2027-01-01', { forma: 'cartao' })]), 1);
     assert.deepEqual([sofa.cabe, sofa.semLimite, sofa.cartao, sofa.cabeEm], [false, true, 'nubank', null]);

@@ -914,10 +914,23 @@ function textoDoPlanoDaMeta(p) {
         como = [entrada, parcelas].filter(Boolean).join(' + ');
     }
     const comprometido = p.comprometidoMax != null ? ` · Comprometido até ${pct1(p.comprometidoMax)}` : '';
-    if (p.cabe) return { texto: `${mes} · ${como}${comprometido}`, classe: 'vd', dica };
-    const porque = p.semLimite ? 'sem limite no cartão' : `faltam ${brl(p.falta)} em ${nomePeriodoAbrev(Estado.ciclos[p.cicloFalta])}`;
-    const quando = p.cabeEm != null ? ` · cabe com entrada em ${nomePeriodoAbrev(Estado.ciclos[p.cabeEm])}` : '';
-    return { texto: `${mes} · ${como} · não cabe: ${porque}${quando}`, classe: 'vm', dica };
+    // Débito sem entrada: o mês da meta já é o da 1ª parcela, não se repete na frente.
+    const semEntradaNoDebito = p.forma === 'financiamento' && !(p.entrada > 0);
+    const inicio = semEntradaNoDebito ? '' : `${mes} · `;
+    if (p.cabe) return { texto: `${inicio}${como}${comprometido}`, classe: 'vd', dica };
+    // A falta é o maior buraco; o mês é o 1º em que o dinheiro não dá (o buraco cresce depois).
+    const porque = p.semLimite ? 'sem limite no cartão' : `faltam até ${brl(p.falta)} a partir de ${nomePeriodoAbrev(Estado.ciclos[p.cicloFalta])}`;
+    const verbo = p.forma === 'avista' ? 'em' : p.entrada > 0 ? 'com entrada em' : p.forma === 'cartao' ? 'comprando em' : 'começando em';
+    const quando = p.cabeEm != null ? ` · cabe ${verbo} ${nomePeriodoAbrev(Estado.ciclos[p.cabeEm])}` : '';
+    return { texto: `${inicio}${como} · não cabe: ${porque}${quando}`, classe: 'vm', dica };
+}
+
+// O que o mês da meta quer dizer, no hover: sem entrada, um mês só basta pro parcelado.
+function tituloDoMesDaMeta(m) {
+    const forma = formaDaMeta(m);
+    if (forma === 'avista') return 'Mês do pagamento';
+    if (m.entrada > 0) return 'Mês da entrada';
+    return forma === 'cartao' ? 'Mês da compra (1ª fatura no seguinte)' : 'Mês da 1ª parcela';
 }
 
 function htmlModalMetas(planos) {
@@ -939,17 +952,18 @@ function htmlModalMetas(planos) {
             `<option value=${a.id}${a.id === m.ancora_meta_id ? ' selected' : ''}>${escapeHtml(a.nome)}</option>`).join('');
         const quando = m.ancora_meta_id != null && ancoras.some(a => a.id === m.ancora_meta_id)
             ? campo(m, 'deslocamento', m.deslocamento || 0, 'type=number step=1 class=metaCurto title="Meses depois (+) ou antes (−) da âncora" aria-label="Meses em relação à âncora"')
-            : campo(m, 'mes', m.mes ? m.mes.slice(0, 7) : '', 'type=month aria-label="Mês da meta"');
+            : campo(m, 'mes', m.mes ? m.mes.slice(0, 7) : '', `type=month aria-label="Mês da meta" title="${tituloDoMesDaMeta(m)}"`);
         const formas = Object.entries(FORMAS_DA_META).map(([valor, rotulo]) =>
             `<option value=${valor}${formaDaMeta(m) === valor ? ' selected' : ''}>${rotulo}</option>`).join('');
-        // Só nos parcelados: entrada (parte do total, paga no mês da meta), vezes e o mês da 1ª
-        // parcela (guardado como meses depois da entrada, pra seguir a âncora junto).
+        // Só nos parcelados: entrada (parte do total, paga no mês da meta), vezes e, só com
+        // entrada, o mês da 1ª parcela (guardado como meses depois da entrada, pra seguir a
+        // âncora junto). Sem entrada, o mês da meta basta.
         const parcelado = formaDaMeta(m) !== 'avista';
         const primeira = p.mes && p.mesesAteParcela != null ? somaMeses(p.mes, p.mesesAteParcela).slice(0, 7) : '';
         const extras = !parcelado ? '' :
             `<label title="Parte do total paga no mês da meta; o resto vai parcelado">Entrada R$ ${campo(m, 'entrada', emReais(m.entrada), 'inputmode=decimal class=metaMedio placeholder="0,00"')}</label>` +
             `<label>Vezes ${campo(m, 'parcelas', m.parcelas, `inputmode=numeric class=metaCurto placeholder="${PARCELAS_PADRAO_METAS}"`)}</label>` +
-            `<label>1ª parcela ${campo(m, 'primeira_parcela', primeira, 'type=month aria-label="Mês da 1ª parcela"')}</label>`;
+            (m.entrada > 0 ? `<label>1ª parcela ${campo(m, 'primeira_parcela', primeira, 'type=month aria-label="Mês da 1ª parcela"')}</label>` : '');
         return `<div class=metaLinha data-meta=${m.id}>` +
             `<div class=metaPrincipal>` +
             campo(m, 'nome', m.nome, 'class=metaNome aria-label="Nome da meta"') +

@@ -218,7 +218,8 @@ function contextoDoPlano() {
 
 // Plano de uma meta com a entrada (ou o pagamento à vista) no ciclo c, sobre as linhas das
 // metas anteriores. Datas: a entrada no mês da meta e a 1ª parcela `meses_ate_parcela` meses
-// depois (padrão 1); o resto (total − entrada) se divide nas vezes (padrão 10), sem juros.
+// depois (padrão 1); sem entrada, só o mês da meta vale. O resto (total − entrada) se divide
+// nas vezes (padrão 10), sem juros.
 // No cartão, a compra é no mês antes da 1ª fatura e cabe se o Livre do cartão comporta o resto
 // inteiro (o banco bloqueia tudo na hora); no débito, cada parcela é Comprometido.
 // Dinheiro: em cada mês de pagamento (entrada, parcelas ou faturas), o guardado projetado,
@@ -236,7 +237,11 @@ function planoNoCiclo(meta, c, anteriores, ctx) {
         const resto = centavos(valor - entrada);
         const n = meta.parcelas || PARCELAS_PADRAO_METAS;
         // Cartão: no mínimo 1 mês depois (a compra fica no mês da entrada ou depois dele).
-        const meses = Math.max(forma === 'cartao' ? 1 : 0, meta.meses_ate_parcela ?? 1);
+        // Sem entrada, um mês só: o da meta é o da compra no cartão (fatura no seguinte) e o
+        // da 1ª parcela no débito; `meses_ate_parcela` guardado fica sem efeito.
+        const meses = entrada > TOLERANCIA_FINANCEIRA
+            ? Math.max(forma === 'cartao' ? 1 : 0, meta.meses_ate_parcela ?? 1)
+            : (forma === 'cartao' ? 1 : 0);
         const partes = resto > TOLERANCIA_FINANCEIRA ? partesIguais(resto, n) : [];
         Object.assign(plano, { entrada, parcelas: partes.length, parcela: partes[0] || 0, mesesAteParcela: meses });
         if (entrada > TOLERANCIA_FINANCEIRA) {
