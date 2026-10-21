@@ -175,6 +175,9 @@ test('plano em pílulas: situação, entrada, parcelas, Comprometido e falta, co
     assert.equal(rotuloDoMesDaMeta({ forma: 'financiamento', entrada: 500 }), '1ª parcela');
     assert.equal(rotuloDoMesDaMeta({ forma: 'cartao', entrada: 500 }), 'Compra');
     assert.equal(rotuloDoMesDaMeta({ forma: 'auto' }), 'Pagamento');
+    // Pôr ou trocar o valor da entrada volta o mês dela pra 1 mês antes do mês da meta.
+    assert.match(interacoes, /if \(campo === 'entrada' && valor > 0 && meta\.meses_ate_parcela !== 1\) campos\.meses_ate_parcela = 1;/);
+    assert.match(regras, /padrão: 1 mês antes; pôr ou trocar o valor da entrada volta o mês dela pra 1 mês antes/);
     // As vezes ficam junto do valor total (linha de cima); o mês da entrada embaixo, só com entrada.
     assert.ok(visoes.indexOf("campo('mcValor'") < visoes.indexOf("campo('mcVezes'") && visoes.indexOf("campo('mcVezes'") < visoes.indexOf("campo('mcMes'"));
     assert.match(visoes, /\(parcelado && m\.entrada > 0 \? campo\('mcMesEntrada', 'Mês da entrada', entrada\('mes_entrada', mesEntrada, 'type=month'\)\) : ''\)/);
@@ -306,4 +309,13 @@ test('migration 38: tira a âncora (colunas e valor nulo), abortando se houver a
     assert.match(m38, /^begin;$/m);
     assert.match(m38, /^commit;$/m);
     assert.doesNotMatch(m38, /grant|policy|disable row level security/i);   // RLS da 36 intacto
+});
+
+test('entrada sem mês escolhido: 1 mês antes do mês da meta, no débito e no cartão', () => {
+    const r = carrega([
+        meta(1, 'Mesa', 1000, '2027-03-01', { forma: 'financiamento', entrada: 400, parcelas: 2 }),
+        meta(2, 'Fogão', 1000, '2027-05-01', { forma: 'cartao', entrada: 400, parcelas: 2 }),
+    ]);
+    assert.equal(doPlano(r, 1).cicloEntrada, 4);   // 1ª parcela Mar/27 (5), entrada Fev/27
+    assert.equal(doPlano(r, 2).cicloEntrada, 6);   // compra Mai/27 (7), entrada Abr/27
 });
