@@ -892,7 +892,7 @@ function valorDoCampoDaMeta(campo, texto) {
     if (campo === 'ancora_meta_id') return t ? +t : null;
     if (campo === 'deslocamento') return /^[-−]?\d+$/.test(t) ? +t.replace('−', '-') : t ? undefined : 0;
     if (campo === 'parcelas') return t ? (/^\d+$/.test(t) && +t >= 1 && +t <= 120 ? +t : undefined) : null;
-    if (campo === 'primeira_parcela') return t ? (/^\d{4}-\d{2}$/.test(t) ? `${t}-01` : undefined) : null;
+    if (campo === 'mes_entrada') return t ? (/^\d{4}-\d{2}$/.test(t) ? `${t}-01` : undefined) : null;
     if (!t) return null;
     const n = Math.round(numeroDoLimiteDigitado(t) * 100) / 100;
     if (!Number.isFinite(n) || n < 0 || (campo === 'valor' && n <= 0)) return undefined;
@@ -945,12 +945,16 @@ el('corpoMetas').addEventListener('change', e => {
     let campo = input.dataset.campo;
     let valor = valorDoCampoDaMeta(campo, input.value);
     if (!meta || valor === undefined) { mostrarToast('Valor inválido', 'Confira o campo e tente de novo.'); desenhar(); return; }
-    // 1ª parcela: grava a distância em meses da entrada (segue a âncora junto); antes da
-    // entrada não vale. Vazio volta ao padrão (1 mês depois).
-    if (campo === 'primeira_parcela') {
-        const entrada = mesDaMeta(meta, new Map(Estado.metas.map(m => [m.id, m])));
-        const meses = valor && entrada ? (+valor.slice(0, 4) - +entrada.slice(0, 4)) * 12 + (+valor.slice(5, 7) - +entrada.slice(5, 7)) : null;
-        if (meses != null && meses < 0) { mostrarToast('Mês inválido', 'A 1ª parcela não pode vir antes da entrada.'); desenhar(); return; }
+    // Mês da entrada: grava quantos meses antes do mês da meta ela vem (segue a âncora junto);
+    // depois do mês da meta não vale. Vazio volta ao padrão (1 mês antes no débito, junto no cartão).
+    if (campo === 'mes_entrada') {
+        const mesMeta = mesDaMeta(meta, new Map(Estado.metas.map(m => [m.id, m])));
+        const meses = valor && mesMeta ? (+mesMeta.slice(0, 4) - +valor.slice(0, 4)) * 12 + (+mesMeta.slice(5, 7) - +valor.slice(5, 7)) : null;
+        if (meses != null && meses < 0) {
+            mostrarToast('Mês inválido', `A entrada não pode vir depois ${formaDaMeta(meta) === 'cartao' ? 'da compra' : 'da 1ª parcela'}.`);
+            desenhar();
+            return;
+        }
         campo = 'meses_ate_parcela';
         valor = meses;
     }

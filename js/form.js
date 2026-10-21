@@ -1212,15 +1212,14 @@ function etapasDaCompraDaMeta(meta, plano) {
         const resto = -(meta.valor - (plano.entrada || 0));
         if (!plano.parcelas) return entrada;
         // Cartão: as faturas do plano, a partir da 1ª (as que passam do horizonte seguem mês a mês).
-        // Débito: a série começa no mês da 1ª parcela.
+        // Débito: a série começa no mês da meta (o da 1ª parcela).
         const primeiraFatura = plano.linhas.find(r => r.cred)?.fatura;
         return [...entrada, plano.forma === 'cartao'
             ? { nome: meta.nome, cred: true, v: resto, vezes: plano.parcelas, dividir: true, cartao: plano.cartao,
                 faturas: primeiraFatura ? Array.from({ length: plano.parcelas }, (_, p) => somaMeses(primeiraFatura, p)) : null }
             : { nome: meta.nome, cred: false, v: resto, vezes: plano.parcelas, dividir: true, comprometido: true,
                 // Início do ciclo da 1ª parcela (o dia 1º do mês ainda é do ciclo anterior).
-                data: Estado.ciclos[plano.ciclo + plano.mesesAteParcela]
-                    ? dataISO(Estado.ciclos[plano.ciclo + plano.mesesAteParcela].ini) : somaMeses(plano.mes, plano.mesesAteParcela) }];
+                data: Estado.ciclos[plano.ciclo] ? dataISO(Estado.ciclos[plano.ciclo].ini) : plano.mes }];
     }
     return [{ nome: meta.nome, cred: false, v: -meta.valor }];
 }

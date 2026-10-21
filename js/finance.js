@@ -144,7 +144,7 @@ function lancamentosComPrevistas() {
 // METAS (fin_meta, migration 36)
 // ===================================================================
 // O mantenedor informa nome, valor total e o mês (ou uma âncora ± meses) e, se parcelar, a
-// entrada (parte do total), as vezes e o mês da 1ª parcela. O plano sai daqui, em cascata pela
+// entrada (parte do total), o mês dela e as vezes. O plano sai daqui, em cascata pela
 // data (as metas disputam o mesmo guardado e o mesmo limite), e as linhas dele entram como
 // previstas na base de todos os cálculos — saldo, Aporte/Resgate, guardado, data da Reserva,
 // fatura, Livre Futuro e Comprometido já enxergam as metas (ver planoNoCiclo). A forma é a
@@ -216,12 +216,13 @@ function contextoDoPlano() {
     };
 }
 
-// Plano de uma meta com a entrada (ou o pagamento à vista) no ciclo c, sobre as linhas das
-// metas anteriores. Datas: a entrada no mês da meta e a 1ª parcela `meses_ate_parcela` meses
-// depois (padrão 1); sem entrada, só o mês da meta vale. O resto (total − entrada) se divide
-// nas vezes (padrão 10), sem juros.
-// No cartão, a compra é no mês antes da 1ª fatura e cabe se o Livre do cartão comporta o resto
-// inteiro (o banco bloqueia tudo na hora); no débito, cada parcela é Comprometido.
+// Plano de uma meta com o mês dela no ciclo c, sobre as linhas das metas anteriores. O mês da
+// meta é o do pagamento (à vista), o da 1ª parcela (débito) ou o da compra (cartão, 1ª fatura
+// no seguinte); a entrada vem `meses_ate_parcela` meses antes (padrão: 1 no débito, 0 no
+// cartão), e sem entrada esse número fica sem efeito. O resto (total − entrada) se divide nas
+// vezes (padrão 10), sem juros.
+// No cartão, a compra cabe se o Livre do cartão comporta o resto inteiro (o banco bloqueia
+// tudo na hora); no débito, cada parcela é Comprometido.
 // Dinheiro: em cada mês de pagamento (entrada, parcelas ou faturas), o guardado projetado,
 // menos tudo o que as metas anteriores e esta já pagaram até ali, não pode ficar negativo.
 // Comprometido aparece no plano como informação, sem barrar.
@@ -236,19 +237,16 @@ function planoNoCiclo(meta, c, anteriores, ctx) {
         const entrada = centavos(Math.min(valor, meta.entrada > 0 ? meta.entrada : 0));
         const resto = centavos(valor - entrada);
         const n = meta.parcelas || PARCELAS_PADRAO_METAS;
-        // Cartão: no mínimo 1 mês depois (a compra fica no mês da entrada ou depois dele).
-        // Sem entrada, um mês só: o da meta é o da compra no cartão (fatura no seguinte) e o
-        // da 1ª parcela no débito; `meses_ate_parcela` guardado fica sem efeito.
-        const meses = entrada > TOLERANCIA_FINANCEIRA
-            ? Math.max(forma === 'cartao' ? 1 : 0, meta.meses_ate_parcela ?? 1)
-            : (forma === 'cartao' ? 1 : 0);
+        // Meses da entrada até o mês da meta. Antes do 1º ciclo carregado, a entrada fica nele.
+        const antes = entrada > TOLERANCIA_FINANCEIRA ? Math.max(0, meta.meses_ate_parcela ?? (forma === 'cartao' ? 0 : 1)) : 0;
+        const cicloEntrada = Math.max(0, c - antes);
         const partes = resto > TOLERANCIA_FINANCEIRA ? partesIguais(resto, n) : [];
-        Object.assign(plano, { entrada, parcelas: partes.length, parcela: partes[0] || 0, mesesAteParcela: meses });
+        Object.assign(plano, { entrada, parcelas: partes.length, parcela: partes[0] || 0, cicloEntrada });
         if (entrada > TOLERANCIA_FINANCEIRA) {
-            plano.linhas.push(linhaDaMeta(meta, 900, { nome: `Entrada · ${meta.nome}`, data: dataDoCiclo(c), v: -entrada }));
+            plano.linhas.push(linhaDaMeta(meta, 900, { nome: `Entrada · ${meta.nome}`, data: dataDoCiclo(cicloEntrada), v: -entrada }));
         }
         if (forma === 'cartao' && partes.length) {
-            const compra = c + meses - 1;
+            const compra = c;   // no mês da meta
             const comLimite = Estado.ciclos[compra] && CARTOES.find(cartao => {
                 // Compras das metas anteriores feitas até a compra e cobradas depois ocupam o cartão.
                 const ocupado = anteriores.filter(r => r.cred && r._compra <= compra && r.periodoIdx > compra && cartaoDaFatura(r.fatura) === cartao)
@@ -265,7 +263,7 @@ function planoNoCiclo(meta, c, anteriores, ctx) {
                 })).filter(r => r.periodoIdx != null).map(r => ({ ...r, _compra: compra })));
             }
         } else {
-            plano.linhas.push(...partes.map((v, p) => [c + meses + p, v]).filter(([j]) => Estado.ciclos[j])
+            plano.linhas.push(...partes.map((v, p) => [c + p, v]).filter(([j]) => Estado.ciclos[j])
                 .map(([j, v], p) => linhaDaMeta(meta, p + 1, { data: dataDoCiclo(j), v: -v, comprometido: true })));
         }
         if (plano.linhas.some(r => r.comprometido || ehParcelaDeCompra(r))) {
@@ -298,7 +296,8 @@ function calcularPlanoDasMetas() {
     return metas.map(({ meta, mes, ciclo }) => {
         if (ciclo < 0) return { meta, mes, ciclo, cabe: false, cabeEm: null, linhas: [] };   // sem data ou fora dos ciclos
         // O plano fica sempre no mês pedido (o buraco, se houver, aparece no saldo daqueles
-        // ciclos); sem caber, diz também o 1º mês de entrada em que tudo caberia.
+        // ciclos); sem caber, diz também o 1º mês da meta em que tudo caberia (a entrada
+        // anda junto, com a mesma distância).
         const plano = { meta, mes, ciclo, cabeEm: null, ...planoNoCiclo(meta, ciclo, anteriores, ctx) };
         if (!plano.cabe) {
             for (let c = ciclo + 1; c < Estado.ciclos.length; c++) {
