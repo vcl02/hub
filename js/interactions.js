@@ -882,18 +882,16 @@ el('modalMetas').addEventListener('click', e => {
     if (e.target == el('modalMetas')) el('modalMetas').close();
 });
 
-// Valor de cada campo como vai pro banco. Vazio vira null (valor e mês vazios: a meta fica
-// sem plano). Devolve undefined quando o texto é inválido.
+// Valor de cada campo como vai pro banco. Vazio vira null (mês vazio: a meta fica sem plano)
+// e o valor é obrigatório. Devolve undefined quando o texto é inválido.
 function valorDoCampoDaMeta(campo, texto) {
     const t = String(texto ?? '').trim();
     if (campo === 'nome') return t || undefined;
     if (campo === 'forma') return t in FORMAS_DA_META ? t : undefined;
     if (campo === 'mes') return t ? (/^\d{4}-\d{2}$/.test(t) ? `${t}-01` : undefined) : null;
-    if (campo === 'ancora_meta_id') return t ? +t : null;
-    if (campo === 'deslocamento') return /^[-−]?\d+$/.test(t) ? +t.replace('−', '-') : t ? undefined : 0;
     if (campo === 'parcelas') return t ? (/^\d+$/.test(t) && +t >= 1 && +t <= 120 ? +t : undefined) : null;
     if (campo === 'mes_entrada') return t ? (/^\d{4}-\d{2}$/.test(t) ? `${t}-01` : undefined) : null;
-    if (!t) return null;
+    if (!t) return campo === 'valor' ? undefined : null;
     const n = Math.round(numeroDoLimiteDigitado(t) * 100) / 100;
     if (!Number.isFinite(n) || n < 0 || (campo === 'valor' && n <= 0)) return undefined;
     return n;
@@ -904,12 +902,9 @@ function valorDoCampoDaMeta(campo, texto) {
 async function gravarMudancaDaMeta(acao, id, campos) {
     try {
         if (Estado.simulando) {
-            if (acao === 'inserir') Estado.metas.push({ id: -(++Estado._proxIdSimulado), forma: 'avista', deslocamento: 0, status: 'aberta', valor: null, mes: null, ancora_meta_id: null, ...campos });
+            if (acao === 'inserir') Estado.metas.push({ id: -(++Estado._proxIdSimulado), forma: 'avista', status: 'aberta', mes: null, ...campos });
             if (acao === 'atualizar') Object.assign(Estado.metas.find(m => m.id === id), campos);
-            if (acao === 'excluir') {
-                Estado.metas = Estado.metas.filter(m => m.id !== id);
-                Estado.metas.forEach(m => { if (m.ancora_meta_id === id) m.ancora_meta_id = null; });   // como o on delete set null
-            }
+            if (acao === 'excluir') Estado.metas = Estado.metas.filter(m => m.id !== id);
         } else if (acao === 'inserir') {
             Estado.metas.push(normalizarMeta(await inserirMeta(campos)));
         } else if (acao === 'atualizar') {
@@ -927,7 +922,6 @@ async function gravarMudancaDaMeta(acao, id, campos) {
         } else {
             await excluirMeta(id);
             Estado.metas = Estado.metas.filter(m => m.id !== id);
-            Estado.metas.forEach(m => { if (m.ancora_meta_id === id) m.ancora_meta_id = null; });
         }
     } catch (err) {
         mostrarToast('Meta não salva', err.message);
@@ -945,10 +939,11 @@ el('corpoMetas').addEventListener('change', e => {
     let campo = input.dataset.campo;
     let valor = valorDoCampoDaMeta(campo, input.value);
     if (!meta || valor === undefined) { mostrarToast('Valor inválido', 'Confira o campo e tente de novo.'); desenhar(); return; }
-    // Mês da entrada: grava quantos meses antes do mês da meta ela vem (segue a âncora junto);
-    // depois do mês da meta não vale. Vazio volta ao padrão (1 mês antes no débito, junto no cartão).
+    // Mês da entrada: grava quantos meses antes do mês da meta ela vem (anda junto quando o mês
+    // da meta muda); depois do mês da meta não vale. Vazio volta ao padrão (1 mês antes no
+    // débito, junto no cartão).
     if (campo === 'mes_entrada') {
-        const mesMeta = mesDaMeta(meta, new Map(Estado.metas.map(m => [m.id, m])));
+        const mesMeta = meta.mes;
         const meses = valor && mesMeta ? (+mesMeta.slice(0, 4) - +valor.slice(0, 4)) * 12 + (+mesMeta.slice(5, 7) - +valor.slice(5, 7)) : null;
         if (meses != null && meses < 0) {
             mostrarToast('Mês inválido', `A entrada não pode vir depois ${formaDaMeta(meta) === 'cartao' ? 'da compra' : 'da 1ª parcela'}.`);
@@ -959,24 +954,18 @@ el('corpoMetas').addEventListener('change', e => {
         valor = meses;
     }
     if ((meta[campo] ?? null) === valor) return;
-    // Ligar a uma âncora começa no mesmo mês dela; voltar pra "Mês" parte do mês que a âncora dava.
-    const campos = { [campo]: valor };
-    if (campo === 'ancora_meta_id' && valor == null && !meta.mes) campos.mes = mesDaMeta(meta, new Map(Estado.metas.map(m => [m.id, m]))) || proximoMesISO();
-    if (campo === 'ancora_meta_id' && valor != null) campos.deslocamento = 0;
-    gravarMudancaDaMeta('atualizar', id, campos);
+    gravarMudancaDaMeta('atualizar', id, { [campo]: valor });
 });
 el('corpoMetas').addEventListener('click', e => {
     const botao = e.target.closest('[data-acao]');
     if (!botao) return;
     const acao = botao.dataset.acao;
     if (acao === 'novaMeta') return gravarMudancaDaMeta('inserir', null, { nome: 'Nova meta', valor: 1000, mes: proximoMesISO(), forma: 'avista' });
-    if (acao === 'novaAncora') return gravarMudancaDaMeta('inserir', null, { nome: 'Nova âncora', mes: proximoMesISO() });
     const id = +botao.closest('[data-meta]').dataset.meta;
     const meta = Estado.metas.find(m => m.id === id);
     if (!meta) return;
     if (acao === 'excluir') {
-        const ligadas = Estado.metas.filter(m => m.ancora_meta_id === id).length;
-        if (!confirm(`Excluir "${meta.nome}"?${ligadas ? ` ${ligadas} meta(s) ligada(s) a ela ficam sem data.` : ''}`)) return;
+        if (!confirm(`Excluir "${meta.nome}"?`)) return;
         return gravarMudancaDaMeta('excluir', id);
     }
     if (acao === 'comprar') {

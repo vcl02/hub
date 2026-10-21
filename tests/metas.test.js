@@ -1,5 +1,6 @@
 // Metas (fin_meta, migration 36): o plano em cascata (à vista, cartão, financiamento, não
-// cabe), a âncora, as linhas previstas na base e no Comprometido. Roda o código real de
+// cabe), as linhas previstas na base e no Comprometido, a grade do modal e a migration 38 (sem
+// âncora). Roda o código real de
 // domain/shared/finance + as regras de Comprometido de charts.js num cenário de 12 ciclos.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -42,11 +43,11 @@ function carrega(metas) {
     const limites = graficos.slice(graficos.indexOf('const LIMITES_COMPROMISSOS'), graficos.indexOf('\n];\n', graficos.indexOf('const LIMITES_COMPROMISSOS')) + 4);
     vm.runInContext(limites + graficos.slice(graficos.indexOf('const ehParcelaDeCompra'), graficos.indexOf('function dadosCompromissosCiclo(')), contexto);
     vm.runInContext(`limparCachesFinanceiros();
-        globalThis.r = { plano: planoDasMetas(), base: lancamentosComPrevistas(), mesDaMeta, cicloDoMes, guardadoAte };`, contexto);
+        globalThis.r = { plano: planoDasMetas(), base: lancamentosComPrevistas(), cicloDoMes, guardadoAte };`, contexto);
     return contexto.r;
 }
 
-const meta = (id, nome, valor, mes, extra = {}) => ({ id, nome, valor, mes, ancora_meta_id: null, deslocamento: 0, forma: 'auto', parcelas: null, entrada: null, meses_ate_parcela: null, status: 'aberta', ...extra });
+const meta = (id, nome, valor, mes, extra = {}) => ({ id, nome, valor, mes, forma: 'auto', parcelas: null, entrada: null, meses_ate_parcela: null, status: 'aberta', ...extra });
 const doPlano = (r, id) => r.plano.find(p => p.meta.id === id);
 
 test('cenário: guardado projetado cresce 2.000 por ciclo (sem metas)', () => {
@@ -56,13 +57,10 @@ test('cenário: guardado projetado cresce 2.000 por ciclo (sem metas)', () => {
     assert.deepEqual(JSON.parse(JSON.stringify(r.plano)), []);
 });
 
-test('âncora: meta segue a data dela com deslocamento; ciclo é o que começa no mês', () => {
-    const r = carrega([]);
-    const chaves = meta(1, 'Chaves do AP', null, '2027-03-01');
-    const porId = new Map([[1, chaves]]);
-    assert.equal(r.mesDaMeta(meta(2, 'Vistoria', 800, null, { ancora_meta_id: 1, deslocamento: -1 }), porId), '2027-02-01');
-    assert.equal(r.mesDaMeta(meta(3, 'Planejados', 9000, '2026-12-01', { ancora_meta_id: 1, deslocamento: 1 }), porId), '2027-04-01');
-    assert.equal(r.mesDaMeta(meta(4, 'Mesa', 900, '2026-12-01'), porId), '2026-12-01');
+test('ciclo da meta é o que começa no mês dela; linha sem valor (âncora antiga) não gera plano', () => {
+    const r = carrega([meta(1, 'Chaves do AP', null, '2027-03-01'), meta(2, 'Mesa', 900, '2026-12-01', { ancora_meta_id: 1, deslocamento: 3 })]);
+    // A meta vale pelo próprio mês: âncora e deslocamento antigos não mudam nada.
+    assert.deepEqual(JSON.parse(JSON.stringify(r.plano.map(p => [p.meta.id, p.mes, p.ciclo]))), [[2, '2026-12-01', 2]]);
     assert.equal(r.cicloDoMes('2027-03-01'), 5);
     assert.equal(r.cicloDoMes('2030-01-01'), -1);
     assert.equal(r.cicloDoMes(null), -1);
@@ -145,8 +143,8 @@ test('plano em pílulas: situação, entrada, parcelas, Comprometido e falta, co
     vm.runInContext(`const pct1 = n => n.toFixed(1).replace('.', ',') + '%';
         const LIMITES_COMPROMISSOS = [{ percentual: 50 }];
         const formaDaMeta = meta => (['cartao', 'financiamento'].includes(meta.forma) ? meta.forma : 'avista');
-        ${trecho} globalThis.t = { partesDoPlanoDaMeta, htmlDoPlanoDaMeta, tituloDoMesDaMeta };`, contexto);
-    const { partesDoPlanoDaMeta, htmlDoPlanoDaMeta, tituloDoMesDaMeta } = contexto.t;
+        ${trecho} globalThis.t = { partesDoPlanoDaMeta, htmlDoPlanoDaMeta, rotuloDoMesDaMeta };`, contexto);
+    const { partesDoPlanoDaMeta, htmlDoPlanoDaMeta, rotuloDoMesDaMeta } = contexto.t;
     const base = { mes: '2026-11-01', ciclo: 1, cicloEntrada: 1, disponivel: 0, forma: 'financiamento', entrada: 0, parcelas: 21, parcela: 190.48, meta: { valor: 4000 } };
     const nbsp = s => s.replace(/ /g, ' ');
     // Cada parte como "classe: rótulo | valor | detalhe".
@@ -172,17 +170,14 @@ test('plano em pílulas: situação, entrada, parcelas, Comprometido e falta, co
         '<span class="mpParte mpSituacao vd"><b>Cabe</b></span> ' +
         '<span class="mpParte"><i>Entrada</i> <b>R$ 1.000,00</b> <span class=mpDetalhe>Nov/26</span></span> ' +
         '<span class="mpParte"><i>Débito</i> <b>21x R$ 190,48</b> <span class=mpDetalhe>Nov/26 a Jul/28</span></span></span>');
-    assert.match(regras, /cada meta mostra o plano ao lado em \*\*pílulas\*\*, com o rótulo em itálico, o valor em negrito e o mês apagado/);
+    assert.match(regras, /cada meta mostra o plano embaixo dos campos em \*\*pílulas\*\*, com o rótulo em itálico, o valor em negrito e o mês apagado/);
     assert.match(ler('css/forms.css'), /\.mpParte\.am \{ color: #F0A83A; background: var\(--orange-soft\); border-color: #6A5330; \}/);
-    assert.equal(tituloDoMesDaMeta({ forma: 'financiamento', entrada: 500 }), 'Mês da 1ª parcela');
-    assert.equal(tituloDoMesDaMeta({ forma: 'cartao', entrada: 500 }), 'Mês da compra (1ª fatura no seguinte)');
-    assert.equal(tituloDoMesDaMeta({ forma: 'auto' }), 'Mês do pagamento');
-    // As vezes ficam junto do valor total (linha de cima), não da entrada.
-    assert.match(visoes, /aria-label="Valor da meta"'\)\}<\/label>\$\{vezes\}/);
-    assert.match(visoes, /<label class=metaVezes title="Vezes">\$\{campo\(m, 'parcelas', m\.parcelas, `inputmode=numeric class=metaCurto placeholder="\$\{PARCELAS_PADRAO_METAS\}" aria-label="Vezes"`\)\}x<\/label>/);
-    assert.match(regras, /nos parcelados, com as \*\*vezes\*\* logo ao lado, `\[10\]x`, porque dividem o total/);
-    // Embaixo, o mês da entrada ao lado dela, só com entrada.
-    assert.match(visoes, /\(m\.entrada > 0 \? campo\(m, 'mes_entrada', mesEntrada, 'type=month title="Mês da entrada" aria-label="Mês da entrada"'\) : ''\)/);
+    assert.equal(rotuloDoMesDaMeta({ forma: 'financiamento', entrada: 500 }), '1ª parcela');
+    assert.equal(rotuloDoMesDaMeta({ forma: 'cartao', entrada: 500 }), 'Compra');
+    assert.equal(rotuloDoMesDaMeta({ forma: 'auto' }), 'Pagamento');
+    // As vezes ficam junto do valor total (linha de cima); o mês da entrada embaixo, só com entrada.
+    assert.ok(visoes.indexOf("campo('mcValor'") < visoes.indexOf("campo('mcVezes'") && visoes.indexOf("campo('mcVezes'") < visoes.indexOf("campo('mcMes'"));
+    assert.match(visoes, /\(parcelado && m\.entrada > 0 \? campo\('mcMesEntrada', 'Mês da entrada', entrada\('mes_entrada', mesEntrada, 'type=month'\)\) : ''\)/);
     assert.doesNotMatch(visoes, /primeira_parcela/);
 });
 
@@ -219,8 +214,7 @@ test('Comprometido do ciclo enxerga as linhas das metas; cadastro e tela ligados
     assert.match(interacoes, /el\('btMetas'\)\.hidden = !Estado\.temMetas \|\| modoRestrito\(\);/);
     assert.match(interacoes, /if \(!confirm\(`Excluir "\$\{meta\.nome\}"\?/);
     assert.match(visoes, /function htmlModalMetas\(planos\) \{/);
-    assert.match(visoes, /<option value="">Mês próprio<\/option>/);
-    assert.match(regras, /quando \(\*\*Mês próprio\*\*, com o campo de mês ao lado, ou uma âncora ± meses\)/);
+    assert.doesNotMatch(visoes + interacoes + ler('js/finance.js'), /ancora_meta_id|deslocamento|novaAncora|ICONE_ANCORA|mesDaMeta|Mês próprio/);
     // Comprar: cadastro preenchido; depois da última etapa, a meta vira comprada.
     assert.match(formulario, /if \(Estado\._compraDaMeta\) await avancarCompraDaMeta\(\);/);
     assert.match(formulario, /await gravarMudancaDaMeta\('atualizar', compra\.metaId, \{ status: 'comprada' \}\);/);
@@ -242,7 +236,8 @@ test('migration 36: tabela com RLS do dono, histórico e DataGrip-safe', () => {
 
 test('REGRAS.md documenta metas', () => {
     assert.match(regras, /## Metas/);
-    assert.match(regras, /\*\*Âncora\*\* é uma data com nome/);
+    assert.doesNotMatch(regras, /\*\*Âncora\*\* é uma data com nome/);
+    assert.match(regras, /Não há âncora \(data com nome que outras metas seguiam\): saiu a pedido do mantenedor \(migration 38\)\./);
     assert.match(regras, /Sem caber, a meta fica no mês pedido mesmo/);
     assert.match(regras, /\*\*Cabe\*\* quando, em cada mês de pagamento \(entrada, parcelas ou faturas\)/);
     assert.match(regras, /O Comprometido aparece no plano só como informação/);
@@ -279,4 +274,36 @@ test('mês da entrada: campo embaixo, gravado como meses antes do mês da meta (
     // Comprar no débito: a série começa no mês da meta (o da 1ª parcela).
     assert.match(formulario, /data: Estado\.ciclos\[plano\.ciclo\] \? dataISO\(Estado\.ciclos\[plano\.ciclo\]\.ini\) : plano\.mes/);
     assert.match(regras, /O mês da entrada fica guardado como meses antes do mês da meta \(`meses_ate_parcela`, migration 37\)/);
+});
+
+test('modal: todo campo com rótulo em cima, numa grade de colunas fixas', () => {
+    assert.match(visoes, /const campo = \(classe, rotulo, controle, dica = ''\) => `<label class="metaCampo \$\{classe\}"/);
+    for (const [classe, rotulo] of [['mcNome', "'Nome'"], ['mcValor', "'Valor total'"], ['mcVezes', "'Vezes'"], ['mcMes', 'rotuloDoMesDaMeta\\(m\\)'], ['mcForma', "'Forma'"], ['mcEntrada', "'Entrada'"], ['mcMesEntrada', "'Mês da entrada'"]]) {
+        assert.match(visoes, new RegExp(`campo\\('${classe}', ${rotulo}, `), classe);
+    }
+    assert.match(visoes, /return \{ avista: 'Pagamento', cartao: 'Compra', financiamento: '1ª parcela' \}\[formaDaMeta\(m\)\];/);
+    const css = ler('css/forms.css');
+    assert.match(css, /grid-template-columns: minmax\(0, 1fr\) 7\.5rem 4rem 10rem 10\.5rem auto;/);
+    assert.match(css, /\.mcEntrada \{ grid-column: 2; grid-row: 2; \}/);
+    assert.match(css, /\.mcMesEntrada \{ grid-column: 4; grid-row: 2; \}/);
+    assert.match(ler('css/mobile.css'), /\.metaGrade \{ grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\); \}/);
+    // Valor é obrigatório (migration 38): apagar não grava null.
+    assert.match(interacoes, /if \(!t\) return campo === 'valor' \? undefined : null;/);
+    assert.match(regras, /\*\*todos com rótulo em cima\*\*, numa grade de colunas fixas igual em todas as metas/);
+});
+
+test('migration 38: tira a âncora (colunas e valor nulo), abortando se houver alguma; DataGrip-safe', () => {
+    const m38 = ler('migrations/38-metas-sem-ancora.sql');
+    assert.match(m38, /select 'public\.fin_meta'::regclass;/);
+    assert.match(m38, /select 1 \/ \(case when count\(\*\) = 0 then 1 else 0 end\) as sem_ancora\s*\n\s*from public\.fin_meta\s*\n\s*where valor is null\s*\n\s*or to_jsonb\(fin_meta\) ->> 'ancora_meta_id' is not null;/);
+    assert.match(m38, /alter table public\.fin_meta drop column if exists ancora_meta_id;/);
+    assert.match(m38, /alter table public\.fin_meta drop column if exists deslocamento;/);
+    assert.match(m38, /alter table public\.fin_meta alter column valor set not null;/);
+    assert.ok(m38.indexOf('sem_ancora') < m38.indexOf('drop column'), 'checa antes de remover');
+    const codigo = m38.split('\n').filter(l => !l.trim().startsWith('--')).join('\n');
+    assert.doesNotMatch(codigo, /\$\$|\bdo\b\s/);
+    assert.ok(m38.split('\n').filter(l => l.trim().startsWith('--')).every(l => !l.includes(';')));
+    assert.match(m38, /^begin;$/m);
+    assert.match(m38, /^commit;$/m);
+    assert.doesNotMatch(m38, /grant|policy|disable row level security/i);   // RLS da 36 intacto
 });

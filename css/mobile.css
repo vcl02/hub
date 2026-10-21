@@ -312,3 +312,17 @@
       white-space: nowrap;
       cursor: help;
   }
+
+  /* Metas no celular: a mesma grade rotulada em duas colunas iguais, com os mesmos campos
+     do desktop (valores à esquerda, vezes e meses à direita) e as ações no fim. */
+  @media (max-width: 640px) {
+      .metaGrade { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+      .mcNome { grid-column: 1 / -1; grid-row: 1; }
+      .mcValor { grid-column: 1; grid-row: 2; }
+      .mcVezes { grid-column: 2; grid-row: 2; }
+      .mcMes { grid-column: 1; grid-row: 3; }
+      .mcForma { grid-column: 2; grid-row: 3; }
+      .mcEntrada { grid-column: 1; grid-row: 4; }
+      .mcMesEntrada { grid-column: 2; grid-row: 4; }
+      .metaGrade > .metaBotoes { grid-column: 1 / -1; grid-row: 5; justify-content: flex-end; }
+  }

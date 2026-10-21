@@ -54,7 +54,7 @@ test('erros operacionais usam toast; só exclusão, pago fora do ciclo e corrigi
     // As quatro únicas caixas nativas permitidas (ver REGRAS.md): excluir lançamento, marcar
     // como pago um Débito com data fora do ciclo atual (ver pago-ajusta-data.test.js),
     // corrigir a data de uma recorrência duplicada no ciclo (ver recorrencia-duplicada.test.js)
-    // e excluir uma meta ou âncora (ver metas.test.js).
+    // e excluir uma meta (ver metas.test.js).
     assert.equal((fontesJs.match(/\bconfirm\(/g) || []).length, 4);
     assert.match(formulario, /if \(!confirm\(pergunta\)\) return;/);
     assert.match(interacoes, /mostrarToast\('Falhou ao atualizar'/);

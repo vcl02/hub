@@ -143,8 +143,8 @@ function lancamentosComPrevistas() {
 // ===================================================================
 // METAS (fin_meta, migration 36)
 // ===================================================================
-// O mantenedor informa nome, valor total e o mês (ou uma âncora ± meses) e, se parcelar, a
-// entrada (parte do total), o mês dela e as vezes. O plano sai daqui, em cascata pela
+// O mantenedor informa nome, valor total e o mês e, se parcelar, as vezes, a entrada
+// (parte do total) e o mês dela. O plano sai daqui, em cascata pela
 // data (as metas disputam o mesmo guardado e o mesmo limite), e as linhas dele entram como
 // previstas na base de todos os cálculos — saldo, Aporte/Resgate, guardado, data da Reserva,
 // fatura, Livre Futuro e Comprometido já enxergam as metas (ver planoNoCiclo). A forma é a
@@ -152,14 +152,6 @@ function lancamentosComPrevistas() {
 // da tabela) vale como À vista. Sem juros por enquanto: parcela = resto ÷ vezes.
 const PARCELAS_PADRAO_METAS = 10;             // vezes quando a meta não diz
 const formaDaMeta = meta => (['cartao', 'financiamento'].includes(meta.forma) ? meta.forma : 'avista');
-
-// Mês da meta (AAAA-MM-01): o próprio, ou o da âncora ± deslocamento. Um nível só: a âncora
-// vale pelo mês dela. Sem data (âncora excluída, sem mês) não há plano.
-function mesDaMeta(meta, porId) {
-    const ancora = meta.ancora_meta_id != null ? porId.get(meta.ancora_meta_id) : null;
-    if (ancora) return ancora.mes ? somaMeses(ancora.mes, meta.deslocamento || 0) : null;
-    return meta.mes || null;
-}
 
 // Ciclo do mês: o que começa naquele mês (o mesmo nome que a navegação mostra, ex.: Mar/27).
 const cicloDoMes = mes => (mes ? Estado.ciclos.findIndex(c => dataISO(c.ini).slice(0, 7) === mes.slice(0, 7)) : -1);
@@ -285,10 +277,9 @@ function planoNoCiclo(meta, c, anteriores, ctx) {
 
 function calcularPlanoDasMetas() {
     const todas = Estado.metas || [];
-    const porId = new Map(todas.map(m => [m.id, m]));
     const metas = todas
         .filter(m => m.status === 'aberta' && m.valor > 0)
-        .map(meta => { const mes = mesDaMeta(meta, porId); return { meta, mes, ciclo: cicloDoMes(mes) }; })
+        .map(meta => ({ meta, mes: meta.mes || null, ciclo: cicloDoMes(meta.mes) }))
         .sort((a, b) => (a.ciclo < 0) - (b.ciclo < 0) || a.ciclo - b.ciclo || a.meta.id - b.meta.id);
     if (!metas.length) return [];
     const ctx = contextoDoPlano();

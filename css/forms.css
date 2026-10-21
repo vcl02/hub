@@ -903,8 +903,7 @@
       margin-bottom: .6rem;
   }
 
-  /* Uma meta por bloco: a linha principal (nome, valor, quando, forma, ações) e, embaixo,
-     os campos que só valem pra forma escolhida e o plano calculado. */
+  /* Uma meta por bloco: a grade de campos rotulados e, embaixo, o plano em pílulas. */
   .metaLinha {
       padding: .55rem .6rem;
       margin-bottom: .45rem;
@@ -913,28 +912,44 @@
       border-radius: 9px;
   }
 
-  .metaLinha.metaAncora {
-      display: flex;
-      align-items: center;
-      gap: .5rem;
+  /* Colunas fixas, iguais em todas as metas: nome | valor total | vezes | mês | forma | ações.
+     Embaixo, nos parcelados, a entrada sob o valor e o mês dela sob o mês: valores com
+     valores, meses com meses. À vista, a coluna das vezes fica vazia. */
+  .metaGrade {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 7.5rem 4rem 10rem 10.5rem auto;
+      gap: .45rem .5rem;
+      align-items: end;
   }
 
-  .metaPrincipal,
-  .metaDetalhe {
+  .metaCampo {
       display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: .4rem .5rem;
+      flex-direction: column;
+      gap: .2rem;
+      min-width: 0;
   }
 
-  .metaDetalhe {
-      margin-top: .4rem;
+  .metaCampo > span {
       color: var(--mu);
-      font-size: .82rem;
+      font-size: .72rem;
   }
 
+  .mcNome { grid-column: 1; grid-row: 1; }
+  .mcValor { grid-column: 2; grid-row: 1; }
+  .mcVezes { grid-column: 3; grid-row: 1; }
+  .mcMes { grid-column: 4; grid-row: 1; }
+  .mcForma { grid-column: 5; grid-row: 1; }
+  .metaGrade > .metaBotoes { grid-column: 6; grid-row: 1; }
+  .mcEntrada { grid-column: 2; grid-row: 2; }
+  .mcMesEntrada { grid-column: 4; grid-row: 2; }
+
+  /* Mesma altura em todos (o de mês nativo é mais alto): rótulos e campos ficam em prumo. */
   .metaLinha input,
   .metaLinha select {
+      width: 100%;
+      min-width: 0;
+      height: 2.1rem;
+      box-sizing: border-box;
       padding: .3rem .45rem;
       font: inherit;
       font-size: .88rem;
@@ -944,44 +959,15 @@
       border-radius: 6px;
   }
 
-  /* Nome encolhe primeiro: nos parcelados (com as vezes) a linha toda ainda cabe numa só. */
-  .metaLinha .metaNome {
-      flex: 1 1 7rem;
-      min-width: 0;
-      font-weight: 600;
-  }
+  .metaLinha .metaNome { font-weight: 600; }
 
-  .metaValor input { width: 7.5rem; }
-  .metaLinha .metaCurto { width: 4rem; }
-  .metaLinha .metaMedio { width: 6.5rem; }
-
-  .metaVezes {
-      display: inline-flex;
-      align-items: center;
-      gap: .2rem;
-  }
-
-  .metaVezes .metaCurto { width: 3.2rem; }
-
-  .metaDetalhe label {
-      display: inline-flex;
-      align-items: center;
-      gap: .3rem;
-  }
-
-  .metaIcone {
-      display: inline-flex;
-      color: var(--mu);
-  }
-
-  /* O plano em pílulas, empurrado pra direita; quebra pra linha de baixo quando não cabe.
-     Rótulo em itálico apagado, valor em negrito, mês apagado; a cor diz a situação. */
+  /* O plano em pílulas, embaixo dos campos. Rótulo em itálico apagado, valor em negrito,
+     mês apagado; a cor diz a situação. */
   .metaPlano {
       display: flex;
       flex-wrap: wrap;
-      justify-content: flex-end;
       gap: .3rem;
-      margin-left: auto;
+      margin-top: .5rem;
       font-size: .8rem;
   }
 

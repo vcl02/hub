@@ -886,12 +886,11 @@ function htmlModalCartao(dados, cartao) {
         `</div>`;
 }
 
-// Modal de Metas (botão do cabeçalho): âncoras (datas com nome) no topo e as metas abertas
-// na ordem do plano, cada uma editável na própria linha (nome, valor, quando, forma e, só
-// quando parcela, entrada com o mês dela e vezes) com o plano calculado ao lado
+// Modal de Metas (botão do cabeçalho): as metas abertas na ordem do plano, cada uma editável
+// na própria linha, com todo campo rotulado numa grade fixa (nome, valor total, vezes, mês e
+// forma; embaixo, nos parcelados, a entrada e o mês dela) e o plano calculado em pílulas
 // (planoDasMetas em finance.js). Compradas e desistidas não aparecem: já viraram lançamento
 // ou saíram da conta. Só leitura do Estado; os handlers ficam em interactions.js.
-const ICONE_ANCORA = '<svg viewBox="0 0 24 24" width=15 height=15 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true><circle cx=12 cy=5 r=2.5 /><path d="M12 7.5V21M5 13a7 7 0 0 0 14 0M8 11h8" /></svg>';
 const ICONE_COMPRAR = '<svg viewBox="0 0 24 24" width=16 height=16 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true><circle cx=9 cy=20 r=1.4 /><circle cx=18 cy=20 r=1.4 /><path d="M2 3h3l2.6 12.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L21 8H6" /></svg>';
 const ICONE_EXCLUIR = '<svg viewBox="0 0 24 24" width=16 height=16 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>';
 const FORMAS_DA_META = { avista: 'À vista', cartao: 'Parcelado Crédito', financiamento: 'Parcelado Débito' };
@@ -940,57 +939,41 @@ function htmlDoPlanoDaMeta(p) {
     return `<span class="metaPlano ${classe}"${dica ? ` title="${escapeHtml(dica)}"` : ''}>${partes.map(parte).join(' ')}</span>`;
 }
 
-// O que o mês da meta quer dizer, no hover (a entrada tem o mês dela, na linha de baixo).
-function tituloDoMesDaMeta(m) {
-    return { avista: 'Mês do pagamento', cartao: 'Mês da compra (1ª fatura no seguinte)', financiamento: 'Mês da 1ª parcela' }[formaDaMeta(m)];
+// Rótulo do mês da meta: o que ele é pra cada forma (a entrada tem o mês dela, embaixo).
+function rotuloDoMesDaMeta(m) {
+    return { avista: 'Pagamento', cartao: 'Compra', financiamento: '1ª parcela' }[formaDaMeta(m)];
 }
 
 function htmlModalMetas(planos) {
     const emReais = v => (v == null ? '' : v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-    const campo = (meta, nome, valor, extra = '') => `<input data-campo=${nome} value="${escapeHtml(String(valor ?? ''))}" ${extra}>`;
+    const entrada = (nome, valor, extra = '') => `<input data-campo=${nome} value="${escapeHtml(String(valor ?? ''))}" ${extra}>`;
+    // Todo campo com o rótulo em cima, na sua coluna da grade (mc*): alinha entre as metas.
+    const campo = (classe, rotulo, controle, dica = '') => `<label class="metaCampo ${classe}"${dica ? ` title="${dica}"` : ''}><span>${rotulo}</span>${controle}</label>`;
     const botao = (acao, icone, rotulo) => `<button type=button class=btIcone data-acao=${acao} title="${rotulo}" aria-label="${rotulo}">${icone}</button>`;
-    const ancoras = Estado.metas.filter(m => m.valor == null && m.status === 'aberta')
-        .sort((a, b) => String(a.mes).localeCompare(String(b.mes)) || a.id - b.id);
-    const linhaAncora = a => `<div class="metaLinha metaAncora" data-meta=${a.id}>` +
-        `<span class=metaIcone title="Âncora: as metas ligadas a ela andam junto com esta data">${ICONE_ANCORA}</span>` +
-        campo(a, 'nome', a.nome, 'class=metaNome aria-label="Nome da âncora"') +
-        campo(a, 'mes', a.mes ? a.mes.slice(0, 7) : '', 'type=month aria-label="Mês da âncora"') +
-        botao('excluir', ICONE_EXCLUIR, 'Excluir') + `</div>`;
     const linhaMeta = p => {
         const m = p.meta;
-        // "Mês próprio": a meta tem data dela (campo de mês ao lado); senão segue uma âncora.
-        const opcoesAncora = `<option value="">Mês próprio</option>` + ancoras.map(a =>
-            `<option value=${a.id}${a.id === m.ancora_meta_id ? ' selected' : ''}>${escapeHtml(a.nome)}</option>`).join('');
-        const quando = m.ancora_meta_id != null && ancoras.some(a => a.id === m.ancora_meta_id)
-            ? campo(m, 'deslocamento', m.deslocamento || 0, 'type=number step=1 class=metaCurto title="Meses depois (+) ou antes (−) da âncora" aria-label="Meses em relação à âncora"')
-            : campo(m, 'mes', m.mes ? m.mes.slice(0, 7) : '', `type=month aria-label="Mês da meta" title="${tituloDoMesDaMeta(m)}"`);
         const formas = Object.entries(FORMAS_DA_META).map(([valor, rotulo]) =>
             `<option value=${valor}${formaDaMeta(m) === valor ? ' selected' : ''}>${rotulo}</option>`).join('');
-        // Só nos parcelados: as vezes junto do valor (dividem o total menos a entrada) e,
-        // embaixo, a entrada (parte do total) e, só com ela, o mês dela (guardado como meses
-        // antes do mês da meta, pra seguir a âncora junto).
+        // Só nos parcelados: as vezes (dividem o total menos a entrada) e, embaixo, a entrada
+        // (parte do total) e, só com ela, o mês dela (guardado como meses antes do mês da meta).
         const parcelado = formaDaMeta(m) !== 'avista';
-        const vezes = !parcelado ? '' :
-            `<label class=metaVezes title="Vezes">${campo(m, 'parcelas', m.parcelas, `inputmode=numeric class=metaCurto placeholder="${PARCELAS_PADRAO_METAS}" aria-label="Vezes"`)}x</label>`;
         const mesEntrada = p.cicloEntrada != null && Estado.ciclos[p.cicloEntrada] ? dataISO(Estado.ciclos[p.cicloEntrada].ini).slice(0, 7) : '';
-        const extras = !parcelado ? '' :
-            `<label title="Parte do total; o resto vai parcelado">Entrada R$ ${campo(m, 'entrada', emReais(m.entrada), 'inputmode=decimal class=metaMedio placeholder="0,00"')}</label>` +
-            (m.entrada > 0 ? campo(m, 'mes_entrada', mesEntrada, 'type=month title="Mês da entrada" aria-label="Mês da entrada"') : '');
         return `<div class=metaLinha data-meta=${m.id}>` +
-            `<div class=metaPrincipal>` +
-            campo(m, 'nome', m.nome, 'class=metaNome aria-label="Nome da meta"') +
-            `<label class=metaValor>R$ ${campo(m, 'valor', emReais(m.valor), 'inputmode=decimal aria-label="Valor da meta"')}</label>${vezes}` +
-            `<select data-campo=ancora_meta_id aria-label="Quando">${opcoesAncora}</select>${quando}` +
-            `<select data-campo=forma aria-label="Forma de pagar">${formas}</select>` +
+            `<div class=metaGrade>` +
+            campo('mcNome', 'Nome', entrada('nome', m.nome, 'class=metaNome')) +
+            campo('mcValor', 'Valor total', entrada('valor', emReais(m.valor), 'inputmode=decimal placeholder="0,00"')) +
+            (parcelado ? campo('mcVezes', 'Vezes', entrada('parcelas', m.parcelas, `inputmode=numeric placeholder="${PARCELAS_PADRAO_METAS}"`)) : '') +
+            campo('mcMes', rotuloDoMesDaMeta(m), entrada('mes', m.mes ? m.mes.slice(0, 7) : '', 'type=month')) +
+            campo('mcForma', 'Forma', `<select data-campo=forma>${formas}</select>`) +
             `<span class=metaBotoes>${botao('comprar', ICONE_COMPRAR, 'Comprar')}${botao('excluir', ICONE_EXCLUIR, 'Excluir')}</span>` +
+            (parcelado ? campo('mcEntrada', 'Entrada', entrada('entrada', emReais(m.entrada), 'inputmode=decimal placeholder="0,00"'), 'Parte do total; o resto vai parcelado') : '') +
+            (parcelado && m.entrada > 0 ? campo('mcMesEntrada', 'Mês da entrada', entrada('mes_entrada', mesEntrada, 'type=month')) : '') +
             `</div>` +
-            `<div class=metaDetalhe>${extras}${htmlDoPlanoDaMeta(p)}</div>` +
+            htmlDoPlanoDaMeta(p) +
             `</div>`;
     };
     return `<div class=metasAcoes>` +
         `<button type=button class=btIcone data-acao=novaMeta title="Nova meta" aria-label="Nova meta"><svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round aria-hidden=true><line x1=12 y1=5 x2=12 y2=19 /><line x1=5 y1=12 x2=19 y2=12 /></svg></button>` +
-        `<button type=button class=btIcone data-acao=novaAncora title="Nova âncora (data com nome, ex.: Chaves do AP)" aria-label="Nova âncora">${ICONE_ANCORA}</button>` +
         `</div>` +
-        ancoras.map(linhaAncora).join('') +
         (planos.length ? planos.map(linhaMeta).join('') : '<p class=empty>Nenhuma meta.</p>');
 }
