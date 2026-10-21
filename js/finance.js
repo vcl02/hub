@@ -389,6 +389,42 @@ function comprometidosAteAFalta(plano) {
     return { ate, total: centavos(lista.reduce((s, g) => s + g.total, 0)), grupos: lista };
 }
 
+// Folga ideal de uma meta parcelada: sobrar uns R$ 1.000 por mês depois das parcelas.
+const FOLGA_MENSAL_IDEAL = 1000;
+
+// Sobra de cada mês com parcela: o que o mês deixa (variação do guardado projetado sem metas,
+// que é o Aporte sugerido ou o Resgate do mês) menos o que as metas anteriores e esta pagam
+// nele. Devolve a menor — o pior mês. O mês só da entrada fica de fora: ela é uma vez só e não
+// muda com o número de vezes. Null sem parcela nos ciclos carregados.
+function folgaDoPlano(plano, anteriores, ctx) {
+    const pagoNoMes = (linhas, j) => linhas.filter(r => r.periodoIdx === j).reduce((s, r) => s - r.v, 0);
+    const meses = [...new Set(plano.linhas.filter(r => r._parte !== 900).map(r => r.periodoIdx).filter(j => j != null))];
+    if (!meses.length) return null;
+    return centavos(Math.min(...meses.map(j =>
+        ctx.guardado(j) - (j > 0 ? ctx.guardado(j - 1) : 0) - pagoNoMes(anteriores, j) - pagoNoMes(plano.linhas, j))));
+}
+
+// Opções de vezes de uma meta parcelada, de 1x até a última parcela caber nos ciclos carregados
+// (depois disso as parcelas somem da conta e "caberia" à toa): o **mínimo** que cabe e o
+// **ideal**, o menor que cabe deixando ao menos FOLGA_MENSAL_IDEAL no pior mês. Cada uma com a
+// prévia (parcela, 1ª e última, folga); `atual` traz a folga do número de vezes escolhido.
+function opcoesDeVezes(meta, plano, anteriores, ctx) {
+    const ate = Math.min(120, Estado.ciclos.length - plano.ciclo - (plano.forma === 'cartao' ? 1 : 0));
+    const previa = (vezes, p) => {
+        const meses = p.linhas.filter(r => r._parte !== 900).map(r => r.periodoIdx).filter(j => j != null);
+        return { vezes, parcela: p.parcela, ini: Math.min(...meses), fim: Math.max(...meses), folga: folgaDoPlano(p, anteriores, ctx) };
+    };
+    const opcoes = { atual: previa(plano.parcelas, plano), minimo: null, ideal: null };
+    for (let n = 1; n <= ate && !opcoes.ideal; n++) {
+        const p = n === plano.parcelas ? plano : planoNoCiclo({ ...meta, parcelas: n }, plano.ciclo, anteriores, ctx, { leve: true });
+        if (!p.cabe || !p.parcelas) continue;
+        const opcao = previa(n, p);
+        if (!opcoes.minimo) opcoes.minimo = opcao;
+        if (opcao.folga != null && opcao.folga >= FOLGA_MENSAL_IDEAL - TOLERANCIA_FINANCEIRA) opcoes.ideal = opcao;
+    }
+    return opcoes;
+}
+
 function calcularPlanoDasMetas() {
     const todas = Estado.metas || [];
     const metas = todas
@@ -409,14 +445,13 @@ function calcularPlanoDasMetas() {
             for (let c = ciclo + 1; c < Estado.ciclos.length; c++) {
                 if (planoNoCiclo(movida, c, anteriores, ctx, { leve: true }).cabe) { plano.cabeEm = c; break; }
             }
-            // Parcelado: o menor número de vezes que cabe no mesmo mês. Só até a última parcela
-            // cair nos ciclos carregados — depois disso as parcelas somem da conta e "caberia" à toa.
-            if (plano.forma !== 'avista' && plano.parcelas) {
-                const ate = Math.min(120, Estado.ciclos.length - ciclo - (plano.forma === 'cartao' ? 1 : 0));
-                for (let n = plano.parcelas + 1; n <= ate; n++) {
-                    if (planoNoCiclo({ ...meta, parcelas: n }, ciclo, anteriores, ctx, { leve: true }).cabe) { plano.vezesQueCabe = n; break; }
-                }
-            }
+        }
+        // Parcelado: as opções de vezes (mínimo que cabe e o ideal com folga), e o "em Nx" do
+        // Pra caber quando o atual não cabe e mais vezes resolvem.
+        if (plano.forma !== 'avista' && plano.parcelas) {
+            plano.opcoesVezes = opcoesDeVezes(meta, plano, anteriores, ctx);
+            const minimo = plano.opcoesVezes.minimo;
+            if (!plano.cabe && minimo && minimo.vezes > plano.parcelas) plano.vezesQueCabe = minimo.vezes;
         }
         plano.porMes = detalheDoPlano(plano, anteriores, ctx);
         anteriores.push(...plano.linhas);

@@ -1188,6 +1188,16 @@
 
   .mpParte i,
   .mpDetalhe { color: var(--mu); }
+
+  /* Opção de vezes clicável (Mínimo/Ideal): a mesma pílula, com cursor e realce de botão. */
+  .mpOpcao {
+      font: inherit;
+      cursor: pointer;
+  }
+
+  .mpOpcao:hover { border-color: var(--line-strong); background: var(--field-hover); }
+  .mpParte .vd { color: var(--vd); }
+  .mpParte .vm { color: var(--vm); }
   .mpParte b { font-weight: 700; }
 
   .mpParte.vd { color: var(--vd); background: var(--green-soft); border-color: #2F5A40; }

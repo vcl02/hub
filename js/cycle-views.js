@@ -1047,6 +1047,25 @@ function htmlComprometidos(p) {
         `<th class=n>Por vez</th><th class=n>Total</th></tr></thead><tbody>${dados.grupos.map(linha).join('')}</tbody></table></div>`;
 }
 
+// Opções de vezes de uma meta parcelada, embaixo do plano: o atual com a sobra do pior mês e,
+// quando diferentes dele, o **Mínimo** que cabe e o **Ideal** (sobra ao menos R$ 1.000 por mês),
+// cada um com a prévia (parcela, até quando, sobra do pior mês) e clicável pra usar.
+function htmlOpcoesDeVezes(p) {
+    const o = p.opcoesVezes;
+    if (!o) return '';
+    const sobra = v => (v == null ? '' : `pior mês sobra <span class=${v < 0 ? 'vm' : 'vd'}>${brl(v)}</span>`);
+    const ate = j => nomePeriodoAbrev(Estado.ciclos[j]);
+    const opcao = (rotulo, x, dica) => (x.vezes === o.atual.vezes ? '' :
+        `<button type=button class="mpParte mpOpcao" data-acao=usarVezes data-vezes=${x.vezes} title="Usar ${x.vezes}x${dica}">` +
+        `<i>${rotulo}</i> <b>${x.vezes}x ${brl(x.parcela)}</b> <span class=mpDetalhe>até ${ate(x.fim)} · ${sobra(x.folga)}</span></button>`);
+    const ideal = o.ideal ? opcao('Ideal', o.ideal, ` (sobra ao menos ${brl(FOLGA_MENSAL_IDEAL)} por mês)`)
+        : `<span class=mpParte><i>Ideal</i> <span class=mpDetalhe>nenhum número de vezes deixa ${brl(FOLGA_MENSAL_IDEAL)} por mês</span></span>`;
+    return `<div class=metaPlano title="Sobra do pior mês: o que o mês deixa depois das parcelas das metas, entre os meses com parcela">` +
+        `<span class=mpParte><i>Agora</i> <b>${o.atual.vezes}x</b> <span class=mpDetalhe>${sobra(o.atual.folga)}</span></span> ` +
+        (o.minimo ? opcao('Mínimo', o.minimo, ' (o menor número de vezes que cabe)') : `<span class=mpParte><i>Mínimo</i> <span class=mpDetalhe>nenhum número de vezes cabe</span></span>`) +
+        ` ${ideal}</div>`;
+}
+
 // Rótulo do mês da meta: o que ele é pra cada forma (a entrada tem o mês dela, embaixo).
 function rotuloDoMesDaMeta(m) {
     return { avista: 'Pagamento', cartao: 'Compra', financiamento: '1ª parcela' }[formaDaMeta(m)];
@@ -1081,7 +1100,7 @@ function htmlModalMetas(planos) {
             (parcelado ? campo('mcEntrada', 'Entrada', dinheiro('entrada', m.entrada), 'Parte do total; o resto vai parcelado') : '') +
             (parcelado && m.entrada > 0 ? campo('mcMesEntrada', 'Mês da entrada', entrada('mes_entrada', mesEntrada, 'type=month')) : '') +
             `</div>` +
-            htmlDoPlanoDaMeta(p) +
+            htmlDoPlanoDaMeta(p) + htmlOpcoesDeVezes(p) +
             `</div>`;
     };
     return `<div class=metasAcoes>` +

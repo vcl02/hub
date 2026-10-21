@@ -1035,6 +1035,8 @@ el('corpoMetas').addEventListener('click', e => {
         if (!confirm(`Excluir "${meta.nome}"?`)) return;
         return gravarMudancaDaMeta('excluir', id);
     }
+    // Mínimo/Ideal de vezes: usa aquele número de vezes (grava como qualquer edição da meta).
+    if (acao === 'usarVezes') return gravarMudancaDaMeta('atualizar', id, { parcelas: +botao.dataset.vezes });
     if (acao === 'mesAMes') {
         const plano = planoDasMetas().find(p => p.meta.id === id);
         if (!plano) return;
