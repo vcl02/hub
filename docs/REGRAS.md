@@ -669,6 +669,10 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Embaixo, nos parcelados, **Entrada** sob o valor e **Mês da entrada** sob o mês (só com entrada; depois do mês da meta não vale, vazio volta ao padrão).
   No celular, a mesma grade em duas colunas, com os mesmos campos.
   Não há âncora (data com nome que outras metas seguiam): saiu a pedido do mantenedor (migration 38).
+- **Mês a mês** (botão-ícone de calendário em cada meta) abre um modal com o resumo em pílulas e uma tabela de cada mês em que a meta paga algo (o da entrada e os das parcelas ou faturas): o que **sai** (Entrada, Parcela k/N ou À vista), o **Disponível** antes (guardado projetado do mês menos as metas anteriores e o que esta já pagou), quanto **sobra** (verde) ou **falta** (vermelho, linha em fundo vermelho) depois — a mesma conta do Cabe — e o **Comprometido** do mês contando as metas anteriores e esta (vermelho acima do teto de 50%; `—` sem entrada no mês).
+  Embaixo, o total pago nos ciclos carregados (e, se faltarem parcelas além deles, quanto é o valor inteiro).
+  O modal se refaz a cada desenho e fecha sozinho se a meta sair (excluída ou comprada).
+  No celular, cada mês vira um cartão com as mesmas informações (rótulo em cima de cada número), sem rolar de lado.
 - **Comprar** abre o cadastro já preenchido com o plano, pra conferir, escolher a categoria e salvar: à vista, um débito; com entrada, primeiro ela (débito, hoje) e depois o resto — Parcelado Crédito: crédito em N vezes dividido nas faturas do plano; Parcelado Débito: débito em N vezes dividido, começando no mês da meta (o da 1ª parcela), em aberto e Comprometido.
   Depois da última etapa, a meta vira **comprada** e sai da lista e das projeções (agora é lançamento).
 - Na simulação, criar, editar, excluir e comprar metas fica só na memória, como todo o resto.

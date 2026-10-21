@@ -162,13 +162,15 @@ function linhaDaMeta(meta, k, campos) {
     const linha = {
         nome: meta.nome, categ: 'Meta', freq: null, pago: false, comprometido: false, reserva: false, pra_sempre: false,
         obs: null, canal: null, prio: null, cred: false, fatura: null, recorrencia_id: null, inv: false,
-        ...campos, id: -(1000 + meta.id * 1000 + k), _sid: `meta:${meta.id}:${k}`, _prev: 1, _meta: meta.id,
+        ...campos, id: -(1000 + meta.id * 1000 + k), _sid: `meta:${meta.id}:${k}`, _prev: 1, _meta: meta.id, _parte: k,
     };
     linha.valor = linha.v;
     linha.periodoIdx = periodoDoLancamento(linha);
     return linha;
 }
 const dataDoCiclo = idx => dataISO(Estado.ciclos[idx].ini);
+// Quanto as linhas (de metas) já pagaram até o ciclo j, inclusive.
+const pagoAteCiclo = (linhas, j) => linhas.filter(r => r.periodoIdx != null && r.periodoIdx <= j).reduce((s, r) => s - r.v, 0);
 const centavos = v => Math.round(v * 100) / 100;
 
 // Valor dividido em n partes com a diferença de centavos na última (como o cadastro faz).
@@ -221,8 +223,7 @@ function contextoDoPlano() {
 function planoNoCiclo(meta, c, anteriores, ctx) {
     const forma = formaDaMeta(meta);
     const valor = meta.valor;
-    const pagoAte = (linhas, j) => linhas.filter(r => r.periodoIdx != null && r.periodoIdx <= j).reduce((s, r) => s - r.v, 0);
-    const plano = { forma, disponivel: ctx.guardado(c) - pagoAte(anteriores, c), linhas: [] };
+    const plano = { forma, disponivel: ctx.guardado(c) - pagoAteCiclo(anteriores, c), linhas: [] };
     if (forma === 'avista') {
         plano.linhas = [linhaDaMeta(meta, 0, { data: dataDoCiclo(c), v: -valor })];
     } else {
@@ -265,7 +266,7 @@ function planoNoCiclo(meta, c, anteriores, ctx) {
     // Dinheiro em cada mês de pagamento: o pior buraco e o 1º mês em que ele aparece.
     plano.falta = 0;
     [...new Set(plano.linhas.map(r => r.periodoIdx))].sort((x, y) => x - y).forEach(j => {
-        const sobra = ctx.guardado(j) - pagoAte(anteriores, j) - pagoAte(plano.linhas, j);
+        const sobra = ctx.guardado(j) - pagoAteCiclo(anteriores, j) - pagoAteCiclo(plano.linhas, j);
         if (sobra < -TOLERANCIA_FINANCEIRA) {
             if (plano.cicloFalta == null) plano.cicloFalta = j;
             plano.falta = Math.max(plano.falta, centavos(-sobra));
@@ -273,6 +274,28 @@ function planoNoCiclo(meta, c, anteriores, ctx) {
     });
     plano.cabe = plano.falta <= TOLERANCIA_FINANCEIRA && !plano.semLimite;
     return plano;
+}
+
+// Mês a mês do plano escolhido (o detalhe no modal): em cada mês em que esta meta paga algo,
+// o que sai (entrada, parcela k/N ou à vista), o que sobra do guardado projetado depois das
+// metas anteriores e desta até ali (negativo = falta, a mesma conta do "cabe") e o
+// Comprometido do ciclo contando as metas anteriores e esta (null sem entrada no ciclo).
+// Só pro plano final: o Comprometido de cada mês custa, e a busca do "cabe" não precisa dele.
+function detalheDoPlano(plano, anteriores, ctx) {
+    const extras = [...anteriores, ...plano.linhas];
+    return [...new Set(plano.linhas.map(r => r.periodoIdx).filter(j => j != null))].sort((x, y) => x - y).map(j => {
+        const doMes = plano.linhas.filter(r => r.periodoIdx === j);
+        return {
+            ciclo: j,
+            itens: doMes.map(r => ({
+                rotulo: r._parte === 900 ? 'Entrada' : plano.forma === 'avista' ? 'À vista' : `Parcela ${r._parte}/${plano.parcelas}`,
+                valor: -r.v,
+            })),
+            sai: centavos(doMes.reduce((s, r) => s - r.v, 0)),
+            sobra: centavos(ctx.guardado(j) - pagoAteCiclo(anteriores, j) - pagoAteCiclo(plano.linhas, j)),
+            comprometido: ctx.comprometido(j, extras),
+        };
+    });
 }
 
 function calcularPlanoDasMetas() {
@@ -296,6 +319,7 @@ function calcularPlanoDasMetas() {
                 if (planoNoCiclo(movida, c, anteriores, ctx).cabe) { plano.cabeEm = c; break; }
             }
         }
+        plano.porMes = detalheDoPlano(plano, anteriores, ctx);
         anteriores.push(...plano.linhas);
         return plano;
     });

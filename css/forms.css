@@ -941,7 +941,66 @@
       outline: none;
   }
 
-  /* Comprar e Excluir sempre juntos, no fim da linha. */
+  /* Mês a mês do plano de uma meta: modal menor, por cima do de Metas. */
+  dialog#modalPlanoMeta {
+      color: var(--fg);
+      background: var(--pa);
+      border: 1px solid var(--ln);
+      border-radius: 14px;
+      padding: 1rem;
+      width: min(44rem, 94vw);
+      max-height: 88vh;
+      max-height: 88dvh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px var(--shadow);
+  }
+
+  dialog#modalPlanoMeta:focus { outline: none; }
+
+  .pmTitulo {
+      margin: 0 0 .5rem;
+      font-size: 1rem;
+  }
+
+  /* A tabela rola de lado dentro do modal se a tela for estreita, nunca a página. */
+  .pmRolagem {
+      margin-top: .7rem;
+      overflow-x: auto;
+  }
+
+  .pmTabela {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .84rem;
+      font-variant-numeric: tabular-nums;
+  }
+
+  .pmTabela th,
+  .pmTabela td {
+      padding: .35rem .5rem;
+      text-align: left;
+      white-space: nowrap;
+      border-bottom: 1px solid var(--ln);
+  }
+
+  .pmTabela th {
+      color: var(--mu);
+      font-size: .74rem;
+      font-weight: 500;
+  }
+
+  .pmTabela .n { text-align: right; }
+  .pmTabela i { color: var(--mu); }
+  .pmTabela .vd { color: var(--vd); }
+  .pmTabela .vm,
+  .pmTabela .vm i { color: var(--vm); }
+  .pmTabela tr.pmFalta td { background: var(--red-soft); }
+  .pmTabela tfoot td { border-bottom: 0; }
+
+  /* Entrada e parcela no mesmo mês ficam uma embaixo da outra. */
+  .pmItem { display: block; }
+
+  /* Mês a mês, Comprar e Excluir sempre juntos, no fim da linha. */
   .metaBotoes {
       display: inline-flex;
       gap: .4rem;

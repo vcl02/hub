@@ -331,3 +331,31 @@ test('"Cabe começando em": conta com a entrada 1 mês antes, como fica ao mudar
     assert.deepEqual([p.cabe, p.cicloEntrada, p.cabeEm], [false, 0, 3]);
     assert.match(ler('js/finance.js'), /const movida = \{ \.\.\.meta, meses_ate_parcela: 1 \};/);
 });
+
+test('mês a mês: o que sai, sobra/falta e Comprometido contando a meta em cada mês', () => {
+    // Móveis 40.000: entrada 10.000 em Mar/27 (5), 10x de 3.000 de Abr/27 (6). Guardado
+    // 2.000 × (ciclo + 1): Mar 12.000 − 10.000 = 2.000; Abr 14.000 − 13.000 = 1.000; Mai 0;
+    // Jun −1.000 … Set/27 −4.000. Faturamento 3.000/mês: a parcela de 3.000 é 100% do mês.
+    const p = doPlano(carrega([meta(1, 'Móveis', 40000, '2027-04-01', { forma: 'financiamento', entrada: 10000 })]), 1);
+    const porMes = JSON.parse(JSON.stringify(p.porMes));
+    assert.deepEqual(porMes.map(m => [m.ciclo, m.sai, m.sobra]), [[5, 10000, 2000], [6, 3000, 1000], [7, 3000, 0], [8, 3000, -1000], [9, 3000, -2000], [10, 3000, -3000], [11, 3000, -4000]]);
+    assert.deepEqual(porMes[0].itens, [{ rotulo: 'Entrada', valor: 10000 }]);
+    assert.deepEqual(porMes[1].itens, [{ rotulo: 'Parcela 1/10', valor: 3000 }]);
+    assert.ok(porMes.slice(1).every(m => m.comprometido >= 100 - 1e-9));   // parcela = faturamento
+    assert.equal(porMes[0].comprometido, 0);                                // entrada não é compromisso
+    // A pior falta do mês a mês é a mesma do plano.
+    assert.equal(Math.max(...porMes.map(m => -m.sobra)), p.falta);
+});
+
+test('mês a mês: botão em cada meta, modal próprio e refeito a cada desenho', () => {
+    assert.match(visoes, /botao\('mesAMes', ICONE_MES_A_MES, 'Mês a mês'\)/);
+    assert.match(pagina, /<dialog id=modalPlanoMeta tabindex=-1>\s*<div id=corpoPlanoMeta><\/div>\s*<\/dialog>/);
+    assert.match(interacoes, /if \(acao === 'mesAMes'\) \{/);
+    assert.match(interacoes, /if \(el\('modalPlanoMeta'\)\.open\) \{/);
+    assert.match(ler('js/finance.js'), /plano\.porMes = detalheDoPlano\(plano, anteriores, ctx\);/);
+    assert.match(visoes, /<th class=n title="Comprometido do mês contando esta meta \(teto \$\{teto\}%\)">Comprometido<\/th>/);
+    assert.match(regras, /\*\*Mês a mês\*\* \(botão-ícone de calendário em cada meta\) abre um modal/);
+    // No celular, cada mês vira um cartão com o rótulo em cima de cada número (sem rolar de lado).
+    assert.match(visoes, /data-rotulo="Disponível"/);
+    assert.match(ler('css/mobile.css'), /\.pmTabela td\[data-rotulo\]::before \{\s*content: attr\(data-rotulo\);/);
+});

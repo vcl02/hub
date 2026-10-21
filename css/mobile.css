@@ -326,3 +326,37 @@
       .mcMesEntrada { grid-column: 2; grid-row: 4; }
       .metaGrade > .metaBotoes { grid-column: 1 / -1; grid-row: 5; justify-content: flex-end; }
   }
+
+  /* Mês a mês no celular: cada mês vira um cartão com as mesmas informações — mês e o que
+     sai em cima; Disponível, Sobra/falta e Comprometido embaixo, cada um com o rótulo
+     (data-rotulo) em cima do número — pra caber na largura sem rolar de lado. */
+  @media (max-width: 640px) {
+      .pmTabela thead { display: none; }
+      .pmTabela,
+      .pmTabela tbody,
+      .pmTabela tfoot { display: block; }
+      .pmTabela tr {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: .25rem .5rem;
+          padding: .5rem .35rem;
+          border-bottom: 1px solid var(--ln);
+      }
+      .pmTabela td {
+          padding: 0;
+          white-space: normal;
+          text-align: left;
+          border: 0;
+      }
+      .pmTabela .n { text-align: left; }
+      .pmTabela tr.pmFalta { background: var(--red-soft); }
+      .pmTabela tr.pmFalta td { background: transparent; }
+      .pmTabela td:nth-child(1) { font-weight: 600; }
+      .pmTabela td:nth-child(2) { grid-column: 2 / 4; }
+      .pmTabela td[data-rotulo]::before {
+          content: attr(data-rotulo);
+          display: block;
+          color: var(--mu);
+          font-size: .66rem;
+      }
+  }

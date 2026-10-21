@@ -893,6 +893,7 @@ function htmlModalCartao(dados, cartao) {
 // ou saíram da conta. Só leitura do Estado; os handlers ficam em interactions.js.
 const ICONE_COMPRAR = '<svg viewBox="0 0 24 24" width=16 height=16 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true><circle cx=9 cy=20 r=1.4 /><circle cx=18 cy=20 r=1.4 /><path d="M2 3h3l2.6 12.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L21 8H6" /></svg>';
 const ICONE_EXCLUIR = '<svg viewBox="0 0 24 24" width=16 height=16 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>';
+const ICONE_MES_A_MES = '<svg viewBox="0 0 24 24" width=16 height=16 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true><rect x=3 y=5 width=18 height=16 rx=2 /><path d="M3 10h18M8 3v4M16 3v4M7 14h4M7 17h7" /></svg>';
 const FORMAS_DA_META = { avista: 'À vista', cartao: 'Parcelado Crédito', financiamento: 'Parcelado Débito' };
 
 // Plano de uma meta em partes: a situação (Cabe/Não cabe) e, cada uma com rótulo, valor e
@@ -939,6 +940,36 @@ function htmlDoPlanoDaMeta(p) {
     return `<span class="metaPlano ${classe}"${dica ? ` title="${escapeHtml(dica)}"` : ''}>${partes.map(parte).join(' ')}</span>`;
 }
 
+// Mês a mês do plano (modal aberto pelo botão da meta), com o resumo em pílulas em cima: em
+// cada mês em que a meta paga algo, o que sai, o disponível antes (guardado projetado menos as
+// metas anteriores e o que esta já pagou), o que sobra ou falta depois e o Comprometido do mês
+// contando com ela (vermelho acima do teto). Ver detalheDoPlano em finance.js.
+function htmlDetalheDoPlano(p) {
+    const topo = `<h2 class=pmTitulo>${escapeHtml(p.meta.nome)}</h2>${htmlDoPlanoDaMeta(p)}`;
+    if (!p.porMes?.length) return `${topo}<p class=empty>Sem pagamentos nos ciclos carregados.</p>`;
+    const teto = LIMITES_COMPROMISSOS[0].percentual;
+    const linha = m => {
+        const falta = m.sobra < -TOLERANCIA_FINANCEIRA;
+        const sai = m.itens.map(i => `<span class=pmItem><i>${escapeHtml(i.rotulo)}</i> <b>${brl(i.valor)}</b></span>`).join('');
+        const comprometido = m.comprometido == null ? '—'
+            : `<b${m.comprometido > teto + 1e-9 ? ' class=vm' : ''}>${pct1(m.comprometido)}</b>`;
+        return `<tr${falta ? ' class=pmFalta' : ''}><td>${nomePeriodoAbrev(Estado.ciclos[m.ciclo])}</td><td>${sai}</td>` +
+            `<td class="n${m.sobra + m.sai < -TOLERANCIA_FINANCEIRA ? ' vm' : ''}" data-rotulo="Disponível">${brl(m.sobra + m.sai)}</td>` +
+            `<td class="n ${falta ? 'vm' : 'vd'}" data-rotulo="Sobra / falta"><i>${falta ? 'Falta' : 'Sobra'}</i> <b>${brl(Math.abs(m.sobra))}</b></td>` +
+            `<td class=n data-rotulo="Comprometido">${comprometido}</td></tr>`;
+    };
+    // Parcelas depois do último ciclo carregado não entram no mês a mês: o total diz quanto ficou de fora.
+    const total = p.porMes.reduce((s, m) => s + m.sai, 0);
+    const fora = p.meta.valor - total > TOLERANCIA_FINANCEIRA ? ` <span class=mpDetalhe>de ${brl(p.meta.valor)}; o resto passa dos ciclos carregados</span>` : '';
+    return topo + `<div class=pmRolagem><table class=pmTabela>` +
+        `<thead><tr><th>Mês</th><th>Sai</th>` +
+        `<th class=n title="Guardado projetado do mês menos as metas anteriores e o que esta já pagou antes">Disponível</th>` +
+        `<th class=n>Sobra / falta</th>` +
+        `<th class=n title="Comprometido do mês contando esta meta (teto ${teto}%)">Comprometido</th></tr></thead>` +
+        `<tbody>${p.porMes.map(linha).join('')}</tbody>` +
+        `<tfoot><tr><td>Total</td><td colspan=4><b>${brl(total)}</b>${fora}</td></tr></tfoot></table></div>`;
+}
+
 // Rótulo do mês da meta: o que ele é pra cada forma (a entrada tem o mês dela, embaixo).
 function rotuloDoMesDaMeta(m) {
     return { avista: 'Pagamento', cartao: 'Compra', financiamento: '1ª parcela' }[formaDaMeta(m)];
@@ -969,7 +1000,7 @@ function htmlModalMetas(planos) {
             (parcelado ? campo('mcVezes', 'Vezes', entrada('parcelas', m.parcelas, `inputmode=numeric placeholder="${PARCELAS_PADRAO_METAS}"`)) : '') +
             campo('mcMes', rotuloDoMesDaMeta(m), entrada('mes', m.mes ? m.mes.slice(0, 7) : '', 'type=month')) +
             campo('mcForma', 'Forma', `<select data-campo=forma>${formas}</select>`) +
-            `<span class=metaBotoes>${botao('comprar', ICONE_COMPRAR, 'Comprar')}${botao('excluir', ICONE_EXCLUIR, 'Excluir')}</span>` +
+            `<span class=metaBotoes>${botao('mesAMes', ICONE_MES_A_MES, 'Mês a mês')}${botao('comprar', ICONE_COMPRAR, 'Comprar')}${botao('excluir', ICONE_EXCLUIR, 'Excluir')}</span>` +
             (parcelado ? campo('mcEntrada', 'Entrada', dinheiro('entrada', m.entrada), 'Parte do total; o resto vai parcelado') : '') +
             (parcelado && m.entrada > 0 ? campo('mcMesEntrada', 'Mês da entrada', entrada('mes_entrada', mesEntrada, 'type=month')) : '') +
             `</div>` +

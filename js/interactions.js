@@ -874,6 +874,11 @@ el('modalCartao').addEventListener('click', e => {
 function atualizarMetas() {
     el('btMetas').hidden = !Estado.temMetas || modoRestrito();
     if (el('modalMetas').open) el('corpoMetas').innerHTML = htmlModalMetas(planoDasMetas());
+    if (el('modalPlanoMeta').open) {
+        const plano = planoDasMetas().find(p => p.meta.id === +el('modalPlanoMeta').dataset.meta);
+        if (plano) el('corpoPlanoMeta').innerHTML = htmlDetalheDoPlano(plano);
+        else el('modalPlanoMeta').close();   // a meta saiu (excluída ou comprada)
+    }
 }
 el('btMetas').onclick = () => {
     el('corpoMetas').innerHTML = htmlModalMetas(planoDasMetas());
@@ -882,6 +887,9 @@ el('btMetas').onclick = () => {
 };
 el('modalMetas').addEventListener('click', e => {
     if (e.target == el('modalMetas')) el('modalMetas').close();
+});
+el('modalPlanoMeta').addEventListener('click', e => {
+    if (e.target == el('modalPlanoMeta')) el('modalPlanoMeta').close();
 });
 
 // Valor de cada campo como vai pro banco. Vazio vira null (mês vazio: a meta fica sem plano)
@@ -983,6 +991,15 @@ el('corpoMetas').addEventListener('click', e => {
     if (acao === 'excluir') {
         if (!confirm(`Excluir "${meta.nome}"?`)) return;
         return gravarMudancaDaMeta('excluir', id);
+    }
+    if (acao === 'mesAMes') {
+        const plano = planoDasMetas().find(p => p.meta.id === id);
+        if (!plano) return;
+        el('modalPlanoMeta').dataset.meta = id;
+        el('corpoPlanoMeta').innerHTML = htmlDetalheDoPlano(plano);
+        el('modalPlanoMeta').showModal();
+        el('modalPlanoMeta').focus();   // não abre o teclado do celular
+        return;
     }
     if (acao === 'comprar') {
         const plano = planoDasMetas().find(p => p.meta.id === id);
