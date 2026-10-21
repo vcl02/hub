@@ -14,13 +14,17 @@ PWA para registrar evolução de carga na academia: pirâmide automática, subst
 **Banco:** um item no `localStorage`, criptografado (AES-GCM, chave derivada da senha mestra com PBKDF2):
 
 ```
-{ exercicios: [{ id, grupo, regiao, series, reps, descanso, ativo, variacoes: [{ id, nome, unidade, passo }] }],   // reps = da 1ª série
-  registros:  [{ variacao, data, carga, reps: [n, n, n] }],
-  treinos:    [{ inicio, fim }],
+{ exercicios: [{ id, grupo, regiao, series, reps, descanso, modo, ativo,
+                 variacoes: [{ id, nome, unidade, passo, lados, equip?, nota? }] }],
+  registros:  [{ variacao, data, series: [{ kg, reps }] }],
+  treinos:    [{ inicio, fim, fechado? }],
   medidas:    [{ data, hora, peso, cintura? }] }
 ```
 
-- **Pirâmide:** `carga` é o peso da 1ª série; as outras somam 10% (arredondado ao `passo` do aparelho) e tiram 2 reps. `reps` guarda o que foi feito em cada série.
+- **Pirâmide:** `modo` crescente (+10% de peso, −2 reps), reta (mesma carga) ou invertida. O peso sobe pelo `passo` do aparelho; cada série pode ter peso e reps ajustados. O registro guarda peso e reps de cada série.
+- **Unidades:** `kg`, `lb` (mostra o equivalente em kg) ou `nível`; `lados: 2` = peso por lado (mostra o total).
+- **Calorias:** estimativa = 3,5 MET (Compendium of Physical Activities, 02054) × peso corporal × horas de treino.
+- **Fotos das máquinas:** `localStorage` `carga.foto.<variação>`, fora do banco e do backup.
 - **Aquecimento:** o 1º exercício de cada `regiao` (Pernas / Superior) no dia ganha 1 série de 50% × 15, com 45 s de descanso.
 - **Tempo de treino:** começa no 1º toque dentro de um exercício; 30 min sem mexer encerra no horário da última interação.
 - **Pontos e conquistas:** calculados a partir dos dados, nada extra é guardado.

@@ -78,9 +78,6 @@ h3.sec{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color
 .back{background:none;border:0;padding:8px 0;color:var(--blue);font-weight:600}
 .pn{display:flex;align-items:center;gap:6px}
 .pn b{font-variant-numeric:tabular-nums;font-size:var(--t-sm);color:var(--muted);font-weight:500;min-width:2.4em;text-align:center}
-.pdots{display:flex;gap:5px}
-.pdots i{width:7px;height:7px;border-radius:50%;background:var(--line)}
-.pdots i.on{background:var(--blue);width:18px;border-radius:4px}
 .tempo{font-size:var(--t-sm);font-weight:600;color:var(--blue);font-variant-numeric:tabular-nums;margin-right:4px;white-space:nowrap}
 
 /* ---------- Início ---------- */
@@ -135,7 +132,6 @@ h3.sec{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color
 .seg[aria-checked="true"] .seg-k{color:var(--blue);font-weight:600}
 .presc{font-size:var(--t-sm);color:var(--muted);font-variant-numeric:tabular-nums}
 .presc b{color:var(--fg)}
-.yt{align-self:flex-start;color:var(--blue);font-weight:600;text-decoration:none;padding:6px 0;margin-top:-8px}
 .dicas{padding:10px 14px}
 .dicas summary{font-weight:600;cursor:pointer;padding:2px 0}
 .dicas ul{margin:8px 0 2px;padding-left:18px;display:flex;flex-direction:column;gap:5px;font-size:var(--t-sm);color:var(--muted)}
@@ -156,14 +152,12 @@ h3.sec{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color
 .t-top{width:100%;text-align:left}
 .t-lbl{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:500}
 .plano{list-style:none;margin:0;padding:0;width:100%;display:flex;flex-direction:column;gap:4px;text-align:left}
-.plano li{display:grid;grid-template-columns:1fr auto 76px;gap:10px;align-items:center;padding:8px 10px;border-radius:10px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.plano li{display:grid;grid-template-columns:1fr auto 22px;cursor:pointer;gap:10px;align-items:center;padding:8px 10px;border-radius:10px;font-variant-numeric:tabular-nums;color:var(--muted)}
 .plano li b{font-family:var(--display);font-size:1.3rem;font-weight:700;color:var(--fg)}
 .plano li.aq>span:first-child{font-style:italic}
 .plano li.cur{background:var(--blue-soft);color:var(--fg);box-shadow:inset 0 0 0 2px var(--blue)}
 .plano li.ok,.plano li.ok b{color:var(--green)}
 .plano li.baixo b{color:var(--red)}
-.adj{display:flex;gap:4px;justify-content:flex-end;color:var(--green);font-weight:700}
-.adj button{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--surface);font-size:1.1rem;font-weight:600;color:var(--fg)}
 .t-clock{font-family:var(--display);font-weight:700;font-size:var(--t-3xl);line-height:1;font-variant-numeric:tabular-nums;color:var(--muted);opacity:.5}
 .timer .row{width:100%}
 .t-clock.run{color:var(--blue);opacity:1}
@@ -245,4 +239,69 @@ button,a,summary{touch-action:manipulation}
 .salvo.ok{border-style:solid;border-color:var(--green);background:var(--green-soft);color:var(--green)}
 .salvo.ok b{color:var(--green)}
 .salvo.erro{border-style:solid;border-color:var(--red);background:var(--red-soft);color:var(--red);font-weight:600}
-.timer #t-rodando{order:0}
+
+/* ---------- Exercício: cabeçalho, guia e anotações ---------- */
+.trilha{display:flex;gap:4px;margin-top:-6px}
+.trilha i{flex:1;height:6px;border-radius:4px;background:var(--line);overflow:hidden}
+.trilha i b{display:block;height:100%;background:var(--green);transition:width .3s}
+.trilha i.on{box-shadow:0 0 0 2px var(--blue)}
+.ex-head{display:flex;gap:12px;align-items:flex-start}
+.ex-fig{flex:none;width:96px;height:68px;border-radius:12px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;overflow:hidden}
+.ex-fig img{width:100%;height:100%;object-fit:cover}
+.desenho{width:100%;height:100%;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.desenho .maq{stroke:var(--muted);stroke-width:2.5}
+.desenho .corpo{stroke:var(--fg)}
+.desenho .halter{stroke:var(--blue);stroke-width:4}
+.ex-tit{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.ex-desc{font-style:italic;color:var(--muted);font-size:var(--t-sm)}
+.equip{display:flex;align-items:center;gap:6px;font-size:var(--t-sm);color:var(--muted)}
+.equip input{width:4.5em;border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:4px 8px;font-family:var(--display);font-weight:700;font-size:var(--t-md);color:var(--fg)}
+.guia{font-size:var(--t-sm);margin-top:8px}
+.guia b{color:var(--blue)}
+.nota-l{display:block;font-size:var(--t-sm);color:var(--muted);margin-top:8px}
+.dicas textarea{width:100%;min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:8px 10px;font-size:var(--t-sm);resize:vertical;margin-top:4px}
+.acoes{margin-top:8px}
+.acoes .btn{min-height:40px;padding:8px 12px;font-size:var(--t-sm);text-decoration:none;text-align:center;color:var(--fg)}
+
+/* ---------- Peso: por lado, unidade, conversão ---------- */
+.lbl-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.lbl-row label{font-size:var(--t-sm);color:var(--muted)}
+.tog{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:var(--t-sm);color:var(--muted)}
+.tog[aria-pressed="true"]{border-color:var(--blue);background:var(--blue-soft);color:var(--blue);font-weight:600}
+.mid .unit{border:0;background:none;padding:0 2px;text-decoration:underline dotted;text-underline-offset:3px;font-size:var(--t-sm);white-space:nowrap}
+.conv{font-size:var(--t-sm);color:var(--muted)}
+.conv b{color:var(--fg)}
+
+/* ---------- Pirâmide: modos e edição por série ---------- */
+.t-top{display:flex;justify-content:flex-start}
+.modos{display:flex;gap:4px;background:var(--line);padding:3px;border-radius:10px}
+.modos button{border:0;background:transparent;border-radius:8px;padding:5px 10px;font-size:var(--t-xs);color:var(--muted)}
+.modos button[aria-checked="true"]{background:var(--surface);color:var(--blue);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.plano .st{color:var(--muted);text-align:center}
+.plano li.ok .st{color:var(--green);font-weight:700}
+.plano li.aberta{background:var(--surface);box-shadow:inset 0 0 0 2px var(--blue)}
+.linha-ed{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px 14px;padding-top:6px;color:var(--muted);font-size:var(--t-sm)}
+.linha-ed span{display:flex;align-items:center;gap:4px}
+.linha-ed button{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--bg);font-size:1.1rem;font-weight:600;color:var(--fg)}
+.linha-ed input{width:3.6em;text-align:center;border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:6px 4px;font-family:var(--display);font-weight:700;font-size:var(--t-lg);color:var(--fg)}
+.t-dica{font-style:italic;color:var(--muted);font-size:var(--t-xs);margin-top:-4px}
+.fin{align-self:center}
+
+/* ---------- Edição inline (horários, pesagens) ---------- */
+.btn.sm{min-height:36px;padding:6px 12px;font-size:var(--t-sm)}
+.ed-acoes{display:flex;gap:6px;align-items:center;justify-content:flex-end}
+.ed-inline{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:var(--t-sm);color:var(--muted)}
+.ed-inline input{border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:6px;font-size:var(--t-sm);color:var(--fg);max-width:6.5em}
+.hist li.editando{grid-template-columns:auto 1fr;}
+.hist li.editando .ed-acoes{grid-column:1/-1}
+.treino-tempo .btn.sm{margin-left:auto}
+
+/* ---------- Fim do treino ---------- */
+.fim-top{display:flex;flex-direction:column;gap:6px;padding-top:12px}
+.fim-top h1{color:var(--green);font-size:2.6rem}
+.tiles{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tiles li{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:2px}
+.tiles li:first-child{grid-column:1/-1;border-color:var(--green);background:var(--green-soft)}
+.tiles span{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.tiles b{font-family:var(--display);font-size:var(--t-xl);font-weight:700;line-height:1.1}
+.tiles small{font-size:var(--t-xs);color:var(--muted);font-style:italic}

@@ -46,14 +46,14 @@ async function arrastar(ctx, pg, x1, x2, y = 600) {
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await pg.waitForTimeout(450);
 }
-const linhas = async pg => (await pg.locator('#t-plano li').allTextContents()).map(s => s.replace(/\s+/g, ' ').replace(/[−+]/g, '').trim());
+const linhas = async pg => (await pg.locator('#t-plano li').allTextContents()).map(s => s.replace(/\s+/g, ' ').replace(/[−+✎✓]/g, '').trim());
 
 test('pirâmide usa o passo da máquina e começa com aquecimento', async () => {
   const { ctx, pg, erros } = await abrirApp();
   await pg.tap('.slot >> nth=0');
   await pg.fill('#e-carga', '40'); await pg.dispatchEvent('#e-carga', 'input');
   assert.deepEqual(await linhas(pg), ['Aquecimento20 kg × 15', 'Série 140 kg × 12', 'Série 245 kg × 10', 'Série 350 kg × 8']);
-  assert.match(await pg.textContent('#e-passo'), /passo de 5 kg/);
+  assert.equal(await pg.textContent('#e-unidade'), 'kg');
   assert.deepEqual(erros, []); await ctx.close();
 });
 
@@ -64,12 +64,12 @@ test('salva sozinho a cada série, ajusta reps e desfaz a última série', async
   await pg.click('#t-feita');                                                                // aquecimento: ainda nada salvo
   assert.match(await pg.textContent('#e-historico'), /Nenhum registro/);
   await pg.click('#t-feita'); await pg.click('#t-feita');                                    // séries 1 e 2, sem esperar o descanso
-  assert.match(await pg.textContent('#e-historico'), /40 kg\s*12\/10/);
-  await pg.click('[data-rep="1"][data-d="-1"]');                                            // série 2: fez 9
+  assert.match(await pg.textContent('#e-historico'), /40\/45 kg\s*× 12\/10/);
+  await pg.click('[data-linha="1"]'); await pg.click('[data-aj="reps"][data-d="-1"]');     // série 2: fez 9
   await pg.click('#t-feita');                                                                // série 3
-  assert.match(await pg.textContent('#e-salvo'), /Salvo: 40 kg · 12\/9\/8/);
+  assert.match(await pg.textContent('#e-salvo'), /Salvo: 40\/45\/50 kg × 12\/9\/8/);
   await pg.click('#toast-desfazer');                                                         // toque duplo sem querer na série 3
-  assert.match(await pg.textContent('#e-historico'), /40 kg\s*12\/9(?!\/)/);
+  assert.match(await pg.textContent('#e-historico'), /40\/45 kg\s*× 12\/9(?!\/)/);
   assert.equal(await pg.locator('#t-plano li.ok').count(), 3);
   assert.deepEqual(erros, []); await ctx.close();
 });
@@ -162,7 +162,7 @@ test('migra dados de versões antigas', async () => {
   }));
   assert.equal(r.exercicios[0].regiao, 'Pernas');
   assert.equal(r.exercicios[0].variacoes[0].passo, 5);
-  assert.deepEqual(r.registros[0].reps, [12, 12, 12]);
+  assert.deepEqual(r.registros[0].series, [{ kg: 40, reps: 12 }, { kg: 45, reps: 12 }, { kg: 50, reps: 12 }]);
   assert.equal(r.exercicios[0].reps, 12);                                                   // "10–12" vira 12
   assert.deepEqual(r.medidas, []);
   await ctx.close();
@@ -213,5 +213,86 @@ test('não recarrega no meio de um formulário', async () => {
   try { await pg.evaluate(() => checarAtualizacao(true)); await pg.waitForTimeout(1500); } finally { novaVersao = false; }
   assert.equal(await pg.inputValue('#c-peso'), '88');                                        // continua na tela, nada perdido
   assert.equal(await pg.evaluate(() => atualizacaoPendente), true);                          // atualiza ao sair dela
+  await ctx.close();
+});
+
+test('por lado mostra o total; lb mostra o equivalente em kg', async () => {
+  const { ctx, pg } = await abrirApp();
+  await pg.tap('.slot >> nth=0'); await pg.fill('#e-carga', '40'); await pg.dispatchEvent('#e-carga', 'input');
+  await pg.click('#e-lados');
+  assert.match(await pg.textContent('#e-conv'), /80 kg no total/);
+  assert.match(await pg.textContent('#t-plano'), /40 kg\/lado × 12/);
+  await pg.click('#e-lados'); await pg.click('#e-unidade');                                  // kg → lb
+  assert.match(await pg.textContent('#e-conv'), /≈ 18,1 kg/);
+  await ctx.close();
+});
+
+test('modos de pirâmide e edição do peso de uma série futura', async () => {
+  const { ctx, pg } = await abrirApp();
+  await pg.tap('.slot >> nth=1'); await pg.fill('#e-carga', '40'); await pg.dispatchEvent('#e-carga', 'input');
+  await pg.click('[data-modo="invertida"]');
+  assert.deepEqual((await linhas(pg)).slice(1), ['Série 140 kg × 8', 'Série 235 kg × 10', 'Série 330 kg × 12']);
+  await pg.click('[data-modo="reta"]');
+  assert.deepEqual((await linhas(pg)).slice(1), ['Série 140 kg × 12', 'Série 240 kg × 12', 'Série 340 kg × 12']);
+  await pg.click('[data-linha="2"]'); await pg.fill('[data-aj-in="kg"]', '37'); await pg.dispatchEvent('[data-aj-in="kg"]', 'change');
+  assert.match((await linhas(pg))[3], /^Série 337 kg × 12/);
+  await ctx.close();
+});
+
+test('depois do último descanso vai para o próximo; no fim mostra o resumo', async () => {
+  const { ctx, pg, erros } = await abrirApp();
+  await pg.evaluate(() => { db.exercicios.forEach(e => { e.series = 1; }); });               // treino curto para o teste
+  await pg.tap('.slot >> nth=4'); await pg.fill('#e-carga', '30'); await pg.dispatchEvent('#e-carga', 'input');
+  await pg.click('#t-feita'); await pg.click('#t-feita'); await pg.click('#t-pular');        // aquecimento + série + pula o descanso
+  assert.equal(await pg.textContent('#e-nome'), 'Desenvolvimento máquina');                  // próximo que falta
+  for (const nome of ['Leg press 45°', 'Cadeira flexora', 'Supino máquina', 'Puxada alta']) {
+    await pg.fill('#e-carga', '20'); await pg.dispatchEvent('#e-carga', 'input');
+    while (await pg.isVisible('#t-parado')) await pg.click('#t-feita');
+    await pg.click('#t-pular');
+    if (nome !== 'Puxada alta') assert.equal(await pg.textContent('#e-nome'), nome);
+  }
+  await pg.fill('#e-carga', '20'); await pg.dispatchEvent('#e-carga', 'input');
+  while (await pg.isVisible('#t-parado')) await pg.click('#t-feita');
+  await pg.click('#t-pular');
+  await pg.waitForSelector('#v-fim:not([hidden])');
+  assert.match(await pg.textContent('#f-tiles'), /6\/6/);
+  await pg.click('#v-fim [data-ir="inicio"]');
+  assert.match(await pg.textContent('#i-treino'), /Último treino/);                           // treino fechado
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
+test('nº do aparelho e anotações ficam salvos', async () => {
+  const { ctx, pg } = await abrirApp();
+  await pg.tap('.slot >> nth=2');
+  await pg.fill('#e-equip', '12'); await pg.click('#e-dicas summary'); await pg.fill('#e-nota', 'banco no furo 4');
+  await pg.waitForTimeout(700);
+  await pg.reload(); await pg.waitForSelector('#v-exercicio:not([hidden])');
+  assert.equal(await pg.inputValue('#e-equip'), '12');
+  assert.equal(await pg.inputValue('#e-nota'), 'banco no furo 4');
+  assert.match(await pg.textContent('#e-guia'), /Banco na altura/);
+  await ctx.close();
+});
+
+test('editar o horário do treino e ver calorias', async () => {
+  const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-21T19:00:00') });
+  await pg.click('#i-corpo'); await pg.fill('#c-peso', '90'); await pg.click('#c-form button[type=submit]'); await pg.goBack();
+  await pg.tap('.slot >> nth=0'); await pg.fill('#e-carga', '40'); await pg.dispatchEvent('#e-carga', 'input');
+  await pg.clock.fastForward('10:00'); await pg.click('#t-feita');
+  await pg.click('#e-finalizar');
+  await pg.waitForSelector('#v-fim:not([hidden])');
+  await pg.click('#v-fim [data-ir="inicio"]');
+  await pg.click('[data-editar-treino]');
+  await pg.fill('#et-fim', '19:50'); await pg.click('[data-salvar-treino]');
+  assert.match(await pg.textContent('#i-treinos'), /19:00–19:50 · ~263 kcal/);              // 3,5 × 90 kg × 50/60 h
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
+test('anotação digitada fica no exercício certo mesmo trocando rápido', async () => {
+  const { ctx, pg } = await abrirApp();
+  await pg.tap('.slot >> nth=0'); await pg.fill('#e-equip', '7');
+  await pg.evaluate(() => trocarExercicio(1));                                               // troca antes de 0,5 s
+  await pg.waitForTimeout(700);
+  const r = await pg.evaluate(() => db.exercicios.map(e => e.variacoes[0].equip || ''));
+  assert.deepEqual(r.slice(0, 2), ['7', '']);
   await ctx.close();
 });

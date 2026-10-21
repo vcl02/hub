@@ -63,42 +63,59 @@
   <p class="rule">Dias fixos: quarta e quinta; segunda é o extra sugerido. Pirâmide: você põe o peso da 1ª série e o app calcula as outras (+10% de peso, −2 reps). O 1º exercício de pernas e o 1º de parte de cima começam com aquecimento. Bateu todas as reps da pirâmide? Suba o peso inicial.</p>
 </section>
 
-<!-- Exercício: variação, descanso, carga, histórico (arraste para trocar) -->
+<!-- Exercício: variação, pirâmide, descanso e histórico (arraste para trocar) -->
 <section id="v-exercicio" class="view" hidden>
   <div class="bar nav"><button class="back" type="button" data-voltar>‹ Treino</button>
-    <div class="pn"><span class="tempo" id="e-tempo"></span><span class="pdots" id="e-pontos" aria-hidden="true"></span><b id="e-pos">1/6</b></div></div>
+    <div class="pn"><span class="tempo" id="e-tempo"></span><b id="e-pos">1/6</b></div></div>
+  <div class="trilha" id="e-trilha" aria-hidden="true"></div>
   <p class="swipe-hint" id="e-dica">Arraste para o lado para trocar de exercício</p>
   <p class="eyebrow" id="e-grupo"></p>
   <div class="segs" id="e-variacoes" role="radiogroup" aria-label="Variação usada hoje"></div>
-  <h2 id="e-nome"></h2>
-  <p class="presc" id="e-presc"></p>
-  <a class="yt" id="e-youtube" target="_blank" rel="noopener">▶ Ver execução no YouTube</a>
-  <details class="dicas" id="e-dicas" open>
-    <summary>Dicas de execução</summary>
+  <div class="ex-head">
+    <div class="ex-fig" id="e-fig"></div>
+    <div class="ex-tit">
+      <h2 id="e-nome"></h2>
+      <p class="ex-desc" id="e-desc"></p>
+      <p class="presc" id="e-presc"></p>
+      <label class="equip">Aparelho nº <input id="e-equip" inputmode="numeric" maxlength="8" placeholder="—" autocomplete="off"></label>
+    </div>
+  </div>
+  <details class="dicas" id="e-dicas">
+    <summary>Como fazer, ajustes e anotações</summary>
+    <p class="guia" id="e-guia"></p>
     <ul>
       <li><b>Sem impulso:</b> movimento controlado, sem tranco.</li>
       <li><b>Volte devagar:</b> 2 a 3 segundos na volta.</li>
       <li><b>Respiração:</b> solte o ar pela boca no esforço, puxe pelo nariz na volta.</li>
       <li><b>Abdômen firme</b> e costas apoiadas o tempo todo.</li>
-      <li><b>Ajuste a máquina</b> antes: banco e pegada no seu tamanho.</li>
     </ul>
+    <label class="nota-l" for="e-nota">Suas anotações</label>
+    <textarea id="e-nota" rows="2" placeholder="Ex.: banco no furo 4, pés no meio da plataforma"></textarea>
+    <div class="row acoes">
+      <a class="btn" id="e-youtube" target="_blank" rel="noopener">▶ Ver no YouTube</a>
+      <label class="btn" for="e-foto" id="e-foto-l">Foto da máquina</label>
+      <input type="file" accept="image/*" capture="environment" id="e-foto" hidden>
+    </div>
+    <button type="button" class="link" id="e-foto-rm" hidden>Remover foto</button>
   </details>
 
   <p class="last" id="e-ultima"></p>
   <div class="log">
-  <div class="field">
-    <label for="e-carga">Peso da 1ª série (o resto o app calcula) · <span id="e-passo"></span></label>
-    <div class="stepper">
-      <button type="button" data-passo="carga" data-dir="-1" aria-label="Diminuir carga">−</button>
-      <div class="mid"><input id="e-carga" inputmode="decimal" autocomplete="off" placeholder="0"><span class="unit" id="e-unidade">kg</span></div>
-      <button type="button" data-passo="carga" data-dir="1" aria-label="Aumentar carga">+</button>
+    <div class="field">
+      <div class="lbl-row"><label for="e-carga" id="e-carga-l">Peso da 1ª série</label><button type="button" class="tog" id="e-lados" aria-pressed="false">por lado</button></div>
+      <div class="stepper">
+        <button type="button" data-passo="carga" data-dir="-1" aria-label="Diminuir 1">−</button>
+        <div class="mid"><input id="e-carga" inputmode="decimal" autocomplete="off" placeholder="0"><button type="button" class="unit" id="e-unidade" aria-label="Trocar unidade (kg, lb, nível)">kg</button></div>
+        <button type="button" data-passo="carga" data-dir="1" aria-label="Aumentar 1">+</button>
+      </div>
+      <p class="conv" id="e-conv" hidden></p>
     </div>
-  </div>
   </div>
 
   <div class="box timer">
-    <div class="t-top"><span class="t-lbl">Pirâmide de hoje</span></div>
+    <div class="t-top"><div class="modos" id="t-modos" role="radiogroup" aria-label="Tipo de pirâmide"></div></div>
     <ol class="plano" id="t-plano"></ol>
+    <p class="t-dica">Toque numa série para mudar peso ou reps.</p>
     <div class="t-clock" id="t-relogio" role="timer">1:15</div>
     <p class="t-note" id="t-nota"></p>
     <div class="row" id="t-parado"><button type="button" class="btn primary big" id="t-feita">Série feita · descansar</button></div>
@@ -111,11 +128,26 @@
   </div>
 
   <p class="salvo" id="e-salvo" role="status"></p>
+  <button type="button" class="link fin" id="e-finalizar" data-finalizar hidden>Finalizar treino</button>
 
-  <h3 class="sec">Evolução</h3>
+  <h3 class="sec">Evolução da carga</h3>
   <div id="e-grafico" class="chart"></div>
   <h3 class="sec">Histórico</h3>
   <ul id="e-historico" class="hist"></ul>
+</section>
+
+<!-- Fim do treino -->
+<section id="v-fim" class="view" hidden>
+  <div class="fim-top">
+    <p class="eyebrow" id="f-data"></p>
+    <h1>Treino concluído!</h1>
+    <p class="hint" id="f-msg"></p>
+  </div>
+  <ul class="tiles" id="f-tiles"></ul>
+  <h3 class="sec">O que você fez</h3>
+  <ul class="hist" id="f-lista"></ul>
+  <p class="hint">Calorias: estimativa por MET 3,5 (musculação) × seu peso × tempo de treino; inclui o gasto em repouso.</p>
+  <button type="button" class="btn primary big wide" data-ir="inicio">Voltar ao início</button>
 </section>
 
 <!-- Peso corporal -->
