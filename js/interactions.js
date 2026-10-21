@@ -698,7 +698,9 @@ el('out').addEventListener('click', e => {
     // no +/− terminar de registrar (blur disparava confirma() com o sinal antigo primeiro),
     // então o toggle nunca pegava. O botão de sinal ao lado (data-tog-sinal) resolve isso
     // de verdade, com PATCH próprio — este campo só edita a magnitude, mantendo o sinal atual.
-    span.innerHTML = `<input type=text inputmode=numeric class=inpValor value="${bruto ? formataMascaraDinheiro(String(Math.round(bruto * 100))) : ''}" placeholder="0,00">`;
+    // "R$" fixo na frente, dentro da mesma caixa (.dinheiro), como no cadastro e nas metas.
+    span.innerHTML = `<span class="inpValor dinheiro"><span class=dinheiroPrefixo aria-hidden=true>R$</span>` +
+        `<input type=text inputmode=numeric aria-label="Valor" value="${bruto ? formataMascaraDinheiro(String(Math.round(bruto * 100))) : ''}" placeholder="0,00"></span>`;
     const input = span.querySelector('input');
 
     input.addEventListener('input', () => {
@@ -930,6 +932,15 @@ async function gravarMudancaDaMeta(acao, id, campos) {
 }
 
 const proximoMesISO = () => `${somaMeses(hojeISO(), 1).slice(0, 7)}-01`;
+// Valor e entrada: a máscara de caixa eletrônico do cadastro enquanto digita; apagar tudo
+// deixa vazio (entrada vazia = sem entrada), nunca "0,00".
+el('corpoMetas').addEventListener('input', e => {
+    const input = e.target.closest('[data-dinheiro]');
+    if (!input) return;
+    const cursorNoFim = input.selectionEnd == input.value.length;
+    input.value = input.value.replace(/\D/g, '') ? formataMascaraDinheiro(input.value) : '';
+    if (cursorNoFim) input.setSelectionRange(input.value.length, input.value.length);
+});
 el('corpoMetas').addEventListener('change', e => {
     const input = e.target.closest('[data-campo]');
     const linha = e.target.closest('[data-meta]');

@@ -22,6 +22,9 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Categoria passa pela mesma normalização do cadastro (lista separada por vírgula, sem duplicar nem variar só por espaço/caixa/acento) antes do `UPDATE`.
   Clicar em qualquer outro ponto da linha continua apenas selecionando-a pra somar valores.
   Mesma disponibilidade do Valor/Data/Pago: só lançamento real, nunca pra conta restrita.
+- Todo campo de dinheiro tem **máscara de R$**: o "R$" fixo à esquerda, dentro da própria caixa, e o número à direita no formato de caixa eletrônico (só dígitos; os dois últimos são os centavos: digitar `150000` mostra `R$ 1.500,00`).
+  Vale no Valor do cadastro, na edição do Valor na tabela, no Valor total e na Entrada das metas e nos campos do título (tetos de Besteira/Isabella, Aprovado e Garantido, que já tinham o "R$" ao lado).
+  Onde vazio tem sentido próprio (Entrada da meta, teto padrão, Aprovado herdado), apagar tudo deixa o campo vazio, nunca `R$ 0,00`. O filtro de Valor do cabeçalho é busca, não cadastro: usa a mesma máscara, sem o "R$".
 - Uma linha real possui `id` positivo e pode ser persistida.
   Linhas de fatura, saldo anterior, aporte/resgate sugerido e simulações são derivadas; nunca podem ser editadas ou excluídas diretamente no banco.
 - "é investimento" e o ciclo de um lançamento seguem uma regra só (`ehCategoriaInvestimento` e `periodoDoLancamento` em `js/shared.js`), usada na carga, no cadastro, na edição, na materialização e na simulação: investimento é ter `Investimento` como uma das categorias (inclusive `Investimento, Reserva`); o ciclo é o da fatura no Crédito (mesmo sem data), o da data no Débito (inclusive antecipação) e o Backlog sem data nem fatura. Assim a linha aparece no mesmo ciclo e com a mesma classificação antes e depois de recarregar a página.

@@ -649,6 +649,58 @@
       outline: none;
   }
 
+  /* "R$" fixo à esquerda dentro da caixa do Valor; o número segue à direita. */
+  .moneyWrap .dinheiroPrefixo {
+      align-self: center;
+      padding-left: .75rem;
+  }
+
+  /* Com o "R$" dentro, a caixa é o .moneyWrap: o campo perde a borda e o fundo próprios
+     (que viriam de .fm input) e o foco passa a pintar a caixa inteira. */
+  .moneyWrap input[type=text],
+  .moneyWrap input[type=text]:focus {
+      padding-left: .4rem;
+      background: transparent;
+      border: 0;
+  }
+
+  .moneyWrap:focus-within {
+      border-color: #68727A;
+      background: #24292E;
+  }
+
+  /* Campo de dinheiro (cadastro, edição na tabela, metas): "R$" fixo à esquerda, dentro da
+     mesma caixa do campo, e o número à direita com a máscara de caixa eletrônico
+     (formataMascaraDinheiro). A caixa é o span; o input fica transparente dentro dele. */
+  .dinheiro {
+      display: inline-flex;
+      align-items: center;
+      gap: .3rem;
+      box-sizing: border-box;
+  }
+
+  .dinheiroPrefixo {
+      flex: none;
+      color: var(--mu);
+      font-size: .85em;
+  }
+
+  .dinheiro > input {
+      flex: 1;
+      width: auto;
+      min-width: 0;
+      padding: 0;
+      font: inherit;
+      color: inherit;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      background: transparent;
+      border: 0;
+  }
+
+  .dinheiro > input:focus { outline: none; }
+  .dinheiro:focus-within { outline: 2px solid var(--fg); outline-offset: -1px; }
+
   /* =========================================================
        MENSAGEM DO MODAL
        ========================================================= */
@@ -929,7 +981,7 @@
       min-width: 0;
   }
 
-  .metaCampo > span {
+  .metaCampo > .metaRotulo {
       color: var(--mu);
       font-size: .72rem;
   }
@@ -960,6 +1012,26 @@
   }
 
   .metaLinha .metaNome { font-weight: 600; }
+
+  /* Valor e entrada: a caixa (com o "R$") tem o desenho dos outros campos da meta. */
+  .metaLinha .dinheiro {
+      width: 100%;
+      height: 2.1rem;
+      padding: 0 .45rem;
+      font-size: .88rem;
+      color: var(--fg);
+      background: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 6px;
+  }
+
+  .metaLinha .dinheiro > input {
+      width: auto;
+      height: auto;
+      padding: 0;
+      background: transparent;
+      border: 0;
+  }
 
   /* O plano em pílulas, embaixo dos campos. Rótulo em itálico apagado, valor em negrito,
      mês apagado; a cor diz a situação. */

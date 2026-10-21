@@ -947,8 +947,12 @@ function rotuloDoMesDaMeta(m) {
 function htmlModalMetas(planos) {
     const emReais = v => (v == null ? '' : v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
     const entrada = (nome, valor, extra = '') => `<input data-campo=${nome} value="${escapeHtml(String(valor ?? ''))}" ${extra}>`;
+    // Dinheiro: "R$" fixo na frente, na mesma caixa, e a máscara de caixa eletrônico do
+    // cadastro (ver o input em interactions.js); vazio continua vazio.
+    const dinheiro = (nome, valor) => `<span class=dinheiro><span class=dinheiroPrefixo aria-hidden=true>R$</span>` +
+        `${entrada(nome, emReais(valor), 'inputmode=numeric data-dinheiro placeholder="0,00"')}</span>`;
     // Todo campo com o rótulo em cima, na sua coluna da grade (mc*): alinha entre as metas.
-    const campo = (classe, rotulo, controle, dica = '') => `<label class="metaCampo ${classe}"${dica ? ` title="${dica}"` : ''}><span>${rotulo}</span>${controle}</label>`;
+    const campo = (classe, rotulo, controle, dica = '') => `<label class="metaCampo ${classe}"${dica ? ` title="${dica}"` : ''}><span class=metaRotulo>${rotulo}</span>${controle}</label>`;
     const botao = (acao, icone, rotulo) => `<button type=button class=btIcone data-acao=${acao} title="${rotulo}" aria-label="${rotulo}">${icone}</button>`;
     const linhaMeta = p => {
         const m = p.meta;
@@ -961,12 +965,12 @@ function htmlModalMetas(planos) {
         return `<div class=metaLinha data-meta=${m.id}>` +
             `<div class=metaGrade>` +
             campo('mcNome', 'Nome', entrada('nome', m.nome, 'class=metaNome')) +
-            campo('mcValor', 'Valor total', entrada('valor', emReais(m.valor), 'inputmode=decimal placeholder="0,00"')) +
+            campo('mcValor', 'Valor total', dinheiro('valor', m.valor)) +
             (parcelado ? campo('mcVezes', 'Vezes', entrada('parcelas', m.parcelas, `inputmode=numeric placeholder="${PARCELAS_PADRAO_METAS}"`)) : '') +
             campo('mcMes', rotuloDoMesDaMeta(m), entrada('mes', m.mes ? m.mes.slice(0, 7) : '', 'type=month')) +
             campo('mcForma', 'Forma', `<select data-campo=forma>${formas}</select>`) +
             `<span class=metaBotoes>${botao('comprar', ICONE_COMPRAR, 'Comprar')}${botao('excluir', ICONE_EXCLUIR, 'Excluir')}</span>` +
-            (parcelado ? campo('mcEntrada', 'Entrada', entrada('entrada', emReais(m.entrada), 'inputmode=decimal placeholder="0,00"'), 'Parte do total; o resto vai parcelado') : '') +
+            (parcelado ? campo('mcEntrada', 'Entrada', dinheiro('entrada', m.entrada), 'Parte do total; o resto vai parcelado') : '') +
             (parcelado && m.entrada > 0 ? campo('mcMesEntrada', 'Mês da entrada', entrada('mes_entrada', mesEntrada, 'type=month')) : '') +
             `</div>` +
             htmlDoPlanoDaMeta(p) +
