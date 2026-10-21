@@ -932,6 +932,69 @@ async function corrigeRecorrenciasDuplicadasNoIntervalo(idxInicio, idxFim) {
 // `silencioso` (consolidação automática de 15 em 15 min, bootstrap.js): carga sem aviso, sem
 // toast quando não há nada a fazer, sem o modal de detalhe e falha só no console — mas, se
 // gravou algo, o toast avisa, porque o banco mudou sem um clique.
+// ---- pra sempre: as ocorrências que faltam até DATA_LIMITE_RECORRENCIA ----
+// A mesma regra da migration 33, pro Consolidar tudo: grupo = mesmo nome + categoria (sem
+// diferenciar caixa nem espaço nas pontas) com pra_sempre; modelo = a ocorrência mais recente
+// (maior data e, no empate, maior id), que é a intenção mais nova (valor, dia, cartão, marcas);
+// Frequência = a da ocorrência mais recente do grupo que tem uma (sem Frequência conhecida, o
+// grupo fica como está). As novas saem do modelo como no cadastro (dataDaOcorrencia: meses
+// sempre contados da data do modelo; Semanal/Quinzenal em 7/14 dias), só depois da última data
+// e até o limite — então repetir não cria nada. Copiam nome, categoria, valor, Crédito,
+// Frequência, lote, canal, prio, Reserva, Comprometido e pra_sempre; nascem em aberto e sem
+// obs; no Crédito, a fatura anda com a data (faturaDaOcorrencia). Só linhas reais (id > 0).
+function ocorrenciasPraSempreQueFaltam(linhas, limite = DATA_LIMITE_RECORRENCIA) {
+    const grupos = new Map();
+    linhas.filter(r => r.pra_sempre && r.data && r.id > 0 && !r._sim).forEach(r => {
+        const chave = `${String(r.nome ?? '').trim().toLowerCase()}|${String(r.categ ?? '').trim().toLowerCase()}`;
+        if (!grupos.has(chave)) grupos.set(chave, []);
+        grupos.get(chave).push(r);
+    });
+    return [...grupos.values()].map(grupo => {
+        const ordem = [...grupo].sort((a, b) => dataISO(b.data).localeCompare(dataISO(a.data)) || b.id - a.id);
+        const modelo = ordem[0];
+        const freq = ordem.find(r => r.freq)?.freq;
+        if (!RECORRENCIAS[freq]) return null;
+        const inicio = dataISO(modelo.data);
+        const reserva = !!modelo.reserva, comprometido = !!modelo.comprometido;
+        const novas = [];
+        for (let p = 1; dataDaOcorrencia(inicio, p, freq) <= limite; p++) {
+            const data = dataDaOcorrencia(inicio, p, freq);
+            novas.push({
+                data, valor: modelo.valor ?? modelo.v, nome: modelo.nome, categ: modelo.categ, freq, cred: !!modelo.cred, pago: false,
+                fatura: modelo.cred && modelo.fatura ? faturaDaOcorrencia(dataISO(modelo.fatura), inicio, data) : null,
+                recorrencia_id: modelo.recorrencia_id ?? null, obs: null, canal: modelo.canal ?? null, prio: modelo.prio ?? null,
+                reserva, comprometido, pra_sempre: true,
+            });
+        }
+        return novas.length ? { modelo, freq, novas } : null;
+    }).filter(Boolean);
+}
+
+// Pra sempre até o limite (só no clique do Consolidar tudo, nunca na automática de 15 min, que
+// fica só com Aporte/Resgate; nunca na simulação): cria de uma vez as ocorrências que faltam
+// em cada grupo (ocorrenciasPraSempreQueFaltam). Modelo sem lote ganha o próximo número da
+// sequência — ele e as novas entram juntos no lote, como na migration 33.
+async function estenderPraSempre() {
+    if (Estado.simulando || !Estado.temPraSempre) return { criadas: 0, log: [] };
+    const grupos = ocorrenciasPraSempreQueFaltam(Estado.lancamentos);
+    if (!grupos.length) return { criadas: 0, log: [] };
+    for (const g of grupos.filter(x => x.modelo.recorrencia_id == null)) {
+        const lote = await proximaRecorrencia();
+        await atualizarLancamentos([g.modelo.id], { recorrencia_id: lote });
+        g.modelo.recorrencia_id = lote;
+        g.novas.forEach(n => { n.recorrencia_id = lote; });
+    }
+    const criadas = await inserirLancamentos(grupos.flatMap(g => g.novas));
+    // Mesmas regras da carga: o que aparece agora é o que volta ao recarregar.
+    criadas.forEach(linha => Estado.lancamentos.push({
+        ...linha, v: +linha.valor || 0, inv: ehCategoriaInvestimento(linha.categ), periodoIdx: periodoDoLancamento(linha),
+    }));
+    limparCachesFinanceiros();
+    const mes = iso => nomePeriodoAbrev({ ini: iso });
+    const log = grupos.map(g => `Pra sempre: ${g.modelo.nome} — ${g.novas.length} ocorrência(s), de ${mes(g.novas[0].data)} a ${mes(g.novas[g.novas.length - 1].data)}.`);
+    return { criadas: criadas.length, log };
+}
+
 async function consolidarTudo(botao, depoisDaCarga = () => {}, { silencioso = false } = {}) {
     if (botao.disabled) return;
     // Um Materializar/Consolidar de um clique ainda gravando: a varredura leria o ciclo antes
@@ -962,6 +1025,9 @@ async function consolidarTudo(botao, depoisDaCarga = () => {}, { silencioso = fa
         depoisDaCarga();
         // Hoje fora de qualquer ciclo: não há de onde partir a varredura.
         if (Estado.idxHoje < 0) return;
+        // Pra sempre primeiro: as ocorrências novas entram nas datas e no Aporte/Resgate abaixo.
+        etapa('Estendendo pra sempre…');
+        const { criadas: praSempre, log: logPraSempre } = silencioso ? { criadas: 0, log: [] } : await estenderPraSempre();
         etapa('Consolidando…');
         const ultimoCicloAntesDaCorrecao = Estado.lancamentos.reduce(
             (max, r) => r.periodoIdx != null && r.periodoIdx > max ? r.periodoIdx : max,
@@ -999,15 +1065,16 @@ async function consolidarTudo(botao, depoisDaCarga = () => {}, { silencioso = fa
         const partes = [];
         if (materializados || consolidados) partes.push(`${materializados} materializado(s), ${consolidados} consolidado(s)`);
         if (corrigidos) partes.push(`${corrigidos} data(s) de recorrência duplicada corrigida(s)`);
+        if (praSempre) partes.push(`${praSempre} ocorrência(s) pra sempre criada(s) até ${DATA_LIMITE_RECORRENCIA.slice(0, 4)}`);
         const resumo = partes.length
             ? `${partes.join('; ')}.`
-            : 'Nenhum ciclo com Aporte sugerido, Resgate necessário ou recorrência duplicada pendente.';
+            : 'Nenhum ciclo com Aporte sugerido, Resgate necessário, recorrência duplicada ou pra sempre pendente.';
         if (silencioso) {
             if (partes.length) mostrarToast('Consolidado automaticamente', resumo);
         } else {
             mostrarToast('Consolidar tudo', resumo);
             // Sem nada gravado, o toast já diz tudo: o modal só abre quando há o que detalhar.
-            if (partes.length) mostrarResultadoConsolidarTudo(resumo, [...logDatas, ...logAjustes]);
+            if (partes.length) mostrarResultadoConsolidarTudo(resumo, [...logPraSempre, ...logDatas, ...logAjustes]);
         }
     } catch (err) {
         if (silencioso) console.warn('[consolidação automática] falhou:', err.message);

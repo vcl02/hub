@@ -95,7 +95,7 @@ test('conclusão sempre aparece em toast, juntando materialização/consolidaç�
     const inicio = formulario.indexOf("async function consolidarTudo(botao, depoisDaCarga = () => {}, { silencioso = false } = {}) {");
     const trecho = formulario.slice(inicio, formulario.indexOf('\n}\n', inicio) + 3);
     assert.match(trecho, /const partes = \[\];\s*\n\s*if \(materializados \|\| consolidados\) partes\.push\(`\$\{materializados\} materializado\(s\), \$\{consolidados\} consolidado\(s\)`\);\s*\n\s*if \(corrigidos\) partes\.push\(`\$\{corrigidos\} data\(s\) de recorrência duplicada corrigida\(s\)`\);/);
-    assert.match(trecho, /const resumo = partes\.length\s*\n\s*\? `\$\{partes\.join\('; '\)\}\.`\s*\n\s*: 'Nenhum ciclo com Aporte sugerido, Resgate necessário ou recorrência duplicada pendente\.';/);
+    assert.match(trecho, /const resumo = partes\.length\s*\n\s*\? `\$\{partes\.join\('; '\)\}\.`\s*\n\s*: 'Nenhum ciclo com Aporte sugerido, Resgate necessário, recorrência duplicada ou pra sempre pendente\.';/);
     assert.match(trecho, /mostrarToast\('Consolidar tudo', resumo\);/);
     assert.match(trecho, /catch \(err\) \{\s*if \(silencioso\) console\.warn\('\[consolidação automática\] falhou:', err\.message\);\s*else mostrarToast\('Falhou ao consolidar tudo', err\.message\);\s*desenhar\(\);/);
 });
@@ -108,7 +108,7 @@ test('também abre um modal com o detalhe ciclo a ciclo — resposta direta ao c
     assert.match(trecho, /logAjustes\.push\(`\$\{nomePeriodo\(Estado\.ciclos\[idx\]\)\}: \$\{resultado == 'consolidado' \? 'Consolidado' : 'Materializado'\} \$\{ehAporte \? 'Aporte' : 'Resgate'\} de \$\{brl\(Math\.abs\(ajuste\.v\)\)\}\$\{limite\}\.`\);/);
     assert.match(trecho, /const limite = ajuste\.resgatouTudo \? \(ajuste\.v < 0 \? ' \(resgate diminuído: o guardado não pode ficar negativo\)' : ' \(todo o guardado\)'\) : '';/);
     // Só abre quando algo foi gravado; sem nada a fazer, fica só o toast.
-    assert.match(trecho, /if \(partes\.length\) mostrarResultadoConsolidarTudo\(resumo, \[\.\.\.logDatas, \.\.\.logAjustes\]\);/);
+    assert.match(trecho, /if \(partes\.length\) mostrarResultadoConsolidarTudo\(resumo, \[\.\.\.logPraSempre, \.\.\.logDatas, \.\.\.logAjustes\]\);/);
     assert.equal((trecho.match(/mostrarResultadoConsolidarTudo\(/g) || []).length, 1);
 
     assert.match(pagina, /<dialog id=modalConsolidarTudo>/);
@@ -140,7 +140,7 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /Ciclos anteriores ao atual nunca entram nessa varredura\./);
     assert.match(regras, /a conclusão sempre aparece em toast contando quantos foram materializados, quantos foram consolidados e quantas datas de recorrência duplicada foram corrigidas/);
     assert.match(regras, /abre sozinho um modal \(`#modalConsolidarTudo`\) com o mesmo resumo e uma linha por ação de verdade executada/);
-    assert.match(regras, /Quando a varredura não encontra nada a fazer, aparece só o toast \("Nenhum ciclo com Aporte sugerido, Resgate necessário ou recorrência duplicada pendente\."\), sem modal/);
+    assert.match(regras, /Quando a varredura não encontra nada a fazer, aparece só o toast \("Nenhum ciclo com Aporte sugerido, Resgate necessário, recorrência duplicada ou pra sempre pendente\."\), sem modal/);
     assert.match(regras, /Diferente do modal de diagnóstico de carga \(que só abre por escolha do usuário, pra não interromper a consulta\), este abre automaticamente porque é resposta direta a um clique explícito do próprio usuário/);
     assert.match(regras, /sem botão de fechar, mesmo padrão de clicar fora ou Esc/);
     assert.match(regras, /Não altera nem recalcula nada: só lê o que a varredura já gravou\./);
