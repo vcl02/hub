@@ -47,14 +47,20 @@
   </header>
   <ul id="i-semana" class="week" aria-label="Dias de treino desta semana"></ul>
   <p class="week-msg"><span id="i-msg"></span><b id="i-cont-semana"></b></p>
+  <button type="button" class="game" data-ir="conquistas">
+    <span class="g-top"><b id="g-nivel">Nível 1</b><span id="g-pts">0 pts</span></span>
+    <span class="track"><span id="g-barra"></span></span>
+    <span class="g-info" id="g-info"></span>
+  </button>
   <p class="treino-tempo" id="i-treino"></p>
+  <button type="button" class="corpo-card" id="i-corpo" data-ir="corpo"></button>
   <div class="progress">
     <div class="progress-row"><span>Registrados hoje</span><b id="i-cont">0/6</b></div>
     <div class="track"><span id="i-barra"></span></div>
   </div>
   <ul id="i-lista" class="slots"></ul>
   <div id="i-hist-box" class="view" hidden><h3 class="sec">Últimos treinos</h3><ul id="i-treinos" class="hist"></ul></div>
-  <p class="rule">Dias fixos: quarta e quinta; segunda é o extra sugerido. Pirâmide: você põe o peso da 1ª série e o app calcula as outras (+10% de peso, −2 reps). O 1º exercício do dia começa com aquecimento. Fez todas as reps da última série? Suba o peso inicial.</p>
+  <p class="rule">Dias fixos: quarta e quinta; segunda é o extra sugerido. Pirâmide: você põe o peso da 1ª série e o app calcula as outras (+10% de peso, −2 reps). O 1º exercício de pernas e o 1º de parte de cima começam com aquecimento. Bateu todas as reps da pirâmide? Suba o peso inicial.</p>
 </section>
 
 <!-- Exercício: variação, descanso, carga, histórico (arraste para trocar) -->
@@ -81,7 +87,7 @@
   <p class="last" id="e-ultima"></p>
   <div class="log">
   <div class="field">
-    <label for="e-carga">Peso da 1ª série (o resto o app calcula)</label>
+    <label for="e-carga">Peso da 1ª série (o resto o app calcula) · <span id="e-passo"></span></label>
     <div class="stepper">
       <button type="button" data-passo="carga" data-dir="-1" aria-label="Diminuir carga">−</button>
       <div class="mid"><input id="e-carga" inputmode="decimal" autocomplete="off" placeholder="0"><span class="unit" id="e-unidade">kg</span></div>
@@ -104,17 +110,7 @@
     <button type="button" class="link" id="t-zerar" hidden>Zerar séries</button>
   </div>
 
-  <form id="e-form" class="log">
-    <div class="field">
-      <label for="e-reps">Reps feitas na última série</label>
-      <div class="stepper">
-        <button type="button" data-passo="reps" data-dir="-1" aria-label="Diminuir reps">−</button>
-        <div class="mid"><input id="e-reps" inputmode="numeric" autocomplete="off" placeholder="10"><span class="unit">reps</span></div>
-        <button type="button" data-passo="reps" data-dir="1" aria-label="Aumentar reps">+</button>
-      </div>
-    </div>
-    <button class="btn primary big" type="submit">Salvar carga de hoje</button>
-  </form>
+  <form id="e-form"><button class="btn primary big wide" type="submit">Salvar exercício de hoje</button></form>
 
   <h3 class="sec">Evolução</h3>
   <div id="e-grafico" class="chart"></div>
@@ -122,12 +118,51 @@
   <ul id="e-historico" class="hist"></ul>
 </section>
 
+<!-- Peso corporal -->
+<section id="v-corpo" class="view" hidden>
+  <div class="bar"><button class="back" type="button" data-voltar>‹ Treino</button></div>
+  <h2>Peso corporal</h2>
+  <p class="muted small">Pese-se 1 vez por semana, de manhã, em jejum e depois de ir ao banheiro. A tendência ao longo das semanas importa mais que um dia isolado.</p>
+  <form id="c-form" class="log">
+    <div class="field">
+      <label for="c-peso">Peso</label>
+      <div class="stepper">
+        <button type="button" data-passo="peso" data-dir="-1" aria-label="Diminuir peso">−</button>
+        <div class="mid"><input id="c-peso" inputmode="decimal" autocomplete="off" placeholder="0"><span class="unit">kg</span></div>
+        <button type="button" data-passo="peso" data-dir="1" aria-label="Aumentar peso">+</button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="c-cintura">Cintura (opcional, na altura do umbigo)</label>
+      <div class="stepper">
+        <button type="button" data-passo="cintura" data-dir="-1" aria-label="Diminuir cintura">−</button>
+        <div class="mid"><input id="c-cintura" inputmode="decimal" autocomplete="off" placeholder="—"><span class="unit">cm</span></div>
+        <button type="button" data-passo="cintura" data-dir="1" aria-label="Aumentar cintura">+</button>
+      </div>
+    </div>
+    <button class="btn primary big" type="submit">Salvar pesagem de hoje</button>
+  </form>
+  <h3 class="sec">Evolução</h3>
+  <div id="c-grafico" class="chart"></div>
+  <h3 class="sec">Histórico</h3>
+  <ul id="c-historico" class="hist"></ul>
+</section>
+
+<!-- Pontos e conquistas -->
+<section id="v-conquistas" class="view" hidden>
+  <div class="bar"><button class="back" type="button" data-voltar>‹ Treino</button></div>
+  <h2>Conquistas</h2>
+  <div class="box" id="q-resumo"></div>
+  <ul class="conq" id="q-lista"></ul>
+  <div class="box"><p><b>Como ganhar pontos</b></p><ul class="q-pontos" id="q-pontos"></ul><p class="small muted">Nível sobe a cada 300 pontos. Sequência = semanas seguidas com 2 ou mais treinos; a semana atual só entra quando bate a meta.</p></div>
+</section>
+
 <!-- Ajustes -->
 <section id="v-ajustes" class="view" hidden>
   <div class="bar"><button class="back" type="button" data-voltar>‹ Treino</button></div>
   <h2>Ajustes</h2>
   <div class="menu">
-    <button type="button" data-ir="editar">Editar exercícios<span>Nomes, substitutos, séries, reps e descanso</span></button>
+    <button type="button" data-ir="editar">Editar exercícios<span>Ordem, nomes, substitutos, passo de peso, séries, reps e descanso</span></button>
     <button type="button" data-ir="backup">Backup<span>Baixar ou restaurar seus registros</span></button>
     <button type="button" data-ir="senha">Trocar senha mestra</button>
     <button type="button" id="a-instalar" hidden>Instalar na tela inicial<span>Funciona offline depois de instalado</span></button>
@@ -139,7 +174,7 @@
 <section id="v-editar" class="view" hidden>
   <div class="bar"><button class="back" type="button" data-voltar>‹ Ajustes</button></div>
   <h2>Exercícios</h2>
-  <p class="muted small">Cada exercício tem principal, substituto em máquina e último recurso com halter. Deixe em branco o que não usar. Use “nível” para máquinas marcadas por número de placa.</p>
+  <p class="muted small">Cada exercício tem principal, substituto em máquina e último recurso com halter; deixe em branco o que não usar. <b>Passo</b> é quanto o peso sobe de uma placa ou halter para o próximo (ex.: 5 kg na máquina, 2 kg no halter). Use “nível” para máquinas marcadas por número de placa. <b>Região</b> define o aquecimento: o 1º exercício de cada região ganha uma série leve. Use ↑ ↓ para mudar a ordem.</p>
   <form id="ed-form" class="view">
     <div id="ed-lista" class="view"></div>
     <button type="button" class="btn" id="ed-novo">+ Adicionar exercício</button>
@@ -175,7 +210,7 @@
 </section>
 
 </div>
-<div id="toast" role="status" hidden></div>
+<div id="toast" role="status" hidden><span id="toast-msg"></span><button type="button" id="toast-desfazer" hidden>Desfazer</button></div>
 <button type="button" id="mini" hidden><span id="mini-t">0:00</span><span id="mini-n"></span><span>Abrir ›</span></button>
 <script src="app.js"></script>
 </body>
