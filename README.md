@@ -17,4 +17,6 @@ PWA para registrar evolução de carga na academia, com substituto por exercíci
   registros:  [{ variacao, data, carga, reps }] }
 ```
 
+**Sessão do dia** (séries feitas, cronômetro, exercício aberto, valores digitados): item `carga.sessao` no `localStorage`, sem criptografia; zera quando muda o dia.
+
 Dias de treino: `DIAS_FIXOS` e `DIAS_EXTRA` no topo de `app.js`.

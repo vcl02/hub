@@ -112,6 +112,7 @@ let pilha = [];
 function mostrar(nome) {
   document.querySelectorAll('section.view').forEach(v => { v.hidden = v.id !== 'v-' + nome; });
   telas[nome]?.();
+  salvarSessao();
   window.scrollTo(0, 0);
 }
 function ir(nome) {
@@ -125,7 +126,8 @@ addEventListener('popstate', () => { if (db && pilha.length > 1) { pilha.pop(); 
 // ===== Bloqueio =====
 let modo = 'criar';
 function telaBloqueio(m, erro = '') {
-  modo = m; db = null; chave = null; pararDescanso();
+  modo = m; db = null; chave = null;
+  clearInterval(T.intervalo); T.intervalo = null; T.fim = 0; manterTela(false); $('mini').hidden = true;   // sessão salva continua
   const criar = m === 'criar';
   $('l-titulo').textContent = criar ? 'Criar senha mestra' : 'Desbloquear';
   $('l-sub').textContent = criar ? 'Seus registros ficam criptografados neste aparelho. Não existe recuperação de senha: anote em lugar seguro.' : 'Digite sua senha mestra.';
@@ -139,7 +141,7 @@ function telaBloqueio(m, erro = '') {
 async function entrou() {
   db = preparar(db);
   try { await navigator.storage?.persist?.(); } catch (e) {}
-  ir('inicio');
+  restaurarSessao();
 }
 $('l-form').addEventListener('submit', async ev => {
   ev.preventDefault();
@@ -222,13 +224,15 @@ telas.exercicio = () => {
   $('e-variacoes').hidden = e.variacoes.filter(x => x.nome).length < 2;
   $('e-nome').textContent = v.nome;
   $('e-presc').innerHTML = `<b>${e.series} séries × ${esc(e.reps)} reps</b> · descanso ${e.descanso} s`;
+  $('e-youtube').href = 'https://www.youtube.com/results?search_query=' + encodeURIComponent((v.nome + ' execução correta').replace(/[()]/g, ' ').replace(/\s+/g, ' ').trim());
   pintarDescanso(e);
   $('e-ultima').innerHTML = u
     ? `<span>Última: <b>${fmt(u.carga)} ${esc(v.unidade)} × ${u.reps}</b> · ${quando(u.data)}</span>${u.reps >= repsMax(e) ? `<span class="chip warn">Fez ${repsMax(e)}: suba a carga</span>` : ''}`
     : '<span class="muted">Primeiro registro desta variação. Comece leve.</span>';
   $('e-unidade').textContent = v.unidade;
-  $('e-carga').value = u ? String(u.carga).replace('.', ',') : '';
-  $('e-reps').value = u ? u.reps : repsMin(e);
+  const rs = rascunho[v.id];   // valor digitado e ainda não salvo tem prioridade
+  $('e-carga').value = rs ? rs.carga : u ? String(u.carga).replace('.', ',') : '';
+  $('e-reps').value = rs ? rs.reps : u ? u.reps : repsMin(e);
   const lista = db.registros.filter(r => r.variacao === v.id).sort((a, b) => b.data.localeCompare(a.data));
   $('e-historico').innerHTML = lista.length
     ? lista.map(r => `<li><span class="h-d">${dataCurta(r.data)}</span><span class="h-v">${fmt(r.carga)} ${esc(v.unidade)} × ${r.reps}</span><button type="button" class="del" data-apagar="${r.data}">Apagar</button></li>`).join('')
@@ -263,6 +267,7 @@ $('e-form').addEventListener('submit', ev => {
   if (!(reps > 0)) { toast('Informe as reps'); $('e-reps').focus(); return; }
   const h = hoje(), r = db.registros.find(x => x.variacao === v.id && x.data === h);
   if (r) { r.carga = carga; r.reps = reps; } else db.registros.push({ variacao: v.id, data: h, carga, reps });
+  delete rascunho[v.id]; salvarSessao();
   gravar(); toast(r ? 'Registro de hoje atualizado' : `Salvo: ${fmt(carga)} ${v.unidade} × ${reps}`);
   telas.exercicio();
 });
@@ -272,11 +277,19 @@ function passo(campo, dir) {
   let n = num(inp.value); if (!isFinite(n)) n = 0;
   n = Math.max(0, Math.round((n + dir * d) * 100) / 100);
   inp.value = campo === 'carga' ? String(n).replace('.', ',') : n;
+  guardarRascunho();
 }
+function guardarRascunho() {
+  const e = exAtual(); if (!e) return;
+  rascunho[e.variacoes[e.ativo].id] = { carga: $('e-carga').value, reps: $('e-reps').value };
+  salvarSessao();
+}
+$('e-carga').addEventListener('input', guardarRascunho);
+$('e-reps').addEventListener('input', guardarRascunho);
 function trocarExercicio(dir) {
   const n = db.exercicios.length, i = db.exercicios.findIndex(e => e.id === atual);
   atual = db.exercicios[(i + dir + n) % n].id;
-  telas.exercicio(); tick(); window.scrollTo(0, 0);
+  telas.exercicio(); salvarSessao(); tick(); window.scrollTo(0, 0);
   store.set('carga.arrastou', '1'); $('e-dica').hidden = true;
 }
 
@@ -312,37 +325,47 @@ function trocarExercicio(dir) {
   if (store.get('carga.arrastou')) $('e-dica').hidden = true;
 })();
 
-// ===== Cronômetro de descanso =====
+// ===== Sessão do dia (fora do banco, sobrevive a fechar o app) =====
+// { dia, series: {exercicioId: n}, rascunho: {variacaoId: {carga, reps}}, exercicio, fim, aberto }
+const K_SESSAO = 'carga.sessao';
+let rascunho = {};
+function salvarSessao() {
+  if (!db) return;
+  store.set(K_SESSAO, JSON.stringify({ dia: T.dia, series: T.series, rascunho, exercicio: T.exercicio, fim: T.fim, aberto: $('v-exercicio').hidden ? null : atual }));
+}
+function restaurarSessao() {
+  let s = null; try { s = JSON.parse(store.get(K_SESSAO)); } catch (e) {}
+  const existe = id => db.exercicios.some(e => e.id === id);
+  ir('inicio');
+  if (!s || s.dia !== hoje()) return;
+  T.dia = s.dia; T.series = s.series || {}; rascunho = s.rascunho || {};
+  if (s.fim > Date.now() && existe(s.exercicio)) { T.exercicio = s.exercicio; T.fim = s.fim; manterTela(true); T.intervalo = setInterval(tick, 250); }
+  if (existe(s.aberto)) { atual = s.aberto; ir('exercicio'); }
+  salvarSessao(); tick();
+}
+
+// ===== Cronômetro de descanso (sem som; vibra no fim) =====
 const T = { exercicio: null, fim: 0, intervalo: null, series: {}, dia: hoje() };
-let audio = null, telaLigada = null;
+let telaLigada = null;
 const relogio = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + pad(s % 60); };
-function seriesFeitas(id) { if (T.dia !== hoje()) { T.series = {}; T.dia = hoje(); } return T.series[id] || 0; }
+function seriesFeitas(id) { if (T.dia !== hoje()) { T.series = {}; rascunho = {}; T.dia = hoje(); } return T.series[id] || 0; }
 async function manterTela(sim) {
   try {
     if (sim && !telaLigada && navigator.wakeLock) { telaLigada = await navigator.wakeLock.request('screen'); telaLigada.addEventListener('release', () => { telaLigada = null; }); }
     else if (!sim && telaLigada) { await telaLigada.release(); telaLigada = null; }
   } catch (e) {}
 }
-function apitar() {
-  try {
-    const t0 = audio.currentTime;
-    [0, .3, .6].forEach((o, i) => {
-      const os = audio.createOscillator(), g = audio.createGain();
-      os.frequency.value = i === 2 ? 1175 : 880;
-      g.gain.setValueAtTime(.0001, t0 + o); g.gain.exponentialRampToValueAtTime(.5, t0 + o + .02); g.gain.exponentialRampToValueAtTime(.0001, t0 + o + .22);
-      os.connect(g).connect(audio.destination); os.start(t0 + o); os.stop(t0 + o + .25);
-    });
-  } catch (e) {}
-  try { navigator.vibrate?.([400, 150, 400, 150, 700]); } catch (e) {}
-}
 function iniciarDescanso(e) {
-  try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); } catch (x) {}
   T.exercicio = e.id; T.fim = Date.now() + e.descanso * 1000;
-  manterTela(true); clearInterval(T.intervalo); T.intervalo = setInterval(tick, 250); tick();
+  manterTela(true); clearInterval(T.intervalo); T.intervalo = setInterval(tick, 250); salvarSessao(); tick();
 }
-function pararDescanso() { clearInterval(T.intervalo); T.intervalo = null; T.fim = 0; manterTela(false); tick(); }
+function pararDescanso() { clearInterval(T.intervalo); T.intervalo = null; T.fim = 0; manterTela(false); salvarSessao(); tick(); }
 function tick() {
-  if (T.fim && Date.now() >= T.fim) { clearInterval(T.intervalo); T.intervalo = null; T.fim = 0; manterTela(false); apitar(); toast('Descanso acabou: próxima série'); }
+  if (T.fim && Date.now() >= T.fim) {
+    clearInterval(T.intervalo); T.intervalo = null; T.fim = 0; manterTela(false); salvarSessao();
+    try { navigator.vibrate?.([400, 150, 400, 150, 700]); } catch (e) {}
+    toast('Descanso acabou: próxima série');
+  }
   const naTela = !$('v-exercicio').hidden;
   if (db && naTela && exAtual()) pintarDescanso(exAtual());
   const mostrarMini = !!(T.fim && db && !(naTela && atual === T.exercicio));
@@ -366,11 +389,11 @@ function pintarDescanso(e) {
     ? (rodando ? 'Última série feita. Salve a carga abaixo.' : 'Séries completas. Salve a carga abaixo.')
     : rodando ? `Próxima: série ${n + 1} de ${e.series}` : `Faça a série ${n + 1} de ${e.series} e toque no botão.`;
 }
-$('t-feita').addEventListener('click', () => { const e = exAtual(); T.series[e.id] = seriesFeitas(e.id) + 1; iniciarDescanso(e); });
-$('t-menos').addEventListener('click', () => { if (T.fim) { T.fim -= 15000; tick(); } });
-$('t-mais').addEventListener('click', () => { if (T.fim) { T.fim += 15000; tick(); } });
+$('t-feita').addEventListener('click', () => { const e = exAtual(); T.series[e.id] = seriesFeitas(e.id) + 1; iniciarDescanso(e); });   // iniciarDescanso salva a sessão
+$('t-menos').addEventListener('click', () => { if (T.fim) { T.fim -= 15000; salvarSessao(); tick(); } });
+$('t-mais').addEventListener('click', () => { if (T.fim) { T.fim += 15000; salvarSessao(); tick(); } });
 $('t-pular').addEventListener('click', pararDescanso);
-$('t-zerar').addEventListener('click', () => { const e = exAtual(); T.series[e.id] = 0; if (T.exercicio === e.id) pararDescanso(); pintarDescanso(e); });
+$('t-zerar').addEventListener('click', () => { const e = exAtual(); T.series[e.id] = 0; if (T.exercicio === e.id) pararDescanso(); salvarSessao(); pintarDescanso(e); });
 $('mini').addEventListener('click', () => { if (db && T.exercicio) { atual = T.exercicio; ir('exercicio'); } });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && T.fim) { manterTela(true); tick(); } });
 
