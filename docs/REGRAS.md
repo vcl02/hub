@@ -672,6 +672,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Depois: `À vista R$ 1.500,00 Nov/26`; `Entrada R$ 10.000,00 Mar/27`; `Débito 10x R$ 3.000,00 Abr/27 a Jan/28` (no cartão, o nome dele e as faturas, a partir do mês seguinte à compra); `Comprometido até 46,0%` (vermelho acima do teto de 50%, só informativo).
   Sem caber, `Faltam até R$ 1.200,00 desde Mai/27` (o maior buraco desde o 1º mês sem dinheiro) ou `Sem limite no cartão`, em vermelho, e `Cabe começando em Jun/27` em âmbar ("Cabe comprando em" no cartão, "Cabe em" à vista).
   O hover traz o guardado disponível no mês da meta.
+  **Cabe começando em** (e "Cabe comprando em", "Cabe em") é um botão: muda o mês da meta pra esse, como pelo campo — com entrada, ela vai pra 1 mês antes, que é como a busca do "cabe em" conta. No Pra caber, os "Sem cortar" (`Em Nx` e `Começando em …`) também são botões, e funcionam no Mês a mês sem fechar o modal.
   Os campos editam na própria linha, **todos com rótulo em cima**, numa grade de colunas fixas igual em todas as metas: **Nome**, **Valor total**, **Vezes** (só nos parcelados, junto do valor porque dividem o total), o mês — rotulado **Pagamento** (à vista), **1ª parcela** (débito) ou **Compra** (crédito) —, **Forma** e as ações.
   Embaixo, nos parcelados, **Entrada** sob o valor e **Mês da entrada** sob o mês (só com entrada; depois do mês da meta não vale, vazio volta ao padrão).
   No celular, a mesma grade em duas colunas, com os mesmos campos.

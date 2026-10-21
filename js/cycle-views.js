@@ -926,19 +926,27 @@ function partesDoPlanoDaMeta(p) {
             : { rotulo: 'Faltam até', valor: brl(p.falta), detalhe: `desde ${nomePeriodoAbrev(Estado.ciclos[p.cicloFalta])}`, classe: 'vm' });
         // Mudar o mês da meta volta a entrada pra 1 mês antes (a busca já conta assim).
         if (p.cabeEm != null) {
+            // Clicável: muda o mês da meta pra esse (a entrada vai junto pra 1 mês antes).
             partes.push({ rotulo: { avista: 'Cabe em', cartao: 'Cabe comprando em', financiamento: 'Cabe começando em' }[p.forma],
-                valor: nomePeriodoAbrev(Estado.ciclos[p.cabeEm]), classe: 'am' });
+                valor: nomePeriodoAbrev(Estado.ciclos[p.cabeEm]), classe: 'am', usarMes: mesDoCiclo(p.cabeEm) });
         }
     }
     return { classe, dica: `Guardado projetado disponível em ${mes}: ${brl(Math.max(0, p.disponivel))}`, partes };
 }
 
-// Cada parte vira uma pílula: rótulo em itálico, valor em negrito e o mês apagado.
+// Mês (AAAA-MM-01) do ciclo: o que o campo de mês da meta grava pra cair nele (cicloDoMes).
+const mesDoCiclo = idx => `${dataISO(Estado.ciclos[idx].ini).slice(0, 7)}-01`;
+
+// Botão que muda o mês da meta (data-acao=usarMes), com a mesma cara de pílula.
+const atributosUsarMes = (mes, rotulo) => `type=button data-acao=usarMes data-mes=${mes} title="Mudar o mês da meta pra ${rotulo}"`;
+
+// Cada parte vira uma pílula: rótulo em itálico, valor em negrito e o mês apagado. A que
+// sugere outro mês (usarMes) é um botão que muda o mês da meta.
 function htmlDoPlanoDaMeta(p) {
     const { classe, dica, partes } = partesDoPlanoDaMeta(p);
-    const parte = x => `<span class="mpParte${x.situacao ? ' mpSituacao' : ''}${x.classe ? ` ${x.classe}` : ''}">` +
+    const parte = x => `<${x.usarMes ? `button ${atributosUsarMes(x.usarMes, x.valor)}` : 'span'} class="mpParte${x.usarMes ? ' mpOpcao' : ''}${x.situacao ? ' mpSituacao' : ''}${x.classe ? ` ${x.classe}` : ''}">` +
         [x.rotulo && `<i>${escapeHtml(x.rotulo)}</i>`, x.valor && `<b>${escapeHtml(x.valor)}</b>`,
-            x.detalhe && `<span class=mpDetalhe>${escapeHtml(x.detalhe)}</span>`].filter(Boolean).join(' ') + '</span>';
+            x.detalhe && `<span class=mpDetalhe>${escapeHtml(x.detalhe)}</span>`].filter(Boolean).join(' ') + `</${x.usarMes ? 'button' : 'span'}>`;
     return `<span class="metaPlano ${classe}"${dica ? ` title="${escapeHtml(dica)}"` : ''}>${partes.map(parte).join(' ')}</span>`;
 }
 
@@ -996,8 +1004,9 @@ function mesesEmTrechos(ciclos) {
 function htmlPraCaber(p) {
     receitasDoModal = receitasPraCaber(p);
     const semCortar = [
-        p.vezesQueCabe ? `<span class=mpParte><i>Em</i> <b>${p.vezesQueCabe}x</b></span>` : '',
-        p.cabeEm != null ? `<span class=mpParte><i>${{ avista: 'Em', cartao: 'Comprando em', financiamento: 'Começando em' }[p.forma]}</i> <b>${nomePeriodoAbrev(Estado.ciclos[p.cabeEm])}</b></span>` : '',
+        // Clicáveis: usam aquele número de vezes ou mudam o mês da meta.
+        p.vezesQueCabe ? `<button type=button class="mpParte mpOpcao" data-acao=usarVezes data-vezes=${p.vezesQueCabe} title="Usar ${p.vezesQueCabe}x"><i>Em</i> <b>${p.vezesQueCabe}x</b></button>` : '',
+        p.cabeEm != null ? `<button ${atributosUsarMes(mesDoCiclo(p.cabeEm), nomePeriodoAbrev(Estado.ciclos[p.cabeEm]))} class="mpParte mpOpcao"><i>${{ avista: 'Em', cartao: 'Comprando em', financiamento: 'Começando em' }[p.forma]}</i> <b>${nomePeriodoAbrev(Estado.ciclos[p.cabeEm])}</b></button>` : '',
     ].filter(Boolean).join(' ');
     if (!receitasDoModal.length && !semCortar) return '';
     const ganho = v => `<b class=vd>+${brl(v)}</b>`;

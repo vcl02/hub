@@ -894,6 +894,9 @@ el('modalPlanoMeta').addEventListener('click', e => {
     if (e.target == el('modalPlanoMeta')) return el('modalPlanoMeta').close();
     const botao = e.target.closest('[data-acao=simularReceita]');
     if (botao) simularReceitaPraCaber(receitasDoModal[+botao.dataset.receita]);
+    // "Cabe começando em …" e "Em Nx" do resumo e do Sem cortar: ajustam a meta daqui mesmo.
+    const ajuste = e.target.closest('[data-acao=usarMes], [data-acao=usarVezes]');
+    if (ajuste) return ajustarMeta(+el('modalPlanoMeta').dataset.meta, ajuste);
     if (e.target.closest('[data-acao=verComprometidos]')) {
         const plano = planoDasMetas().find(p => p.meta.id === +el('modalPlanoMeta').dataset.meta);
         if (!plano) return;
@@ -978,6 +981,18 @@ async function gravarMudancaDaMeta(acao, id, campos) {
     desenhar();
 }
 
+// Botões de sugestão da meta: "Mínimo/Ideal/Em Nx" usam aquele número de vezes; "Cabe
+// começando em …" muda o mês dela — e, como mudar o mês no campo, a entrada volta pra 1 mês
+// antes (a busca do "cabe em" já conta assim).
+function ajustarMeta(id, botao) {
+    const meta = Estado.metas.find(m => m.id === id);
+    if (!meta) return;
+    if (botao.dataset.acao === 'usarVezes') return gravarMudancaDaMeta('atualizar', id, { parcelas: +botao.dataset.vezes });
+    const campos = { mes: botao.dataset.mes };
+    if (meta.entrada > 0 && meta.meses_ate_parcela !== 1) campos.meses_ate_parcela = 1;
+    return gravarMudancaDaMeta('atualizar', id, campos);
+}
+
 const proximoMesISO = () => `${somaMeses(hojeISO(), 1).slice(0, 7)}-01`;
 // Valor e entrada: a máscara de caixa eletrônico do cadastro enquanto digita; apagar tudo
 // deixa vazio (entrada vazia = sem entrada), nunca "0,00".
@@ -1036,7 +1051,7 @@ el('corpoMetas').addEventListener('click', e => {
         return gravarMudancaDaMeta('excluir', id);
     }
     // Mínimo/Ideal de vezes: usa aquele número de vezes (grava como qualquer edição da meta).
-    if (acao === 'usarVezes') return gravarMudancaDaMeta('atualizar', id, { parcelas: +botao.dataset.vezes });
+    if (acao === 'usarVezes' || acao === 'usarMes') return ajustarMeta(id, botao);
     if (acao === 'mesAMes') {
         const plano = planoDasMetas().find(p => p.meta.id === id);
         if (!plano) return;

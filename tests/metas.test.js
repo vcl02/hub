@@ -490,7 +490,8 @@ test('opções de vezes: linha embaixo do plano, clique usa o número de vezes',
     // A sobra fica só no hover: a pílula mostra vezes, parcela e até quando; sem "Agora".
     assert.match(visoes, /<i>\$\{rotulo\}<\/i> <b>\$\{x\.vezes\}x \$\{brl\(x\.parcela\)\}<\/b> <span class=mpDetalhe>até \$\{ate\(x\.fim\)\}<\/span><\/button>/);
     assert.doesNotMatch(visoes, /<i>Agora<\/i>|pior mês sobra/);
-    assert.match(interacoes, /if \(acao === 'usarVezes'\) return gravarMudancaDaMeta\('atualizar', id, \{ parcelas: \+botao\.dataset\.vezes \}\);/);
+    assert.match(interacoes, /if \(acao === 'usarVezes' \|\| acao === 'usarMes'\) return ajustarMeta\(id, botao\);/);
+    assert.match(interacoes, /if \(botao\.dataset\.acao === 'usarVezes'\) return gravarMudancaDaMeta\('atualizar', id, \{ parcelas: \+botao\.dataset\.vezes \}\);/);
     assert.match(regras, /\*\*Opções de vezes\*\* \(só parcelado\)/);
 });
 
@@ -509,4 +510,25 @@ test('sobra/mês: o típico decide o ideal; o pior mês aparece com o nome, e o 
     assert.deepEqual([jun.deixa, jun.sobra > 0], [-5000, true]);
     assert.match(visoes, /<th class=n title="O que o mês deixa: entradas − saídas, com as metas \(pode ser negativo com o guardado ainda positivo\)">No mês<\/th>/);
     assert.match(regras, /O ideal olha o típico porque um mês já negativo sem a meta/);
+});
+
+test('"Cabe começando em …" é um botão que muda o mês da meta (a entrada vai pra 1 mês antes)', () => {
+    const trecho = visoes.slice(visoes.indexOf('const mesAbrev'), visoes.indexOf('function htmlModalMetas('));
+    const contexto = vm.createContext({ MESES: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'] });
+    ['js/domain.js', 'js/shared.js'].forEach(arquivo => vm.runInContext(ler(arquivo), contexto));
+    contexto.Estado = { ciclos: CICLOS.map(c => ({ ...c })) };
+    vm.runInContext(`const pct1 = n => n.toFixed(1).replace('.', ',') + '%';
+        const LIMITES_COMPROMISSOS = [{ percentual: 50 }];
+        ${trecho} globalThis.t = { htmlDoPlanoDaMeta };`, contexto);
+    const html = contexto.t.htmlDoPlanoDaMeta({ mes: '2026-11-01', ciclo: 1, cicloEntrada: 1, disponivel: 0, forma: 'financiamento', entrada: 0,
+        parcelas: 2, parcela: 500, meta: { valor: 1000 }, cabe: false, falta: 100, cicloFalta: 1, cabeEm: 5 });
+    assert.match(html.replace(/\u00a0/g, ' '), /<button type=button data-acao=usarMes data-mes=2027-03-01 title="Mudar o mês da meta pra Mar\/27" class="mpParte mpOpcao am"><i>Cabe começando em<\/i> <b>Mar\/27<\/b><\/button>/);
+    // Sem cortar, no Pra caber: os dois também são botões.
+    assert.match(visoes, /<button type=button class="mpParte mpOpcao" data-acao=usarVezes data-vezes=\$\{p\.vezesQueCabe\}/);
+    assert.match(visoes, /p\.cabeEm != null \? `<button \$\{atributosUsarMes\(mesDoCiclo\(p\.cabeEm\)/);
+    // Mudar o mês por aqui faz o mesmo que pelo campo: com entrada, ela volta pra 1 mês antes.
+    const ajustar = interacoes.slice(interacoes.indexOf('function ajustarMeta('), interacoes.indexOf('const proximoMesISO'));
+    assert.match(ajustar, /const campos = \{ mes: botao\.dataset\.mes \};\s*\n\s*if \(meta\.entrada > 0 && meta\.meses_ate_parcela !== 1\) campos\.meses_ate_parcela = 1;/);
+    assert.match(interacoes, /const ajuste = e\.target\.closest\('\[data-acao=usarMes\], \[data-acao=usarVezes\]'\);\s*\n\s*if \(ajuste\) return ajustarMeta\(\+el\('modalPlanoMeta'\)\.dataset\.meta, ajuste\);/);
+    assert.match(regras, /\*\*Cabe começando em\*\* \(e "Cabe comprando em", "Cabe em"\) é um botão/);
 });
