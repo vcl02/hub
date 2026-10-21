@@ -475,3 +475,17 @@ test('treino finalizado sem séries salvas conta como feito e não é apagado ao
   assert.equal(await pg.evaluate(() => db.treinos.length), 1);
   assert.deepEqual(erros, []); await ctx.close();
 });
+
+test('conquistas de longo prazo, ano a ano', async () => {
+  const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-21T20:00:00') });
+  await pg.evaluate(() => {                                                                   // 81 treinos em ~1 ano, 2 por semana
+    const v = db.exercicios[0].variacoes[0].id;
+    for (let i = 0; i < 81; i++) db.registros.push({ variacao: v, data: somaDias('2025-10-15', Math.floor(i / 2) * 7 + (i % 2) * 2), series: [{ kg: 40, reps: 12 }] });
+  });
+  await pg.click('.game');
+  assert.equal(await pg.locator('#q-lista li.q-ano').count(), 5);
+  assert.equal(await pg.locator('#q-lista li:not(.q-ano)').count(), 36);
+  const on = (await pg.locator('#q-lista li.on b').allTextContents()).filter(t => /ano|semanas batidas/.test(t));
+  assert.deepEqual(on, ['1 ano de treino', '40 semanas batidas']);
+  assert.deepEqual(erros, []); await ctx.close();
+});

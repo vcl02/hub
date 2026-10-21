@@ -188,6 +188,8 @@ h3.sec{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color
 .box .track span{background:var(--blue)}
 .conq{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
 .conq li{display:flex;gap:10px;align-items:flex-start;border:1px dashed var(--line);border-radius:12px;padding:10px;color:var(--muted)}
+/* título de cada ano das conquistas de longo prazo */
+.conq li.q-ano{grid-column:1/-1;border:0;padding:10px 0 0;font-size:var(--t-xs);font-weight:600;letter-spacing:.08em;text-transform:uppercase}
 .conq li.on{border-style:solid;border-color:var(--green);background:var(--green-soft);color:var(--fg)}
 .conq b{display:block;font-size:var(--t-sm)}
 .conq small{font-size:var(--t-xs);font-style:italic}

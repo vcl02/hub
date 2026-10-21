@@ -417,6 +417,8 @@ function estatisticas() {
   s.pesagem = new Set(db.medidas.map(m => semanaDe(m.data))).size;
   const ms = [...db.medidas].sort((a, b) => a.data.localeCompare(b.data));
   if (ms.length > 1) s.perda = Math.round((ms[0].peso - ms[ms.length - 1].peso) * 10) / 10;
+  const primeiro = [...dias].sort()[0];
+  s.dias = primeiro ? diasDesde(primeiro) : 0;   // dias desde o 1º treino
   s.rapido = db.treinos.some(t => { const min = (t.fim - t.inicio) / 6e4, d = iso(new Date(t.inicio)); return min >= 15 && min <= 45 && db.registros.filter(r => r.data === d).length >= 4; });
   s.pontos = PONTOS.reduce((soma, [k, p]) => soma + s[k] * p, 0);
   s.nivel = Math.floor(s.pontos / PTS_NIVEL) + 1;
@@ -439,7 +441,14 @@ const CONQUISTAS = [
   ['8 semanas seguidas', 'Meta de 2 treinos por 8 semanas seguidas', s => s.melhorSequencia >= 8],
   ['25 treinos', '25 dias de treino', s => s.treino >= 25],
   ['−5 kg', 'Perca 5 kg desde a 1ª pesagem', s => s.perda >= 5],
-  ['50 treinos', '50 dias de treino', s => s.treino >= 50]
+  ['50 treinos', '50 dias de treino', s => s.treino >= 50],
+  // Longo prazo, ano a ano. Base: meta de 2 treinos/semana batida em ~80% das semanas ≈ 80 treinos e 40 semanas batidas por ano.
+  ...[1, 2, 3, 4, 5].flatMap(n => [
+    [`${n} ${n === 1 ? 'ano' : 'anos'} de treino`, `${n === 1 ? '1 ano' : n + ' anos'} desde o 1º treino, com ${80 * n}+ treinos`, s => s.dias >= 365 * n && s.treino >= 80 * n, 'Ano ' + n],
+    [`${40 * n} semanas batidas`, `${40 * n} semanas com 2+ treinos (não precisam ser seguidas)`, s => s.semanasMeta >= 40 * n, 'Ano ' + n],
+    [`${25 * n} recordes`, `${25 * n} vezes subindo a carga`, s => s.recorde >= 25 * n, 'Ano ' + n],
+    [`${100 * n} pirâmides perfeitas`, `Bata todas as reps em ${100 * n} pirâmides`, s => s.piramide >= 100 * n, 'Ano ' + n]
+  ])
 ];
 function celebrar(antes) {   // mensagens do que mudou depois de uma ação
   const depois = estatisticas(), msgs = [];
@@ -461,7 +470,7 @@ telas.conquistas = () => {
   $('q-resumo').innerHTML = `<div class="q-top"><b>Nível ${s.nivel}</b><span>${s.pontos.toLocaleString('pt-BR')} pts · faltam ${PTS_NIVEL - (s.pontos % PTS_NIVEL)} para o nível ${s.nivel + 1}</span></div>
     <div class="track"><span style="width:${s.progresso * 100}%"></span></div>
     <p class="small muted">Sequência atual: <b>${s.sequencia}</b> · melhor: <b>${s.melhorSequencia}</b> semanas com 2+ treinos · ${s.recorde} recordes · ${s.piramide} pirâmides completas</p>`;
-  $('q-lista').innerHTML = CONQUISTAS.map(([nome, desc, f]) => `<li class="${f(s) ? 'on' : ''}"><span class="q-ico" aria-hidden="true">${f(s) ? '★' : '☆'}</span><span><b>${nome}</b><small>${desc}</small></span></li>`).join('');
+  $('q-lista').innerHTML = CONQUISTAS.map(([nome, desc, f, ano], i) => `${ano && ano !== CONQUISTAS[i - 1][3] ? `<li class="q-ano">${ano}</li>` : ''}<li class="${f(s) ? 'on' : ''}"><span class="q-ico" aria-hidden="true">${f(s) ? '★' : '☆'}</span><span><b>${nome}</b><small>${desc}</small></span></li>`).join('');
   $('q-pontos').innerHTML = PONTOS.map(([, p, txt]) => `<li><b>+${p}</b> ${txt}</li>`).join('');
 };
 // Calorias: MET × peso corporal (kg) × horas. Usa a pesagem mais recente até o dia do treino.
