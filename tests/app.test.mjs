@@ -27,18 +27,51 @@ before(async () => {
 });
 after(async () => { await navegador?.close(); servidor?.close(); });
 
+// Supabase falso (auth + PostgREST em memória): o teste não depende de internet nem do banco real.
+const CHAVES = { tr_exercicio: ['id'], tr_variacao: ['id'], tr_registro: ['variacao_id', 'data'], tr_treino: ['inicio'], tr_medida: ['data'] };
+const novaNuvem = () => ({ online: true, tabelas: Object.fromEntries(Object.keys(CHAVES).map(t => [t, []])) });
+const b64u = o => Buffer.from(JSON.stringify(o)).toString('base64url');
+async function fakeSupabase(ctx, nuvem) {
+  const user = { id: 'u1', aud: 'authenticated', role: 'authenticated', email: 'eu@teste.com', app_metadata: {}, user_metadata: {} };
+  await ctx.route(/supabase\.co\//, async route => {
+    const req = route.request(), u = new URL(req.url()), json = (corpo, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(corpo) });
+    if (!nuvem.online) return route.abort('internetdisconnected');
+    if (u.pathname === '/auth/v1/token') {
+      const corpo = req.postDataJSON() || {};
+      if (u.searchParams.get('grant_type') === 'password' && corpo.password !== 'senha123') return json({ code: 400, error_code: 'invalid_credentials', msg: 'Invalid login credentials' }, 400);
+      const exp = Math.floor(Date.now() / 1000) + 3600;
+      return json({ access_token: b64u({ alg: 'HS256' }) + '.' + b64u({ sub: 'u1', exp, role: 'authenticated' }) + '.x', token_type: 'bearer', expires_in: 3600, expires_at: exp, refresh_token: 'r', user });
+    }
+    if (u.pathname === '/auth/v1/user') return json(user);
+    if (u.pathname === '/auth/v1/logout') return route.fulfill({ status: 204 });
+    const t = u.pathname.replace('/rest/v1/', ''), linhas = nuvem.tabelas[t];
+    if (!linhas) return json({ message: 'tabela?' }, 404);
+    const filtros = [...u.searchParams].filter(([, v]) => v.startsWith('eq.')).map(([k, v]) => [k, v.slice(3)]);
+    const chave = l => CHAVES[t].map(k => l[k]).join('|');
+    if (req.method() === 'GET') { const off = +(u.searchParams.get('offset') || 0), lim = +(u.searchParams.get('limit') || 1e9); return json(linhas.slice(off, off + lim)); }
+    if (req.method() === 'POST') {
+      for (const l of [].concat(req.postDataJSON())) { const i = linhas.findIndex(x => chave(x) === chave(l)); if (i >= 0) linhas[i] = l; else linhas.push(l); }
+      return route.fulfill({ status: 201 });
+    }
+    if (req.method() === 'DELETE') { nuvem.tabelas[t] = linhas.filter(l => !filtros.every(([k, v]) => String(l[k]) === v)); return route.fulfill({ status: 204 }); }
+    return json({}, 405);
+  });
+}
 // Fontes do Google são bloqueadas para o teste não depender de internet
-async function abrirApp({ relogio } = {}) {
+async function abrirApp({ relogio, nuvem = novaNuvem(), antes } = {}) {
   const ctx = await navegador.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  await fakeSupabase(ctx, nuvem);
   const pg = await ctx.newPage(), erros = [];
   pg.on('pageerror', e => erros.push(e.message));
   if (relogio) await pg.clock.install({ time: relogio });
   await pg.goto(url);
-  await pg.fill('#l-senha', '1234'); await pg.fill('#l-rep', '1234'); await pg.click('#l-btn');
+  if (antes) { await pg.evaluate(antes); await pg.reload(); }
+  await pg.fill('#l-email', 'eu@teste.com'); await pg.fill('#l-senha', 'senha123'); await pg.click('#l-btn');
   await pg.waitForSelector('#v-inicio:not([hidden])');
-  return { ctx, pg, erros };
+  return { ctx, pg, erros, nuvem };
 }
+const sincronizado = pg => pg.waitForFunction(() => !temPendente() && !enviando);
 async function arrastar(ctx, pg, x1, x2, y = 600) {
   const cdp = await ctx.newCDPSession(pg);
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x1, y }] });
@@ -136,7 +169,7 @@ test('séries do dia continuam depois de recarregar', async () => {
   const { ctx, pg } = await abrirApp();
   await pg.tap('.slot >> nth=1'); await pg.fill('#e-carga', '25'); await pg.dispatchEvent('#e-carga', 'input');
   await pg.click('#t-feita');
-  await pg.reload();                                                                         // "manter desbloqueado" vem marcado
+  await pg.reload();                                                                         // sessão do Supabase fica salva
   await pg.waitForSelector('#v-exercicio:not([hidden])');
   assert.equal(await pg.inputValue('#e-carga'), '25');
   assert.equal(await pg.locator('#t-plano li.ok').count(), 1);
@@ -336,5 +369,85 @@ test('excluir um treino ao editar', async () => {
   assert.equal(await pg.isVisible('#i-hist-box'), false);
   await pg.click('#toast-desfazer');
   assert.equal(await pg.evaluate(() => db.treinos.length), 1);
+  await ctx.close();
+});
+
+test('salva na nuvem e abre em outro aparelho', async () => {
+  const a = await abrirApp();
+  await a.pg.tap('.slot >> nth=0'); await a.pg.fill('#e-carga', '40'); await a.pg.dispatchEvent('#e-carga', 'input');
+  await a.pg.click('#t-feita'); await a.pg.click('#t-feita');
+  await sincronizado(a.pg);
+  assert.equal(a.nuvem.tabelas.tr_exercicio.length, 6);
+  assert.deepEqual(a.nuvem.tabelas.tr_registro.map(r => r.series), [[{ kg: 40, reps: 12 }]]);
+  const b = await abrirApp({ nuvem: a.nuvem });                                              // outro aparelho, mesma conta
+  assert.match(await b.pg.textContent('.slot >> nth=0'), /40kg.*12/);
+  assert.deepEqual([...a.erros, ...b.erros], []); await a.ctx.close(); await b.ctx.close();
+});
+
+test('sem internet guarda no aparelho e envia ao reconectar', async () => {
+  const { ctx, pg, nuvem, erros } = await abrirApp();
+  await sincronizado(pg);
+  nuvem.online = false;
+  await pg.click('#i-corpo'); await pg.fill('#c-peso', '91'); await pg.click('#c-form button[type=submit]');
+  await pg.waitForFunction(() => erroSync);
+  await pg.goBack();
+  assert.match(await pg.textContent('#i-sync'), /Sem internet/);
+  await pg.reload(); await pg.waitForSelector('#v-inicio:not([hidden])');                     // abre offline com a cópia local
+  assert.match(await pg.textContent('#i-corpo'), /91 kg/);
+  nuvem.online = true;
+  await pg.evaluate(() => dispatchEvent(new Event('online')));
+  await sincronizado(pg);
+  assert.equal(nuvem.tabelas.tr_medida[0].peso, 91);
+  assert.equal(await pg.isVisible('#i-sync'), false);
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
+test('senha errada não entra', async () => {
+  const ctx = await navegador.newContext();
+  await fakeSupabase(ctx, novaNuvem());
+  const pg = await ctx.newPage(); await pg.goto(url);
+  await pg.fill('#l-email', 'eu@teste.com'); await pg.fill('#l-senha', 'errada'); await pg.click('#l-btn');
+  await pg.waitForFunction(() => $('l-erro').textContent);
+  assert.match(await pg.textContent('#l-erro'), /incorretos/);
+  assert.equal(await pg.isVisible('#v-inicio'), false);
+  await ctx.close();
+});
+
+test('junta à conta o banco criptografado da versão antiga', async () => {
+  // Monta o cofre antigo como a versão anterior gravava (AES-GCM, chave salva por "manter desbloqueado")
+  const antes = async () => {
+    const k = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']), iv = crypto.getRandomValues(new Uint8Array(12));
+    const b64 = a => btoa(String.fromCharCode(...new Uint8Array(a)));
+    const velho = { exercicios: [{ id: 'e1', grupo: 'Peito', regiao: 'Superior', variacoes: [{ id: 'v1', nome: 'Supino máquina' }] }],
+      registros: [{ variacao: 'v1', data: '2026-10-21', series: [{ kg: 30, reps: 12 }] }], treinos: [{ inicio: 1, fim: 2 }], medidas: [] };
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, new TextEncoder().encode(JSON.stringify(velho)));
+    localStorage.setItem('carga.vault.v1', JSON.stringify({ it: 1, salt: b64(new Uint8Array(16)), iv: b64(iv), ct: b64(ct) }));
+    localStorage.setItem('carga.key.v1', b64(await crypto.subtle.exportKey('raw', k)));
+  };
+  const { ctx, pg, nuvem, erros } = await abrirApp({ antes });
+  await pg.waitForFunction(() => db.registros.length === 1);
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.tr_registro.map(r => r.variacao_id), ['v1']);
+  assert.equal(await pg.evaluate(() => localStorage.getItem('carga.vault.v1')), null);
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
+test('não marca série sem peso (senão o treino não seria salvo)', async () => {
+  const { ctx, pg } = await abrirApp();
+  await pg.tap('.slot >> nth=0');
+  await pg.click('#t-feita');
+  assert.equal(await pg.locator('#t-plano li.ok').count(), 0);
+  assert.match(await pg.textContent('#toast-msg'), /Coloque o peso/);
+  await ctx.close();
+});
+
+test('sair da conta volta para o login', async () => {
+  const { ctx, pg } = await abrirApp();
+  await sincronizado(pg);
+  await pg.click('[data-ir="ajustes"]');
+  assert.match(await pg.textContent('#a-info'), /eu@teste\.com.*Tudo salvo na nuvem/);
+  await pg.click('#a-sair');
+  await pg.waitForSelector('#v-bloqueio:not([hidden])');
+  assert.equal(await pg.evaluate(() => localStorage.getItem('tr.db.u1')), null);
   await ctx.close();
 });

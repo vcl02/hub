@@ -1,7 +1,7 @@
 // Offline + sempre a versão mais nova quando há internet.
 // Arquivos do app: rede primeiro, revalidando com o servidor (ignora o cache do navegador); sem internet, usa o cache.
-const VERSAO = 'carga-v13';
-const ARQUIVOS = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
+const VERSAO = 'carga-v14';
+const ARQUIVOS = ['./', 'index.html', 'style.css', 'app.js', 'supabase.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => e.waitUntil(caches.open(VERSAO).then(c => c.addAll(ARQUIVOS)).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(

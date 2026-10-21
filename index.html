@@ -14,29 +14,20 @@
 <body>
 <div class="wrap">
 
-<!-- Bloqueio: criar senha ou desbloquear -->
+<!-- Login (Supabase) -->
 <section id="v-bloqueio" class="view lock" hidden>
   <p class="eyebrow">Diário de Carga</p>
-  <h1 id="l-titulo">Criar senha mestra</h1>
-  <p id="l-sub" class="muted"></p>
+  <h1>Entrar</h1>
+  <p class="muted">Mesmo e-mail e senha do fin. Seus treinos ficam salvos na nuvem e aparecem em qualquer aparelho.</p>
   <form id="l-form" class="form box">
-    <label for="l-senha">Senha mestra</label>
-    <input id="l-senha" type="password" minlength="4" required>
-    <div id="l-rep-box" class="form">
-      <label for="l-rep">Repita a senha</label>
-      <input id="l-rep" type="password" autocomplete="new-password" minlength="4">
-    </div>
-    <label class="check"><input id="l-manter" type="checkbox" checked> Manter desbloqueado neste aparelho</label>
+    <label for="l-email">E-mail</label>
+    <input id="l-email" type="email" autocomplete="username" required>
+    <label for="l-senha">Senha</label>
+    <input id="l-senha" type="password" autocomplete="current-password" required>
     <p id="l-erro" class="err" role="alert"></p>
-    <button class="btn primary big" id="l-btn" type="submit">Criar e entrar</button>
+    <button class="btn primary big" id="l-btn" type="submit">Entrar</button>
   </form>
-  <div id="l-esqueci-box" hidden>
-    <button type="button" class="link" id="l-esqueci">Esqueci a senha</button>
-    <div id="l-apagar-box" class="box warn" hidden>
-      <p>Sem a senha não dá para abrir os dados. Apagar tudo deste aparelho e começar de novo? Se tiver backup, restaure depois.</p>
-      <button type="button" class="btn danger" id="l-apagar">Apagar tudo e recomeçar</button>
-    </div>
-  </div>
+  <button type="button" class="link" id="l-esqueci">Esqueci a senha</button>
 </section>
 
 <!-- Início: semana + lista de exercícios -->
@@ -52,6 +43,7 @@
     <span class="track"><span id="g-barra"></span></span>
     <span class="g-info" id="g-info"></span>
   </button>
+  <p class="muted small" id="i-sync" role="status" hidden></p>
   <p class="treino-tempo" id="i-treino"></p>
   <button type="button" class="corpo-card" id="i-corpo" data-ir="corpo"></button>
   <div class="progress">
@@ -88,7 +80,7 @@
       <li><b>Sem impulso:</b> movimento controlado, sem tranco.</li>
       <li><b>Volte devagar:</b> 2 a 3 segundos na volta.</li>
       <li><b>Respiração:</b> solte o ar pela boca no esforço, puxe pelo nariz na volta.</li>
-      <li><b>Não arqueie as costas:</b> lombar encostada no banco, sem curvar nem arquear para ajudar a subir o peso. Se precisar arquear, o peso está alto.</li>
+      <li><b>Peito estufado:</b> pode arquear as costas e estufar o peito, com as escápulas juntas. Só não tire o quadril do banco nem jogue o tronco para ajudar a subir o peso; se precisar disso, o peso está alto.</li>
       <li><b>Abdômen firme</b> o tempo todo.</li>
     </ul>
     <label class="nota-l" for="e-nota">Suas anotações</label>
@@ -203,9 +195,9 @@
   <div class="menu">
     <button type="button" data-ir="editar">Editar exercícios<span>Ordem, nomes, substitutos, passo de peso, séries, reps e descanso</span></button>
     <button type="button" data-ir="backup">Backup<span>Baixar ou restaurar seus registros</span></button>
-    <button type="button" data-ir="senha">Trocar senha mestra</button>
+    <button type="button" data-ir="senha">Trocar senha<span>Vale também para o fin (mesma conta)</span></button>
     <button type="button" id="a-instalar" hidden>Instalar na tela inicial<span>Funciona offline depois de instalado</span></button>
-    <button type="button" id="a-bloquear" class="danger-text">Bloquear agora</button>
+    <button type="button" id="a-sair" class="danger-text">Sair da conta</button>
   </div>
   <p class="muted small" id="a-info"></p>
 </section>
@@ -225,24 +217,30 @@
   <div class="bar"><button class="back" type="button" data-voltar>‹ Ajustes</button></div>
   <h2>Backup</h2>
   <div class="box">
-    <p>O backup é um arquivo .json <b>sem criptografia</b>. Guarde no Drive ou mande para você mesmo.</p>
+    <p>Seus dados já ficam na nuvem. O backup é uma cópia extra em .json <b>sem criptografia</b>.</p>
     <button type="button" class="btn primary" id="b-baixar">Baixar backup</button>
   </div>
   <div class="box">
-    <p><b>Restaurar</b> substitui tudo o que está neste aparelho.</p>
+    <p><b>Restaurar</b> substitui tudo o que está na sua conta.</p>
     <input type="file" id="b-arquivo" accept=".json,application/json" aria-label="Arquivo de backup">
     <p id="b-erro" class="err" role="alert"></p>
     <button type="button" class="btn danger" id="b-restaurar">Restaurar backup</button>
   </div>
+  <form class="box form" id="m-form" hidden>
+    <p><b>Dados da versão antiga</b> estão neste aparelho, criptografados. Digite a senha mestra antiga para juntar à sua conta.</p>
+    <label for="m-senha">Senha mestra antiga</label><input id="m-senha" type="password" autocomplete="off" required>
+    <p id="m-erro" class="err" role="alert"></p>
+    <button class="btn primary" type="submit">Juntar à conta</button>
+  </form>
 </section>
 
 <section id="v-senha" class="view" hidden>
   <div class="bar"><button class="back" type="button" data-voltar>‹ Ajustes</button></div>
   <h2>Trocar senha</h2>
   <form id="s-form" class="form box">
-    <label for="s-atual">Senha atual</label><input id="s-atual" type="password" autocomplete="current-password" required>
-    <label for="s-nova">Nova senha</label><input id="s-nova" type="password" autocomplete="new-password" minlength="4" required>
-    <label for="s-rep">Repita a nova senha</label><input id="s-rep" type="password" autocomplete="new-password" minlength="4" required>
+    <div id="s-atual-box" class="form"><label for="s-atual">Senha atual</label><input id="s-atual" type="password" autocomplete="current-password"></div>
+    <label for="s-nova">Nova senha</label><input id="s-nova" type="password" autocomplete="new-password" minlength="6" required>
+    <label for="s-rep">Repita a nova senha</label><input id="s-rep" type="password" autocomplete="new-password" minlength="6" required>
     <p id="s-erro" class="err" role="alert"></p>
     <button class="btn primary" type="submit">Trocar senha</button>
   </form>
@@ -251,6 +249,7 @@
 </div>
 <div id="toast" role="status" hidden><span id="toast-msg"></span><button type="button" id="toast-desfazer" hidden>Desfazer</button></div>
 <button type="button" id="mini" hidden><span id="mini-t">0:00</span><span id="mini-n"></span><span>Abrir ›</span></button>
+<script src="supabase.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

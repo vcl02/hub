@@ -1,8 +1,8 @@
 'use strict';
 /*
-  Diário de Carga — tudo roda no navegador.
+  Diário de Carga — login e dados no Supabase (projeto fin, tabelas tr_*), com cópia local para funcionar sem internet.
 
-  Banco (um item no localStorage, criptografado com a senha mestra):
+  Banco em memória (cada lista vira uma tabela; ver "Banco" mais abaixo):
     db = {
       exercicios: [{ id, grupo, regiao, series, reps, descanso, modo, ativo,
                      variacoes: [{ id, nome, unidade, passo, lados, equip?, nota? }] }],
@@ -16,6 +16,10 @@
   Pontos, nível, conquistas e calorias são calculados a partir desses dados (nada extra é guardado).
   Fotos das máquinas ficam fora do banco: localStorage "carga.foto.<variação>".
 */
+
+// ===== Supabase (chave publicável: pode ficar no código; quem protege os dados é o RLS por usuário) =====
+const SUPABASE_URL = 'https://yzmyncxoskvqzdczaill.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Fq984qUdQO8mGq4PSYmUiQ_ySaLrmEQ';
 
 // ===== Configuração =====
 const DIAS_FIXOS = [3, 4];   // quarta, quinta (Date.getDay)
@@ -52,11 +56,11 @@ const GUIA = {
   'remada sentada máquina': ['Máquina sentada com apoio no peito · costas e bíceps', 'Peito na almofada; banco na altura em que a pegada fique entre o peito e o abdômen. Puxe levando os cotovelos para trás e juntando as escápulas.'],
   'remada baixa no cabo': ['Polia baixa · costas e bíceps', 'Pés na plataforma, joelhos levemente dobrados, coluna reta. Puxe o triângulo até o abdômen sem balançar o tronco.'],
   'remada unilateral (serrote)': ['Banco e 1 halter · costas', 'Mão e joelho do mesmo lado apoiados no banco, costas retas. Puxe o halter até a lateral do abdômen, cotovelo rente ao corpo.'],
-  'desenvolvimento máquina': ['Máquina sentada · ombros e tríceps', 'Banco na altura em que as pegadas fiquem na linha dos ombros. Costas apoiadas; empurre para cima sem arquear a lombar.'],
-  'desenvolvimento no smith': ['Barra guiada · ombros e tríceps', 'Banco com encosto em pé; a barra desce até a altura do queixo, à frente do rosto. Abdômen firme, sem arquear.'],
+  'desenvolvimento máquina': ['Máquina sentada · ombros e tríceps', 'Banco na altura em que as pegadas fiquem na linha dos ombros. Costas apoiadas; peito estufado; empurre para cima sem tirar o quadril do banco.'],
+  'desenvolvimento no smith': ['Barra guiada · ombros e tríceps', 'Banco com encosto em pé; a barra desce até a altura do queixo, à frente do rosto. Peito estufado e abdômen firme, sem jogar o tronco para trás.'],
   'desenvolvimento com halteres': ['Banco com encosto e halteres · ombros e tríceps', 'Costas apoiadas, halteres na altura das orelhas, cotovelos levemente à frente. Empurre para cima e desça devagar.']
 };
-const K_DADOS = 'carga.vault.v1', K_CHAVE = 'carga.key.v1', ITER = 310000;
+const K_ANTIGO = 'carga.vault.v1', K_ANTIGO_CHAVE = 'carga.key.v1';   // banco da versão antiga (só para migrar)
 const NOME_DIA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const DIA_LONGO = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
 
@@ -131,27 +135,96 @@ function confirmar(btn, texto) {   // 1º toque arma, 2º confirma
   return false;
 }
 
-// ===== Banco criptografado (PBKDF2 → AES-GCM) =====
-let db = null, chave = null, sal = null, iter = ITER;
-const te = new TextEncoder(), td = new TextDecoder();
-function b64(buf) { const a = new Uint8Array(buf); let s = ''; for (let i = 0; i < a.length; i += 0x8000) s += String.fromCharCode.apply(null, a.subarray(i, i + 0x8000)); return btoa(s); }
-function deB64(s) { const b = atob(s), a = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; }
-async function derivar(senha, s, it) {
-  const base = await crypto.subtle.importKey('raw', te.encode(senha), 'PBKDF2', false, ['deriveKey']);
-  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: s, iterations: it, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
+// ===== Banco: Supabase + cópia local =====
+// Cada mudança grava a cópia local na hora e, 0,8 s depois, envia ao Supabase só as linhas que mudaram
+// (diferença para "base", a última versão confirmada pelo servidor). Sem internet, fica pendente e envia ao reconectar.
+// Tabelas (todas com user_id e RLS "só o dono"): chave de cada linha entre colchetes.
+const TABELAS = { tr_exercicio: ['id'], tr_variacao: ['id'], tr_registro: ['variacao_id', 'data'], tr_treino: ['inicio'], tr_medida: ['data'] };
+const ORDEM = Object.keys(TABELAS);   // pais antes dos filhos
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const K_LOCAL = id => 'tr.db.' + id, K_BASE = id => 'tr.base.' + id;
+let db = null, usuario = null, base = null, enviando = false, tEnvio = null, erroSync = '';
+function linhas(d) {   // db → { tabela: { chave: linha } }
+  const L = Object.fromEntries(ORDEM.map(t => [t, {}]));
+  const por = (t, l) => { L[t][TABELAS[t].map(k => l[k]).join('|')] = l; };
+  d.exercicios.forEach((e, ordem) => {
+    por('tr_exercicio', { id: e.id, ordem, grupo: e.grupo, regiao: e.regiao, series: e.series, reps: e.reps, descanso: e.descanso, modo: e.modo, ativo: e.ativo });
+    e.variacoes.forEach((v, i) => por('tr_variacao', { id: v.id, exercicio_id: e.id, ordem: i, nome: v.nome, unidade: v.unidade, passo: v.passo, lados: v.lados, equip: v.equip || null, nota: v.nota || null }));
+  });
+  d.registros.forEach(r => por('tr_registro', { variacao_id: r.variacao, data: r.data, series: r.series }));
+  d.treinos.forEach(t => por('tr_treino', { inicio: new Date(t.inicio).toISOString(), fim: new Date(t.fim).toISOString(), fechado: !!t.fechado }));
+  d.medidas.forEach(m => por('tr_medida', { data: m.data, hora: m.hora || '', peso: m.peso, cintura: m.cintura ?? null }));
+  return L;
 }
-async function abrir(k) {
-  const c = JSON.parse(store.get(K_DADOS));
-  return JSON.parse(td.decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: deB64(c.iv) }, k, deB64(c.ct))));
+function deLinhas(R) {   // linhas do servidor → db
+  const vs = {}; R.tr_variacao.forEach(v => (vs[v.exercicio_id] ||= []).push(v));
+  return preparar({
+    exercicios: [...R.tr_exercicio].sort((a, b) => a.ordem - b.ordem).map(e => ({ ...e, variacoes: (vs[e.id] || []).sort((a, b) => a.ordem - b.ordem) })),
+    registros: R.tr_registro.map(r => ({ variacao: r.variacao_id, data: r.data, series: r.series })),
+    treinos: R.tr_treino.map(t => ({ inicio: Date.parse(t.inicio), fim: Date.parse(t.fim), fechado: t.fechado })),
+    medidas: R.tr_medida
+  });
 }
-async function fechar() {
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, chave, te.encode(JSON.stringify(db)));
-  if (!store.set(K_DADOS, JSON.stringify({ it: iter, salt: b64(sal), iv: b64(iv), ct: b64(ct) }))) toast('Não consegui gravar no aparelho. Faça um backup.', null, true);
+function diferenca(a, b) {   // o que enviar para o servidor sair de a e chegar em b; null = nada
+  let n = 0; const up = {}, del = {};
+  for (const t of ORDEM) {
+    up[t] = Object.entries(b[t]).filter(([k, l]) => JSON.stringify(a?.[t]?.[k]) !== JSON.stringify(l)).map(([, l]) => l);
+    del[t] = Object.entries(a?.[t] || {}).filter(([k]) => !(k in b[t])).map(([, l]) => l);
+    n += up[t].length + del[t].length;
+  }
+  return n ? { up, del } : null;
 }
-let fila = Promise.resolve();
-const gravar = () => (fila = fila.then(fechar).catch(() => toast('Erro ao gravar', null, true)));
-async function manterChave(sim) { if (sim) store.set(K_CHAVE, b64(await crypto.subtle.exportKey('raw', chave))); else store.del(K_CHAVE); }
+const temPendente = () => !!(db && usuario && diferenca(base, linhas(db)));
+async function enviar() {
+  clearTimeout(tEnvio);
+  if (enviando || !usuario || !db) return;
+  const agora = linhas(db), mud = diferenca(base, agora);
+  if (!mud) { erroSync = ''; pintarSync(); return; }
+  enviando = true;
+  try {
+    for (const t of ORDEM) if (mud.up[t].length) {
+      const { error } = await sb.from(t).upsert(mud.up[t].map(l => ({ user_id: usuario.id, ...l })), { onConflict: ['user_id', ...TABELAS[t]].join(',') });
+      if (error) throw error;
+    }
+    for (const t of [...ORDEM].reverse()) for (const l of mud.del[t]) {
+      let q = sb.from(t).delete(); for (const k of TABELAS[t]) q = q.eq(k, l[k]);
+      const { error } = await q; if (error) throw error;
+    }
+    base = agora; store.set(K_BASE(usuario.id), JSON.stringify(base)); erroSync = '';
+  } catch (e) { erroSync = e.message || String(e); }
+  finally { enviando = false; }
+  pintarSync();
+  if (!erroSync && temPendente()) enviar();   // mudou algo enquanto enviava
+}
+async function baixar() {
+  const R = {};
+  for (const t of ORDEM) {
+    R[t] = [];
+    for (let i = 0; ; i += 1000) {
+      const { data, error } = await sb.from(t).select('*').range(i, i + 999); if (error) throw error;
+      R[t].push(...data); if (data.length < 1000) break;
+    }
+  }
+  return R;
+}
+function gravar() {
+  if (!usuario || !db) return Promise.resolve();
+  if (!store.set(K_LOCAL(usuario.id), JSON.stringify(db))) toast('Não consegui gravar no aparelho.', null, true);
+  clearTimeout(tEnvio); tEnvio = setTimeout(enviar, 800);
+  pintarSync();
+  return Promise.resolve();
+}
+function pintarSync() {
+  const p = temPendente(), off = !navigator.onLine || /fetch|network/i.test(erroSync);
+  const txt = !p ? 'Tudo salvo na nuvem.' : erroSync && !off ? 'Erro ao enviar para a nuvem: ' + erroSync
+    : off ? 'Sem internet: salvo no aparelho, envia para a nuvem quando conectar.' : 'Enviando para a nuvem…';
+  $('i-sync').hidden = !p || (!erroSync && !off); $('i-sync').textContent = txt;
+  $('i-sync').classList.toggle('err', !!erroSync && !off);
+  return txt;
+}
+addEventListener('online', () => enviar());
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && temPendente()) enviar(); });
+setInterval(() => { if (temPendente()) enviar(); }, 60000);
 // Executa uma mudança, grava e devolve a função que desfaz
 function alterar(acao) {
   const antes = JSON.stringify(db);
@@ -196,7 +269,7 @@ function preparar(d) {           // valida, completa campos e migra formatos ant
       series = reps.map((n, i) => ({ kg: e && v ? alvoKg({ ...e, modo: 'crescente' }, v, +r.carga, i) : +r.carga, reps: n }));
     }
     return { variacao: r.variacao, data: r.data, series: series.map(s => ({ kg: Math.max(0, num(s.kg) || 0), reps: Math.max(0, parseInt(s.reps, 10) || 0) })) };
-  }).filter(r => r.series.length && r.series.every(s => s.kg > 0));
+  }).filter(r => varDe.has(r.variacao) && r.series.length && r.series.every(s => s.kg > 0));
   const treinos = (d.treinos || []).filter(t => t && t.inicio > 0 && t.fim >= t.inicio).map(t => ({ inicio: +t.inicio, fim: +t.fim, ...(t.fechado && { fechado: true }) }));
   const medidas = (d.medidas || []).filter(m => m && dataOk(m.data) && num(m.peso) > 0)
     .map(m => ({ data: m.data, hora: /^\d{2}:\d{2}$/.test(m.hora) ? m.hora : '', peso: num(m.peso), ...(num(m.cintura) > 0 && { cintura: num(m.cintura) }) }));
@@ -221,19 +294,12 @@ function ir(nome) {
 function voltar() { if (pilha.length > 1) history.back(); else mostrar('inicio'); }
 addEventListener('popstate', () => { if (db && pilha.length > 1) { pilha.pop(); mostrar(pilha[pilha.length - 1]); } });
 
-// ===== Bloqueio =====
-let modo = 'criar';
-function telaBloqueio(m, erro = '') {
-  modo = m; db = null; chave = null;
+// ===== Login (Supabase Auth, e-mail e senha) =====
+let recuperando = false;   // veio do link de "Esqueci a senha"
+function telaLogin(erro = '') {
+  db = null; usuario = null; base = null;
   clearInterval(T.intervalo); T.intervalo = null; T.fim = 0; manterTela(false); $('mini').hidden = true;   // sessão salva continua
-  const criar = m === 'criar';
-  $('l-titulo').textContent = criar ? 'Criar senha mestra' : 'Desbloquear';
-  $('l-sub').textContent = criar ? 'Seus registros ficam criptografados neste aparelho. Não existe recuperação de senha: anote em lugar seguro.' : 'Digite sua senha mestra.';
-  $('l-rep-box').hidden = !criar; $('l-rep').required = criar;
-  $('l-senha').autocomplete = criar ? 'new-password' : 'current-password';
-  $('l-btn').textContent = criar ? 'Criar e entrar' : 'Entrar';
-  $('l-esqueci-box').hidden = criar; $('l-apagar-box').hidden = true;
-  $('l-erro').textContent = erro; $('l-senha').value = ''; $('l-rep').value = '';
+  $('l-erro').textContent = erro; $('l-senha').value = '';
   ir('bloqueio');
 }
 async function entrou() {
@@ -241,31 +307,88 @@ async function entrou() {
   try { await navigator.storage?.persist?.(); } catch (e) {}
   restaurarSessao();
 }
+// Abre na hora com a cópia local; depois envia o que estava pendente e traz a versão da nuvem.
+async function carregar(u) {
+  usuario = u;
+  let local = null;
+  try { local = JSON.parse(store.get(K_LOCAL(u.id))); base = JSON.parse(store.get(K_BASE(u.id))); } catch (e) { local = null; }
+  if (local) { db = local; await entrou(); }
+  if (local && temPendente()) { await enviar(); if (erroSync) return; }   // sem internet: segue com a cópia local
+  let R;
+  try { R = await baixar(); } catch (e) { erroSync = e.message || String(e); pintarSync(); if (!local) telaLogin('Sem conexão com a nuvem. Tente de novo.'); return; }
+  if (usuario !== u) return;   // saiu enquanto baixava
+  const nuvem = deLinhas(R), vazio = !R.tr_exercicio.length;
+  base = linhas(nuvem);
+  let novo = vazio ? preparar(bancoNovo()) : nuvem;
+  novo = await migrarAntigo(novo);
+  const mudou = !db || JSON.stringify(linhas(db)) !== JSON.stringify(linhas(novo));
+  db = novo; gravar();
+  if (!local) await entrou();
+  else if (mudou && TELAS_SEGURAS.includes(pilha[pilha.length - 1])) mostrar(pilha[pilha.length - 1]);
+  if (recuperando) { recuperando = false; semSenhaAtual = true; ir('senha'); toast('Crie uma senha nova'); }
+}
 $('l-form').addEventListener('submit', async ev => {
   ev.preventDefault();
-  const senha = $('l-senha').value, btn = $('l-btn'), erro = $('l-erro'), rotulo = btn.textContent;
-  erro.textContent = '';
-  if (!window.crypto?.subtle) { erro.textContent = 'Abra o app pelo endereço https.'; return; }
-  if (senha.length < 4) { erro.textContent = 'Use pelo menos 4 caracteres.'; return; }
-  if (modo === 'criar' && senha !== $('l-rep').value) { erro.textContent = 'As senhas não conferem.'; return; }
-  btn.disabled = true; btn.textContent = 'Abrindo…';
+  const btn = $('l-btn'), erro = $('l-erro');
+  erro.textContent = ''; btn.disabled = true; btn.textContent = 'Entrando…';
   try {
-    if (modo === 'criar') {
-      sal = crypto.getRandomValues(new Uint8Array(16)); iter = ITER;
-      chave = await derivar(senha, sal, iter); db = preparar(bancoNovo()); await gravar();
-    } else {
-      const c = JSON.parse(store.get(K_DADOS)); sal = deB64(c.salt); iter = c.it || ITER;
-      const k = await derivar(senha, sal, iter);
-      try { db = await abrir(k); } catch (e) { erro.textContent = 'Senha incorreta.'; return; }
-      chave = k;
-    }
-    await manterChave($('l-manter').checked);
-    await entrou();
-  } catch (e) { erro.textContent = 'Não foi possível abrir: ' + (e.message || e); }
-  finally { btn.disabled = false; btn.textContent = rotulo; }
+    const { data, error } = await sb.auth.signInWithPassword({ email: $('l-email').value.trim(), password: $('l-senha').value });
+    if (error) { erro.textContent = /invalid/i.test(error.message) ? 'E-mail ou senha incorretos.' : 'Não foi possível entrar: ' + error.message; return; }
+    $('l-senha').value = '';
+    await carregar(data.user);
+  } catch (e) { erro.textContent = 'Sem conexão. Tente de novo.'; }
+  finally { btn.disabled = false; btn.textContent = 'Entrar'; }
 });
-$('l-esqueci').addEventListener('click', () => { $('l-apagar-box').hidden = !$('l-apagar-box').hidden; });
-$('l-apagar').addEventListener('click', () => { store.del(K_DADOS); store.del(K_CHAVE); telaBloqueio('criar'); toast('Dados apagados'); });
+$('l-esqueci').addEventListener('click', async () => {
+  const email = $('l-email').value.trim(), erro = $('l-erro');
+  if (!email) { erro.textContent = 'Digite seu e-mail acima.'; $('l-email').focus(); return; }
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+  erro.textContent = error ? 'Não foi possível enviar: ' + error.message : 'Enviamos um link para ' + email + '.';
+});
+sb.auth.onAuthStateChange(ev => {   // sem chamadas ao Supabase aqui dentro (evita travar o cliente)
+  if (ev === 'PASSWORD_RECOVERY') { recuperando = true; if (db) setTimeout(() => { recuperando = false; semSenhaAtual = true; ir('senha'); toast('Crie uma senha nova'); }); }
+});
+
+// ===== Migração do banco criptografado da versão antiga (fica só neste aparelho) =====
+const deB64 = s => { const b = atob(s), a = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; };
+async function abrirAntigo(chave) {
+  const c = JSON.parse(store.get(K_ANTIGO));
+  return preparar(JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: deB64(c.iv) }, chave, deB64(c.ct)))));
+}
+async function chaveDaSenha(senha) {
+  const c = JSON.parse(store.get(K_ANTIGO)), base = await crypto.subtle.importKey('raw', new TextEncoder().encode(senha), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: deB64(c.salt), iterations: c.it || 310000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+}
+// Junta os dados antigos do aparelho com os da nuvem; no mesmo dia (treino), variação+dia (registro) ou dia (pesagem), vale o do aparelho.
+function juntar(nuvem, local) {
+  const dia = t => iso(new Date(t.inicio)), dias = new Set(local.treinos.map(dia));
+  return preparar({
+    exercicios: local.exercicios,
+    registros: [...nuvem.registros.filter(r => !local.registros.some(x => x.variacao === r.variacao && x.data === r.data)), ...local.registros],
+    treinos: [...nuvem.treinos.filter(t => !dias.has(dia(t))), ...local.treinos].sort((a, b) => a.inicio - b.inicio),
+    medidas: [...nuvem.medidas.filter(m => !local.medidas.some(x => x.data === m.data)), ...local.medidas]
+  });
+}
+// Com "manter desbloqueado" a chave está salva e a migração é automática; sem ela, pede a senha antiga na tela de Backup.
+async function migrarAntigo(atual) {
+  const k = store.get(K_ANTIGO_CHAVE);
+  if (!store.get(K_ANTIGO) || !window.crypto?.subtle) return atual;
+  if (!k) { setTimeout(() => toast('Há dados da versão antiga neste aparelho: Ajustes › Backup'), 300); return atual; }
+  try {
+    const velho = await abrirAntigo(await crypto.subtle.importKey('raw', deB64(k), { name: 'AES-GCM' }, false, ['decrypt']));
+    store.del(K_ANTIGO); store.del(K_ANTIGO_CHAVE);
+    setTimeout(() => toast('Dados da versão antiga enviados para a sua conta'), 300);
+    return juntar(atual, velho);
+  } catch (e) { return atual; }
+}
+$('m-form').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const erro = $('m-erro'); erro.textContent = '';
+  let velho; try { velho = await abrirAntigo(await chaveDaSenha($('m-senha').value)); } catch (e) { erro.textContent = 'Senha incorreta.'; return; }
+  db = juntar(db, velho); gravar();
+  store.del(K_ANTIGO); store.del(K_ANTIGO_CHAVE);
+  $('m-senha').value = ''; toast('Dados antigos juntados à sua conta'); ir('inicio');
+});
 
 // ===== Pontos, nível, conquistas e resumo (calculados dos dados) =====
 const PONTOS = [['treino', 50, 'por dia de treino'], ['exercicio', 10, 'por exercício feito'], ['piramide', 10, 'por pirâmide completa'],
@@ -863,6 +986,7 @@ $('t-feita').addEventListener('click', () => {
   if (travadoHoje()) return;
   const e = exAtual(), aq = temAquecimento(e), n = seriesFeitas(e.id), ehAquecimento = aq && n === 0;
   const s = planoAtual(e)[n]; if (!s) return;
+  if (!(s.kg > 0)) { toast('Coloque o peso antes de marcar a série: sem peso não salva', null, true); $('e-carga').focus(); return; }
   if (aq) T.aquecimento[e.regiao] = e.id;
   T.series[e.id] = n + 1; editando = null;
   if (!ehAquecimento) (T.feitas[e.id] ||= [])[s.i] = { reps: s.reps, ...(T.ajuste[e.id]?.[s.i]?.kg != null && { kg: T.ajuste[e.id][s.i].kg }) };
@@ -957,11 +1081,16 @@ document.addEventListener('click', ev => {
 let eventoInstalar = null;
 telas.ajustes = async () => {
   $('a-instalar').hidden = !eventoInstalar;
-  let info = `Versão ${versaoAtual || '—'}. ${db.registros.length} registro(s) e ${db.medidas.length} pesagem(ns) neste aparelho.`;
-  try { if (navigator.storage?.persisted) info += (await navigator.storage.persisted()) ? ' Armazenamento persistente ativo.' : ' O navegador não garantiu armazenamento persistente: faça backup de vez em quando.'; } catch (e) {}
-  $('a-info').textContent = info;
+  $('a-info').textContent = `Conta: ${usuario?.email || '—'}. ${pintarSync()} ${db.registros.length} registro(s) e ${db.medidas.length} pesagem(ns). Versão ${versaoAtual || '—'}.`;
 };
-$('a-bloquear').addEventListener('click', () => { store.del(K_CHAVE); telaBloqueio('entrar'); });
+$('a-sair').addEventListener('click', async ev => {
+  const p = temPendente();
+  if (p && !confirmar(ev.currentTarget, 'Há dados sem enviar. Sair mesmo?')) return;
+  const id = usuario.id;
+  if (!p) { store.del(K_LOCAL(id)); store.del(K_BASE(id)); }   // pendente fica no aparelho e envia no próximo login
+  try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {}
+  telaLogin();
+});
 addEventListener('beforeinstallprompt', ev => { ev.preventDefault(); eventoInstalar = ev; $('a-instalar').hidden = false; });
 $('a-instalar').addEventListener('click', async () => { if (!eventoInstalar) return; eventoInstalar.prompt(); try { await eventoInstalar.userChoice; } catch (e) {} eventoInstalar = null; $('a-instalar').hidden = true; });
 
@@ -1029,16 +1158,22 @@ $('b-restaurar').addEventListener('click', async ev => {
   db = novo; gravar(); $('b-arquivo').value = ''; toast('Backup restaurado'); ir('inicio');
 });
 
-// Trocar senha
+telas.backup = () => { $('m-form').hidden = !store.get(K_ANTIGO); };
+
+// Trocar senha (da conta Supabase; vale também para o fin). Vindo do link de recuperação, não pede a atual.
+let semSenhaAtual = false;
+telas.senha = () => { $('s-atual-box').hidden = semSenhaAtual; $('s-atual').required = !semSenhaAtual; };
 $('s-form').addEventListener('submit', async ev => {
   ev.preventDefault();
   const erro = $('s-erro'), nova = $('s-nova').value; erro.textContent = '';
   if (nova !== $('s-rep').value) { erro.textContent = 'As novas senhas não conferem.'; return; }
-  try { await abrir(await derivar($('s-atual').value, sal, iter)); } catch (e) { erro.textContent = 'Senha atual incorreta.'; return; }
-  sal = crypto.getRandomValues(new Uint8Array(16)); iter = ITER;
-  chave = await derivar(nova, sal, iter); await gravar();
-  if (store.get(K_CHAVE)) await manterChave(true);
-  ev.target.reset(); toast('Senha trocada'); voltar();
+  if (!semSenhaAtual) {
+    const { error } = await sb.auth.signInWithPassword({ email: usuario.email, password: $('s-atual').value });
+    if (error) { erro.textContent = /invalid/i.test(error.message) ? 'Senha atual incorreta.' : error.message; return; }
+  }
+  const { error } = await sb.auth.updateUser({ password: nova });
+  if (error) { erro.textContent = 'Não foi possível trocar: ' + error.message; return; }
+  semSenhaAtual = false; ev.target.reset(); toast('Senha trocada'); voltar();
 });
 
 // ===== Sempre a última versão =====
@@ -1073,14 +1208,6 @@ setInterval(() => { checarAtualizacao(); aplicarAtualizacao(); }, 10 * 60 * 1000
 (async () => {
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
   checarAtualizacao(true);
-  const bruto = store.get(K_DADOS);
-  if (!bruto) return telaBloqueio('criar');
-  try { const c = JSON.parse(bruto); sal = deB64(c.salt); iter = c.it || ITER; }
-  catch (e) { return telaBloqueio('entrar', 'Dados corrompidos. Use “Esqueci a senha” e restaure um backup.'); }
-  const k = store.get(K_CHAVE);
-  if (k && window.crypto?.subtle) {
-    try { chave = await crypto.subtle.importKey('raw', deB64(k), { name: 'AES-GCM' }, true, ['encrypt', 'decrypt']); db = await abrir(chave); return entrou(); }
-    catch (e) { store.del(K_CHAVE); }
-  }
-  telaBloqueio('entrar');
+  const { data } = await sb.auth.getSession();   // sessão salva no aparelho: entra direto, mesmo sem internet
+  if (data.session) carregar(data.session.user); else telaLogin();
 })();
