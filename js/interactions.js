@@ -956,6 +956,10 @@ el('corpoMetas').addEventListener('change', e => {
     const id = +linha.dataset.meta;
     const meta = Estado.metas.find(m => m.id === id);
     let campo = input.dataset.campo;
+    // Campo de mês: o navegador dispara "change" a cada dígito do ano (0002, 0020, 0202…) e ao
+    // apagar pra redigitar. Só grava mês completo, de 2000 em diante; o mês da meta apagado
+    // também espera (o da entrada vazio é escolha: volta ao padrão).
+    if ((campo === 'mes' || campo === 'mes_entrada') && (input.value ? +input.value.slice(0, 4) < 2000 : campo === 'mes')) return;
     let valor = valorDoCampoDaMeta(campo, input.value);
     if (!meta || valor === undefined) { mostrarToast('Valor inválido', 'Confira o campo e tente de novo.'); desenhar(); return; }
     // Mês da entrada: grava quantos meses antes do mês da meta ela vem; depois do mês da meta
@@ -976,7 +980,7 @@ el('corpoMetas').addEventListener('change', e => {
     // da entrada pro padrão: 1 mês antes. Mudar o mês da entrada, ou o valor de uma entrada
     // que já existe, mantém o que foi escolhido.
     const campos = { [campo]: valor };
-    const voltaEntrada = campo === 'mes' || (campo === 'entrada' && valor > 0 && !(meta.entrada > 0));
+    const voltaEntrada = campo === 'mes' ? meta.entrada > 0 : campo === 'entrada' && valor > 0 && !(meta.entrada > 0);
     if (voltaEntrada && meta.meses_ate_parcela !== 1) campos.meses_ate_parcela = 1;
     gravarMudancaDaMeta('atualizar', id, campos);
 });

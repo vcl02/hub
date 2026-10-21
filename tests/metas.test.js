@@ -177,7 +177,7 @@ test('plano em pílulas: situação, entrada, parcelas, Comprometido e falta, co
     assert.equal(rotuloDoMesDaMeta({ forma: 'auto' }), 'Pagamento');
     // Mudar o mês da meta ou pôr uma entrada nova volta o mês dela pra 1 mês antes; mudar o
     // mês da entrada (ou o valor de uma que já existe) mantém.
-    assert.match(interacoes, /const voltaEntrada = campo === 'mes' \|\| \(campo === 'entrada' && valor > 0 && !\(meta\.entrada > 0\)\);/);
+    assert.match(interacoes, /const voltaEntrada = campo === 'mes' \? meta\.entrada > 0 : campo === 'entrada' && valor > 0 && !\(meta\.entrada > 0\);/);
     assert.match(interacoes, /if \(voltaEntrada && meta\.meses_ate_parcela !== 1\) campos\.meses_ate_parcela = 1;/);
     assert.match(regras, /mudar o mês da 1ª parcela\/compra, ou pôr uma entrada onde não havia, volta o mês dela pra 1 mês antes, e mudar o Mês da entrada ou o valor de uma entrada que já existe mantém o escolhido/);
     // As vezes ficam junto do valor total (linha de cima); o mês da entrada embaixo, só com entrada.
@@ -358,4 +358,11 @@ test('mês a mês: botão em cada meta, modal próprio e refeito a cada desenho'
     // No celular, cada mês vira um cartão com o rótulo em cima de cada número (sem rolar de lado).
     assert.match(visoes, /data-rotulo="Disponível"/);
     assert.match(ler('css/mobile.css'), /\.pmTabela td\[data-rotulo\]::before \{\s*content: attr\(data-rotulo\);/);
+});
+
+test('campo de mês das metas não grava ano pela metade nem o mês da meta apagado', () => {
+    assert.match(interacoes, /if \(\(campo === 'mes' \|\| campo === 'mes_entrada'\) && \(input\.value \? \+input\.value\.slice\(0, 4\) < 2000 : campo === 'mes'\)\) return;/);
+    // A guarda vem antes de qualquer gravação ou aviso.
+    assert.ok(interacoes.indexOf("campo === 'mes_entrada') && (input.value") < interacoes.indexOf("let valor = valorDoCampoDaMeta(campo, input.value);"));
+    assert.match(regras, /Campo de mês só grava mês completo, de 2000 em diante/);
 });
