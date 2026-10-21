@@ -896,36 +896,48 @@ const ICONE_COMPRAR = '<svg viewBox="0 0 24 24" width=16 height=16 fill=none str
 const ICONE_EXCLUIR = '<svg viewBox="0 0 24 24" width=16 height=16 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>';
 const FORMAS_DA_META = { avista: 'À vista', cartao: 'Parcelado Crédito', financiamento: 'Parcelado Débito' };
 
-// Texto do plano de uma meta: o mês e como pagar; sem caber, quanto falta, em que mês o
-// dinheiro acaba (ou que o cartão não tem limite) e quando caberia.
+// Plano de uma meta em partes: a situação (Cabe/Não cabe) e, cada uma com rótulo, valor e
+// detalhe (mês), o à vista, a entrada, as parcelas (no débito ou no cartão, faturas a partir do
+// mês seguinte à compra), o maior Comprometido (vermelho acima do teto) e, sem caber, o maior
+// buraco desde o 1º mês em que o dinheiro não dá (ou que falta limite) e quando caberia.
 const mesAbrev = iso => nomePeriodoAbrev({ ini: iso });
-function textoDoPlanoDaMeta(p) {
-    if (p.ciclo == null || p.mes == null) return { texto: 'Sem data', classe: 'neutro' };
-    if (p.ciclo < 0) return { texto: 'Fora dos ciclos carregados', classe: 'neutro' };
+function partesDoPlanoDaMeta(p) {
+    if (p.ciclo == null || p.mes == null) return { classe: 'neutro', partes: [{ rotulo: 'Sem data' }] };
+    if (p.ciclo < 0) return { classe: 'neutro', partes: [{ rotulo: 'Fora dos ciclos carregados' }] };
     const mes = nomePeriodoAbrev(Estado.ciclos[p.ciclo]);
-    const dica = `Guardado projetado disponível em ${mes}: ${brl(Math.max(0, p.disponivel))}`;
-    // Débito: o mês da meta é o da 1ª parcela, que o texto já mostra; não se repete na frente.
-    const inicio = p.forma === 'financiamento' ? '' : `${mes} · `;
-    let como = 'à vista';
-    if (p.forma !== 'avista') {
-        // "entrada R$ 10.000,00 em Fev/27 + 10x R$ 3.000,00 de Mar/27 a Dez/27"; no cartão, com
-        // o nome dele, faturas a partir do mês seguinte à compra e o mês da entrada só se for outro.
-        const mesEntrada = !inicio || p.cicloEntrada !== p.ciclo ? ` em ${nomePeriodoAbrev(Estado.ciclos[p.cicloEntrada])}` : '';
-        const entrada = p.entrada > 0 ? `entrada ${brl(p.entrada)}${mesEntrada}` : '';
+    const classe = p.cabe ? 'vd' : 'vm';
+    const partes = [{ valor: p.cabe ? 'Cabe' : 'Não cabe', classe, situacao: true }];
+    if (p.forma === 'avista') partes.push({ rotulo: 'À vista', valor: brl(p.meta.valor), detalhe: mes });
+    if (p.entrada > 0) partes.push({ rotulo: 'Entrada', valor: brl(p.entrada), detalhe: nomePeriodoAbrev(Estado.ciclos[p.cicloEntrada]) });
+    if (p.forma !== 'avista' && p.parcelas) {
         const depois = p.forma === 'cartao' ? 1 : 0;
-        const ini = somaMeses(p.mes, depois), fim = somaMeses(p.mes, depois + p.parcelas - 1);
-        const parcelas = p.parcelas
-            ? `${p.forma === 'cartao' ? `${NOME_CARTAO[p.cartao]} ` : ''}${p.parcelas}x ${brl(p.parcela)} ${p.parcelas > 1 ? `de ${mesAbrev(ini)} a ${mesAbrev(fim)}` : `em ${mesAbrev(ini)}`}` : '';
-        como = [entrada, parcelas].filter(Boolean).join(' + ');
+        const ini = mesAbrev(somaMeses(p.mes, depois)), fim = mesAbrev(somaMeses(p.mes, depois + p.parcelas - 1));
+        partes.push({ rotulo: p.forma === 'cartao' ? NOME_CARTAO[p.cartao] : 'Débito', valor: `${p.parcelas}x ${brl(p.parcela)}`,
+            detalhe: p.parcelas > 1 ? `${ini} a ${fim}` : ini });
     }
-    const comprometido = p.comprometidoMax != null ? ` · Comprometido até ${pct1(p.comprometidoMax)}` : '';
-    if (p.cabe) return { texto: `${inicio}${como}${comprometido}`, classe: 'vd', dica };
-    // A falta é o maior buraco; o mês é o 1º em que o dinheiro não dá (o buraco cresce depois).
-    const porque = p.semLimite ? 'sem limite no cartão' : `faltam até ${brl(p.falta)} a partir de ${nomePeriodoAbrev(Estado.ciclos[p.cicloFalta])}`;
-    // Mudar o mês da meta leva a entrada junto, com a mesma distância.
-    const verbo = { avista: 'em', cartao: 'comprando em', financiamento: 'começando em' }[p.forma];
-    const quando = p.cabeEm != null ? ` · cabe ${verbo} ${nomePeriodoAbrev(Estado.ciclos[p.cabeEm])}` : '';
-    return { texto: `${inicio}${como} · não cabe: ${porque}${quando}`, classe: 'vm', dica };
+    if (p.comprometidoMax != null) {
+        partes.push({ rotulo: 'Comprometido até', valor: pct1(p.comprometidoMax),
+            classe: p.comprometidoMax > LIMITES_COMPROMISSOS[0].percentual + 1e-9 ? 'vm' : '' });
+    }
+    if (!p.cabe) {
+        partes.push(p.semLimite ? { rotulo: 'Sem limite no cartão', classe: 'vm' }
+            : { rotulo: 'Faltam até', valor: brl(p.falta), detalhe: `desde ${nomePeriodoAbrev(Estado.ciclos[p.cicloFalta])}`, classe: 'vm' });
+        // Mudar o mês da meta leva a entrada junto, com a mesma distância.
+        if (p.cabeEm != null) {
+            partes.push({ rotulo: { avista: 'Cabe em', cartao: 'Cabe comprando em', financiamento: 'Cabe começando em' }[p.forma],
+                valor: nomePeriodoAbrev(Estado.ciclos[p.cabeEm]), classe: 'am' });
+        }
+    }
+    return { classe, dica: `Guardado projetado disponível em ${mes}: ${brl(Math.max(0, p.disponivel))}`, partes };
+}
+
+// Cada parte vira uma pílula: rótulo em itálico, valor em negrito e o mês apagado.
+function htmlDoPlanoDaMeta(p) {
+    const { classe, dica, partes } = partesDoPlanoDaMeta(p);
+    const parte = x => `<span class="mpParte${x.situacao ? ' mpSituacao' : ''}${x.classe ? ` ${x.classe}` : ''}">` +
+        [x.rotulo && `<i>${escapeHtml(x.rotulo)}</i>`, x.valor && `<b>${escapeHtml(x.valor)}</b>`,
+            x.detalhe && `<span class=mpDetalhe>${escapeHtml(x.detalhe)}</span>`].filter(Boolean).join(' ') + '</span>';
+    return `<span class="metaPlano ${classe}"${dica ? ` title="${escapeHtml(dica)}"` : ''}>${partes.map(parte).join(' ')}</span>`;
 }
 
 // O que o mês da meta quer dizer, no hover (a entrada tem o mês dela, na linha de baixo).
@@ -946,7 +958,6 @@ function htmlModalMetas(planos) {
         botao('excluir', ICONE_EXCLUIR, 'Excluir') + `</div>`;
     const linhaMeta = p => {
         const m = p.meta;
-        const plano = textoDoPlanoDaMeta(p);
         // "Mês próprio": a meta tem data dela (campo de mês ao lado); senão segue uma âncora.
         const opcoesAncora = `<option value="">Mês próprio</option>` + ancoras.map(a =>
             `<option value=${a.id}${a.id === m.ancora_meta_id ? ' selected' : ''}>${escapeHtml(a.nome)}</option>`).join('');
@@ -971,7 +982,7 @@ function htmlModalMetas(planos) {
             `<select data-campo=forma aria-label="Forma de pagar">${formas}</select>` +
             `<span class=metaBotoes>${botao('comprar', ICONE_COMPRAR, 'Comprar')}${botao('excluir', ICONE_EXCLUIR, 'Excluir')}</span>` +
             `</div>` +
-            `<div class=metaDetalhe>${extras}<span class="metaPlano ${plano.classe}"${plano.dica ? ` title="${escapeHtml(plano.dica)}"` : ''}>${escapeHtml(plano.texto)}</span></div>` +
+            `<div class=metaDetalhe>${extras}${htmlDoPlanoDaMeta(p)}</div>` +
             `</div>`;
     };
     return `<div class=metasAcoes>` +

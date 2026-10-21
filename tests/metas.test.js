@@ -136,32 +136,44 @@ test('mês da meta: débito começa nele, cartão compra nele; sem entrada, o m�
     assert.deepEqual(JSON.parse(JSON.stringify(comEntrada.linhas.map(l => [l.periodoIdx, l.v]))), [[1, -1000], [4, -1000], [5, -1000], [6, -1000]]);
 });
 
-test('texto do plano: mês de cima, entrada com o mês dela; falta é o maior buraco a partir do 1º mês', () => {
-    // Só o trecho do texto (cycle-views.js), com domain/shared reais e 12 ciclos.
+test('plano em pílulas: situação, entrada, parcelas, Comprometido e falta, com cores', () => {
+    // Só o trecho do plano (cycle-views.js), com domain/shared reais e 12 ciclos.
     const trecho = visoes.slice(visoes.indexOf('const mesAbrev'), visoes.indexOf('function htmlModalMetas('));
     const contexto = vm.createContext({ MESES: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'] });
     ['js/domain.js', 'js/shared.js'].forEach(arquivo => vm.runInContext(ler(arquivo), contexto));
     contexto.Estado = { ciclos: CICLOS.map(c => ({ ...c })) };
     vm.runInContext(`const pct1 = n => n.toFixed(1).replace('.', ',') + '%';
+        const LIMITES_COMPROMISSOS = [{ percentual: 50 }];
         const formaDaMeta = meta => (['cartao', 'financiamento'].includes(meta.forma) ? meta.forma : 'avista');
-        ${trecho} globalThis.t = { textoDoPlanoDaMeta, tituloDoMesDaMeta };`, contexto);
-    const { textoDoPlanoDaMeta, tituloDoMesDaMeta } = contexto.t;
-    const base = { mes: '2026-11-01', ciclo: 1, cicloEntrada: 1, disponivel: 0, forma: 'financiamento', entrada: 0, parcelas: 21, parcela: 190.48 };
-    const nbsp = s => s.replace(/\u00a0/g, ' ');
-    const texto = p => nbsp(textoDoPlanoDaMeta({ ...base, ...p }).texto);
-    // Débito: o mês da meta é o da 1ª parcela e não se repete na frente; a entrada diz o mês dela.
-    assert.equal(texto({ cabe: true }), '21x R$ 190,48 de Nov/26 a Jul/28');
-    assert.equal(texto({ cabe: false, falta: 4000, cicloFalta: 3, cabeEm: 5 }),
-        '21x R$ 190,48 de Nov/26 a Jul/28 · não cabe: faltam até R$ 4.000,00 a partir de Jan/27 · cabe começando em Mar/27');
-    assert.equal(texto({ entrada: 1000, cicloEntrada: 0, cabe: true }), 'entrada R$ 1.000,00 em Out/26 + 21x R$ 190,48 de Nov/26 a Jul/28');
-    assert.equal(texto({ entrada: 1000, cabe: true }), 'entrada R$ 1.000,00 em Nov/26 + 21x R$ 190,48 de Nov/26 a Jul/28');
-    // Cartão: o mês da meta é o da compra, faturas a partir do seguinte; a entrada só diz o mês se for outro.
-    const cartao = { forma: 'cartao', cartao: 'nubank' };
-    assert.equal(texto({ ...cartao, cabe: false, semLimite: true, cabeEm: 5 }),
-        'Nov/26 · Nubank 21x R$ 190,48 de Dez/26 a Ago/28 · não cabe: sem limite no cartão · cabe comprando em Mar/27');
-    assert.equal(texto({ ...cartao, entrada: 1000, cabe: true }), 'Nov/26 · entrada R$ 1.000,00 + Nubank 21x R$ 190,48 de Dez/26 a Ago/28');
-    assert.equal(texto({ ...cartao, entrada: 1000, cicloEntrada: 0, cabe: true }), 'Nov/26 · entrada R$ 1.000,00 em Out/26 + Nubank 21x R$ 190,48 de Dez/26 a Ago/28');
-    assert.match(texto({ forma: 'avista', cabe: false, falta: 10, cicloFalta: 1, cabeEm: 5 }), /^Nov\/26 · à vista · .* · cabe em Mar\/27$/);
+        ${trecho} globalThis.t = { partesDoPlanoDaMeta, htmlDoPlanoDaMeta, tituloDoMesDaMeta };`, contexto);
+    const { partesDoPlanoDaMeta, htmlDoPlanoDaMeta, tituloDoMesDaMeta } = contexto.t;
+    const base = { mes: '2026-11-01', ciclo: 1, cicloEntrada: 1, disponivel: 0, forma: 'financiamento', entrada: 0, parcelas: 21, parcela: 190.48, meta: { valor: 4000 } };
+    const nbsp = s => s.replace(/ /g, ' ');
+    // Cada parte como "classe: rótulo | valor | detalhe".
+    const partes = p => JSON.parse(JSON.stringify(partesDoPlanoDaMeta({ ...base, ...p }).partes
+        .map(x => nbsp(`${x.classe || ''}: ${[x.rotulo, x.valor, x.detalhe].map(v => v || '').join(' | ')}`))));
+    assert.deepEqual(partes({ cabe: true }), ['vd:  | Cabe | ', ': Débito | 21x R$ 190,48 | Nov/26 a Jul/28']);
+    // Débito com entrada antes e Comprometido acima do teto (50%): vermelho, só informativo.
+    assert.deepEqual(partes({ entrada: 1000, cicloEntrada: 0, cabe: true, comprometidoMax: 101.6 }),
+        ['vd:  | Cabe | ', ': Entrada | R$ 1.000,00 | Out/26', ': Débito | 21x R$ 190,48 | Nov/26 a Jul/28', 'vm: Comprometido até | 101,6% | ']);
+    assert.deepEqual(partes({ cabe: true, comprometidoMax: 40 }).at(-1), ': Comprometido até | 40,0% | ');
+    // Sem caber: o maior buraco desde o 1º mês sem dinheiro, e quando caberia (âmbar).
+    assert.deepEqual(partes({ cabe: false, falta: 4000, cicloFalta: 3, cabeEm: 5 }).slice(-2),
+        ['vm: Faltam até | R$ 4.000,00 | desde Jan/27', 'am: Cabe começando em | Mar/27 | ']);
+    // Cartão: faturas a partir do mês seguinte à compra, com o nome dele.
+    assert.deepEqual(partes({ forma: 'cartao', cartao: 'nubank', cabe: false, semLimite: true, cabeEm: 5 }),
+        ['vm:  | Não cabe | ', ': Nubank | 21x R$ 190,48 | Dez/26 a Ago/28', 'vm: Sem limite no cartão |  | ', 'am: Cabe comprando em | Mar/27 | ']);
+    assert.deepEqual(partes({ forma: 'avista', cabe: false, falta: 10, cicloFalta: 1, cabeEm: 5 }),
+        ['vm:  | Não cabe | ', ': À vista | R$ 4.000,00 | Nov/26', 'vm: Faltam até | R$ 10,00 | desde Nov/26', 'am: Cabe em | Mar/27 | ']);
+    assert.deepEqual(partes({ ciclo: -1 }), [': Fora dos ciclos carregados |  | ']);
+    // HTML: pílulas com rótulo em itálico, valor em negrito e o mês apagado.
+    assert.equal(nbsp(htmlDoPlanoDaMeta({ ...base, entrada: 1000, cabe: true })),
+        '<span class="metaPlano vd" title="Guardado projetado disponível em Nov/26: R$ 0,00">' +
+        '<span class="mpParte mpSituacao vd"><b>Cabe</b></span> ' +
+        '<span class="mpParte"><i>Entrada</i> <b>R$ 1.000,00</b> <span class=mpDetalhe>Nov/26</span></span> ' +
+        '<span class="mpParte"><i>Débito</i> <b>21x R$ 190,48</b> <span class=mpDetalhe>Nov/26 a Jul/28</span></span></span>');
+    assert.match(regras, /cada meta mostra o plano ao lado em \*\*pílulas\*\*, com o rótulo em itálico, o valor em negrito e o mês apagado/);
+    assert.match(ler('css/forms.css'), /\.mpParte\.am \{ color: #F0A83A; background: var\(--orange-soft\); border-color: #6A5330; \}/);
     assert.equal(tituloDoMesDaMeta({ forma: 'financiamento', entrada: 500 }), 'Mês da 1ª parcela');
     assert.equal(tituloDoMesDaMeta({ forma: 'cartao', entrada: 500 }), 'Mês da compra (1ª fatura no seguinte)');
     assert.equal(tituloDoMesDaMeta({ forma: 'auto' }), 'Mês do pagamento');

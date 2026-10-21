@@ -965,16 +965,47 @@
       color: var(--mu);
   }
 
-  /* O plano empurra pra direita e quebra inteiro pra linha de baixo quando não cabe. */
+  /* O plano em pílulas, empurrado pra direita; quebra pra linha de baixo quando não cabe.
+     Rótulo em itálico apagado, valor em negrito, mês apagado; a cor diz a situação. */
   .metaPlano {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: .3rem;
       margin-left: auto;
-      font-size: .84rem;
-      font-weight: 600;
+      font-size: .8rem;
   }
 
-  .metaPlano.vd { color: var(--vd); }
-  .metaPlano.vm { color: var(--vm); }
-  .metaPlano.neutro { color: var(--mu); }
+  .mpParte {
+      display: inline-flex;
+      align-items: baseline;
+      gap: .3rem;
+      padding: .1rem .5rem;
+      color: var(--fg);
+      background: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+  }
+
+  .mpParte i,
+  .mpDetalhe { color: var(--mu); }
+  .mpParte b { font-weight: 700; }
+
+  .mpParte.vd { color: var(--vd); background: var(--green-soft); border-color: #2F5A40; }
+  .mpParte.vm { color: var(--vm); background: var(--red-soft); border-color: #6A3A36; }
+  .mpParte.am { color: #F0A83A; background: var(--orange-soft); border-color: #6A5330; }
+
+  /* Nas coloridas, rótulo e mês seguem a cor, um pouco mais apagados. */
+  .mpParte.vd i, .mpParte.vm i, .mpParte.am i,
+  .mpParte.vd .mpDetalhe, .mpParte.vm .mpDetalhe, .mpParte.am .mpDetalhe {
+      color: inherit;
+      opacity: .8;
+  }
+
+  .mpSituacao { font-weight: 700; }
+  .metaPlano.neutro .mpParte { color: var(--mu); }
 
   /* Cadastro no Crédito: Livre Hoje do cartão antes → depois da compra, discreto sob a
      Fatura; sem limite, a linha inteira fica vermelha. */
