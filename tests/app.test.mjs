@@ -9,13 +9,17 @@ import { chromium } from 'playwright';
 
 const RAIZ = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const TIPOS = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png' };
-let servidor, url, navegador;
+let servidor, url, navegador, novaVersao = false;   // novaVersao: simula um deploy alterando o app.js
 
 before(async () => {
   servidor = http.createServer((req, res) => {
     let p = path.join(RAIZ, decodeURIComponent(req.url.split('?')[0]));
     if (p.endsWith(path.sep)) p += 'index.html';
-    fs.readFile(p, (e, d) => { if (e) { res.writeHead(404); res.end(); return; } res.writeHead(200, { 'content-type': TIPOS[path.extname(p)] || 'application/octet-stream' }); res.end(d); });
+    fs.readFile(p, (e, d) => {
+      if (e) { res.writeHead(404); res.end(); return; }
+      if (novaVersao && p.endsWith('app.js')) d = Buffer.concat([d, Buffer.from('\n// deploy novo')]);
+      res.writeHead(200, { 'content-type': TIPOS[path.extname(p)] || 'application/octet-stream' }); res.end(d);
+    });
   });
   await new Promise(r => servidor.listen(0, r));
   url = `http://localhost:${servidor.address().port}/`;
@@ -161,4 +165,31 @@ test('pesagem guarda o horário e avisa quando foge do habitual', async () => {
   assert.match(await pg.textContent('#c-aviso'), /Fora do seu horário/);
   assert.equal(await pg.getAttribute('#c-aviso', 'class'), 'aviso erro');
   assert.deepEqual(erros, []); await ctx.close();
+});
+
+test('recarrega sozinho quando sai uma versão nova', async () => {
+  const { ctx, pg } = await abrirApp();
+  await pg.waitForFunction(() => versaoAtual);                                               // versão rodando registrada
+  await pg.tap('.slot >> nth=0'); await pg.fill('#e-carga', '40'); await pg.dispatchEvent('#e-carga', 'input');
+  novaVersao = true;
+  try {
+    const recarregou = pg.waitForEvent('load');
+    await pg.evaluate(() => checarAtualizacao(true));
+    await recarregou;
+  } finally { novaVersao = false; }
+  await pg.fill('#l-senha', '1234'); await pg.click('#l-btn');
+  await pg.waitForSelector('#v-exercicio:not([hidden])');                                    // volta no mesmo exercício
+  assert.equal(await pg.inputValue('#e-carga'), '40');
+  await ctx.close();
+});
+
+test('não recarrega no meio de um formulário', async () => {
+  const { ctx, pg } = await abrirApp();
+  await pg.waitForFunction(() => versaoAtual);
+  await pg.click('#i-corpo'); await pg.fill('#c-peso', '88');
+  novaVersao = true;
+  try { await pg.evaluate(() => checarAtualizacao(true)); await pg.waitForTimeout(1500); } finally { novaVersao = false; }
+  assert.equal(await pg.inputValue('#c-peso'), '88');                                        // continua na tela, nada perdido
+  assert.equal(await pg.evaluate(() => atualizacaoPendente), true);                          // atualiza ao sair dela
+  await ctx.close();
 });

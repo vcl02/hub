@@ -26,6 +26,7 @@ PWA para registrar evolução de carga na academia: pirâmide automática, subst
 - **Pontos e conquistas:** calculados a partir dos dados, nada extra é guardado.
 - **Sessão do dia** (séries marcadas, reps, cronômetro, exercício aberto, peso digitado): item `carga.sessao` no `localStorage`, sem criptografia; zera quando muda o dia.
 - **Cores:** azul = app e ações, verde = feito/sucesso, vermelho = erro/abaixo da meta; tokens no topo de `style.css`.
+- **Atualização:** ao abrir, ao voltar para o app e a cada 10 min, `app.js` compara `index.html`, `app.js` e `style.css` publicados com os que estão rodando; se mudaram, recarrega (fora de telas com formulário). O `sw.js` busca da rede revalidando com o servidor e só usa o cache sem internet.
 - Dias de treino: `DIAS_FIXOS` e `DIAS_EXTRA` no topo de `app.js`.
 
 ## Testes
