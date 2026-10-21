@@ -52,7 +52,7 @@
     <div class="track"><span id="i-barra"></span></div>
   </div>
   <ul id="i-lista" class="slots"></ul>
-  <p class="rule">Dias fixos: quarta e quinta. Segunda é o extra sugerido. Bateu o topo da faixa de reps em todas as séries? Suba a carga no próximo treino.</p>
+  <p class="rule">Dias fixos: quarta e quinta; segunda é o extra sugerido. Pirâmide: você põe o peso da 1ª série e o app calcula as outras (+10% de peso, −2 reps). O 1º exercício do dia começa com aquecimento. Fez todas as reps da última série? Suba o peso inicial.</p>
 </section>
 
 <!-- Exercício: variação, descanso, carga, histórico (arraste para trocar) -->
@@ -65,9 +65,32 @@
   <h2 id="e-nome"></h2>
   <p class="presc" id="e-presc"></p>
   <a class="yt" id="e-youtube" target="_blank" rel="noopener">▶ Ver execução no YouTube</a>
+  <details class="dicas" id="e-dicas" open>
+    <summary>Dicas de execução</summary>
+    <ul>
+      <li><b>Sem impulso:</b> movimento controlado, sem tranco.</li>
+      <li><b>Volte devagar:</b> 2 a 3 segundos na volta.</li>
+      <li><b>Respiração:</b> solte o ar pela boca no esforço, puxe pelo nariz na volta.</li>
+      <li><b>Abdômen firme</b> e costas apoiadas o tempo todo.</li>
+      <li><b>Ajuste a máquina</b> antes: banco e pegada no seu tamanho.</li>
+    </ul>
+  </details>
+
+  <p class="last" id="e-ultima"></p>
+  <div class="log">
+  <div class="field">
+    <label for="e-carga">Peso da 1ª série (o resto o app calcula)</label>
+    <div class="stepper">
+      <button type="button" data-passo="carga" data-dir="-1" aria-label="Diminuir carga">−</button>
+      <div class="mid"><input id="e-carga" inputmode="decimal" autocomplete="off" placeholder="0"><span class="unit" id="e-unidade">kg</span></div>
+      <button type="button" data-passo="carga" data-dir="1" aria-label="Aumentar carga">+</button>
+    </div>
+  </div>
+  </div>
 
   <div class="box timer">
-    <div class="t-top"><span class="t-lbl">Descanso</span><div class="dots" id="t-series" aria-label="Séries feitas"></div></div>
+    <div class="t-top"><span class="t-lbl">Pirâmide de hoje</span></div>
+    <ol class="plano" id="t-plano"></ol>
     <div class="t-clock" id="t-relogio" role="timer">1:15</div>
     <p class="t-note" id="t-nota"></p>
     <div class="row" id="t-parado"><button type="button" class="btn primary big" id="t-feita">Série feita · descansar</button></div>
@@ -79,18 +102,9 @@
     <button type="button" class="link" id="t-zerar" hidden>Zerar séries</button>
   </div>
 
-  <p class="last" id="e-ultima"></p>
   <form id="e-form" class="log">
     <div class="field">
-      <label for="e-carga">Carga</label>
-      <div class="stepper">
-        <button type="button" data-passo="carga" data-dir="-1" aria-label="Diminuir carga">−</button>
-        <div class="mid"><input id="e-carga" inputmode="decimal" autocomplete="off" placeholder="0"><span class="unit" id="e-unidade">kg</span></div>
-        <button type="button" data-passo="carga" data-dir="1" aria-label="Aumentar carga">+</button>
-      </div>
-    </div>
-    <div class="field">
-      <label for="e-reps">Reps na série mais fraca</label>
+      <label for="e-reps">Reps feitas na última série</label>
       <div class="stepper">
         <button type="button" data-passo="reps" data-dir="-1" aria-label="Diminuir reps">−</button>
         <div class="mid"><input id="e-reps" inputmode="numeric" autocomplete="off" placeholder="10"><span class="unit">reps</span></div>

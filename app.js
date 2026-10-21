@@ -48,7 +48,17 @@ function quando(d) {
   return n === 0 ? 'hoje' : n === 1 ? 'ontem' : n > 1 && n < 7 ? 'há ' + n + ' dias' : dataCurta(d);
 }
 const repsMax = e => { const m = String(e.reps).match(/\d+/g); return m ? Math.max(...m.map(Number)) : 12; };
-const repsMin = e => { const m = String(e.reps).match(/\d+/g); return m ? Math.min(...m.map(Number)) : 10; };
+// Pirâmide: série i = peso inicial + i × 10% (arredondado ao passo), reps = topo − 2i
+const repsSerie = (e, i) => Math.max(1, repsMax(e) - 2 * i);
+const repsUltima = e => repsSerie(e, e.series - 1);
+const passoCarga = v => v.unidade === 'kg' ? 2.5 : 1;
+const arred = (x, p) => Math.max(p, Math.round(x / p) * p);
+function plano(e, v, inicial, comAquecimento) {
+  const p = passoCarga(v), ok = isFinite(inicial) && inicial > 0, inc = ok ? arred(inicial * .1, p) : 0, s = [];
+  if (comAquecimento) s.push({ nome: 'Aquecimento', carga: ok ? arred(inicial * .5, p) : null, reps: 15, aq: true });
+  for (let i = 0; i < e.series; i++) s.push({ nome: 'Série ' + (i + 1), carga: ok ? inicial + inc * i : null, reps: repsSerie(e, i) });
+  return s;
+}
 let tToast;
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(tToast); tToast = setTimeout(() => { t.hidden = true; }, 2400); }
 function confirmar(btn, texto) {   // 1º toque arma, 2º confirma (alert/confirm não são usados)
@@ -179,8 +189,8 @@ telas.inicio = () => {
     const feito = db.registros.some(r => r.data === h && e.variacoes.some(x => x.id === r.variacao)); if (feito) feitos++;
     return `<li><button type="button" class="slot" data-ex="${e.id}">
       <span class="slot-main"><span class="eyebrow">${esc(e.grupo)}${e.ativo > 0 ? ` · <span class="kind">${TIPOS[e.ativo]}</span>` : ''}</span>
-      <span class="name">${esc(v.nome)}</span><span class="r">${e.series} × ${esc(e.reps)} · ${e.descanso} s</span>
-      <span class="chips">${feito ? '<span class="chip ok">✓ Feito hoje</span>' : ''}${u && u.reps >= repsMax(e) ? '<span class="chip warn">Subir carga</span>' : ''}</span></span>
+      <span class="name">${esc(v.nome)}</span><span class="r">${Array.from({ length: e.series }, (_, i) => repsSerie(e, i)).join(' → ')} reps · ${e.descanso} s</span>
+      <span class="chips">${feito ? '<span class="chip ok">✓ Feito hoje</span>' : ''}${u && u.reps >= repsUltima(e) ? '<span class="chip warn">Subir carga</span>' : ''}</span></span>
       <span class="slot-load">${u ? `<span class="w">${fmt(u.carga)}<small>${esc(v.unidade)}</small></span><span class="r">× ${u.reps} · ${quando(u.data)}</span>` : '<span class="r">sem registro</span>'}</span>
     </button></li>`;
   }).join('');
@@ -223,16 +233,16 @@ telas.exercicio = () => {
   $('e-variacoes').innerHTML = e.variacoes.map((x, i) => x.nome ? `<button type="button" class="seg" role="radio" aria-checked="${i === e.ativo}" data-var="${i}"><span class="seg-k">${TIPOS[i]}</span><span class="seg-n">${esc(x.nome)}</span></button>` : '').join('');
   $('e-variacoes').hidden = e.variacoes.filter(x => x.nome).length < 2;
   $('e-nome').textContent = v.nome;
-  $('e-presc').innerHTML = `<b>${e.series} séries × ${esc(e.reps)} reps</b> · descanso ${e.descanso} s`;
+  $('e-presc').innerHTML = `<b>Pirâmide ${Array.from({ length: e.series }, (_, i) => repsSerie(e, i)).join(' → ')} reps</b> · descanso ${e.descanso} s`;
   $('e-youtube').href = 'https://www.youtube.com/results?search_query=' + encodeURIComponent((v.nome + ' execução correta').replace(/[()]/g, ' ').replace(/\s+/g, ' ').trim());
-  pintarDescanso(e);
   $('e-ultima').innerHTML = u
-    ? `<span>Última: <b>${fmt(u.carga)} ${esc(v.unidade)} × ${u.reps}</b> · ${quando(u.data)}</span>${u.reps >= repsMax(e) ? `<span class="chip warn">Fez ${repsMax(e)}: suba a carga</span>` : ''}`
+    ? `<span>Última: <b>peso inicial ${fmt(u.carga)} ${esc(v.unidade)}</b>, ${u.reps} reps na última série · ${quando(u.data)}</span>${u.reps >= repsUltima(e) ? '<span class="chip warn">Completou: suba o peso inicial</span>' : ''}`
     : '<span class="muted">Primeiro registro desta variação. Comece leve.</span>';
   $('e-unidade').textContent = v.unidade;
   const rs = rascunho[v.id];   // valor digitado e ainda não salvo tem prioridade
   $('e-carga').value = rs ? rs.carga : u ? String(u.carga).replace('.', ',') : '';
-  $('e-reps').value = rs ? rs.reps : u ? u.reps : repsMin(e);
+  $('e-reps').value = rs ? rs.reps : repsUltima(e);
+  pintarDescanso(e);
   const lista = db.registros.filter(r => r.variacao === v.id).sort((a, b) => b.data.localeCompare(a.data));
   $('e-historico').innerHTML = lista.length
     ? lista.map(r => `<li><span class="h-d">${dataCurta(r.data)}</span><span class="h-v">${fmt(r.carga)} ${esc(v.unidade)} × ${r.reps}</span><button type="button" class="del" data-apagar="${r.data}">Apagar</button></li>`).join('')
@@ -264,7 +274,7 @@ $('e-form').addEventListener('submit', ev => {
   const e = exAtual(), v = e.variacoes[e.ativo];
   const carga = num($('e-carga').value), reps = parseInt($('e-reps').value, 10);
   if (!isFinite(carga) || carga < 0) { toast('Informe a carga'); $('e-carga').focus(); return; }
-  if (!(reps > 0)) { toast('Informe as reps'); $('e-reps').focus(); return; }
+  if (!(reps >= 0)) { toast('Informe as reps'); $('e-reps').focus(); return; }
   const h = hoje(), r = db.registros.find(x => x.variacao === v.id && x.data === h);
   if (r) { r.carga = carga; r.reps = reps; } else db.registros.push({ variacao: v.id, data: h, carga, reps });
   delete rascunho[v.id]; salvarSessao();
@@ -282,7 +292,7 @@ function passo(campo, dir) {
 function guardarRascunho() {
   const e = exAtual(); if (!e) return;
   rascunho[e.variacoes[e.ativo].id] = { carga: $('e-carga').value, reps: $('e-reps').value };
-  salvarSessao();
+  salvarSessao(); pintarDescanso(e);
 }
 $('e-carga').addEventListener('input', guardarRascunho);
 $('e-reps').addEventListener('input', guardarRascunho);
@@ -293,70 +303,86 @@ function trocarExercicio(dir) {
   store.set('carga.arrastou', '1'); $('e-dica').hidden = true;
 }
 
-// Arrastar para o lado = próximo / anterior
+// Arrastar para o lado = próximo / anterior (escuta a tela inteira, inclusive as bordas)
 (() => {
   const tela = $('v-exercicio'), semMovimento = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let x0 = 0, y0 = 0, t0 = 0, ativo = false, eixo = null;
+  let x0 = 0, y0 = 0, t0 = 0, ativo = false, eixo = null, pendente = null;
   const soltar = () => { tela.classList.add('slide'); tela.style.transform = ''; tela.style.opacity = ''; };
-  tela.addEventListener('touchstart', ev => {
-    ativo = ev.touches.length === 1 && !ev.target.closest('input,textarea,select,.segs');
-    if (!ativo) return;
-    x0 = ev.touches[0].clientX; y0 = ev.touches[0].clientY; t0 = Date.now(); eixo = null; tela.classList.remove('slide');
+  const concluir = () => {     // novo toque durante a animação: termina a troca na hora
+    if (!pendente) return;
+    clearTimeout(pendente.t); const d = pendente.dir; pendente = null;
+    trocarExercicio(d); tela.classList.remove('slide'); tela.style.transform = ''; tela.style.opacity = '';
+  };
+  document.addEventListener('touchstart', ev => {
+    ativo = false;
+    if (tela.hidden || !db) return;
+    concluir();
+    if (ev.touches.length !== 1 || ev.target.closest('input,textarea,select,.segs,#mini')) return;
+    ativo = true; x0 = ev.touches[0].clientX; y0 = ev.touches[0].clientY; t0 = Date.now(); eixo = null; tela.classList.remove('slide');
   }, { passive: true });
-  tela.addEventListener('touchmove', ev => {
+  document.addEventListener('touchmove', ev => {
     if (!ativo) return;
     const dx = ev.touches[0].clientX - x0, dy = ev.touches[0].clientY - y0;
     if (!eixo && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) eixo = Math.abs(dx) > Math.abs(dy) * 1.3 ? 'x' : 'y';
     if (eixo === 'x' && !semMovimento) { tela.style.transform = `translateX(${dx * .5}px)`; tela.style.opacity = String(1 - Math.min(Math.abs(dx) / 600, .4)); }
   }, { passive: true });
-  tela.addEventListener('touchend', ev => {
+  document.addEventListener('touchend', ev => {
     if (!ativo) return; ativo = false;
     const dx = ev.changedTouches[0].clientX - x0, rapido = Date.now() - t0 < 300;
     const trocar = eixo === 'x' && (Math.abs(dx) > 80 || (rapido && Math.abs(dx) > 40)), dir = dx < 0 ? 1 : -1;
     if (!trocar || semMovimento) { soltar(); if (trocar) trocarExercicio(dir); return; }
     tela.classList.add('slide'); tela.style.transform = `translateX(${-dir * 40}%)`; tela.style.opacity = '0';
-    setTimeout(() => {
-      trocarExercicio(dir);
+    pendente = { dir, t: setTimeout(() => {
+      pendente = null; trocarExercicio(dir);
       tela.classList.remove('slide'); tela.style.transform = `translateX(${dir * 30}%)`;
-      requestAnimationFrame(soltar);
-    }, 170);
+      requestAnimationFrame(() => requestAnimationFrame(soltar));
+    }, 170) };
   });
-  tela.addEventListener('touchcancel', () => { ativo = false; soltar(); });
+  document.addEventListener('touchcancel', () => { if (ativo) { ativo = false; soltar(); } });
+  $('e-dicas').open = store.get('carga.dicas') !== 'fechado';
+  $('e-dicas').addEventListener('toggle', () => store.set('carga.dicas', $('e-dicas').open ? 'aberto' : 'fechado'));
   if (store.get('carga.arrastou')) $('e-dica').hidden = true;
 })();
 
 // ===== Sessão do dia (fora do banco, sobrevive a fechar o app) =====
-// { dia, series: {exercicioId: n}, rascunho: {variacaoId: {carga, reps}}, exercicio, fim, aberto }
+// { dia, series: {exercicioId: n}, rascunho: {variacaoId: {carga, reps}}, aquecimento: exercicioId, exercicio, fim, aberto }
 const K_SESSAO = 'carga.sessao';
 let rascunho = {};
 function salvarSessao() {
   if (!db) return;
-  store.set(K_SESSAO, JSON.stringify({ dia: T.dia, series: T.series, rascunho, exercicio: T.exercicio, fim: T.fim, aberto: $('v-exercicio').hidden ? null : atual }));
+  store.set(K_SESSAO, JSON.stringify({ dia: T.dia, series: T.series, rascunho, aquecimento: T.aquecimento, exercicio: T.exercicio, fim: T.fim, aberto: $('v-exercicio').hidden ? null : atual }));
 }
 function restaurarSessao() {
   let s = null; try { s = JSON.parse(store.get(K_SESSAO)); } catch (e) {}
   const existe = id => db.exercicios.some(e => e.id === id);
   ir('inicio');
   if (!s || s.dia !== hoje()) return;
-  T.dia = s.dia; T.series = s.series || {}; rascunho = s.rascunho || {};
+  T.dia = s.dia; T.series = s.series || {}; rascunho = s.rascunho || {}; T.aquecimento = existe(s.aquecimento) ? s.aquecimento : null;
   if (s.fim > Date.now() && existe(s.exercicio)) { T.exercicio = s.exercicio; T.fim = s.fim; manterTela(true); T.intervalo = setInterval(tick, 250); }
   if (existe(s.aberto)) { atual = s.aberto; ir('exercicio'); }
   salvarSessao(); tick();
 }
 
 // ===== Cronômetro de descanso (sem som; vibra no fim) =====
-const T = { exercicio: null, fim: 0, intervalo: null, series: {}, dia: hoje() };
+const T = { exercicio: null, fim: 0, intervalo: null, series: {}, aquecimento: null, dia: hoje() };
 let telaLigada = null;
 const relogio = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + pad(s % 60); };
-function seriesFeitas(id) { if (T.dia !== hoje()) { T.series = {}; rascunho = {}; T.dia = hoje(); } return T.series[id] || 0; }
+function seriesFeitas(id) { if (T.dia !== hoje()) { T.series = {}; rascunho = {}; T.aquecimento = null; T.dia = hoje(); } return T.series[id] || 0; }
+// O 1º exercício começado no dia ganha uma série de aquecimento
+function temAquecimento(e) {
+  seriesFeitas(e.id);
+  if (T.aquecimento) return T.aquecimento === e.id;
+  const h = hoje();
+  return !Object.values(T.series).some(n => n > 0) && !db.registros.some(r => r.data === h);
+}
 async function manterTela(sim) {
   try {
     if (sim && !telaLigada && navigator.wakeLock) { telaLigada = await navigator.wakeLock.request('screen'); telaLigada.addEventListener('release', () => { telaLigada = null; }); }
     else if (!sim && telaLigada) { await telaLigada.release(); telaLigada = null; }
   } catch (e) {}
 }
-function iniciarDescanso(e) {
-  T.exercicio = e.id; T.fim = Date.now() + e.descanso * 1000;
+function iniciarDescanso(e, segundos) {
+  T.exercicio = e.id; T.fim = Date.now() + segundos * 1000;
   manterTela(true); clearInterval(T.intervalo); T.intervalo = setInterval(tick, 250); salvarSessao(); tick();
 }
 function pararDescanso() { clearInterval(T.intervalo); T.intervalo = null; T.fim = 0; manterTela(false); salvarSessao(); tick(); }
@@ -376,20 +402,29 @@ function tick() {
     $('mini-n').textContent = 'Descanso' + (e ? ' · ' + e.variacoes[variacaoAtiva(e)].nome : '');
   }
 }
+const descansoAquecimento = e => Math.min(45, e.descanso);
 function pintarDescanso(e) {
-  const n = seriesFeitas(e.id), rodando = !!T.fim && T.exercicio === e.id;
-  $('t-series').innerHTML = Array.from({ length: e.series }, (_, i) => `<span class="dot${i < n ? ' on' : ''}"></span>`).join('');
-  $('t-relogio').textContent = relogio(rodando ? T.fim - Date.now() : e.descanso * 1000);
+  const v = e.variacoes[e.ativo], n = seriesFeitas(e.id), rodando = !!T.fim && T.exercicio === e.id;
+  const P = plano(e, v, num($('e-carga').value), temAquecimento(e)), prox = P[n];
+  const txt = s => (s.carga ? fmt(s.carga) + ' ' + esc(v.unidade) : '—') + ' × ' + s.reps;
+  $('t-plano').innerHTML = P.map((s, i) => `<li class="${i < n ? 'ok' : i === n ? 'cur' : ''}${s.aq ? ' aq' : ''}"><span>${s.nome}</span><b>${txt(s)}</b><span>${i < n ? '✓' : ''}</span></li>`).join('');
+  $('t-relogio').textContent = relogio(rodando ? T.fim - Date.now() : (prox && prox.aq ? descansoAquecimento(e) : e.descanso) * 1000);
   $('t-relogio').classList.toggle('run', rodando);
-  $('t-parado').hidden = rodando || n >= e.series;
+  $('t-parado').hidden = rodando || n >= P.length;
   $('t-rodando').hidden = !rodando;
   $('t-zerar').hidden = n === 0;
-  $('t-feita').textContent = `Série ${n + 1} feita · descansar`;
-  $('t-nota').textContent = n >= e.series
-    ? (rodando ? 'Última série feita. Salve a carga abaixo.' : 'Séries completas. Salve a carga abaixo.')
-    : rodando ? `Próxima: série ${n + 1} de ${e.series}` : `Faça a série ${n + 1} de ${e.series} e toque no botão.`;
+  $('t-feita').textContent = prox ? `${prox.nome} feita · descansar` : '';
+  $('t-nota').textContent = n >= P.length
+    ? (rodando ? 'Última série feita. Salve abaixo as reps que fez nela.' : 'Pirâmide completa. Salve abaixo.')
+    : !prox.carga ? 'Coloque o peso da 1ª série abaixo para calcular a pirâmide.'
+    : (rodando ? 'Próxima: ' : 'Agora: ') + prox.nome.toLowerCase() + ' · ' + txt(prox).replace(/&amp;/g, '&');
 }
-$('t-feita').addEventListener('click', () => { const e = exAtual(); T.series[e.id] = seriesFeitas(e.id) + 1; iniciarDescanso(e); });   // iniciarDescanso salva a sessão
+$('t-feita').addEventListener('click', () => {
+  const e = exAtual(), aq = temAquecimento(e), n = seriesFeitas(e.id);
+  if (aq) T.aquecimento = e.id;
+  T.series[e.id] = n + 1;
+  iniciarDescanso(e, aq && n === 0 ? descansoAquecimento(e) : e.descanso);   // salva a sessão
+});
 $('t-menos').addEventListener('click', () => { if (T.fim) { T.fim -= 15000; salvarSessao(); tick(); } });
 $('t-mais').addEventListener('click', () => { if (T.fim) { T.fim += 15000; salvarSessao(); tick(); } });
 $('t-pular').addEventListener('click', pararDescanso);
@@ -433,7 +468,7 @@ function editorExercicio(e) {
     <div class="ed-head"><input class="ed-grupo" value="${esc(e.grupo)}" placeholder="Grupo (ex.: Peito)" aria-label="Grupo muscular"><button type="button" class="del ed-remover">Remover</button></div>
     <div class="ed-p">
       <label>Séries<input class="ed-series" inputmode="numeric" value="${e.series ?? 3}"></label>
-      <label>Reps<input class="ed-reps" value="${esc(e.reps ?? '10–12')}"></label>
+      <label>Reps 1ª série<input class="ed-reps" value="${esc(e.reps ?? '10–12')}"></label>
       <label>Descanso (s)<input class="ed-descanso" inputmode="numeric" value="${e.descanso ?? 75}"></label>
     </div>
     ${[0, 1, 2].map(i => { const v = (e.variacoes || [])[i] || {}; return `<div class="ed-v" data-id="${v.id || ''}">
