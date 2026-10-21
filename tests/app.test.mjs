@@ -462,3 +462,16 @@ test('outra conta do Supabase não entra', async () => {
   assert.equal(await pg.isVisible('#v-inicio'), false);
   await ctx.close();
 });
+
+test('treino finalizado sem séries salvas conta como feito e não é apagado ao abrir um exercício', async () => {
+  const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-21T20:00:00') });
+  await pg.evaluate(() => { db.treinos.push({ inicio: new Date('2026-10-21T17:43').getTime(), fim: new Date('2026-10-21T18:37').getTime(), fechado: true }); gravar(); mostrar('inicio'); });
+  assert.match(await pg.textContent('#i-cont'), /Treino feito/);
+  assert.match(await pg.textContent('#i-semana .today'), /✓/);
+  await pg.tap('.slot >> nth=0');
+  assert.equal(await pg.isVisible('#e-travado'), true);
+  await pg.goBack();
+  assert.match(await pg.textContent('#i-treino'), /17:43–18:37/);                            // não recomeçou a contagem
+  assert.equal(await pg.evaluate(() => db.treinos.length), 1);
+  assert.deepEqual(erros, []); await ctx.close();
+});

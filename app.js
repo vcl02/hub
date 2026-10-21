@@ -388,6 +388,8 @@ const PTS_NIVEL = 300;
 const semanaDe = d => { const x = deIso(d); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return iso(x); };
 const somaDias = (d, n) => { const x = deIso(d); x.setDate(x.getDate() + n); return iso(x); };
 const mapas = () => { const ex = new Map(), va = new Map(); db.exercicios.forEach(e => e.variacoes.forEach(v => { ex.set(v.id, e); va.set(v.id, v); })); return { ex, va }; };
+// Dia treinado = tem exercício registrado ou treino finalizado (mesmo sem séries salvas)
+const diasTreinados = () => new Set([...db.registros.map(r => r.data), ...db.treinos.filter(t => t.fechado).map(t => iso(new Date(t.inicio)))]);
 const ordemCronologica = () => [...db.registros].sort((a, b) => a.data.localeCompare(b.data));
 function recordesAte(fim) {   // registros que bateram a maior carga anterior da mesma variação
   const melhor = {}, rec = new Set();
@@ -399,7 +401,7 @@ function recordesAte(fim) {   // registros que bateram a maior carga anterior da
   return rec;
 }
 function estatisticas() {
-  const { ex } = mapas(), dias = new Set(db.registros.map(r => r.data));
+  const { ex } = mapas(), dias = diasTreinados();
   const s = { treino: dias.size, exercicio: db.registros.length, piramide: 0, recorde: recordesAte().size, extra: 0, pesagem: 0, perda: 0, rapido: false };
   s.piramide = db.registros.filter(r => completo(r, ex.get(r.variacao))).length;
   s.extra = [...dias].filter(d => DIAS_EXTRA.includes(deIso(d).getDay())).length;
@@ -479,25 +481,26 @@ function resumoDia(dia) {
 function ultimo(variacaoId) { let u = null; for (const r of db.registros) if (r.variacao === variacaoId && (!u || r.data > u.data)) u = r; return u; }
 const registroHoje = e => db.registros.find(r => r.data === hoje() && e.variacoes.some(v => v.id === r.variacao));
 telas.inicio = () => {
-  let feitos = 0;
+  let feitos = 0; const trav = travadoHoje();
   $('i-lista').innerHTML = db.exercicios.map(e => {
     e.ativo = variacaoAtiva(e);
     const v = e.variacoes[e.ativo], u = ultimo(v.id), feito = !!registroHoje(e); if (feito) feitos++;
     return `<li><button type="button" class="slot" data-ex="${e.id}">
       <span class="slot-main"><span class="eyebrow">${esc(e.grupo)}${e.ativo > 0 ? ` · <i>${TIPOS[e.ativo].toLowerCase()}</i>` : ''}${v.equip ? ` · nº ${esc(v.equip)}` : ''}</span>
       <span class="name">${esc(v.nome)}</span><span class="r">${Array.from({ length: e.series }, (_, i) => alvoReps(e, i)).join(' → ')} reps · ${e.descanso} s</span>
-      <span class="chips">${feito ? '<span class="chip ok">✓ Feito hoje</span>' : ''}${completo(u, e) ? '<span class="chip acao">↑ Subir carga</span>' : ''}</span></span>
+      <span class="chips">${feito ? '<span class="chip ok">✓ Feito hoje</span>' : trav ? '<span class="chip">Sem séries salvas hoje</span>' : ''}${completo(u, e) ? '<span class="chip acao">↑ Subir carga</span>' : ''}</span></span>
       <span class="slot-load">${u ? `<span class="w">${fmt(topo(u))}<small>${esc(unidadeTxt(v))}</small></span><span class="r">${repsTxt(u)} · <i>${quando(u.data)}</i></span>` : '<span class="r">sem registro</span>'}</span>
     </button></li>`;
   }).join('');
-  $('i-cont').textContent = feitos + '/' + db.exercicios.length;
-  $('i-barra').style.width = (db.exercicios.length ? feitos / db.exercicios.length * 100 : 0) + '%';
+  $('i-lista').classList.toggle('travado', !!trav);
+  $('i-cont').textContent = trav ? '✓ Treino feito' : feitos + '/' + db.exercicios.length;
+  $('i-barra').style.width = (trav ? 100 : db.exercicios.length ? feitos / db.exercicios.length * 100 : 0) + '%';
   const d = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
   $('i-data').textContent = d[0].toUpperCase() + d.slice(1);
   semana(); pintarTempo(); pintarJogo(estatisticas()); pintarCorpoInicio();
 };
 function semana() {
-  const agora = new Date(), h = hoje(), dias = new Set(db.registros.map(r => r.data));
+  const agora = new Date(), h = hoje(), dias = diasTreinados();
   const seg = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() - ((agora.getDay() + 6) % 7));
   let fixos = 0, extra = false, html = '';
   for (let i = 0; i < 7; i++) {
@@ -730,7 +733,7 @@ const emAndamento = t => !!t && !t.fechado && Date.now() - t.fim <= INATIVO;
 let editTreino = null;
 // Um treino por dia: depois de finalizado (ou 30 min parado) com exercícios feitos, o dia fica travado até reabrir
 const treinoHoje = () => { const t = ultimoTreino(); return t && iso(new Date(t.inicio)) === hoje() ? t : null; };
-const travadoHoje = () => { const t = treinoHoje(); return t && !emAndamento(t) && db.registros.some(r => r.data === hoje()) ? t : null; };
+const travadoHoje = () => { const t = treinoHoje(); return t && !emAndamento(t) && (t.fechado || db.registros.some(r => r.data === hoje())) ? t : null; };
 function marcarAtividade() {
   if (!db || travadoHoje()) return;
   const agora = Date.now(), t = ultimoTreino();
