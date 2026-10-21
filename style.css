@@ -237,3 +237,12 @@ h3.sec{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color
 #v-exercicio{touch-action:pan-y}
 #v-exercicio.slide{transition:transform .18s ease,opacity .18s ease}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}.slot:active{transform:none}}
+
+/* ---------- Ajustes de uso ---------- */
+.wrap{padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))}   /* espaço para a barra do cronômetro */
+button,a,summary{touch-action:manipulation}
+.salvo{font-size:var(--t-sm);padding:12px 14px;border-radius:12px;border:1px dashed var(--line);color:var(--muted);text-align:center}
+.salvo.ok{border-style:solid;border-color:var(--green);background:var(--green-soft);color:var(--green)}
+.salvo.ok b{color:var(--green)}
+.salvo.erro{border-style:solid;border-color:var(--red);background:var(--red-soft);color:var(--red);font-weight:600}
+.timer #t-rodando{order:0}

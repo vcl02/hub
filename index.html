@@ -26,7 +26,7 @@
       <label for="l-rep">Repita a senha</label>
       <input id="l-rep" type="password" autocomplete="new-password" minlength="4">
     </div>
-    <label class="check"><input id="l-manter" type="checkbox"> Manter desbloqueado neste aparelho</label>
+    <label class="check"><input id="l-manter" type="checkbox" checked> Manter desbloqueado neste aparelho</label>
     <p id="l-erro" class="err" role="alert"></p>
     <button class="btn primary big" id="l-btn" type="submit">Criar e entrar</button>
   </form>
@@ -110,7 +110,7 @@
     <button type="button" class="link" id="t-zerar" hidden>Zerar séries</button>
   </div>
 
-  <form id="e-form"><button class="btn primary big wide" type="submit">Salvar exercício de hoje</button></form>
+  <p class="salvo" id="e-salvo" role="status"></p>
 
   <h3 class="sec">Evolução</h3>
   <div id="e-grafico" class="chart"></div>

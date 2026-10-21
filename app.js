@@ -381,29 +381,38 @@ telas.exercicio = () => {
   $('e-passo').textContent = `passo de ${fmt(passoCarga(v))} ${v.unidade}`;
   const rs = rascunho[v.id];   // valor digitado e ainda não salvo tem prioridade
   $('e-carga').value = rs ? rs.carga : u ? virgula(u.carga) : '';
-  pintarDescanso(e);
-  const lista = db.registros.filter(r => r.variacao === v.id).sort((a, b) => b.data.localeCompare(a.data));
+  pintarDescanso(e); pintarSalvo(e); pintarHistorico(e);
+};
+function pintarHistorico(e) {
+  const v = e.variacoes[e.ativo], lista = db.registros.filter(r => r.variacao === v.id).sort((a, b) => b.data.localeCompare(a.data));
   $('e-historico').innerHTML = lista.length
     ? lista.map(r => `<li><i class="h-d">${dataCurta(r.data)}</i><span class="h-v">${fmt(r.carga)} ${esc(v.unidade)} <small>${r.reps.join('/')}</small></span><button type="button" class="del" data-apagar="${r.data}">Apagar</button></li>`).join('')
     : '<li class="empty">Nenhum registro ainda.</li>';
   grafico($('e-grafico'), lista.slice(0, 12).reverse().map(r => ({ data: r.data, valor: r.carga })), v.unidade, 'Evolução do peso inicial');
-};
-$('e-form').addEventListener('submit', ev => {
-  ev.preventDefault();
-  const e = exAtual(), v = e.variacoes[e.ativo], carga = num($('e-carga').value), k = seriesDeTrabalho(e);
-  if (!isFinite(carga) || carga <= 0) { toast('Informe o peso da 1ª série', null, true); $('e-carga').focus(); return; }
-  if (!k) { toast('Marque na pirâmide as séries que você fez', null, true); return; }
-  const reps = Array.from({ length: k }, (_, i) => (T.reps[e.id] || [])[i] ?? repsSerie(e, i));
-  const h = hoje(), antes = estatisticas();
-  let existia = false;
-  const desfazer = alterar(() => {
-    const r = db.registros.find(x => x.variacao === v.id && x.data === h); existia = !!r;
+}
+// Salva sozinho: a cada série marcada, ajuste de reps, peso ou troca de variação. 1 registro por exercício por dia.
+function autoSalvar(e) {
+  const v = e.variacoes[e.ativo], carga = num($('e-carga').value), k = seriesDeTrabalho(e), h = hoje();
+  const doExercicio = new Set(e.variacoes.map(x => x.id));
+  const antes = estatisticas();
+  if (!k) db.registros = db.registros.filter(r => !(r.data === h && doExercicio.has(r.variacao)));          // séries zeradas
+  else if (carga > 0) {                                                                                      // sem peso: não mexe no que já está salvo
+    const reps = Array.from({ length: k }, (_, i) => (T.reps[e.id] || [])[i] ?? repsSerie(e, i));
+    db.registros = db.registros.filter(r => !(r.data === h && doExercicio.has(r.variacao) && r.variacao !== v.id));   // trocou de variação
+    const r = db.registros.find(x => x.variacao === v.id && x.data === h);
     if (r) { r.carga = carga; r.reps = reps; } else db.registros.push({ variacao: v.id, data: h, carga, reps });
-  });
-  delete rascunho[v.id]; salvarSessao(); marcarAtividade(); vibrar(40);
-  toast([existia ? 'Registro de hoje atualizado' : `Salvo: ${fmt(carga)} ${v.unidade} · ${reps.join('/')}`, ...celebrar(antes)].join(' · '), desfazer);
-  telas.exercicio();
-});
+  }
+  gravar(); pintarSalvo(e); pintarHistorico(e);
+  return celebrar(antes);
+}
+function pintarSalvo(e) {
+  const v = e.variacoes[e.ativo], r = db.registros.find(x => x.variacao === v.id && x.data === hoje()), sem = !(num($('e-carga').value) > 0);
+  $('e-salvo').classList.toggle('ok', !!r);
+  $('e-salvo').classList.toggle('erro', !r && sem && seriesDeTrabalho(e) > 0);
+  $('e-salvo').innerHTML = r ? `✓ Salvo: <b>${fmt(r.carga)} ${esc(v.unidade)}</b> · ${r.reps.join('/')} reps`
+    : sem && seriesDeTrabalho(e) > 0 ? 'Coloque o peso da 1ª série para salvar.'
+    : '<i>Salva sozinho a cada série marcada.</i>';
+}
 const CAMPOS = { carga: 'e-carga', peso: 'c-peso', cintura: 'c-cintura' };
 function passo(campo, dir) {
   const inp = $(CAMPOS[campo]), e = campo === 'carga' ? exAtual() : null;
@@ -416,6 +425,7 @@ function guardarRascunho() {
   const e = exAtual(); if (!e) return;
   rascunho[e.variacoes[e.ativo].id] = { carga: $('e-carga').value };
   salvarSessao(); pintarDescanso(e); marcarAtividade();
+  if (seriesDeTrabalho(e)) autoSalvar(e);
 }
 $('e-carga').addEventListener('input', guardarRascunho);
 
@@ -623,26 +633,41 @@ function pintarRelogio(e, P = planoAtual(e)) {
   const v = e.variacoes[e.ativo], n = seriesFeitas(e.id), rodando = !!T.fim && T.exercicio === e.id, prox = P[n];
   $('t-relogio').textContent = relogio(rodando ? T.fim - Date.now() : (prox && prox.aq ? descansoAquecimento(e) : e.descanso) * 1000);
   $('t-relogio').classList.toggle('run', rodando);
-  $('t-parado').hidden = rodando || n >= P.length;
+  $('t-parado').hidden = n >= P.length;
   $('t-rodando').hidden = !rodando;
   $('t-feita').textContent = prox ? `${prox.nome} feita · descansar` : '';
-  $('t-nota').textContent = n >= P.length ? 'Pirâmide feita. Não completou alguma série? Ajuste as reps com − e + e salve.'
+  $('t-nota').textContent = n >= P.length ? 'Pirâmide feita e salva. Não completou alguma série? Ajuste as reps com − e +.'
     : !prox.carga ? 'Coloque o peso da 1ª série acima para calcular a pirâmide.'
     : (rodando ? 'Próxima: ' : 'Agora: ') + prox.nome.toLowerCase() + ' · ' + pesoTxt(prox, v) + ' × ' + prox.reps;
 }
 $('t-feita').addEventListener('click', () => {
   const e = exAtual(), aq = temAquecimento(e), n = seriesFeitas(e.id), ehAquecimento = aq && n === 0;
+  const nome = planoAtual(e)[n]?.nome || 'Série';
   if (aq) T.aquecimento[e.regiao] = e.id;
   T.series[e.id] = n + 1;
   if (!ehAquecimento) { const i = n - (aq ? 1 : 0); (T.reps[e.id] ||= [])[i] = repsSerie(e, i); }
   vibrar(40);
   iniciarDescanso(e, ehAquecimento ? descansoAquecimento(e) : e.descanso);   // salva a sessão
+  const msgs = autoSalvar(e);
   pintarDescanso(e); marcarAtividade();
+  toast([nome + (ehAquecimento ? ' feito' : ' feita'), ...msgs].join(' · '), () => desfazerSerie(e.id));
 });
+function desfazerSerie(id) {
+  const e = db.exercicios.find(x => x.id === id); if (!e) return;
+  const n = seriesFeitas(id); if (!n) return;
+  T.series[id] = n - 1;
+  const aqDele = T.aquecimento[e.regiao] === id;
+  if (aqDele && n === 1) delete T.aquecimento[e.regiao];
+  else (T.reps[id] ||= []).length = n - 1 - (aqDele ? 1 : 0);
+  if (T.exercicio === id) pararDescanso();
+  autoSalvar(e); salvarSessao();
+  if (atual === id && !$('v-exercicio').hidden) telas.exercicio();
+  toast('Série desmarcada');
+}
 $('t-menos').addEventListener('click', () => { if (T.fim) { T.fim -= 15000; salvarSessao(); tick(); } marcarAtividade(); });
 $('t-mais').addEventListener('click', () => { if (T.fim) { T.fim += 15000; salvarSessao(); tick(); } marcarAtividade(); });
 $('t-pular').addEventListener('click', () => { pararDescanso(); marcarAtividade(); });
-$('t-zerar').addEventListener('click', () => { const e = exAtual(); T.series[e.id] = 0; T.reps[e.id] = []; if (T.exercicio === e.id) pararDescanso(); salvarSessao(); pintarDescanso(e); marcarAtividade(); });
+$('t-zerar').addEventListener('click', () => { const e = exAtual(); T.series[e.id] = 0; T.reps[e.id] = []; if (T.exercicio === e.id) pararDescanso(); salvarSessao(); autoSalvar(e); pintarDescanso(e); marcarAtividade(); });
 $('mini').addEventListener('click', () => { if (db && T.exercicio) { atual = T.exercicio; ir('exercicio'); } });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState !== 'visible') return; pintarTempo(); if (T.fim) { manterTela(true); tick(); } });
 
@@ -654,12 +679,12 @@ document.addEventListener('click', ev => {
   if (d.ir) ir(d.ir);
   else if ('voltar' in d) voltar();
   else if (d.ex) { atual = d.ex; ir('exercicio'); }
-  else if (d.var) { exAtual().ativo = +d.var; telas.exercicio(); marcarAtividade(); }
+  else if (d.var) { const e = exAtual(); e.ativo = +d.var; telas.exercicio(); if (seriesDeTrabalho(e)) autoSalvar(e); marcarAtividade(); }
   else if (d.passo) passo(d.passo, +d.dir);
   else if (d.rep !== undefined) {
     const e = exAtual(), i = +d.rep, a = (T.reps[e.id] ||= []);
     a[i] = Math.max(0, Math.min(50, (a[i] ?? repsSerie(e, i)) + +d.d));
-    vibrar(15); salvarSessao(); pintarDescanso(e); marcarAtividade();
+    vibrar(15); salvarSessao(); pintarDescanso(e); autoSalvar(e); marcarAtividade();
   }
   else if (d.apagar) {
     if (!confirmar(b, 'Confirmar')) return;
@@ -761,7 +786,7 @@ $('s-form').addEventListener('submit', async ev => {
 
 // ===== Sempre a última versão =====
 // Ao abrir, ao voltar para o app e a cada 10 min, compara os arquivos publicados com os que estão rodando.
-// Se mudaram, recarrega sozinho (a sessão do dia está salva). Em telas com formulário, espera você sair delas.
+// Se mudaram, recarrega sozinho (a sessão do dia está salva). Espera o treino acabar e não age em telas com formulário.
 const ARQUIVOS_APP = ['index.html', 'app.js', 'style.css'];
 const TELAS_SEGURAS = ['inicio', 'exercicio', 'conquistas', 'ajustes'];
 let versaoAtual = null, atualizacaoPendente = false, ultimaChecagem = 0;
@@ -778,13 +803,14 @@ async function checarAtualizacao(forcar = false) {
 }
 function aplicarAtualizacao() {
   if (!atualizacaoPendente || !TELAS_SEGURAS.includes(pilha[pilha.length - 1])) return;
+  if (!db || T.fim || emAndamento(ultimoTreino())) return;   // nunca no meio do treino: espera ele acabar
   atualizacaoPendente = false; salvarSessao();
   toast('Atualizando para a versão nova…');
   setTimeout(() => location.reload(), 900);
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checarAtualizacao(); });
 addEventListener('online', () => checarAtualizacao(true));
-setInterval(checarAtualizacao, 10 * 60 * 1000);
+setInterval(() => { checarAtualizacao(); aplicarAtualizacao(); }, 10 * 60 * 1000);
 
 // ===== Início do app =====
 (async () => {

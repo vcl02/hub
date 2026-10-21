@@ -57,18 +57,33 @@ test('pirâmide usa o passo da máquina e começa com aquecimento', async () => 
   assert.deepEqual(erros, []); await ctx.close();
 });
 
-test('reps por série, salvar e desfazer', async () => {
+test('salva sozinho a cada série, ajusta reps e desfaz a última série', async () => {
   const { ctx, pg, erros } = await abrirApp();
   await pg.tap('.slot >> nth=0');
   await pg.fill('#e-carga', '40'); await pg.dispatchEvent('#e-carga', 'input');
-  for (let i = 0; i < 4; i++) { await pg.click('#t-feita'); await pg.click('#t-pular'); }   // aquecimento + 3 séries
-  await pg.click('[data-rep="1"][data-d="-1"]');                                            // série 2: fez 9
-  await pg.click('#e-form button');
-  assert.match(await pg.textContent('#e-historico'), /40 kg\s*12\/9\/8/);
-  assert.doesNotMatch(await pg.textContent('#e-ultima'), /suba/);                           // não completou
-  await pg.click('#toast-desfazer');
+  await pg.click('#t-feita');                                                                // aquecimento: ainda nada salvo
   assert.match(await pg.textContent('#e-historico'), /Nenhum registro/);
+  await pg.click('#t-feita'); await pg.click('#t-feita');                                    // séries 1 e 2, sem esperar o descanso
+  assert.match(await pg.textContent('#e-historico'), /40 kg\s*12\/10/);
+  await pg.click('[data-rep="1"][data-d="-1"]');                                            // série 2: fez 9
+  await pg.click('#t-feita');                                                                // série 3
+  assert.match(await pg.textContent('#e-salvo'), /Salvo: 40 kg · 12\/9\/8/);
+  await pg.click('#toast-desfazer');                                                         // toque duplo sem querer na série 3
+  assert.match(await pg.textContent('#e-historico'), /40 kg\s*12\/9(?!\/)/);
+  assert.equal(await pg.locator('#t-plano li.ok').count(), 3);
   assert.deepEqual(erros, []); await ctx.close();
+});
+
+test('peso trocado depois das séries atualiza o registro; trocar de variação não duplica', async () => {
+  const { ctx, pg } = await abrirApp();
+  await pg.tap('.slot >> nth=0'); await pg.fill('#e-carga', '40'); await pg.dispatchEvent('#e-carga', 'input');
+  await pg.click('#t-feita'); await pg.click('#t-feita');
+  await pg.fill('#e-carga', '42,5'); await pg.dispatchEvent('#e-carga', 'input');
+  assert.match(await pg.textContent('#e-salvo'), /42,5 kg/);
+  await pg.click('[data-var="1"]');                                                          // trocou para o substituto
+  const hoje = await pg.evaluate(() => db.registros.filter(r => r.data === hoje()).length);
+  assert.equal(hoje, 1);
+  await ctx.close();
 });
 
 test('aquecimento só no 1º exercício de cada região', async () => {
@@ -99,8 +114,7 @@ test('peso corporal, pontos e conquistas', async () => {
   await pg.goBack();
   assert.match(await pg.textContent('#i-corpo'), /90,4 kg/);
   await pg.tap('.slot >> nth=2'); await pg.fill('#e-carga', '30'); await pg.dispatchEvent('#e-carga', 'input');
-  await pg.click('#t-feita'); await pg.click('#t-pular'); await pg.click('#t-feita');
-  await pg.click('#e-form button');
+  await pg.click('#t-feita'); await pg.click('#t-feita');
   await pg.goBack();
   assert.match(await pg.textContent('#g-pts'), /^70 pts$/);                                 // 50 treino + 10 exercício + 10 pesagem
   await pg.click('.game');
@@ -122,7 +136,7 @@ test('séries do dia continuam depois de recarregar', async () => {
   const { ctx, pg } = await abrirApp();
   await pg.tap('.slot >> nth=1'); await pg.fill('#e-carga', '25'); await pg.dispatchEvent('#e-carga', 'input');
   await pg.click('#t-feita');
-  await pg.reload(); await pg.fill('#l-senha', '1234'); await pg.click('#l-btn');
+  await pg.reload();                                                                         // "manter desbloqueado" vem marcado
   await pg.waitForSelector('#v-exercicio:not([hidden])');
   assert.equal(await pg.inputValue('#e-carga'), '25');
   assert.equal(await pg.locator('#t-plano li.ok').count(), 1);
@@ -167,19 +181,27 @@ test('pesagem guarda o horário e avisa quando foge do habitual', async () => {
   assert.deepEqual(erros, []); await ctx.close();
 });
 
-test('recarrega sozinho quando sai uma versão nova', async () => {
+test('recarrega sozinho quando sai uma versão nova (fora do treino)', async () => {
   const { ctx, pg } = await abrirApp();
   await pg.waitForFunction(() => versaoAtual);                                               // versão rodando registrada
-  await pg.tap('.slot >> nth=0'); await pg.fill('#e-carga', '40'); await pg.dispatchEvent('#e-carga', 'input');
   novaVersao = true;
   try {
     const recarregou = pg.waitForEvent('load');
     await pg.evaluate(() => checarAtualizacao(true));
     await recarregou;
   } finally { novaVersao = false; }
-  await pg.fill('#l-senha', '1234'); await pg.click('#l-btn');
-  await pg.waitForSelector('#v-exercicio:not([hidden])');                                    // volta no mesmo exercício
-  assert.equal(await pg.inputValue('#e-carga'), '40');
+  await pg.waitForSelector('#v-inicio:not([hidden])');                                       // entra direto, sem senha
+  await ctx.close();
+});
+
+test('não recarrega no meio do treino', async () => {
+  const { ctx, pg } = await abrirApp();
+  await pg.waitForFunction(() => versaoAtual);
+  await pg.tap('.slot >> nth=0'); await pg.fill('#e-carga', '40'); await pg.dispatchEvent('#e-carga', 'input');
+  novaVersao = true;
+  try { await pg.evaluate(() => checarAtualizacao(true)); await pg.waitForTimeout(1500); } finally { novaVersao = false; }
+  assert.equal(await pg.isVisible('#v-exercicio'), true);
+  assert.equal(await pg.evaluate(() => atualizacaoPendente), true);                          // aplica quando o treino acabar
   await ctx.close();
 });
 
