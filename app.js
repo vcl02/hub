@@ -5,7 +5,8 @@
   Banco (um único item no localStorage, criptografado com a senha mestra):
     db = {
       exercicios: [{ id, grupo, series, reps, descanso, ativo, variacoes: [{ id, nome, unidade }] }],
-      registros:  [{ variacao, data, carga, reps }]      // 1 por variação por dia
+      registros:  [{ variacao, data, carga, reps }],     // 1 por variação por dia
+      treinos:    [{ inicio, fim }]                      // horários (ms); fim = última interação
     }
   variacoes[0] = principal, [1] = substituto (máquina), [2] = halter. "ativo" = índice da variação em uso.
 */
@@ -93,7 +94,7 @@ async function manterChave(sim) { if (sim) store.set(K_CHAVE, b64(await crypto.s
 function bancoNovo() {
   return {
     exercicios: PADRAO.map(([grupo, descanso, nomes]) => ({ grupo, series: 3, reps: '10–12', descanso, variacoes: nomes.map(nome => ({ nome })) })),
-    registros: []
+    registros: [], treinos: []
   };
 }
 function variacaoAtiva(e) { if (e.variacoes[e.ativo]?.nome) return e.ativo; const i = e.variacoes.findIndex(v => v.nome); return i < 0 ? 0 : i; }
@@ -113,7 +114,8 @@ function preparar(d) {           // valida, completa campos e migra o formato an
   const registros = d.registros
     .filter(r => r && r.variacao && /^\d{4}-\d{2}-\d{2}$/.test(r.data) && isFinite(r.carga))
     .map(r => ({ variacao: r.variacao, data: r.data, carga: +r.carga, reps: +r.reps || 0 }));
-  return { exercicios, registros };
+  const treinos = (d.treinos || []).filter(t => t && t.inicio > 0 && t.fim >= t.inicio).map(t => ({ inicio: +t.inicio, fim: +t.fim }));
+  return { exercicios, registros, treinos };
 }
 
 // ===== Navegação =====
@@ -198,7 +200,7 @@ telas.inicio = () => {
   $('i-barra').style.width = (db.exercicios.length ? feitos / db.exercicios.length * 100 : 0) + '%';
   const d = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
   $('i-data').textContent = d[0].toUpperCase() + d.slice(1);
-  semana();
+  semana(); pintarTempo();
 };
 function semana() {
   const agora = new Date(), h = hoje(), dias = new Set(db.registros.map(r => r.data));
@@ -228,6 +230,7 @@ telas.exercicio = () => {
   e.ativo = variacaoAtiva(e);
   const v = e.variacoes[e.ativo], pos = db.exercicios.indexOf(e), u = ultimo(v.id);
   $('e-pos').textContent = (pos + 1) + '/' + db.exercicios.length;
+  pintarTempo();
   $('e-pontos').innerHTML = db.exercicios.map((_, i) => `<i${i === pos ? ' class="on"' : ''}></i>`).join('');
   $('e-grupo').textContent = e.grupo;
   $('e-variacoes').innerHTML = e.variacoes.map((x, i) => x.nome ? `<button type="button" class="seg" role="radio" aria-checked="${i === e.ativo}" data-var="${i}"><span class="seg-k">${TIPOS[i]}</span><span class="seg-n">${esc(x.nome)}</span></button>` : '').join('');
@@ -277,7 +280,7 @@ $('e-form').addEventListener('submit', ev => {
   if (!(reps >= 0)) { toast('Informe as reps'); $('e-reps').focus(); return; }
   const h = hoje(), r = db.registros.find(x => x.variacao === v.id && x.data === h);
   if (r) { r.carga = carga; r.reps = reps; } else db.registros.push({ variacao: v.id, data: h, carga, reps });
-  delete rascunho[v.id]; salvarSessao();
+  delete rascunho[v.id]; salvarSessao(); marcarAtividade();
   gravar(); toast(r ? 'Registro de hoje atualizado' : `Salvo: ${fmt(carga)} ${v.unidade} × ${reps}`);
   telas.exercicio();
 });
@@ -292,15 +295,42 @@ function passo(campo, dir) {
 function guardarRascunho() {
   const e = exAtual(); if (!e) return;
   rascunho[e.variacoes[e.ativo].id] = { carga: $('e-carga').value, reps: $('e-reps').value };
-  salvarSessao(); pintarDescanso(e);
+  salvarSessao(); pintarDescanso(e); marcarAtividade();
 }
+
+// ===== Tempo de treino =====
+// Começa no 1º toque dentro de um exercício. 30 min sem mexer = treino encerrado na última interação.
+const INATIVO = 30 * 60 * 1000;
+const hhmm = t => new Date(t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+const duracao = ms => { const m = Math.max(0, Math.round(ms / 60000)); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + pad(m % 60) + ' min'; };
+const ultimoTreino = () => db.treinos[db.treinos.length - 1];
+const emAndamento = t => !!t && Date.now() - t.fim <= INATIVO;
+function marcarAtividade() {
+  if (!db) return;
+  const agora = Date.now(), t = ultimoTreino();
+  if (emAndamento(t)) t.fim = agora; else db.treinos.push({ inicio: agora, fim: agora });
+  gravar(); pintarTempo();
+}
+function pintarTempo() {
+  if (!db) return;
+  const t = ultimoTreino(), ativo = emAndamento(t), box = $('i-treino');
+  $('e-tempo').textContent = ativo ? '⏱ ' + duracao(Date.now() - t.inicio) : '';
+  box.classList.toggle('on', ativo);
+  box.innerHTML = !t ? '<span class="muted">O tempo do treino começa no 1º toque dentro de um exercício.</span>'
+    : ativo ? `<span>Treino em andamento desde ${hhmm(t.inicio)}</span><b>${duracao(Date.now() - t.inicio)}</b>`
+    : `<span>Último treino: ${quando(iso(new Date(t.inicio)))}, ${hhmm(t.inicio)}–${hhmm(t.fim)}</span><b>${duracao(t.fim - t.inicio)}</b>`;
+  const fechados = (ativo ? db.treinos.slice(0, -1) : db.treinos).slice(-5).reverse();
+  $('i-hist-box').hidden = !fechados.length;
+  $('i-treinos').innerHTML = fechados.map(x => { const d = new Date(x.inicio); return `<li><span class="h-d">${NOME_DIA[d.getDay()]} ${dataCurta(iso(d))}</span><span class="h-d">${hhmm(x.inicio)}–${hhmm(x.fim)}</span><span class="h-v">${duracao(x.fim - x.inicio)}</span></li>`; }).join('');
+}
+setInterval(pintarTempo, 15000);
 $('e-carga').addEventListener('input', guardarRascunho);
 $('e-reps').addEventListener('input', guardarRascunho);
 function podeTrocar(dir) { const j = db.exercicios.findIndex(e => e.id === atual) + dir; return j >= 0 && j < db.exercicios.length; }   // sem dar a volta
 function trocarExercicio(dir) {
   if (!podeTrocar(dir)) return;
   atual = db.exercicios[db.exercicios.findIndex(e => e.id === atual) + dir].id;
-  telas.exercicio(); salvarSessao(); tick(); window.scrollTo(0, 0);
+  telas.exercicio(); salvarSessao(); marcarAtividade(); tick(); window.scrollTo(0, 0);
   store.set('carga.arrastou', '1'); $('e-dica').hidden = true;
 }
 
@@ -425,13 +455,14 @@ $('t-feita').addEventListener('click', () => {
   if (aq) T.aquecimento = e.id;
   T.series[e.id] = n + 1;
   iniciarDescanso(e, aq && n === 0 ? descansoAquecimento(e) : e.descanso);   // salva a sessão
+  marcarAtividade();
 });
-$('t-menos').addEventListener('click', () => { if (T.fim) { T.fim -= 15000; salvarSessao(); tick(); } });
-$('t-mais').addEventListener('click', () => { if (T.fim) { T.fim += 15000; salvarSessao(); tick(); } });
-$('t-pular').addEventListener('click', pararDescanso);
-$('t-zerar').addEventListener('click', () => { const e = exAtual(); T.series[e.id] = 0; if (T.exercicio === e.id) pararDescanso(); salvarSessao(); pintarDescanso(e); });
+$('t-menos').addEventListener('click', () => { if (T.fim) { T.fim -= 15000; salvarSessao(); tick(); } marcarAtividade(); });
+$('t-mais').addEventListener('click', () => { if (T.fim) { T.fim += 15000; salvarSessao(); tick(); } marcarAtividade(); });
+$('t-pular').addEventListener('click', () => { pararDescanso(); marcarAtividade(); });
+$('t-zerar').addEventListener('click', () => { const e = exAtual(); T.series[e.id] = 0; if (T.exercicio === e.id) pararDescanso(); salvarSessao(); pintarDescanso(e); marcarAtividade(); });
 $('mini').addEventListener('click', () => { if (db && T.exercicio) { atual = T.exercicio; ir('exercicio'); } });
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && T.fim) { manterTela(true); tick(); } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState !== 'visible') return; pintarTempo(); if (T.fim) { manterTela(true); tick(); } });
 
 // ===== Cliques gerais =====
 document.addEventListener('click', ev => {
@@ -441,7 +472,7 @@ document.addEventListener('click', ev => {
   if (d.ir) ir(d.ir);
   else if ('voltar' in d) voltar();
   else if (d.ex) { atual = d.ex; ir('exercicio'); }
-  else if (d.var) { exAtual().ativo = +d.var; gravar(); telas.exercicio(); }
+  else if (d.var) { exAtual().ativo = +d.var; telas.exercicio(); marcarAtividade(); }
   else if (d.passo) passo(d.passo, +d.dir);
   else if (d.apagar) {
     if (!confirmar(b, 'Confirmar')) return;
@@ -491,7 +522,7 @@ $('ed-form').addEventListener('submit', ev => {
     const antigo = db.exercicios.find(e => e.id === f.dataset.id);
     exercicios.push({ id: f.dataset.id, grupo: f.querySelector('.ed-grupo').value, series: f.querySelector('.ed-series').value, reps: f.querySelector('.ed-reps').value, descanso: f.querySelector('.ed-descanso').value, ativo: antigo?.ativo, variacoes });
   }
-  const novo = preparar({ exercicios, registros: db.registros });
+  const novo = preparar({ exercicios, registros: db.registros, treinos: db.treinos });
   const ids = new Set(novo.exercicios.flatMap(e => e.variacoes.map(v => v.id)));
   novo.registros = novo.registros.filter(r => ids.has(r.variacao));   // remove histórico de exercício removido
   db = novo; gravar(); toast('Exercícios salvos'); voltar();
