@@ -465,6 +465,10 @@ const exAtual = () => db.exercicios.find(e => e.id === atual);
 const varAtual = () => { const e = exAtual(); return e?.variacoes[e.ativo]; };
 telas.exercicio = () => {
   const e = exAtual(); if (!e) { voltar(); return; }
+  const trav = travadoHoje();
+  $('v-exercicio').classList.toggle('travado', !!trav);
+  $('e-travado').hidden = !trav;
+  if (trav) $('e-travado-msg').textContent = `O treino de hoje foi finalizado às ${hhmm(trav.fim)}. Um treino por dia.`;
   e.ativo = variacaoAtiva(e); editando = null;
   const v = e.variacoes[e.ativo], pos = db.exercicios.indexOf(e), u = ultimo(v.id), guia = GUIA[v.nome.toLowerCase()];
   $('e-pos').textContent = (pos + 1) + '/' + db.exercicios.length;
@@ -549,7 +553,7 @@ function passo(campo, dir) {   // peso do exercício muda de 1 em 1
   if (campo === 'carga') guardarRascunho();
 }
 function guardarRascunho() {
-  const e = exAtual(); if (!e) return;
+  const e = exAtual(); if (!e || travadoHoje()) return;
   rascunho[e.variacoes[e.ativo].id] = { carga: $('e-carga').value };
   salvarSessao(); pintarPeso(e); pintarDescanso(e); marcarAtividade();
   if (seriesDeTrabalho(e)) autoSalvar(e);
@@ -633,11 +637,21 @@ const INATIVO = 30 * 60 * 1000;
 const ultimoTreino = () => db.treinos[db.treinos.length - 1];
 const emAndamento = t => !!t && !t.fechado && Date.now() - t.fim <= INATIVO;
 let editTreino = null;
+// Um treino por dia: depois de finalizado (ou 30 min parado) com exercícios feitos, o dia fica travado até reabrir
+const treinoHoje = () => { const t = ultimoTreino(); return t && iso(new Date(t.inicio)) === hoje() ? t : null; };
+const travadoHoje = () => { const t = treinoHoje(); return t && !emAndamento(t) && db.registros.some(r => r.data === hoje()) ? t : null; };
 function marcarAtividade() {
-  if (!db) return;
+  if (!db || travadoHoje()) return;
   const agora = Date.now(), t = ultimoTreino();
-  if (emAndamento(t)) t.fim = agora; else db.treinos.push({ inicio: agora, fim: agora });
+  if (emAndamento(t)) t.fim = agora;
+  else if (treinoHoje()) { t.inicio = agora; t.fim = agora; delete t.fechado; }   // abriu e não chegou a treinar: recomeça a contagem
+  else db.treinos.push({ inicio: agora, fim: agora });
   gravar(); pintarTempo();
+}
+function reabrirTreino() {
+  const t = treinoHoje(); if (!t) return;
+  delete t.fechado; t.fim = Date.now(); gravar();
+  telas.exercicio(); toast('Treino de hoje reaberto');
 }
 function pintarTempo() {
   if (!db) return;
@@ -647,7 +661,7 @@ function pintarTempo() {
   const cal = t && !ativo ? kcal(t) : null;
   box.innerHTML = !t ? '<i class="muted">O tempo do treino começa no 1º toque dentro de um exercício.</i>'
     : ativo ? `<span>Treino em andamento desde ${hhmm(t.inicio)}</span><b>${duracao(Date.now() - t.inicio)}</b><button type="button" class="btn sm" data-finalizar>Finalizar</button>`
-    : `<span>Último treino <i>${quando(iso(new Date(t.inicio)))}, ${hhmm(t.inicio)}–${hhmm(t.fim)}${cal ? ` · ~${cal} kcal` : ''}</i></span><b>${duracao(t.fim - t.inicio)}</b>`;
+    : `<span>Último treino <i>${quando(iso(new Date(t.inicio)))}, ${hhmm(t.inicio)}–${hhmm(t.fim)}${cal ? ` · ~${cal} kcal` : ''}</i></span><b>${duracao(t.fim - t.inicio)}</b>${travadoHoje() ? '<button type="button" class="btn sm" data-reabrir>Reabrir</button>' : ''}`;
   if (editTreino) return;   // não redesenha a lista enquanto um horário está sendo editado
   const fechados = (ativo ? db.treinos.slice(0, -1) : db.treinos).slice(-5).reverse();
   $('i-hist-box').hidden = !fechados.length;
@@ -661,7 +675,7 @@ function abrirEdicaoTreino(inicio) {
   editTreino = inicio;
   const li = document.querySelector(`[data-editar-treino="${inicio}"]`).closest('li');
   li.className = 'editando';
-  li.innerHTML = `<i class="h-d">${NOME_DIA[new Date(t.inicio).getDay()]} ${dataCurta(iso(new Date(t.inicio)))}</i><span class="ed-inline"><input type="time" id="et-ini" value="${hhmm(t.inicio)}" aria-label="Início"> – <input type="time" id="et-fim" value="${hhmm(t.fim)}" aria-label="Fim"></span><span class="ed-acoes"><button type="button" class="btn sm primary" data-salvar-treino="${inicio}">Salvar</button><button type="button" class="link" data-cancelar>Cancelar</button></span>`;
+  li.innerHTML = `<i class="h-d">${NOME_DIA[new Date(t.inicio).getDay()]} ${dataCurta(iso(new Date(t.inicio)))}</i><span class="ed-inline"><input type="time" id="et-ini" value="${hhmm(t.inicio)}" aria-label="Início"> – <input type="time" id="et-fim" value="${hhmm(t.fim)}" aria-label="Fim"></span><span class="ed-acoes"><button type="button" class="del" data-excluir-treino="${inicio}">Excluir</button><button type="button" class="link" data-cancelar>Cancelar</button><button type="button" class="btn sm primary" data-salvar-treino="${inicio}">Salvar</button></span>`;
 }
 function finalizarTreino() {
   const t = ultimoTreino();
@@ -846,6 +860,7 @@ function ajustarSerie(e, i, campo, valor) {
   if (seriesDeTrabalho(e)) autoSalvar(e);
 }
 $('t-feita').addEventListener('click', () => {
+  if (travadoHoje()) return;
   const e = exAtual(), aq = temAquecimento(e), n = seriesFeitas(e.id), ehAquecimento = aq && n === 0;
   const s = planoAtual(e)[n]; if (!s) return;
   if (aq) T.aquecimento[e.regiao] = e.id;
@@ -883,9 +898,10 @@ document.addEventListener('change', ev => {   // peso/reps digitados no editor d
 
 // ===== Cliques gerais =====
 document.addEventListener('click', ev => {
-  const b = ev.target.closest('[data-ir],[data-voltar],[data-ex],[data-var],[data-passo],[data-apagar],[data-apagar-medida],[data-modo],[data-aj],[data-linha],[data-finalizar],[data-editar-treino],[data-salvar-treino],[data-editar-medida],[data-salvar-medida],[data-cancelar]');
+  const b = ev.target.closest('[data-ir],[data-voltar],[data-ex],[data-var],[data-passo],[data-apagar],[data-apagar-medida],[data-modo],[data-aj],[data-linha],[data-finalizar],[data-reabrir],[data-editar-treino],[data-salvar-treino],[data-excluir-treino],[data-editar-medida],[data-salvar-medida],[data-cancelar]');
   if (!b || !db) return;
   const d = b.dataset;
+  if (travadoHoje() && !$('v-exercicio').hidden && (d.var || d.passo === 'carga' || d.modo || d.aj || d.linha !== undefined)) return;   // dia travado
   if (d.ir) ir(d.ir);
   else if ('voltar' in d) voltar();
   else if (d.ex) { atual = d.ex; ir('exercicio'); }
@@ -901,6 +917,14 @@ document.addEventListener('click', ev => {
     editando = editando === +d.linha ? null : +d.linha; pintarDescanso(exAtual());
   }
   else if ('finalizar' in d) finalizarTreino();
+  else if ('reabrir' in d) reabrirTreino();
+  else if (d.excluirTreino) {
+    if (!confirmar(b, 'Excluir treino e exercícios do dia?')) return;
+    const t = db.treinos.find(x => x.inicio === +d.excluirTreino), dia = iso(new Date(t.inicio));
+    const desfazer = alterar(() => { db.treinos = db.treinos.filter(x => x !== t); db.registros = db.registros.filter(r => r.data !== dia); });
+    if (dia === hoje()) { T.series = {}; T.feitas = {}; T.ajuste = {}; T.aquecimento = {}; pararDescanso(); }
+    editTreino = null; mostrar(pilha[pilha.length - 1]); toast('Treino excluído', desfazer);
+  }
   else if (d.editarTreino) abrirEdicaoTreino(+d.editarTreino);
   else if (d.salvarTreino) {
     const t = db.treinos.find(x => x.inicio === +d.salvarTreino), ini = $('et-ini').value, fim = $('et-fim').value;

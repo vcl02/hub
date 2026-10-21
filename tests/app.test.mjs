@@ -296,3 +296,45 @@ test('anotação digitada fica no exercício certo mesmo trocando rápido', asyn
   assert.deepEqual(r.slice(0, 2), ['7', '']);
   await ctx.close();
 });
+
+test('um treino por dia: depois de finalizar, trava; dá para reabrir', async () => {
+  const { ctx, pg, erros } = await abrirApp();
+  await pg.tap('.slot >> nth=0'); await pg.fill('#e-carga', '40'); await pg.dispatchEvent('#e-carga', 'input');
+  await pg.click('#t-feita'); await pg.click('#t-feita');
+  await pg.click('#e-finalizar'); await pg.click('#v-fim [data-ir="inicio"]');
+  await pg.tap('.slot >> nth=1');
+  assert.equal(await pg.isVisible('#e-travado'), true);
+  const antes = await pg.evaluate(() => T.series);
+  await pg.click('#t-feita', { force: true });                                               // bloqueado
+  assert.deepEqual(await pg.evaluate(() => T.series), antes);
+  await pg.click('#e-travado [data-reabrir]');
+  assert.equal(await pg.isVisible('#e-travado'), false);
+  await pg.fill('#e-carga', '30'); await pg.dispatchEvent('#e-carga', 'input'); await pg.click('#t-feita');
+  assert.equal(await pg.evaluate(() => db.treinos.length), 1);                               // continua o mesmo treino
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
+test('abrir o app e não treinar não trava o dia', async () => {
+  const { ctx, pg } = await abrirApp({ relogio: new Date('2026-10-21T18:00:00') });
+  await pg.tap('.slot >> nth=0'); await pg.fill('#e-carga', '40'); await pg.dispatchEvent('#e-carga', 'input');
+  await pg.clock.fastForward('40:00');                                                       // esteira, sem marcar série
+  await pg.click('#t-feita');
+  assert.equal(await pg.isVisible('#e-travado'), false);
+  const t = await pg.evaluate(() => db.treinos.map(x => new Date(x.inicio).getHours() + ':' + new Date(x.inicio).getMinutes()));
+  assert.deepEqual(t, ['18:40']);                                                           // começou de novo, sem 2º treino
+  await ctx.close();
+});
+
+test('excluir um treino ao editar', async () => {
+  const { ctx, pg } = await abrirApp();
+  await pg.tap('.slot >> nth=0'); await pg.fill('#e-carga', '40'); await pg.dispatchEvent('#e-carga', 'input');
+  await pg.click('#t-feita'); await pg.click('#t-feita');
+  await pg.click('#e-finalizar'); await pg.click('#v-fim [data-ir="inicio"]');
+  await pg.click('[data-editar-treino]');
+  await pg.click('[data-excluir-treino]'); await pg.click('[data-excluir-treino]');            // confirma
+  assert.equal(await pg.evaluate(() => db.treinos.length + db.registros.length), 0);
+  assert.equal(await pg.isVisible('#i-hist-box'), false);
+  await pg.click('#toast-desfazer');
+  assert.equal(await pg.evaluate(() => db.treinos.length), 1);
+  await ctx.close();
+});
