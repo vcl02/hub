@@ -1,5 +1,5 @@
 // Cache para funcionar offline. Mude a versão a cada atualização.
-const VERSAO = 'carga-v8';
+const VERSAO = 'carga-v9';
 const ARQUIVOS = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => e.waitUntil(caches.open(VERSAO).then(c => c.addAll(ARQUIVOS)).then(() => self.skipWaiting())));

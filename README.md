@@ -14,10 +14,10 @@ PWA para registrar evolução de carga na academia: pirâmide automática, subst
 **Banco:** um item no `localStorage`, criptografado (AES-GCM, chave derivada da senha mestra com PBKDF2):
 
 ```
-{ exercicios: [{ id, grupo, regiao, series, reps, descanso, ativo, variacoes: [{ id, nome, unidade, passo }] }],
+{ exercicios: [{ id, grupo, regiao, series, reps, descanso, ativo, variacoes: [{ id, nome, unidade, passo }] }],   // reps = da 1ª série
   registros:  [{ variacao, data, carga, reps: [n, n, n] }],
   treinos:    [{ inicio, fim }],
-  medidas:    [{ data, peso, cintura }] }
+  medidas:    [{ data, hora, peso, cintura? }] }
 ```
 
 - **Pirâmide:** `carga` é o peso da 1ª série; as outras somam 10% (arredondado ao `passo` do aparelho) e tiram 2 reps. `reps` guarda o que foi feito em cada série.
@@ -25,6 +25,7 @@ PWA para registrar evolução de carga na academia: pirâmide automática, subst
 - **Tempo de treino:** começa no 1º toque dentro de um exercício; 30 min sem mexer encerra no horário da última interação.
 - **Pontos e conquistas:** calculados a partir dos dados, nada extra é guardado.
 - **Sessão do dia** (séries marcadas, reps, cronômetro, exercício aberto, peso digitado): item `carga.sessao` no `localStorage`, sem criptografia; zera quando muda o dia.
+- **Cores:** azul = app e ações, verde = feito/sucesso, vermelho = erro/abaixo da meta; tokens no topo de `style.css`.
 - Dias de treino: `DIAS_FIXOS` e `DIAS_EXTRA` no topo de `app.js`.
 
 ## Testes

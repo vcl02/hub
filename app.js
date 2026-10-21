@@ -4,10 +4,10 @@
 
   Banco (um item no localStorage, criptografado com a senha mestra):
     db = {
-      exercicios: [{ id, grupo, regiao, series, reps, descanso, ativo, variacoes: [{ id, nome, unidade, passo }] }],
+      exercicios: [{ id, grupo, regiao, series, reps, descanso, ativo, variacoes: [{ id, nome, unidade, passo }] }],  // reps = da 1ª série
       registros:  [{ variacao, data, carga, reps: [n, n, n] }],  // 1 por variação por dia; carga = peso da 1ª série
       treinos:    [{ inicio, fim }],                              // horários (ms); fim = última interação
-      medidas:    [{ data, peso, cintura }]                       // peso corporal (kg) e cintura (cm, opcional)
+      medidas:    [{ data, hora, peso, cintura? }]                // peso corporal (kg), horário da pesagem e cintura (cm, opcional)
     }
   variacoes[0] = principal, [1] = substituto (máquina), [2] = halter. "ativo" = índice da variação em uso.
   "passo" = quanto o peso sobe de uma placa/halter para o próximo.
@@ -59,9 +59,8 @@ const diasDesde = d => Math.round((deIso(hoje()) - deIso(d)) / 864e5);
 
 // ===== Pirâmide =====
 // Série i = peso inicial + i × 10% (arredondado ao passo do aparelho); reps = topo − 2i
-const repsMax = e => { const m = String(e.reps).match(/\d+/g); return m ? Math.max(...m.map(Number)) : 12; };
-const repsSerie = (e, i) => Math.max(1, repsMax(e) - 2 * i);
-const passoCarga = v => v.passo || (v.unidade === 'nível' ? 1 : 2.5);
+const repsSerie = (e, i) => Math.max(1, e.reps - 2 * i);
+const passoCarga = v => v.passo;
 const arred = (x, p) => Math.max(p, Math.round(x / p) * p);
 function plano(e, v, inicial, comAquecimento) {
   const p = passoCarga(v), ok = isFinite(inicial) && inicial > 0, inc = ok ? arred(inicial * .1, p) : 0, s = [];
@@ -74,8 +73,9 @@ const completo = (r, e) => !!r && !!e && r.reps.length >= e.series && r.reps.sli
 
 // ===== Avisos (com "Desfazer") =====
 let tToast, desfazerFn = null;
-function toast(msg, desfazer) {
+function toast(msg, desfazer, erro = false) {
   $('toast-msg').textContent = msg; desfazerFn = desfazer || null; $('toast-desfazer').hidden = !desfazer;
+  $('toast').classList.toggle('erro', erro);
   $('toast').hidden = false; clearTimeout(tToast);
   tToast = setTimeout(() => { $('toast').hidden = true; desfazerFn = null; }, desfazer ? 6000 : 2600);
 }
@@ -117,10 +117,12 @@ function alterar(acao) {
 
 function bancoNovo() {
   return {
-    exercicios: PADRAO.map(([grupo, regiao, descanso, nomes]) => ({ grupo, regiao, series: 3, reps: '10–12', descanso, variacoes: nomes.map(nome => ({ nome })) })),
+    exercicios: PADRAO.map(([grupo, regiao, descanso, nomes]) => ({ grupo, regiao, series: 3, reps: 12, descanso, variacoes: nomes.map(nome => ({ nome })) })),
     registros: [], treinos: [], medidas: []
   };
 }
+// reps da 1ª série; aceita o formato antigo em texto ("10–12" → 12)
+const repsDe = r => intEntre(Math.max(0, ...(String(r ?? '').match(/\d+/g) || [0]).map(Number)), 1, 50, 12);
 function variacaoAtiva(e) { if (e.variacoes[e.ativo]?.nome) return e.ativo; const i = e.variacoes.findIndex(v => v.nome); return i < 0 ? 0 : i; }
 function preparar(d) {           // valida, completa campos e migra formatos antigos
   if (d && d.slots) d = {
@@ -136,7 +138,7 @@ function preparar(d) {           // valida, completa campos e migra formatos ant
     while (vs.length < 3) vs.push({ id: novoId(), nome: '', unidade: 'kg', passo: passoPadrao(vs.length, 'kg') });
     const grupo = String(e.grupo || vs[0].nome);
     const regiao = REGIOES.includes(e.regiao) ? e.regiao : /perna|coxa|gl[uú]t|panturr|agach|leg/i.test(grupo + ' ' + vs[0].nome) ? 'Pernas' : 'Superior';
-    const ex = { id: e.id || novoId(), grupo, regiao, series: intEntre(e.series, 1, 10, 3), reps: String(e.reps || '').trim() || '10–12', descanso: intEntre(e.descanso, 10, 600, PADRAO[i]?.[2] || 75), ativo: e.ativo || 0, variacoes: vs };
+    const ex = { id: e.id || novoId(), grupo, regiao, series: intEntre(e.series, 1, 10, 3), reps: repsDe(e.reps),  descanso: intEntre(e.descanso, 10, 600, PADRAO[i]?.[2] || 75), ativo: e.ativo || 0, variacoes: vs };
     ex.ativo = variacaoAtiva(ex);
     return ex;
   });
@@ -150,7 +152,7 @@ function preparar(d) {           // valida, completa campos e migra formatos ant
     }));
   const treinos = (d.treinos || []).filter(t => t && t.inicio > 0 && t.fim >= t.inicio).map(t => ({ inicio: +t.inicio, fim: +t.fim }));
   const medidas = (d.medidas || []).filter(m => m && /^\d{4}-\d{2}-\d{2}$/.test(m.data) && num(m.peso) > 0)
-    .map(m => ({ data: m.data, peso: num(m.peso), cintura: num(m.cintura) > 0 ? num(m.cintura) : null }));
+    .map(m => ({ data: m.data, hora: /^\d{2}:\d{2}$/.test(m.hora) ? m.hora : '', peso: num(m.peso), ...(num(m.cintura) > 0 && { cintura: num(m.cintura) }) }));
   return { exercicios, registros, treinos, medidas };
 }
 
@@ -302,10 +304,10 @@ telas.inicio = () => {
     const v = e.variacoes[e.ativo], u = ultimo(v.id);
     const feito = db.registros.some(r => r.data === h && e.variacoes.some(x => x.id === r.variacao)); if (feito) feitos++;
     return `<li><button type="button" class="slot" data-ex="${e.id}">
-      <span class="slot-main"><span class="eyebrow">${esc(e.grupo)}${e.ativo > 0 ? ` · <span class="kind">${TIPOS[e.ativo]}</span>` : ''}</span>
+      <span class="slot-main"><span class="eyebrow">${esc(e.grupo)}${e.ativo > 0 ? ` · <i>${TIPOS[e.ativo].toLowerCase()}</i>` : ''}</span>
       <span class="name">${esc(v.nome)}</span><span class="r">${Array.from({ length: e.series }, (_, i) => repsSerie(e, i)).join(' → ')} reps · ${e.descanso} s</span>
-      <span class="chips">${feito ? '<span class="chip ok">✓ Feito hoje</span>' : ''}${completo(u, e) ? '<span class="chip warn">Subir carga</span>' : ''}</span></span>
-      <span class="slot-load">${u ? `<span class="w">${fmt(u.carga)}<small>${esc(v.unidade)}</small></span><span class="r">${u.reps.join('/')} · ${quando(u.data)}</span>` : '<span class="r">sem registro</span>'}</span>
+      <span class="chips">${feito ? '<span class="chip ok">✓ Feito hoje</span>' : ''}${completo(u, e) ? '<span class="chip acao">↑ Subir carga</span>' : ''}</span></span>
+      <span class="slot-load">${u ? `<span class="w">${fmt(u.carga)}<small>${esc(v.unidade)}</small></span><span class="r">${u.reps.join('/')} · <i>${quando(u.data)}</i></span>` : '<span class="r">sem registro</span>'}</span>
     </button></li>`;
   }).join('');
   $('i-cont').textContent = feitos + '/' + db.exercicios.length;
@@ -372,8 +374,8 @@ telas.exercicio = () => {
   $('e-presc').innerHTML = `<b>Pirâmide ${Array.from({ length: e.series }, (_, i) => repsSerie(e, i)).join(' → ')} reps</b> · descanso ${e.descanso} s`;
   $('e-youtube').href = 'https://www.youtube.com/results?search_query=' + encodeURIComponent((v.nome + ' execução correta').replace(/[()]/g, ' ').replace(/\s+/g, ' ').trim());
   $('e-ultima').innerHTML = u
-    ? `<span>Última: <b>${fmt(u.carga)} ${esc(v.unidade)}</b> · ${u.reps.join('/')} reps · ${quando(u.data)}</span>${completo(u, e) ? '<span class="chip warn">Completou: suba o peso inicial</span>' : ''}`
-    : '<span class="muted">Primeiro registro desta variação. Comece leve.</span>';
+    ? `<span>Última vez: <b>${fmt(u.carga)} ${esc(v.unidade)}</b> · ${u.reps.join('/')} reps · <i>${quando(u.data)}</i></span>${completo(u, e) ? '<span class="chip acao">↑ Completou: suba o peso inicial</span>' : ''}`
+    : '<i class="muted">Primeiro registro desta variação. Comece leve.</i>';
   $('e-unidade').textContent = v.unidade;
   $('e-passo').textContent = `passo de ${fmt(passoCarga(v))} ${v.unidade}`;
   const rs = rascunho[v.id];   // valor digitado e ainda não salvo tem prioridade
@@ -381,15 +383,15 @@ telas.exercicio = () => {
   pintarDescanso(e);
   const lista = db.registros.filter(r => r.variacao === v.id).sort((a, b) => b.data.localeCompare(a.data));
   $('e-historico').innerHTML = lista.length
-    ? lista.map(r => `<li><span class="h-d">${dataCurta(r.data)}</span><span class="h-v">${fmt(r.carga)} ${esc(v.unidade)} · ${r.reps.join('/')}</span><button type="button" class="del" data-apagar="${r.data}">Apagar</button></li>`).join('')
+    ? lista.map(r => `<li><i class="h-d">${dataCurta(r.data)}</i><span class="h-v">${fmt(r.carga)} ${esc(v.unidade)} <small>${r.reps.join('/')}</small></span><button type="button" class="del" data-apagar="${r.data}">Apagar</button></li>`).join('')
     : '<li class="empty">Nenhum registro ainda.</li>';
   grafico($('e-grafico'), lista.slice(0, 12).reverse().map(r => ({ data: r.data, valor: r.carga })), v.unidade, 'Evolução do peso inicial');
 };
 $('e-form').addEventListener('submit', ev => {
   ev.preventDefault();
   const e = exAtual(), v = e.variacoes[e.ativo], carga = num($('e-carga').value), k = seriesDeTrabalho(e);
-  if (!isFinite(carga) || carga <= 0) { toast('Informe o peso da 1ª série'); $('e-carga').focus(); return; }
-  if (!k) { toast('Marque na pirâmide as séries que você fez'); return; }
+  if (!isFinite(carga) || carga <= 0) { toast('Informe o peso da 1ª série', null, true); $('e-carga').focus(); return; }
+  if (!k) { toast('Marque na pirâmide as séries que você fez', null, true); return; }
   const reps = Array.from({ length: k }, (_, i) => (T.reps[e.id] || [])[i] ?? repsSerie(e, i));
   const h = hoje(), antes = estatisticas();
   let existia = false;
@@ -418,32 +420,46 @@ $('e-carga').addEventListener('input', guardarRascunho);
 
 // ===== Peso corporal =====
 const medidasOrdenadas = () => [...db.medidas].sort((a, b) => b.data.localeCompare(a.data));
+const horaHabitual = () => medidasOrdenadas().find(m => m.hora)?.hora || '';
+const minutos = h => { const [a, b] = h.split(':').map(Number); return a * 60 + b; };
+const agoraHHMM = () => hhmm(Date.now());
 function pintarCorpoInicio() {
-  const L = medidasOrdenadas(), u = L[0], prim = L[L.length - 1], box = $('i-corpo');
+  const L = medidasOrdenadas(), u = L[0], prim = L[L.length - 1], box = $('i-corpo'), hab = horaHabitual();
   const atrasado = !u || diasDesde(u.data) >= 7;
   box.classList.toggle('on', atrasado);
-  if (!u) { box.innerHTML = '<span>Peso corporal</span><b>Registrar 1ª pesagem ›</b>'; return; }
-  const dif = Math.round((u.peso - prim.peso) * 10) / 10;
-  box.innerHTML = `<span>Peso corporal · ${quando(u.data)}${atrasado ? ' · <em>hora de se pesar</em>' : ''}</span>
-    <b>${fmt(u.peso)} kg</b><small>${L.length > 1 ? (dif > 0 ? '+' : '') + fmt(dif) + ' kg desde ' + dataCurta(prim.data) : 'primeira pesagem'}</small>`;
+  if (!u) { box.innerHTML = '<span>Peso corporal</span><b>Registrar ›</b><small>1ª pesagem</small>'; return; }
+  const dif = Math.round((u.peso - prim.peso) * 10) / 10, cls = dif < 0 ? 'bom' : dif > 0 ? 'ruim' : '';
+  box.innerHTML = `<span>Peso corporal <i>${quando(u.data)}</i>${atrasado ? ` · <em>hora de se pesar${hab ? ' às ' + hab : ''}</em>` : ''}</span>
+    <b>${fmt(u.peso)} kg</b><small class="${cls}">${L.length > 1 ? (dif > 0 ? '+' : '') + fmt(dif) + ' kg desde ' + dataCurta(prim.data) : 'primeira pesagem'}</small>`;
 }
+function avisoHorario() {   // reforça pesar sempre no mesmo horário
+  const hab = horaHabitual(), h = $('c-hora').value, box = $('c-aviso');
+  const longe = hab && h && Math.abs(minutos(h) - minutos(hab)) > 60;
+  box.classList.toggle('erro', !!longe);
+  box.innerHTML = !hab ? '<b>Escolha um horário e mantenha toda semana.</b> O peso muda ao longo do dia (água, comida), então só dá para comparar pesagens feitas no mesmo horário.'
+    : longe ? `<b>Fora do seu horário.</b> Você costuma se pesar às <b>${hab}</b>. Pesando às ${h}, a diferença pode ser só de horário, não de gordura.`
+    : `<b>Mesmo horário de sempre: ${hab}.</b> Assim dá para comparar uma semana com a outra.`;
+}
+$('c-hora').addEventListener('input', avisoHorario);
 telas.corpo = () => {
   const L = medidasOrdenadas(), u = L[0];
   $('c-peso').value = u ? virgula(u.peso) : '';
   $('c-cintura').value = u?.cintura ? virgula(u.cintura) : '';
+  $('c-hora').value = horaHabitual() || agoraHHMM();
+  avisoHorario();
   $('c-historico').innerHTML = L.length
-    ? L.map(m => `<li><span class="h-d">${dataCurta(m.data)}</span><span class="h-v">${fmt(m.peso)} kg${m.cintura ? ' · cintura ' + fmt(m.cintura) + ' cm' : ''}</span><button type="button" class="del" data-apagar-medida="${m.data}">Apagar</button></li>`).join('')
+    ? L.map(m => `<li><i class="h-d">${dataCurta(m.data)}${m.hora ? ' ' + m.hora : ''}</i><span class="h-v">${fmt(m.peso)} kg${m.cintura ? ` <small>cintura ${fmt(m.cintura)} cm</small>` : ''}</span><button type="button" class="del" data-apagar-medida="${m.data}">Apagar</button></li>`).join('')
     : '<li class="empty">Nenhuma pesagem ainda.</li>';
   grafico($('c-grafico'), L.slice(0, 16).reverse().map(m => ({ data: m.data, valor: m.peso })), 'kg', 'Evolução do peso corporal');
 };
 $('c-form').addEventListener('submit', ev => {
   ev.preventDefault();
-  const peso = num($('c-peso').value), cintura = num($('c-cintura').value);
-  if (!(peso >= 30 && peso <= 300)) { toast('Informe o peso em kg'); $('c-peso').focus(); return; }
+  const peso = num($('c-peso').value), cintura = num($('c-cintura').value), hora = $('c-hora').value;
+  if (!(peso >= 30 && peso <= 300)) { toast('Informe o peso em kg', null, true); $('c-peso').focus(); return; }
   const h = hoje(), antes = estatisticas();
   const desfazer = alterar(() => {
     db.medidas = db.medidas.filter(m => m.data !== h);
-    db.medidas.push({ data: h, peso, cintura: cintura > 0 ? cintura : null });
+    db.medidas.push({ data: h, hora, peso, ...(cintura > 0 && { cintura }) });
   });
   vibrar(40);
   toast(['Pesagem salva: ' + fmt(peso) + ' kg', ...celebrar(antes)].join(' · '), desfazer);
@@ -468,12 +484,12 @@ function pintarTempo() {
   const t = ultimoTreino(), ativo = emAndamento(t), box = $('i-treino');
   $('e-tempo').textContent = ativo ? '⏱ ' + duracao(Date.now() - t.inicio) : '';
   box.classList.toggle('on', ativo);
-  box.innerHTML = !t ? '<span class="muted">O tempo do treino começa no 1º toque dentro de um exercício.</span>'
+  box.innerHTML = !t ? '<i class="muted">O tempo do treino começa no 1º toque dentro de um exercício.</i>'
     : ativo ? `<span>Treino em andamento desde ${hhmm(t.inicio)}</span><b>${duracao(Date.now() - t.inicio)}</b>`
-    : `<span>Último treino: ${quando(iso(new Date(t.inicio)))}, ${hhmm(t.inicio)}–${hhmm(t.fim)}</span><b>${duracao(t.fim - t.inicio)}</b>`;
+    : `<span>Último treino <i>${quando(iso(new Date(t.inicio)))}, ${hhmm(t.inicio)}–${hhmm(t.fim)}</i></span><b>${duracao(t.fim - t.inicio)}</b>`;
   const fechados = (ativo ? db.treinos.slice(0, -1) : db.treinos).slice(-5).reverse();
   $('i-hist-box').hidden = !fechados.length;
-  $('i-treinos').innerHTML = fechados.map(x => { const d = new Date(x.inicio); return `<li><span class="h-d">${NOME_DIA[d.getDay()]} ${dataCurta(iso(d))}</span><span class="h-d">${hhmm(x.inicio)}–${hhmm(x.fim)}</span><span class="h-v">${duracao(x.fim - x.inicio)}</span></li>`; }).join('');
+  $('i-treinos').innerHTML = fechados.map(x => { const d = new Date(x.inicio); return `<li><i class="h-d">${NOME_DIA[d.getDay()]} ${dataCurta(iso(d))}</i><span class="h-d">${hhmm(x.inicio)}–${hhmm(x.fim)}</span><span class="h-v">${duracao(x.fim - x.inicio)}</span></li>`; }).join('');
 }
 setInterval(pintarTempo, 15000);
 
@@ -677,7 +693,7 @@ function editorExercicio(e) {
       <button type="button" class="del ed-remover">Remover</button></div>
     <div class="ed-p">
       <label>Séries<input class="ed-series" inputmode="numeric" value="${e.series ?? 3}"></label>
-      <label>Reps 1ª série<input class="ed-reps" value="${esc(e.reps ?? '12')}"></label>
+      <label>Reps 1ª série<input class="ed-reps" inputmode="numeric" value="${e.reps ?? 12}"></label>
       <label>Descanso (s)<input class="ed-descanso" inputmode="numeric" value="${e.descanso ?? 75}"></label>
       <label>Região<select class="ed-regiao">${REGIOES.map(r => `<option${e.regiao === r ? ' selected' : ''}>${r}</option>`).join('')}</select></label>
     </div>
@@ -704,7 +720,7 @@ $('ed-form').addEventListener('submit', ev => {
   const exercicios = [];
   for (const f of $('ed-lista').querySelectorAll('fieldset')) {
     const variacoes = [...f.querySelectorAll('.ed-v')].map(r => ({ id: r.dataset.id, nome: r.querySelector('.ed-nome').value, passo: r.querySelector('.ed-passo').value, unidade: r.querySelector('.ed-unidade').value }));
-    if (!variacoes[0].nome.trim()) { toast('Preencha o exercício principal'); f.querySelector('.ed-nome').focus(); return; }
+    if (!variacoes[0].nome.trim()) { toast('Preencha o exercício principal', null, true); f.querySelector('.ed-nome').focus(); return; }
     const antigo = db.exercicios.find(e => e.id === f.dataset.id);
     exercicios.push({ id: f.dataset.id, grupo: f.querySelector('.ed-grupo').value, regiao: f.querySelector('.ed-regiao').value, series: f.querySelector('.ed-series').value, reps: f.querySelector('.ed-reps').value, descanso: f.querySelector('.ed-descanso').value, ativo: antigo?.ativo, variacoes });
   }

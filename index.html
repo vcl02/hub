@@ -122,8 +122,13 @@
 <section id="v-corpo" class="view" hidden>
   <div class="bar"><button class="back" type="button" data-voltar>‹ Treino</button></div>
   <h2>Peso corporal</h2>
-  <p class="muted small">Pese-se 1 vez por semana, de manhã, em jejum e depois de ir ao banheiro. A tendência ao longo das semanas importa mais que um dia isolado.</p>
+  <p class="hint">1 vez por semana, <b>sempre no mesmo horário</b>, de preferência de manhã, em jejum e depois de ir ao banheiro. A tendência ao longo das semanas importa mais que um dia isolado.</p>
   <form id="c-form" class="log">
+    <div class="field">
+      <label for="c-hora">Horário da pesagem</label>
+      <input id="c-hora" class="hora" type="time" required>
+      <p class="aviso" id="c-aviso"></p>
+    </div>
     <div class="field">
       <label for="c-peso">Peso</label>
       <div class="stepper">
@@ -154,7 +159,7 @@
   <h2>Conquistas</h2>
   <div class="box" id="q-resumo"></div>
   <ul class="conq" id="q-lista"></ul>
-  <div class="box"><p><b>Como ganhar pontos</b></p><ul class="q-pontos" id="q-pontos"></ul><p class="small muted">Nível sobe a cada 300 pontos. Sequência = semanas seguidas com 2 ou mais treinos; a semana atual só entra quando bate a meta.</p></div>
+  <div class="box"><p><b>Como ganhar pontos</b></p><ul class="q-pontos" id="q-pontos"></ul><p class="hint">Nível sobe a cada 300 pontos. Sequência = semanas seguidas com 2 ou mais treinos; a semana atual só entra quando bate a meta.</p></div>
 </section>
 
 <!-- Ajustes -->
@@ -174,7 +179,7 @@
 <section id="v-editar" class="view" hidden>
   <div class="bar"><button class="back" type="button" data-voltar>‹ Ajustes</button></div>
   <h2>Exercícios</h2>
-  <p class="muted small">Cada exercício tem principal, substituto em máquina e último recurso com halter; deixe em branco o que não usar. <b>Passo</b> é quanto o peso sobe de uma placa ou halter para o próximo (ex.: 5 kg na máquina, 2 kg no halter). Use “nível” para máquinas marcadas por número de placa. <b>Região</b> define o aquecimento: o 1º exercício de cada região ganha uma série leve. Use ↑ ↓ para mudar a ordem.</p>
+  <p class="hint">Cada exercício tem principal, substituto em máquina e último recurso com halter; deixe em branco o que não usar. <b>Passo</b> é quanto o peso sobe de uma placa ou halter para o próximo (ex.: 5 kg na máquina, 2 kg no halter). Use “nível” para máquinas marcadas por número de placa. <b>Região</b> define o aquecimento: o 1º exercício de cada região ganha uma série leve. Use ↑ ↓ para mudar a ordem.</p>
   <form id="ed-form" class="view">
     <div id="ed-lista" class="view"></div>
     <button type="button" class="btn" id="ed-novo">+ Adicionar exercício</button>

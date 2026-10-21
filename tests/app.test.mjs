@@ -60,7 +60,7 @@ test('reps por série, salvar e desfazer', async () => {
   for (let i = 0; i < 4; i++) { await pg.click('#t-feita'); await pg.click('#t-pular'); }   // aquecimento + 3 séries
   await pg.click('[data-rep="1"][data-d="-1"]');                                            // série 2: fez 9
   await pg.click('#e-form button');
-  assert.match(await pg.textContent('#e-historico'), /40 kg · 12\/9\/8/);
+  assert.match(await pg.textContent('#e-historico'), /40 kg\s*12\/9\/8/);
   assert.doesNotMatch(await pg.textContent('#e-ultima'), /suba/);                           // não completou
   await pg.click('#toast-desfazer');
   assert.match(await pg.textContent('#e-historico'), /Nenhum registro/);
@@ -145,6 +145,20 @@ test('migra dados de versões antigas', async () => {
   assert.equal(r.exercicios[0].regiao, 'Pernas');
   assert.equal(r.exercicios[0].variacoes[0].passo, 5);
   assert.deepEqual(r.registros[0].reps, [12, 12, 12]);
+  assert.equal(r.exercicios[0].reps, 12);                                                   // "10–12" vira 12
   assert.deepEqual(r.medidas, []);
   await ctx.close();
+});
+
+test('pesagem guarda o horário e avisa quando foge do habitual', async () => {
+  const { ctx, pg, erros } = await abrirApp();
+  await pg.click('#i-corpo');
+  assert.match(await pg.textContent('#c-aviso'), /mesmo horário/i);
+  await pg.fill('#c-hora', '07:00'); await pg.fill('#c-peso', '90'); await pg.click('#c-form button[type=submit]');
+  assert.match(await pg.textContent('#c-historico'), /07:00/);
+  assert.equal(await pg.inputValue('#c-hora'), '07:00');                                    // horário habitual já vem preenchido
+  await pg.fill('#c-hora', '15:30'); await pg.dispatchEvent('#c-hora', 'input');
+  assert.match(await pg.textContent('#c-aviso'), /Fora do seu horário/);
+  assert.equal(await pg.getAttribute('#c-aviso', 'class'), 'aviso erro');
+  assert.deepEqual(erros, []); await ctx.close();
 });
