@@ -27,10 +27,10 @@ const CICLOS = Array.from({ length: 12 }, (_, i) => {
     return { id: `c:${i + 1}`, cicloId: i + 1, ini: iso(ano, m, 5), fat: iso(fimAno, fimMes, 4) };
 });
 
-function carrega(metas, { extras = [], tetoBesteira = 0 } = {}) {
+function carrega(metas, { extras = [], tetoBesteira = 0, reservaAluguel = false } = {}) {
     const lancamentos = [...extras, ...CICLOS.flatMap((c, i) => [
         { id: 100 + i, nome: 'Faturamento PJ', categ: 'Renda', data: c.ini, v: 3000, valor: 3000, cred: false, pago: true, periodoIdx: i },
-        { id: 200 + i, nome: 'Aluguel', categ: 'Casa', data: c.ini, v: -1000, valor: -1000, cred: false, pago: true, periodoIdx: i },
+        { id: 200 + i, nome: 'Aluguel', categ: 'Casa', data: c.ini, v: -1000, valor: -1000, cred: false, pago: true, reserva: reservaAluguel, periodoIdx: i },
     ])];
     const estado = {
         idxHoje: 0, ciclos: CICLOS.map(c => ({ ...c })), faturas: [], lancamentos, metas,
@@ -41,9 +41,11 @@ function carrega(metas, { extras = [], tetoBesteira = 0 } = {}) {
     ['js/domain.js', 'js/shared.js', 'js/finance.js'].forEach(arquivo => vm.runInContext(ler(arquivo), contexto));
     vm.runInContext('const filtrarLancamentos = () => lancamentosComPrevistas();', contexto);   // tables.js
     const limites = graficos.slice(graficos.indexOf('const LIMITES_COMPROMISSOS'), graficos.indexOf('\n];\n', graficos.indexOf('const LIMITES_COMPROMISSOS')) + 4);
-    vm.runInContext(limites + graficos.slice(graficos.indexOf('const ehParcelaDeCompra'), graficos.indexOf('function dadosCompromissosCiclo(')), contexto);
+    // Reserva (meta e Liberdade usam) e Comprometido: os trechos reais de charts.js.
+    const constantes = graficos.slice(graficos.indexOf('const MESES_META_RESERVA_EMERGENCIA'), graficos.indexOf('const PERCENTUAL_MINIMO_PIZZA'));
+    vm.runInContext(limites + constantes + graficos.slice(graficos.indexOf('function dadosMetaReservaEmergencia('), graficos.indexOf('function dadosCompromissosCiclo(')), contexto);
     vm.runInContext(`limparCachesFinanceiros();
-        globalThis.r = { plano: planoDasMetas(), base: lancamentosComPrevistas(), cicloDoMes, guardadoAte, receitaPraCaber, receitasPraCaber, candidatosPraCaber, comprometidosAteAFalta, FOLGA_MENSAL_IDEAL };`, contexto);
+        globalThis.r = { plano: planoDasMetas(), base: lancamentosComPrevistas(), cicloDoMes, guardadoAte, receitaPraCaber, receitasPraCaber, candidatosPraCaber, comprometidosAteAFalta };`, contexto);
     return contexto.r;
 }
 
@@ -451,21 +453,35 @@ test('pra caber: quando não dá, lista o que já está comprometido até a falt
     assert.match(regras, /abre o modal \*\*Comprometido até Mmm\/aa\*\*/);
 });
 
-test('opções de vezes: mínimo que cabe e ideal com R$ 1.000 sobrando no pior mês', () => {
-    // Cada mês deixa 2.000 (guardado 2.000 × (ciclo + 1)). Mesa 6.000 sem entrada, 1ª parcela
-    // em Fev/27 (4), em 3x de 2.000: o mês sobra 0. Em 1x já cabe (10.000 guardados em
-    // Fev/27), sobrando −4.000 no mês; em 6x de 1.000 sobra 1.000 em todo mês (até Jul/27, 9).
-    const r = carrega([meta(1, 'Mesa', 6000, '2027-02-01', { forma: 'financiamento', parcelas: 3 })]);
+test('opções de vezes: mínimo que cabe e ideal que completa a Reserva até a última parcela', () => {
+    // Cada mês deixa 2.000 (guardado 2.000 × (ciclo + 1)). Aluguel de 1.000 marcado Reserva: a
+    // meta dela é 9.000 (nove ciclos), com 2.000 guardados hoje faltam 7.000. Mesa 6.000 sem
+    // entrada, 1ª parcela em Fev/27 (4). Ideal = o mês típico sobra a falta da Reserva ÷ meses
+    // de hoje até a última parcela: 4x de 1.500 sobra 500 < 7.000/8; 5x de 1.200 (até Jun/27,
+    // 8) sobra 800 ≥ 7.000/9 = 777,78.
+    const r = carrega([meta(1, 'Mesa', 6000, '2027-02-01', { forma: 'financiamento', parcelas: 3 })], { reservaAluguel: true });
     const o = JSON.parse(JSON.stringify(r.plano.find(p => p.meta.id === 1).opcoesVezes));
-    assert.equal(r.FOLGA_MENSAL_IDEAL, 1000);
+    assert.deepEqual(o.alvo, { tipo: 'reserva', restante: 7000 });
     assert.deepEqual([o.atual.vezes, o.atual.tipica, o.atual.pior], [3, 0, 0]);
     assert.deepEqual([o.minimo.vezes, o.minimo.parcela, o.minimo.tipica, o.minimo.ini, o.minimo.fim], [1, 6000, -4000, 4, 4]);
-    assert.deepEqual([o.ideal.vezes, o.ideal.parcela, o.ideal.tipica, o.ideal.ini, o.ideal.fim], [6, 1000, 1000, 4, 9]);
-    // Nenhum número de vezes deixa 1.000 dentro dos ciclos carregados: sem ideal.
-    const grande = JSON.parse(JSON.stringify(carrega([meta(1, 'Carro', 30000, '2027-02-01', { forma: 'financiamento', parcelas: 10 })]).plano[0].opcoesVezes));
+    assert.deepEqual([o.ideal.vezes, o.ideal.parcela, o.ideal.tipica, o.ideal.fim, o.ideal.alvo], [5, 1200, 800, 8, 777.78]);
+    // Nenhum número de vezes cobre a Reserva dentro dos ciclos carregados: sem ideal.
+    const grande = JSON.parse(JSON.stringify(carrega([meta(1, 'Carro', 30000, '2027-02-01', { forma: 'financiamento', parcelas: 10 })], { reservaAluguel: true }).plano[0].opcoesVezes));
     assert.equal(grande.ideal, null);
     // À vista não tem opções.
     assert.equal(carrega([meta(1, 'Cadeira', 900, '2027-02-01')]).plano[0].opcoesVezes, undefined);
+});
+
+test('opções de vezes: com a Reserva completa (ou sem meta), o ideal mantém o ritmo da Liberdade', () => {
+    // Sem nada marcado Reserva: o alvo é o que o mês típico deixou nos últimos 12 ciclos até
+    // hoje (só o ciclo 0 aqui: 2.000). Qualquer parcela tira disso, então não há ideal.
+    const o = JSON.parse(JSON.stringify(carrega([meta(1, 'Mesa', 6000, '2027-02-01', { forma: 'financiamento', parcelas: 3 })]).plano[0].opcoesVezes));
+    assert.deepEqual(o.alvo, { tipo: 'liberdade', ritmo: 2000 });
+    assert.equal(o.ideal, null);
+    assert.equal(o.minimo.vezes, 1);
+    assert.match(visoes, /mantém o aporte de hoje pra Liberdade/);
+    assert.match(visoes, /a Reserva completa até \$\{ate\(x\.fim\)\}/);
+    assert.match(regras, /Ideal\*\* \(o menor que cabe com o mês típico sobrando o que a Reserva ou a Liberdade pedem\)/);
 });
 
 test('opções de vezes: linha embaixo do plano, clique usa o número de vezes', () => {
@@ -479,15 +495,15 @@ test('opções de vezes: linha embaixo do plano, clique usa o número de vezes',
 });
 
 test('sobra/mês: o típico decide o ideal; o pior mês aparece com o nome, e o Mês a mês mostra o que cada mês deixa', () => {
-    // Um gasto avulso de 6.000 em Jun/27 (8) deixa esse mês negativo sem a meta: nenhuma vez
-    // chegaria a 1.000 nele. Mesa 6.000 em 6x de 1.000 (Fev a Jul/27): o típico sobra 1.000,
-    // o pior é Jun/27 com −5.000 — e o ideal continua sendo 6x.
+    // Um gasto avulso de 6.000 em Jun/27 (8) deixa esse mês negativo sem a meta. Mesa 6.000 em
+    // 6x de 1.000 (Fev a Jul/27): o típico sobra 1.000, o pior é Jun/27 com −5.000. O ideal
+    // olha o típico: 5x de 1.200 (até Jun/27) sobra 800 no típico ≥ 7.000/9 da Reserva.
     const avulso = { id: 990, nome: 'IPVA', categ: 'Carro', data: CICLOS[8].ini, v: -6000, valor: -6000, cred: false, pago: false, periodoIdx: 8 };
-    const r = carrega([meta(1, 'Mesa', 6000, '2027-02-01', { forma: 'financiamento', parcelas: 6 })], { extras: [avulso] });
+    const r = carrega([meta(1, 'Mesa', 6000, '2027-02-01', { forma: 'financiamento', parcelas: 6 })], { extras: [avulso], reservaAluguel: true });
     const p = r.plano.find(x => x.meta.id === 1);
     const o = JSON.parse(JSON.stringify(p.opcoesVezes));
     assert.deepEqual([o.atual.tipica, o.atual.pior, o.atual.cicloPior], [1000, -5000, 8]);
-    assert.equal(o.ideal.vezes, 6);
+    assert.equal(o.ideal.vezes, 5);
     // Mês a mês: "No mês" (deixa) negativo em Jun/27 com o guardado depois ainda positivo.
     const jun = JSON.parse(JSON.stringify(p.porMes)).find(m => m.ciclo === 8);
     assert.deepEqual([jun.deixa, jun.sobra > 0], [-5000, true]);

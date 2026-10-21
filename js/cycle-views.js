@@ -1051,7 +1051,7 @@ function htmlComprometidos(p) {
 }
 
 // Opções de vezes de uma meta parcelada, embaixo do plano: o **Mínimo** que cabe e o **Ideal**
-// (o mês típico sobra ao menos R$ 1.000), só quando diferentes do número escolhido, cada um com
+// (o mês típico sobra o que a Reserva ou a Liberdade pedem), só quando diferentes do número escolhido, cada um com
 // a prévia curta (vezes, parcela, até quando) e clicável pra usar. O quanto sobra por mês fica
 // no hover (texto curto na tela) e na coluna No mês do Mês a mês.
 function htmlOpcoesDeVezes(p) {
@@ -1063,11 +1063,17 @@ function htmlOpcoesDeVezes(p) {
     const opcao = (rotulo, x, dica) => (x.vezes === o.atual.vezes ? '' :
         `<button type=button class="mpParte mpOpcao" data-acao=usarVezes data-vezes=${x.vezes} title="Usar ${x.vezes}x${dica}${sobra(x)}">` +
         `<i>${rotulo}</i> <b>${x.vezes}x ${brl(x.parcela)}</b> <span class=mpDetalhe>até ${ate(x.fim)}</span></button>`);
+    // Por que é ideal: a Reserva completa até a última parcela, ou o ritmo da Liberdade mantido.
+    const porQue = x => (o.alvo?.tipo === 'reserva'
+        ? ` (o mês típico sobra ${brl(x.alvo)}: a Reserva completa até ${ate(x.fim)})`
+        : ` (o mês típico sobra ${brl(x.alvo)}: mantém o aporte de hoje pra Liberdade)`);
     const nenhum = (rotulo, dica) => `<span class=mpParte title="${dica}"><i>${rotulo}</i> <span class=mpDetalhe>nenhum</span></span>`;
     const pilulas = [
         o.minimo ? opcao('Mínimo', o.minimo, ' (o menor número de vezes que cabe)') : nenhum('Mínimo', 'Nenhum número de vezes cabe nos ciclos carregados'),
-        o.ideal ? opcao('Ideal', o.ideal, ` (o mês típico sobra ao menos ${brl(FOLGA_MENSAL_IDEAL)})`)
-            : nenhum('Ideal', `Nenhum número de vezes deixa ${brl(FOLGA_MENSAL_IDEAL)} num mês típico`),
+        o.ideal ? opcao('Ideal', o.ideal, porQue(o.ideal))
+            : nenhum('Ideal', o.alvo?.tipo === 'reserva'
+                ? `Nenhum número de vezes deixa sobrar o bastante pra completar a Reserva (faltam ${brl(o.alvo.restante)}) até a última parcela`
+                : `Nenhum número de vezes mantém o aporte de hoje pra Liberdade (${brl(o.alvo?.ritmo ?? 0)} por mês)`),
     ].filter(Boolean);
     return pilulas.length ? `<div class=metaPlano>${pilulas.join(' ')}</div>` : '';
 }

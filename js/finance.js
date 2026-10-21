@@ -395,8 +395,33 @@ function comprometidosAteAFalta(plano) {
     return { ate, total: centavos(lista.reduce((s, g) => s + g.total, 0)), grupos: lista };
 }
 
-// Folga ideal de uma meta parcelada: sobrar uns R$ 1.000 por mês depois das parcelas.
-const FOLGA_MENSAL_IDEAL = 1000;
+// Quanto o mês típico precisa sobrar pra uma meta parcelada ser "ideal", lido de hoje, sem as
+// metas (o plano é calculado com a base sem elas). Reserva incompleta: o que falta dela, pra
+// completar até a última parcela da opção (o valor por mês depende de cada opção, ver
+// opcoesDeVezes). Reserva completa (ou sem meta): manter o ritmo de hoje rumo à Liberdade — a
+// mediana do que cada mês deixou nos últimos 12 ciclos até hoje (Aporte/Resgate), nunca
+// negativa: a meta não pode tirar do que já vai pra Liberdade todo mês.
+function alvoDeSobraMensal(ctx) {
+    const hoje = Estado.idxHoje;
+    if (hoje == null || hoje < 0) return null;
+    const reserva = dadosMetaReservaEmergenciaCiclo(hoje);
+    if (reserva.meta > TOLERANCIA_FINANCEIRA && reserva.restante > TOLERANCIA_FINANCEIRA) {
+        return { tipo: 'reserva', restante: centavos(reserva.restante) };
+    }
+    const meses = [];
+    for (let j = Math.max(0, hoje - MESES_MEDIA_LIBERDADE_FINANCEIRA + 1); j <= hoje; j++) {
+        meses.push(ctx.guardado(j) - (j > 0 ? ctx.guardado(j - 1) : 0));
+    }
+    meses.sort((a, b) => a - b);
+    const meio = Math.floor(meses.length / 2);
+    const mediana = meses.length % 2 ? meses[meio] : (meses[meio - 1] + meses[meio]) / 2;
+    return { tipo: 'liberdade', ritmo: centavos(Math.max(0, mediana || 0)) };
+}
+
+// O alvo de sobra de uma opção: a parte da Reserva que falta por mês até a última parcela
+// (de hoje até ela, inclusive) ou o ritmo da Liberdade.
+const sobraAlvoDaOpcao = (alvo, fim) => (alvo.tipo === 'reserva'
+    ? centavos(alvo.restante / Math.max(1, fim - Estado.idxHoje + 1)) : alvo.ritmo);
 
 // Quanto sobra por mês com as parcelas (deixaNoMes), nos meses com parcela: o mês **típico**
 // (mediana) e o **pior** (com o ciclo dele). O mês só da entrada fica de fora: ela é uma vez
@@ -415,21 +440,23 @@ function folgaDoPlano(plano, anteriores, ctx) {
 
 // Opções de vezes de uma meta parcelada, de 1x até a última parcela caber nos ciclos carregados
 // (depois disso as parcelas somem da conta e "caberia" à toa): o **mínimo** que cabe e o
-// **ideal**, o menor que cabe deixando ao menos FOLGA_MENSAL_IDEAL no mês típico. Cada uma com
-// a prévia (parcela, 1ª e última, mês típico e pior); `atual` traz a do número escolhido.
-function opcoesDeVezes(meta, plano, anteriores, ctx) {
+// **ideal**, o menor que cabe com o mês típico sobrando ao menos o alvo (alvoDeSobraMensal:
+// Reserva até a última parcela ou o ritmo da Liberdade). Cada uma com a prévia (parcela, 1ª e
+// última, mês típico e pior, alvo); `atual` traz a do número escolhido.
+function opcoesDeVezes(meta, plano, anteriores, ctx, alvo) {
     const ate = Math.min(120, Estado.ciclos.length - plano.ciclo - (plano.forma === 'cartao' ? 1 : 0));
     const previa = (vezes, p) => {
         const meses = p.linhas.filter(r => r._parte !== 900).map(r => r.periodoIdx).filter(j => j != null);
         return { vezes, parcela: p.parcela, ini: Math.min(...meses), fim: Math.max(...meses), ...folgaDoPlano(p, anteriores, ctx) };
     };
-    const opcoes = { atual: previa(plano.parcelas, plano), minimo: null, ideal: null };
+    const opcoes = { alvo, atual: previa(plano.parcelas, plano), minimo: null, ideal: null };
     for (let n = 1; n <= ate && !opcoes.ideal; n++) {
         const p = n === plano.parcelas ? plano : planoNoCiclo({ ...meta, parcelas: n }, plano.ciclo, anteriores, ctx, { leve: true });
         if (!p.cabe || !p.parcelas) continue;
         const opcao = previa(n, p);
         if (!opcoes.minimo) opcoes.minimo = opcao;
-        if (opcao.tipica != null && opcao.tipica >= FOLGA_MENSAL_IDEAL - TOLERANCIA_FINANCEIRA) opcoes.ideal = opcao;
+        opcao.alvo = alvo ? sobraAlvoDaOpcao(alvo, opcao.fim) : null;
+        if (opcao.alvo != null && opcao.tipica != null && opcao.tipica >= opcao.alvo - TOLERANCIA_FINANCEIRA) opcoes.ideal = opcao;
     }
     return opcoes;
 }
@@ -442,6 +469,7 @@ function calcularPlanoDasMetas() {
         .sort((a, b) => (a.ciclo < 0) - (b.ciclo < 0) || a.ciclo - b.ciclo || a.meta.id - b.meta.id);
     if (!metas.length) return [];
     const ctx = contextoDoPlano();
+    const alvo = alvoDeSobraMensal(ctx);
     const anteriores = [];
     return metas.map(({ meta, mes, ciclo }) => {
         if (ciclo < 0) return { meta, mes, ciclo, cabe: false, cabeEm: null, linhas: [] };   // sem data ou fora dos ciclos
@@ -458,7 +486,7 @@ function calcularPlanoDasMetas() {
         // Parcelado: as opções de vezes (mínimo que cabe e o ideal com folga), e o "em Nx" do
         // Pra caber quando o atual não cabe e mais vezes resolvem.
         if (plano.forma !== 'avista' && plano.parcelas) {
-            plano.opcoesVezes = opcoesDeVezes(meta, plano, anteriores, ctx);
+            plano.opcoesVezes = opcoesDeVezes(meta, plano, anteriores, ctx, alvo);
             const minimo = plano.opcoesVezes.minimo;
             if (!plano.cabe && minimo && minimo.vezes > plano.parcelas) plano.vezesQueCabe = minimo.vezes;
         }
