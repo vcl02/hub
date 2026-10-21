@@ -220,7 +220,8 @@ function contextoDoPlano() {
 // Dinheiro: em cada mês de pagamento (entrada, parcelas ou faturas), o guardado projetado,
 // menos tudo o que as metas anteriores e esta já pagaram até ali, não pode ficar negativo.
 // Comprometido aparece no plano como informação, sem barrar.
-function planoNoCiclo(meta, c, anteriores, ctx) {
+// `leve`: só pra saber se cabe (buscas do "cabe em"/"em Nx"), sem o Comprometido de cada mês.
+function planoNoCiclo(meta, c, anteriores, ctx, { leve = false } = {}) {
     const forma = formaDaMeta(meta);
     const valor = meta.valor;
     const plano = { forma, disponivel: ctx.guardado(c) - pagoAteCiclo(anteriores, c), linhas: [] };
@@ -259,7 +260,7 @@ function planoNoCiclo(meta, c, anteriores, ctx) {
             plano.linhas.push(...partes.map((v, p) => [c + p, v]).filter(([j]) => Estado.ciclos[j])
                 .map(([j, v], p) => linhaDaMeta(meta, p + 1, { data: dataDoCiclo(j), v: -v, comprometido: true })));
         }
-        if (plano.linhas.some(r => r.comprometido || ehParcelaDeCompra(r))) {
+        if (!leve && plano.linhas.some(r => r.comprometido || ehParcelaDeCompra(r))) {
             plano.comprometidoMax = ctx.cabeNoTeto(plano.linhas, [...anteriores, ...plano.linhas]).maximo;
         }
     }
@@ -298,6 +299,96 @@ function detalheDoPlano(plano, anteriores, ctx) {
     });
 }
 
+// ===================================================================
+// PRA CABER: sugestões de corte por regra (sem IA), pra uma meta que não cabe
+// ===================================================================
+// Duas fontes de dinheiro, sempre do ciclo atual em diante:
+// - Tetos de Besteira/Isabella: o app supõe o teto inteiro gasto (a prevista do ciclo, que cai
+//   na fatura do ciclo seguinte); baixar o teto devolve até o valor da prevista.
+// - Pular lançamento: saída real em aberto que não é Comprometido (o "intocável"), Reserva,
+//   Investimento (Aporte/Resgate já são a própria conta do guardado: mexer neles só troca o
+//   dinheiro de lugar), transferência de fatura nem gasto que conta num teto (cortar esse só
+//   faria a prevista crescer o mesmo tanto — pra ele, a alavanca é o teto).
+// Investimento fica de fora porque a falta já é medida contra todo o guardado projetado, com
+// Aporte sugerido e Resgate necessário de cada ciclo: não há aporte a diminuir que vire dinheiro.
+function candidatosPraCaber() {
+    const tetos = lancamentosComPrevistas().filter(r => r._prev && String(r._sid).startsWith('prev:')).map(r => {
+        const [, chave, idx] = r._sid.split(':');
+        return { tipo: 'teto', chave, cicloTeto: +idx, ciclo: r.periodoIdx, ganho: -r.v, parcial: true };
+    }).filter(c => c.ciclo != null && Estado.ciclos[c.cicloTeto]?.cicloId != null);
+    const noTeto = r => contaNoTeto(r, CATEGORIA_BESTEIRA) || contaNoTeto(r, ehGastoIsabella);
+    const lancamentos = Estado.lancamentos.filter(r =>
+        r.periodoIdx != null && r.periodoIdx >= Estado.idxHoje && !r.pago && (r.v || 0) < -TOLERANCIA_FINANCEIRA &&
+        !r.comprometido && !r.reserva && !ehCategoriaInvestimento(r.categ) && !ehTransferenciaFatura(r) && !noTeto(r),
+    ).map(r => ({ tipo: 'pular', id: r.id, grupo: r.recorrencia_id ?? `id:${r.id}`, nome: r.nome, data: r.data, ciclo: r.periodoIdx, ganho: -r.v }));
+    return { tetos, lancamentos };
+}
+
+// Uma receita: em cada mês com falta (em ordem), completa o que falta com cortes de ciclos até
+// ali — a falta é acumulada, então um corte ajuda o próprio mês e os seguintes, e um corte
+// depois do buraco não ajuda o buraco. Escolhe primeiro o corte mais perto do buraco (abre
+// mão do mínimo de tempo) e, no mesmo ciclo, o maior. Teto corta só o que falta; lançamento
+// sai inteiro. É uma estimativa: o Simular refaz a conta de verdade.
+function receitaPraCaber(faltas, candidatos) {
+    const usado = new Map();
+    const cobertoAte = j => [...usado].reduce((s, [c, v]) => s + (c.ciclo <= j ? v : 0), 0);
+    faltas.forEach(({ ciclo: j, falta }) => {
+        let resta = falta - cobertoAte(j);
+        candidatos.filter(c => c.ciclo <= j)
+            .sort((a, b) => b.ciclo - a.ciclo || b.ganho - a.ganho)
+            .forEach(c => {
+                const livre = c.ganho - (usado.get(c) || 0);
+                if (resta <= TOLERANCIA_FINANCEIRA || livre <= TOLERANCIA_FINANCEIRA || (!c.parcial && usado.has(c))) return;
+                const valor = c.parcial ? Math.min(livre, resta) : c.ganho;
+                usado.set(c, centavos((usado.get(c) || 0) + valor));
+                resta -= valor;
+            });
+    });
+    const resta = Math.max(0, ...faltas.map(({ ciclo, falta }) => centavos(falta - cobertoAte(ciclo))));
+    const cortes = [...usado].map(([c, valor]) => ({ ...c, valor }));
+    return { cortes, ganho: centavos(cortes.reduce((s, c) => s + c.valor, 0)), resta, cobre: resta <= TOLERANCIA_FINANCEIRA };
+}
+
+// Receitas de uma meta que não cabe por falta de dinheiro: só tetos, só pular lançamentos e,
+// quando nenhuma das duas cobre sozinha, as duas juntas. Vazia quando cabe ou falta limite.
+function receitasPraCaber(plano) {
+    const faltas = (plano.porMes || []).filter(m => m.sobra < -TOLERANCIA_FINANCEIRA).map(m => ({ ciclo: m.ciclo, falta: -m.sobra }));
+    if (plano.cabe || !faltas.length) return [];
+    const { tetos, lancamentos } = candidatosPraCaber();
+    const receitas = [
+        { titulo: 'Diminuir tetos', ...receitaPraCaber(faltas, tetos) },
+        { titulo: 'Pular lançamentos', ...receitaPraCaber(faltas, lancamentos) },
+    ].filter(r => r.cortes.length);
+    if (receitas.length === 2 && !receitas.some(r => r.cobre)) {
+        receitas.push({ titulo: 'Tetos e lançamentos', ...receitaPraCaber(faltas, [...tetos, ...lancamentos]) });
+    }
+    return receitas;
+}
+
+// Quando nem cortando dá: o que já está Comprometido do ciclo atual até o último mês com
+// falta — saídas em aberto marcadas Comprometido, parcelas de compra no cartão e as linhas das
+// outras metas —, por grupo (recorrência, meta ou lançamento), do maior total pro menor. É o
+// dinheiro que o "Pra caber" não toca; a lista serve pra analisar o que dá pra rever.
+function comprometidosAteAFalta(plano) {
+    const faltas = (plano.porMes || []).filter(m => m.sobra < -TOLERANCIA_FINANCEIRA);
+    if (!faltas.length) return null;
+    const ate = Math.max(...faltas.map(m => m.ciclo));
+    const grupos = new Map();
+    lancamentosComPrevistas().filter(r =>
+        !String(r._sid || '').startsWith('prev:') && r._meta !== plano.meta.id &&
+        r.periodoIdx != null && r.periodoIdx >= Estado.idxHoje && r.periodoIdx <= ate &&
+        !r.pago && (r.v || 0) < -TOLERANCIA_FINANCEIRA && (r.comprometido || ehParcelaDeCompra(r)),
+    ).forEach(r => {
+        const chave = r._meta != null ? `meta:${r._meta}` : r.recorrencia_id ?? `id:${r.id}`;
+        if (!grupos.has(chave)) grupos.set(chave, { nome: r._meta != null ? (Estado.metas.find(m => m.id === r._meta)?.nome ?? r.nome) : r.nome, categ: r.categ, meta: r._meta != null, ciclos: [], total: 0 });
+        const g = grupos.get(chave);
+        g.ciclos.push(r.periodoIdx);
+        g.total = centavos(g.total - r.v);
+    });
+    const lista = [...grupos.values()].sort((a, b) => b.total - a.total);
+    return { ate, total: centavos(lista.reduce((s, g) => s + g.total, 0)), grupos: lista };
+}
+
 function calcularPlanoDasMetas() {
     const todas = Estado.metas || [];
     const metas = todas
@@ -316,7 +407,15 @@ function calcularPlanoDasMetas() {
         if (!plano.cabe) {
             const movida = { ...meta, meses_ate_parcela: 1 };
             for (let c = ciclo + 1; c < Estado.ciclos.length; c++) {
-                if (planoNoCiclo(movida, c, anteriores, ctx).cabe) { plano.cabeEm = c; break; }
+                if (planoNoCiclo(movida, c, anteriores, ctx, { leve: true }).cabe) { plano.cabeEm = c; break; }
+            }
+            // Parcelado: o menor número de vezes que cabe no mesmo mês. Só até a última parcela
+            // cair nos ciclos carregados — depois disso as parcelas somem da conta e "caberia" à toa.
+            if (plano.forma !== 'avista' && plano.parcelas) {
+                const ate = Math.min(120, Estado.ciclos.length - ciclo - (plano.forma === 'cartao' ? 1 : 0));
+                for (let n = plano.parcelas + 1; n <= ate; n++) {
+                    if (planoNoCiclo({ ...meta, parcelas: n }, ciclo, anteriores, ctx, { leve: true }).cabe) { plano.vezesQueCabe = n; break; }
+                }
             }
         }
         plano.porMes = detalheDoPlano(plano, anteriores, ctx);

@@ -893,6 +893,8 @@ function htmlModalCartao(dados, cartao) {
 // ou saíram da conta. Só leitura do Estado; os handlers ficam em interactions.js.
 const ICONE_COMPRAR = '<svg viewBox="0 0 24 24" width=16 height=16 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true><circle cx=9 cy=20 r=1.4 /><circle cx=18 cy=20 r=1.4 /><path d="M2 3h3l2.6 12.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L21 8H6" /></svg>';
 const ICONE_EXCLUIR = '<svg viewBox="0 0 24 24" width=16 height=16 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>';
+const ICONE_SIMULAR = '<svg viewBox="0 0 24 24" width=16 height=16 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M12 2a10 10 0 1 0 10 10" /><path d="M12 6v6l4 2" /></svg>';
+const ICONE_LISTA = '<svg viewBox="0 0 24 24" width=16 height=16 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" /></svg>';
 const ICONE_MES_A_MES = '<svg viewBox="0 0 24 24" width=16 height=16 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true><rect x=3 y=5 width=18 height=16 rx=2 /><path d="M3 10h18M8 3v4M16 3v4M7 14h4M7 17h7" /></svg>';
 const FORMAS_DA_META = { avista: 'À vista', cartao: 'Parcelado Crédito', financiamento: 'Parcelado Débito' };
 
@@ -967,7 +969,82 @@ function htmlDetalheDoPlano(p) {
         `<th class=n>Sobra / falta</th>` +
         `<th class=n title="Comprometido do mês contando esta meta (teto ${teto}%)">Comprometido</th></tr></thead>` +
         `<tbody>${p.porMes.map(linha).join('')}</tbody>` +
-        `<tfoot><tr><td>Total</td><td colspan=4><b>${brl(total)}</b>${fora}</td></tr></tfoot></table></div>`;
+        `<tfoot><tr><td>Total</td><td colspan=4><b>${brl(total)}</b>${fora}</td></tr></tfoot></table></div>` +
+        htmlPraCaber(p);
+}
+
+// Receitas do "Pra caber" do modal aberto: o botão Simular de cada uma aplica a do mesmo
+// índice (interactions.js). Refeitas a cada desenho do modal.
+let receitasDoModal = [];
+
+// Meses (ciclos) em trechos: "Fev/27 a Abr/27, Jun/27".
+function mesesEmTrechos(ciclos) {
+    const trechos = [];
+    [...new Set(ciclos)].sort((a, b) => a - b).forEach(c => {
+        const ultimo = trechos[trechos.length - 1];
+        if (ultimo && c === ultimo[1] + 1) ultimo[1] = c; else trechos.push([c, c]);
+    });
+    const nome = c => nomePeriodoAbrev(Estado.ciclos[c]);
+    return trechos.map(([a, b]) => (a === b ? nome(a) : `${nome(a)} a ${nome(b)}`)).join(', ');
+}
+
+// "Pra caber" (só sem caber por falta de dinheiro): cada receita com o que corta, quanto
+// rende, se cobre a falta e um Simular; embaixo, o que faria caber sem cortar nada.
+function htmlPraCaber(p) {
+    receitasDoModal = receitasPraCaber(p);
+    const semCortar = [
+        p.vezesQueCabe ? `<span class=mpParte><i>Em</i> <b>${p.vezesQueCabe}x</b></span>` : '',
+        p.cabeEm != null ? `<span class=mpParte><i>${{ avista: 'Em', cartao: 'Comprando em', financiamento: 'Começando em' }[p.forma]}</i> <b>${nomePeriodoAbrev(Estado.ciclos[p.cabeEm])}</b></span>` : '',
+    ].filter(Boolean).join(' ');
+    if (!receitasDoModal.length && !semCortar) return '';
+    const ganho = v => `<b class=vd>+${brl(v)}</b>`;
+    const itens = r => {
+        // Tetos: por categoria e valor novo, em trechos de meses. Lançamentos: por recorrência.
+        const tetos = new Map(), pulos = new Map();
+        r.cortes.forEach(c => {
+            if (c.tipo === 'teto') {
+                const atual = limitesCategoriaDoCiclo(c.cicloTeto)[c.chave];
+                const chave = `${c.chave}|${atual}|${centavos(Math.max(0, atual - c.valor))}`;
+                if (!tetos.has(chave)) tetos.set(chave, { chave: c.chave, atual, novo: Math.max(0, atual - c.valor), ciclos: [], valor: 0 });
+                const t = tetos.get(chave); t.ciclos.push(c.cicloTeto); t.valor += c.valor;
+            } else {
+                if (!pulos.has(c.grupo)) pulos.set(c.grupo, { nome: c.nome, datas: [], valor: 0 });
+                const g = pulos.get(c.grupo); g.datas.push(c.data); g.valor += c.valor;
+            }
+        });
+        // Em ordem de mês: o primeiro ciclo de cada teto, a primeira data de cada lançamento.
+        return [...tetos.values()].sort((a, b) => Math.min(...a.ciclos) - Math.min(...b.ciclos)).map(t => `<li><i>${t.chave === 'besteira' ? 'Besteira' : 'Isabella'}</i> <b>${brl(t.atual)} → ${brl(t.novo)}</b> <span class=mpDetalhe>${mesesEmTrechos(t.ciclos)}</span> ${ganho(t.valor)}</li>`)
+            .concat([...pulos.values()].sort((a, b) => String(a.datas.sort()[0]).localeCompare(String(b.datas.sort()[0]))).map(g => `<li><i>Pular</i> <b>${escapeHtml(g.nome)}</b> <span class=mpDetalhe>${[...new Set(g.datas.map(d => mesAbrev(d)))].join(', ')}</span> ${ganho(g.valor)}</li>`))
+            .join('');
+    };
+    return `<h3 class=pmSubtitulo>Pra caber</h3>` +
+        receitasDoModal.map((r, i) => `<div class=pcReceita><div class=pcTopo><b>${r.titulo}</b> ` +
+            `<span class="mpParte ${r.cobre ? 'vd' : 'am'}">${r.cobre ? `<b>Cobre</b> <span class=mpDetalhe>+${brl(r.ganho)}</span>` : `<i>Ainda faltam</i> <b>${brl(r.resta)}</b>`}</span>` +
+            `<button type=button class=btIcone data-acao=simularReceita data-receita=${i} title="Simular (não salva)" aria-label="Simular ${r.titulo.toLowerCase()}">${ICONE_SIMULAR}</button></div>` +
+            `<ul class=pcCortes>${itens(r)}</ul></div>`).join('') +
+        (semCortar ? `<div class=pcSemCortar><i>Sem cortar</i> ${semCortar}</div>` : '') +
+        // Nenhuma receita cobre: o resto está no que é intocável (Comprometido).
+        (p.falta <= TOLERANCIA_FINANCEIRA || receitasDoModal.some(r => r.cobre) ? '' :
+            `<div class=pcAviso><span>Nem cortando tudo cabe: muito já está Comprometido.</span>` +
+            `<button type=button class=btIcone data-acao=verComprometidos title="Ver comprometidos" aria-label="Ver comprometidos">${ICONE_LISTA}</button></div>`);
+}
+
+// Modal dos comprometidos até a falta (aberto pelo aviso do "Pra caber"): cada grupo com a
+// categoria, os meses, quanto sai por vez e o total no período; no topo, o total contra a
+// maior falta da meta.
+function htmlComprometidos(p) {
+    const dados = comprometidosAteAFalta(p);
+    const topo = `<h2 class=pmTitulo>Comprometido até ${dados ? nomePeriodoAbrev(Estado.ciclos[dados.ate]) : ''}</h2>`;
+    if (!dados?.grupos.length) return `${topo}<p class=empty>Nada comprometido no período.</p>`;
+    const linha = g => `<tr><td>${escapeHtml(g.nome)}${g.meta ? ' <span class=mpDetalhe>meta</span>' : ''}</td>` +
+        `<td data-rotulo="Categoria"><i>${escapeHtml(g.categ || '—')}</i></td>` +
+        `<td data-rotulo="Meses">${mesesEmTrechos(g.ciclos)}</td>` +
+        `<td class=n data-rotulo="Por vez">${brl(g.total / g.ciclos.length)}</td>` +
+        `<td class=n data-rotulo="Total"><b>${brl(g.total)}</b></td></tr>`;
+    return topo +
+        `<div class="mpParte vm pcResumo"><i>Comprometido</i> <b>${brl(dados.total)}</b> <span class=mpDetalhe>contra uma falta de até ${brl(p.falta)} nesta meta</span></div>` +
+        `<div class=pmRolagem><table class=pmTabela><thead><tr><th>Nome</th><th>Categoria</th><th>Meses</th>` +
+        `<th class=n>Por vez</th><th class=n>Total</th></tr></thead><tbody>${dados.grupos.map(linha).join('')}</tbody></table></div>`;
 }
 
 // Rótulo do mês da meta: o que ele é pra cada forma (a entrada tem o mês dela, embaixo).

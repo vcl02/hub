@@ -27,14 +27,14 @@ const CICLOS = Array.from({ length: 12 }, (_, i) => {
     return { id: `c:${i + 1}`, cicloId: i + 1, ini: iso(ano, m, 5), fat: iso(fimAno, fimMes, 4) };
 });
 
-function carrega(metas) {
-    const lancamentos = CICLOS.flatMap((c, i) => [
+function carrega(metas, { extras = [], tetoBesteira = 0 } = {}) {
+    const lancamentos = [...extras, ...CICLOS.flatMap((c, i) => [
         { id: 100 + i, nome: 'Faturamento PJ', categ: 'Renda', data: c.ini, v: 3000, valor: 3000, cred: false, pago: true, periodoIdx: i },
         { id: 200 + i, nome: 'Aluguel', categ: 'Casa', data: c.ini, v: -1000, valor: -1000, cred: false, pago: true, periodoIdx: i },
-    ]);
+    ])];
     const estado = {
         idxHoje: 0, ciclos: CICLOS.map(c => ({ ...c })), faturas: [], lancamentos, metas,
-        limitesPorCiclo: new Map(CICLOS.map(c => [c.cicloId, { id: c.cicloId, limite_besteira: 0, limite_isabella: 0 }])),
+        limitesPorCiclo: new Map(CICLOS.map(c => [c.cicloId, { id: c.cicloId, limite_besteira: tetoBesteira, limite_isabella: 0 }])),
     };
     const contexto = { Estado: estado, SALDO_DESDE: '2026-01-01', MESES: [], document: { getElementById: () => ({}) }, setTimeout, clearTimeout };
     vm.createContext(contexto);
@@ -43,7 +43,7 @@ function carrega(metas) {
     const limites = graficos.slice(graficos.indexOf('const LIMITES_COMPROMISSOS'), graficos.indexOf('\n];\n', graficos.indexOf('const LIMITES_COMPROMISSOS')) + 4);
     vm.runInContext(limites + graficos.slice(graficos.indexOf('const ehParcelaDeCompra'), graficos.indexOf('function dadosCompromissosCiclo(')), contexto);
     vm.runInContext(`limparCachesFinanceiros();
-        globalThis.r = { plano: planoDasMetas(), base: lancamentosComPrevistas(), cicloDoMes, guardadoAte };`, contexto);
+        globalThis.r = { plano: planoDasMetas(), base: lancamentosComPrevistas(), cicloDoMes, guardadoAte, receitaPraCaber, receitasPraCaber, candidatosPraCaber, comprometidosAteAFalta };`, contexto);
     return contexto.r;
 }
 
@@ -365,4 +365,88 @@ test('campo de mês das metas não grava ano pela metade nem o mês da meta apag
     // A guarda vem antes de qualquer gravação ou aviso.
     assert.ok(interacoes.indexOf("campo === 'mes_entrada') && (input.value") < interacoes.indexOf("let valor = valorDoCampoDaMeta(campo, input.value);"));
     assert.match(regras, /Campo de mês só grava mês completo, de 2000 em diante/);
+});
+
+test('pra caber: receita gulosa cobre cada mês só com cortes de ciclos até ele', () => {
+    const r = carrega([]);
+    // Faltas acumuladas: 1.000 em Jun/27 (8) e 4.000 em Set/27 (11). Corte depois do buraco
+    // (ciclo 12) não ajuda; teto corta só o que falta; lançamento sai inteiro.
+    const A = { tipo: 'pular', id: 1, ciclo: 7, ganho: 600 };
+    const B = { tipo: 'pular', id: 2, ciclo: 9, ganho: 2000 };
+    const C = { tipo: 'pular', id: 3, ciclo: 12, ganho: 5000 };
+    const D = { tipo: 'teto', chave: 'besteira', cicloTeto: 7, ciclo: 8, ganho: 800, parcial: true };
+    const receita = JSON.parse(JSON.stringify(r.receitaPraCaber([{ ciclo: 8, falta: 1000 }, { ciclo: 11, falta: 4000 }], [A, B, C, D])));
+    // Jun/27: D (mais perto do buraco) dá 800, A dá 600 → 1.400. Set/27: B dá 2.000 → 3.400 de 4.000.
+    assert.deepEqual(receita.cortes.map(c => [c.id ?? c.chave, c.valor]), [['besteira', 800], [1, 600], [2, 2000]]);
+    assert.deepEqual([receita.ganho, receita.resta, receita.cobre], [3400, 600, false]);
+});
+
+test('pra caber: só entra o que dá pra cortar de verdade', () => {
+    const linha = (id, extra) => ({ id, nome: `L${id}`, categ: 'Presente', data: '2027-05-10', v: -200, valor: -200, cred: false, pago: false, periodoIdx: 7, ...extra });
+    const r = carrega([], { tetoBesteira: 300, extras: [
+        linha(901),                                        // cortável
+        linha(902, { comprometido: true }),                // intocável
+        linha(903, { reserva: true }),
+        linha(904, { categ: 'Investimento', nome: 'Aporte' }),
+        linha(905, { pago: true }),
+        linha(906, { categ: 'Besteira' }),                 // conta no teto: a alavanca é o teto
+        linha(907, { v: 500, valor: 500 }),                // entrada
+        linha(908, { nome: 'Antecipação Fatura', categ: 'Antecipação Fatura' }),
+        linha(909, { periodoIdx: -1 }),                    // antes do ciclo atual (idxHoje 0)
+    ] });
+    const { tetos, lancamentos } = JSON.parse(JSON.stringify(r.candidatosPraCaber()));
+    assert.deepEqual(lancamentos.map(c => c.id), [901]);
+    // Teto de Besteira de 300 em todo ciclo com ciclo seguinte; no ciclo 7, a Besteira de 200
+    // já lançada deixa 100 de prevista. A prevista cai na fatura do ciclo seguinte.
+    assert.equal(tetos.length, 11);
+    assert.deepEqual(tetos.filter(t => t.cicloTeto === 7).map(t => [t.chave, t.ciclo, t.ganho]), [['besteira', 8, 100]]);
+});
+
+test('pra caber: receitas da meta que não cabe e "Em Nx" sem cortar', () => {
+    // Mesa 12.000: entrada 2.000 em Jan/27 (3) e 2x de 5.000 (Fev e Mar/27). Sem os presentes
+    // cabe no limite (Mar/27 fecha em 0). Presentes de 1.000 em Jan, Fev e Mar/27 fazem faltar
+    // 3.000 em Mar/27, e pular os três cobre.
+    const presentes = [3, 4, 5].map(i => ({ id: 950 + i, nome: 'Presente', categ: 'Presente', data: CICLOS[i].ini, v: -1000, valor: -1000, cred: false, pago: false, periodoIdx: i, recorrencia_id: 77 }));
+    const r = carrega([meta(1, 'Mesa', 12000, '2027-02-01', { forma: 'financiamento', entrada: 2000, parcelas: 2 })], { extras: presentes });
+    const plano = r.plano.find(p => p.meta.id === 1);
+    assert.deepEqual([plano.cabe, plano.falta], [false, 3000]);
+    const receitas = JSON.parse(JSON.stringify(r.receitasPraCaber(plano)));
+    assert.deepEqual(receitas.map(x => [x.titulo, x.cobre, x.ganho]), [['Pular lançamentos', true, 3000]]);
+    assert.ok(receitas[0].cortes.every(c => c.tipo === 'pular' && c.grupo === 77));
+    // Parcelado sem caber: o menor número de vezes que cabe, sem passar dos ciclos carregados.
+    const r2 = carrega([meta(1, 'Mesa', 12000, '2027-02-01', { forma: 'financiamento', entrada: 2000, parcelas: 1 })]);
+    const mesa = r2.plano.find(p => p.meta.id === 1);
+    assert.deepEqual([mesa.cabe, mesa.vezesQueCabe], [false, 2]);
+});
+
+test('pra caber: modal, Simular só na memória e regra documentada', () => {
+    assert.match(visoes, /function htmlPraCaber\(p\) \{\s*\n\s*receitasDoModal = receitasPraCaber\(p\);/);
+    assert.match(visoes, /data-acao=simularReceita data-receita=\$\{i\} title="Simular \(não salva\)"/);
+    const simular = interacoes.slice(interacoes.indexOf('function simularReceitaPraCaber('), interacoes.indexOf('\n}\n', interacoes.indexOf('function simularReceitaPraCaber(')));
+    // Liga a simulação e guarda o retrato ANTES de mexer; nada de gravar no banco.
+    assert.ok(simular.indexOf('guardarRetratoAntesDaSimulacao()') < simular.indexOf('receita.cortes.forEach'));
+    assert.doesNotMatch(simular, /excluirLancamento|salvarLimiteDoCiclo|atualizarLancamento/);
+    assert.match(regras, /\*\*Pra caber\*\* \(no Mês a mês de uma meta que não cabe por falta de dinheiro\)/);
+    assert.match(regras, /Investimento fica de fora/);
+});
+
+test('pra caber: quando não dá, lista o que já está comprometido até a falta', () => {
+    // Mesa sem caber: a parcela única de 10.000 em Fev/27 (ciclo 4) é a falta. Comprometidos:
+    // Senac 500 em 3..6 (Mar e Abr/27 passam da falta), uma parcela no cartão e uma linha paga (fora).
+    const senac = [3, 4, 5, 6].map(i => ({ id: 960 + i, nome: 'Senac', categ: 'Educação', data: CICLOS[i].ini, v: -500, valor: -500, cred: false, pago: false, comprometido: true, periodoIdx: i, recorrencia_id: 88 }));
+    const parcela = { id: 970, nome: 'Iphone', categ: 'Eletrônico', data: CICLOS[2].ini, v: -300, valor: -300, cred: true, pago: false, recorrencia_id: 89, freq: null, fatura: '2027-02-12', periodoIdx: 4 };
+    const pago = { id: 971, nome: 'Pago', categ: 'X', data: CICLOS[4].ini, v: -900, valor: -900, cred: false, pago: true, comprometido: true, periodoIdx: 4 };
+    const r = carrega([meta(1, 'Mesa', 12000, '2027-02-01', { forma: 'financiamento', entrada: 2000, parcelas: 1 })], { extras: [...senac, parcela, pago] });
+    const plano = r.plano.find(p => p.meta.id === 1);
+    assert.equal(plano.cabe, false);
+    const dados = JSON.parse(JSON.stringify(r.comprometidosAteAFalta(plano)));
+    assert.equal(dados.ate, 4);
+    assert.deepEqual(dados.grupos.map(g => [g.nome, g.total, g.ciclos]), [['Senac', 1000, [3, 4]], ['Iphone', 300, [4]]]);
+    assert.equal(dados.total, 1300);
+    // Tela: aviso só sem receita que cubra (e com falta de dinheiro), botão abre o modal.
+    assert.match(visoes, /\(p\.falta <= TOLERANCIA_FINANCEIRA \|\| receitasDoModal\.some\(r => r\.cobre\) \? '' :/);
+    assert.match(visoes, /Nem cortando tudo cabe: muito já está Comprometido\./);
+    assert.match(pagina, /<dialog id=modalComprometidos tabindex=-1>\s*<div id=corpoComprometidos><\/div>\s*<\/dialog>/);
+    assert.match(interacoes, /el\('corpoComprometidos'\)\.innerHTML = htmlComprometidos\(plano\);/);
+    assert.match(regras, /abre o modal \*\*Comprometido até Mmm\/aa\*\*/);
 });

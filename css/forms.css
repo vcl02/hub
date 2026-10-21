@@ -942,7 +942,8 @@
   }
 
   /* Mês a mês do plano de uma meta: modal menor, por cima do de Metas. */
-  dialog#modalPlanoMeta {
+  dialog#modalPlanoMeta,
+  dialog#modalComprometidos {
       color: var(--fg);
       background: var(--pa);
       border: 1px solid var(--ln);
@@ -955,7 +956,8 @@
       box-shadow: 0 20px 60px var(--shadow);
   }
 
-  dialog#modalPlanoMeta:focus { outline: none; }
+  dialog#modalPlanoMeta:focus,
+  dialog#modalComprometidos:focus { outline: none; }
 
   .pmTitulo {
       margin: 0 0 .5rem;
@@ -999,6 +1001,75 @@
 
   /* Entrada e parcela no mesmo mês ficam uma embaixo da outra. */
   .pmItem { display: block; }
+
+  /* Pra caber: cada receita num bloco, com o que corta em lista curta; rótulo em itálico,
+     valor em negrito, meses apagados e o quanto rende em verde. */
+  .pmSubtitulo {
+      margin: 1rem 0 .4rem;
+      font-size: .9rem;
+  }
+
+  .pcReceita {
+      margin-bottom: .5rem;
+      padding: .5rem .6rem;
+      background: var(--bg-soft);
+      border: 1px solid var(--ln);
+      border-radius: 9px;
+      font-size: .84rem;
+  }
+
+  .pcTopo {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: .4rem;
+  }
+
+  .pcTopo .btIcone { margin-left: auto; }
+
+  .pcCortes {
+      margin: .4rem 0 0;
+      padding-left: 1.1rem;
+  }
+
+  .pcCortes li { margin: .15rem 0; }
+  .pcCortes i { color: var(--mu); }
+  .pcCortes .vd { color: var(--vd); }
+
+  .pcSemCortar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: .35rem;
+      margin-top: .5rem;
+      font-size: .8rem;
+  }
+
+  .pcSemCortar > i { color: var(--mu); }
+
+  /* Nenhuma receita cobre: aviso em vermelho com o botão da lista de comprometidos. */
+  .pcAviso {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      margin-top: .6rem;
+      padding: .45rem .6rem;
+      color: var(--vm);
+      background: var(--red-soft);
+      border: 1px solid #6A3A36;
+      border-radius: 9px;
+      font-size: .84rem;
+  }
+
+  .pcAviso .btIcone { margin-left: auto; }
+
+  /* Resumo do modal de comprometidos: frase mais longa que uma pílula, quebra no celular. */
+  .mpParte.pcResumo {
+      display: inline-block;
+      margin-top: .2rem;
+      white-space: normal;
+      border-radius: 9px;
+  }
 
   /* Mês a mês, Comprar e Excluir sempre juntos, no fim da linha. */
   .metaBotoes {

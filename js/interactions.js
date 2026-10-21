@@ -878,7 +878,9 @@ function atualizarMetas() {
         const plano = planoDasMetas().find(p => p.meta.id === +el('modalPlanoMeta').dataset.meta);
         if (plano) el('corpoPlanoMeta').innerHTML = htmlDetalheDoPlano(plano);
         else el('modalPlanoMeta').close();   // a meta saiu (excluída ou comprada)
+        if (plano && el('modalComprometidos').open) el('corpoComprometidos').innerHTML = htmlComprometidos(plano);
     }
+    if (!el('modalPlanoMeta').open && el('modalComprometidos').open) el('modalComprometidos').close();
 }
 el('btMetas').onclick = () => {
     el('corpoMetas').innerHTML = htmlModalMetas(planoDasMetas());
@@ -889,8 +891,45 @@ el('modalMetas').addEventListener('click', e => {
     if (e.target == el('modalMetas')) el('modalMetas').close();
 });
 el('modalPlanoMeta').addEventListener('click', e => {
-    if (e.target == el('modalPlanoMeta')) el('modalPlanoMeta').close();
+    if (e.target == el('modalPlanoMeta')) return el('modalPlanoMeta').close();
+    const botao = e.target.closest('[data-acao=simularReceita]');
+    if (botao) simularReceitaPraCaber(receitasDoModal[+botao.dataset.receita]);
+    if (e.target.closest('[data-acao=verComprometidos]')) {
+        const plano = planoDasMetas().find(p => p.meta.id === +el('modalPlanoMeta').dataset.meta);
+        if (!plano) return;
+        el('corpoComprometidos').innerHTML = htmlComprometidos(plano);
+        el('modalComprometidos').showModal();
+        el('modalComprometidos').focus();
+    }
 });
+el('modalComprometidos').addEventListener('click', e => {
+    if (e.target == el('modalComprometidos')) el('modalComprometidos').close();
+});
+
+// Simular uma receita do "Pra caber": liga a simulação (se ainda não está) e aplica os cortes
+// só na memória, como qualquer edição simulada — teto novo nos ciclos e lançamentos ocultos.
+// Nada vai pro banco; sair da simulação desfaz. O modal se refaz com a conta de verdade.
+function simularReceitaPraCaber(receita) {
+    if (!receita) return;
+    if (!Estado.simulando) {
+        Estado.simulando = true;
+        guardarRetratoAntesDaSimulacao();
+        atualizaBotaoSimulacao();
+    }
+    receita.cortes.forEach(c => {
+        if (c.tipo === 'teto') {
+            const cicloId = Estado.ciclos[c.cicloTeto].cicloId;
+            const atual = limitesCategoriaDoCiclo(c.cicloTeto)[c.chave];
+            const salvos = Estado.limitesPorCiclo.get(cicloId) || { id: cicloId };
+            Estado.limitesPorCiclo.set(cicloId, { ...salvos, [`limite_${c.chave}`]: Math.round(Math.max(0, atual - c.valor) * 100) / 100 });
+        } else {
+            const i = Estado.lancamentos.findIndex(x => x.id === c.id);
+            if (i >= 0) Estado.lancamentos.splice(i, 1);
+            Estado.selecionados.delete(String(c.id));
+        }
+    });
+    desenhar();
+}
 
 // Valor de cada campo como vai pro banco. Vazio vira null (mês vazio: a meta fica sem plano)
 // e o valor é obrigatório. Devolve undefined quando o texto é inválido.
