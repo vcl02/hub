@@ -169,6 +169,11 @@ function linhaDaMeta(meta, k, campos) {
     return linha;
 }
 const dataDoCiclo = idx => dataISO(Estado.ciclos[idx].ini);
+// O que o mês j deixa, com as metas: a variação do guardado projetado sem metas (o Aporte
+// sugerido ou o Resgate do mês) menos o que as linhas de metas pagam nele. Diferente do
+// guardado que sobra (acumulado): um mês pode deixar negativo e o guardado continuar positivo.
+const deixaNoMes = (ctx, metas, j) => ctx.guardado(j) - (j > 0 ? ctx.guardado(j - 1) : 0) -
+    metas.filter(r => r.periodoIdx === j).reduce((s, r) => s - r.v, 0);
 // Quanto as linhas (de metas) já pagaram até o ciclo j, inclusive.
 const pagoAteCiclo = (linhas, j) => linhas.filter(r => r.periodoIdx != null && r.periodoIdx <= j).reduce((s, r) => s - r.v, 0);
 const centavos = v => Math.round(v * 100) / 100;
@@ -293,6 +298,7 @@ function detalheDoPlano(plano, anteriores, ctx) {
                 valor: -r.v,
             })),
             sai: centavos(doMes.reduce((s, r) => s - r.v, 0)),
+            deixa: centavos(deixaNoMes(ctx, extras, j)),
             sobra: centavos(ctx.guardado(j) - pagoAteCiclo(anteriores, j) - pagoAteCiclo(plano.linhas, j)),
             comprometido: ctx.comprometido(j, extras),
         };
@@ -392,27 +398,30 @@ function comprometidosAteAFalta(plano) {
 // Folga ideal de uma meta parcelada: sobrar uns R$ 1.000 por mês depois das parcelas.
 const FOLGA_MENSAL_IDEAL = 1000;
 
-// Sobra de cada mês com parcela: o que o mês deixa (variação do guardado projetado sem metas,
-// que é o Aporte sugerido ou o Resgate do mês) menos o que as metas anteriores e esta pagam
-// nele. Devolve a menor — o pior mês. O mês só da entrada fica de fora: ela é uma vez só e não
-// muda com o número de vezes. Null sem parcela nos ciclos carregados.
+// Quanto sobra por mês com as parcelas (deixaNoMes), nos meses com parcela: o mês **típico**
+// (mediana) e o **pior** (com o ciclo dele). O mês só da entrada fica de fora: ela é uma vez
+// só e não muda com o número de vezes. O ideal olha o típico: um mês que já é negativo sem
+// a meta (ex.: dezembro com IPVA e presentes) nunca chegaria a R$ 1.000 com vezes nenhuma.
+// Null sem parcela nos ciclos carregados.
 function folgaDoPlano(plano, anteriores, ctx) {
-    const pagoNoMes = (linhas, j) => linhas.filter(r => r.periodoIdx === j).reduce((s, r) => s - r.v, 0);
+    const linhas = [...anteriores, ...plano.linhas];
     const meses = [...new Set(plano.linhas.filter(r => r._parte !== 900).map(r => r.periodoIdx).filter(j => j != null))];
     if (!meses.length) return null;
-    return centavos(Math.min(...meses.map(j =>
-        ctx.guardado(j) - (j > 0 ? ctx.guardado(j - 1) : 0) - pagoNoMes(anteriores, j) - pagoNoMes(plano.linhas, j))));
+    const porMes = meses.map(j => ({ ciclo: j, valor: centavos(deixaNoMes(ctx, linhas, j)) })).sort((a, b) => a.valor - b.valor);
+    const meio = Math.floor(porMes.length / 2);
+    const tipica = porMes.length % 2 ? porMes[meio].valor : centavos((porMes[meio - 1].valor + porMes[meio].valor) / 2);
+    return { tipica, pior: porMes[0].valor, cicloPior: porMes[0].ciclo };
 }
 
 // Opções de vezes de uma meta parcelada, de 1x até a última parcela caber nos ciclos carregados
 // (depois disso as parcelas somem da conta e "caberia" à toa): o **mínimo** que cabe e o
-// **ideal**, o menor que cabe deixando ao menos FOLGA_MENSAL_IDEAL no pior mês. Cada uma com a
-// prévia (parcela, 1ª e última, folga); `atual` traz a folga do número de vezes escolhido.
+// **ideal**, o menor que cabe deixando ao menos FOLGA_MENSAL_IDEAL no mês típico. Cada uma com
+// a prévia (parcela, 1ª e última, mês típico e pior); `atual` traz a do número escolhido.
 function opcoesDeVezes(meta, plano, anteriores, ctx) {
     const ate = Math.min(120, Estado.ciclos.length - plano.ciclo - (plano.forma === 'cartao' ? 1 : 0));
     const previa = (vezes, p) => {
         const meses = p.linhas.filter(r => r._parte !== 900).map(r => r.periodoIdx).filter(j => j != null);
-        return { vezes, parcela: p.parcela, ini: Math.min(...meses), fim: Math.max(...meses), folga: folgaDoPlano(p, anteriores, ctx) };
+        return { vezes, parcela: p.parcela, ini: Math.min(...meses), fim: Math.max(...meses), ...folgaDoPlano(p, anteriores, ctx) };
     };
     const opcoes = { atual: previa(plano.parcelas, plano), minimo: null, ideal: null };
     for (let n = 1; n <= ate && !opcoes.ideal; n++) {
@@ -420,7 +429,7 @@ function opcoesDeVezes(meta, plano, anteriores, ctx) {
         if (!p.cabe || !p.parcelas) continue;
         const opcao = previa(n, p);
         if (!opcoes.minimo) opcoes.minimo = opcao;
-        if (opcao.folga != null && opcao.folga >= FOLGA_MENSAL_IDEAL - TOLERANCIA_FINANCEIRA) opcoes.ideal = opcao;
+        if (opcao.tipica != null && opcao.tipica >= FOLGA_MENSAL_IDEAL - TOLERANCIA_FINANCEIRA) opcoes.ideal = opcao;
     }
     return opcoes;
 }

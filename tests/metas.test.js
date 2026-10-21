@@ -453,14 +453,14 @@ test('pra caber: quando não dá, lista o que já está comprometido até a falt
 
 test('opções de vezes: mínimo que cabe e ideal com R$ 1.000 sobrando no pior mês', () => {
     // Cada mês deixa 2.000 (guardado 2.000 × (ciclo + 1)). Mesa 6.000 sem entrada, 1ª parcela
-    // em Fev/27 (4), em 3x de 2.000: o pior mês sobra 0. Em 1x já cabe (10.000 guardados em
+    // em Fev/27 (4), em 3x de 2.000: o mês sobra 0. Em 1x já cabe (10.000 guardados em
     // Fev/27), sobrando −4.000 no mês; em 6x de 1.000 sobra 1.000 em todo mês (até Jul/27, 9).
     const r = carrega([meta(1, 'Mesa', 6000, '2027-02-01', { forma: 'financiamento', parcelas: 3 })]);
     const o = JSON.parse(JSON.stringify(r.plano.find(p => p.meta.id === 1).opcoesVezes));
     assert.equal(r.FOLGA_MENSAL_IDEAL, 1000);
-    assert.deepEqual([o.atual.vezes, o.atual.folga], [3, 0]);
-    assert.deepEqual([o.minimo.vezes, o.minimo.parcela, o.minimo.folga, o.minimo.ini, o.minimo.fim], [1, 6000, -4000, 4, 4]);
-    assert.deepEqual([o.ideal.vezes, o.ideal.parcela, o.ideal.folga, o.ideal.ini, o.ideal.fim], [6, 1000, 1000, 4, 9]);
+    assert.deepEqual([o.atual.vezes, o.atual.tipica, o.atual.pior], [3, 0, 0]);
+    assert.deepEqual([o.minimo.vezes, o.minimo.parcela, o.minimo.tipica, o.minimo.ini, o.minimo.fim], [1, 6000, -4000, 4, 4]);
+    assert.deepEqual([o.ideal.vezes, o.ideal.parcela, o.ideal.tipica, o.ideal.ini, o.ideal.fim], [6, 1000, 1000, 4, 9]);
     // Nenhum número de vezes deixa 1.000 dentro dos ciclos carregados: sem ideal.
     const grande = JSON.parse(JSON.stringify(carrega([meta(1, 'Carro', 30000, '2027-02-01', { forma: 'financiamento', parcelas: 10 })]).plano[0].opcoesVezes));
     assert.equal(grande.ideal, null);
@@ -473,4 +473,21 @@ test('opções de vezes: linha embaixo do plano, clique usa o número de vezes',
     assert.match(visoes, /data-acao=usarVezes data-vezes=\$\{x\.vezes\} title="Usar \$\{x\.vezes\}x\$\{dica\}"/);
     assert.match(interacoes, /if \(acao === 'usarVezes'\) return gravarMudancaDaMeta\('atualizar', id, \{ parcelas: \+botao\.dataset\.vezes \}\);/);
     assert.match(regras, /\*\*Opções de vezes\*\* \(só parcelado\)/);
+});
+
+test('sobra/mês: o típico decide o ideal; o pior mês aparece com o nome, e o Mês a mês mostra o que cada mês deixa', () => {
+    // Um gasto avulso de 6.000 em Jun/27 (8) deixa esse mês negativo sem a meta: nenhuma vez
+    // chegaria a 1.000 nele. Mesa 6.000 em 6x de 1.000 (Fev a Jul/27): o típico sobra 1.000,
+    // o pior é Jun/27 com −5.000 — e o ideal continua sendo 6x.
+    const avulso = { id: 990, nome: 'IPVA', categ: 'Carro', data: CICLOS[8].ini, v: -6000, valor: -6000, cred: false, pago: false, periodoIdx: 8 };
+    const r = carrega([meta(1, 'Mesa', 6000, '2027-02-01', { forma: 'financiamento', parcelas: 6 })], { extras: [avulso] });
+    const p = r.plano.find(x => x.meta.id === 1);
+    const o = JSON.parse(JSON.stringify(p.opcoesVezes));
+    assert.deepEqual([o.atual.tipica, o.atual.pior, o.atual.cicloPior], [1000, -5000, 8]);
+    assert.equal(o.ideal.vezes, 6);
+    // Mês a mês: "No mês" (deixa) negativo em Jun/27 com o guardado depois ainda positivo.
+    const jun = JSON.parse(JSON.stringify(p.porMes)).find(m => m.ciclo === 8);
+    assert.deepEqual([jun.deixa, jun.sobra > 0], [-5000, true]);
+    assert.match(visoes, /<th class=n title="O que o mês deixa: entradas − saídas, com as metas \(pode ser negativo com o guardado ainda positivo\)">No mês<\/th>/);
+    assert.match(regras, /O ideal olha o típico porque um mês já negativo sem a meta/);
 });

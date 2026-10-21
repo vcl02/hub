@@ -943,9 +943,10 @@ function htmlDoPlanoDaMeta(p) {
 }
 
 // Mês a mês do plano (modal aberto pelo botão da meta), com o resumo em pílulas em cima: em
-// cada mês em que a meta paga algo, o que sai, o disponível antes (guardado projetado menos as
-// metas anteriores e o que esta já pagou), o que sobra ou falta depois e o Comprometido do mês
-// contando com ela (vermelho acima do teto). Ver detalheDoPlano em finance.js.
+// cada mês em que a meta paga algo, o que sai, o que o próprio mês deixa (entradas − saídas,
+// com as metas — o "sobra/mês" das opções de vezes), o disponível antes (guardado projetado
+// menos as metas anteriores e o que esta já pagou), o guardado que sobra ou falta depois e o
+// Comprometido do mês contando com ela (vermelho acima do teto). Ver detalheDoPlano.
 function htmlDetalheDoPlano(p) {
     const topo = `<h2 class=pmTitulo>${escapeHtml(p.meta.nome)}</h2>${htmlDoPlanoDaMeta(p)}`;
     if (!p.porMes?.length) return `${topo}<p class=empty>Sem pagamentos nos ciclos carregados.</p>`;
@@ -956,8 +957,9 @@ function htmlDetalheDoPlano(p) {
         const comprometido = m.comprometido == null ? '—'
             : `<b${m.comprometido > teto + 1e-9 ? ' class=vm' : ''}>${pct1(m.comprometido)}</b>`;
         return `<tr${falta ? ' class=pmFalta' : ''}><td>${nomePeriodoAbrev(Estado.ciclos[m.ciclo])}</td><td>${sai}</td>` +
+            `<td class="n ${m.deixa < -TOLERANCIA_FINANCEIRA ? 'vm' : 'vd'}" data-rotulo="No mês">${brl(m.deixa)}</td>` +
             `<td class="n${m.sobra + m.sai < -TOLERANCIA_FINANCEIRA ? ' vm' : ''}" data-rotulo="Disponível">${brl(m.sobra + m.sai)}</td>` +
-            `<td class="n ${falta ? 'vm' : 'vd'}" data-rotulo="Sobra / falta"><i>${falta ? 'Falta' : 'Sobra'}</i> <b>${brl(Math.abs(m.sobra))}</b></td>` +
+            `<td class="n ${falta ? 'vm' : 'vd'}" data-rotulo="Guardado depois"><i>${falta ? 'Falta' : 'Sobra'}</i> <b>${brl(Math.abs(m.sobra))}</b></td>` +
             `<td class=n data-rotulo="Comprometido">${comprometido}</td></tr>`;
     };
     // Parcelas depois do último ciclo carregado não entram no mês a mês: o total diz quanto ficou de fora.
@@ -965,11 +967,12 @@ function htmlDetalheDoPlano(p) {
     const fora = p.meta.valor - total > TOLERANCIA_FINANCEIRA ? ` <span class=mpDetalhe>de ${brl(p.meta.valor)}; o resto passa dos ciclos carregados</span>` : '';
     return topo + `<div class=pmRolagem><table class=pmTabela>` +
         `<thead><tr><th>Mês</th><th>Sai</th>` +
+        `<th class=n title="O que o mês deixa: entradas − saídas, com as metas (pode ser negativo com o guardado ainda positivo)">No mês</th>` +
         `<th class=n title="Guardado projetado do mês menos as metas anteriores e o que esta já pagou antes">Disponível</th>` +
-        `<th class=n>Sobra / falta</th>` +
+        `<th class=n>Guardado depois</th>` +
         `<th class=n title="Comprometido do mês contando esta meta (teto ${teto}%)">Comprometido</th></tr></thead>` +
         `<tbody>${p.porMes.map(linha).join('')}</tbody>` +
-        `<tfoot><tr><td>Total</td><td colspan=4><b>${brl(total)}</b>${fora}</td></tr></tfoot></table></div>` +
+        `<tfoot><tr><td>Total</td><td colspan=5><b>${brl(total)}</b>${fora}</td></tr></tfoot></table></div>` +
         htmlPraCaber(p);
 }
 
@@ -1053,15 +1056,17 @@ function htmlComprometidos(p) {
 function htmlOpcoesDeVezes(p) {
     const o = p.opcoesVezes;
     if (!o) return '';
-    const sobra = v => (v == null ? '' : `pior mês sobra <span class=${v < 0 ? 'vm' : 'vd'}>${brl(v)}</span>`);
     const ate = j => nomePeriodoAbrev(Estado.ciclos[j]);
+    const cor = v => `<span class=${v < 0 ? 'vm' : 'vd'}>${brl(v)}</span>`;
+    // "sobra/mês ~R$ 1.200,00 · pior Dez/27 −R$ 6.831,40": o que o mês deixa, não o guardado.
+    const sobra = x => (x.tipica == null ? '' : `sobra/mês ~${cor(x.tipica)}${x.pior < x.tipica - TOLERANCIA_FINANCEIRA ? ` · pior ${ate(x.cicloPior)} ${cor(x.pior)}` : ''}`);
     const opcao = (rotulo, x, dica) => (x.vezes === o.atual.vezes ? '' :
         `<button type=button class="mpParte mpOpcao" data-acao=usarVezes data-vezes=${x.vezes} title="Usar ${x.vezes}x${dica}">` +
-        `<i>${rotulo}</i> <b>${x.vezes}x ${brl(x.parcela)}</b> <span class=mpDetalhe>até ${ate(x.fim)} · ${sobra(x.folga)}</span></button>`);
-    const ideal = o.ideal ? opcao('Ideal', o.ideal, ` (sobra ao menos ${brl(FOLGA_MENSAL_IDEAL)} por mês)`)
-        : `<span class=mpParte><i>Ideal</i> <span class=mpDetalhe>nenhum número de vezes deixa ${brl(FOLGA_MENSAL_IDEAL)} por mês</span></span>`;
-    return `<div class=metaPlano title="Sobra do pior mês: o que o mês deixa depois das parcelas das metas, entre os meses com parcela">` +
-        `<span class=mpParte><i>Agora</i> <b>${o.atual.vezes}x</b> <span class=mpDetalhe>${sobra(o.atual.folga)}</span></span> ` +
+        `<i>${rotulo}</i> <b>${x.vezes}x ${brl(x.parcela)}</b> <span class=mpDetalhe>até ${ate(x.fim)} · ${sobra(x)}</span></button>`);
+    const ideal = o.ideal ? opcao('Ideal', o.ideal, ` (o mês típico sobra ao menos ${brl(FOLGA_MENSAL_IDEAL)})`)
+        : `<span class=mpParte><i>Ideal</i> <span class=mpDetalhe>nenhum número de vezes deixa ${brl(FOLGA_MENSAL_IDEAL)} no mês típico</span></span>`;
+    return `<div class=metaPlano title="Sobra/mês: o que cada mês com parcela deixa (entradas − saídas, com as metas) — o típico (mediana) e o pior. Não é o guardado acumulado: ver a coluna No mês do Mês a mês">` +
+        `<span class=mpParte><i>Agora</i> <b>${o.atual.vezes}x</b> <span class=mpDetalhe>${sobra(o.atual)}</span></span> ` +
         (o.minimo ? opcao('Mínimo', o.minimo, ' (o menor número de vezes que cabe)') : `<span class=mpParte><i>Mínimo</i> <span class=mpDetalhe>nenhum número de vezes cabe</span></span>`) +
         ` ${ideal}</div>`;
 }

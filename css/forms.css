@@ -949,7 +949,7 @@
       border: 1px solid var(--ln);
       border-radius: 14px;
       padding: 1rem;
-      width: min(44rem, 94vw);
+      width: min(52rem, 94vw);
       max-height: 88vh;
       max-height: 88dvh;
       overflow-y: auto;

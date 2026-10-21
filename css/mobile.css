@@ -348,7 +348,8 @@
           text-align: left;
           border: 0;
       }
-      .pmTabela .n { text-align: left; }
+      .pmTabela .n { text-align: left; white-space: nowrap; }
+      .pmTabela td.n i { display: block; }
       .pmTabela tr.pmFalta { background: var(--red-soft); }
       .pmTabela tr.pmFalta td { background: transparent; }
       .pmTabela td:nth-child(1) { font-weight: 600; }
