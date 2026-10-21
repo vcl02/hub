@@ -376,6 +376,9 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Pode começar com um valor máximo estimado e receber `UPDATE` no mesmo lançamento quando o total fechar.
 - A fatura da Isabella não é criada como linha sintética, não é calculada pela soma de compras e não participa da alocação de antecipações dos cartões.
 - A categoria `Isabella` identifica esses lançamentos; ela não muda a interface conforme o e-mail da sessão.
+- Compra que vai sair no **cartão dela** (Natal, Ano Novo, parcelados) não é Crédito do mantenedor nem cartão novo no app: é um **Débito** comum com categoria `Isabella, Fatura`, na data em que o dinheiro sai pra ela, e **Comprometido** quando é compromisso fixo ou parcela (Vezes com Dividir no cadastro).
+  Assim entra no saldo e nas projeções, fica fora do teto `Isabella` (tem `Fatura`) e não vira transferência (só `Antecipação` + `Fatura` vira).
+  A estimativa mensal (`Fatura Nu`, `Fatura Shopee`) cobre só o gasto normal dela: quando a fatura real fechar, ela recebe o total da fatura **menos** os itens já lançados naquele mês, pra nada contar duas vezes.
 - Antecipações de fatura abatem somente faturas do próprio cartão (o da `fatura` que elas apontam; sem `fatura`, Nubank), da mais antiga para a mais nova: antecipação do Mercado Pago maior que a fatura dele não transborda para o Nubank, e vice-versa.
   A antecipação com `fatura` abate exatamente a fatura daquele vencimento, cujo saldo é a soma das compras de crédito com esse mesmo vencimento — mesmo quando o ciclo tem dois vencimentos do mesmo cartão (ciclo longo) ou uma linha de débito ficou com uma `fatura` esquecida; antes, nesses casos, nada era abatido e o pagamento contava duas vezes no saldo.
   Abate no máximo o saldo daquela fatura, nunca transborda.

@@ -47,3 +47,15 @@ test('REGRAS.md legível: uma frase por linha nos itens e subtítulos nas seçõ
         assert.ok(linhas.includes(titulo), titulo);
     }
 });
+
+test('REGRAS.md: compra no cartão da Isabella é Débito "Isabella, Fatura", sem cartão novo', () => {
+    const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
+    assert.match(regras, /Compra que vai sair no \*\*cartão dela\*\* \(Natal, Ano Novo, parcelados\) não é Crédito do mantenedor nem cartão novo no app: é um \*\*Débito\*\* comum com categoria `Isabella, Fatura`/);
+    assert.match(regras, /quando a fatura real fechar, ela recebe o total da fatura \*\*menos\*\* os itens já lançados naquele mês/);
+    // As regras que sustentam a convenção continuam no código: "Fatura" tira do teto Isabella e
+    // só "Antecipação" + "Fatura" é transferência.
+    const graficos = fs.readFileSync('js/charts.js', 'utf8');
+    const shared = fs.readFileSync('js/shared.js', 'utf8');
+    assert.match(graficos, /return categorias\.includes\('isabella'\) && !categorias\.includes\('fatura'\) && !semAcento\(r\.nome\)\.includes\('fatura'\) && !r\.comprometido;/);
+    assert.match(shared, /return c\.includes\('antecipacao'\) && c\.includes\('fatura'\);/);
+});
