@@ -966,18 +966,20 @@ function htmlModalMetas(planos) {
             : campo(m, 'mes', m.mes ? m.mes.slice(0, 7) : '', `type=month aria-label="Mês da meta" title="${tituloDoMesDaMeta(m)}"`);
         const formas = Object.entries(FORMAS_DA_META).map(([valor, rotulo]) =>
             `<option value=${valor}${formaDaMeta(m) === valor ? ' selected' : ''}>${rotulo}</option>`).join('');
-        // Só nos parcelados: entrada (parte do total) e, só com ela, o mês dela (guardado como
-        // meses antes do mês da meta, pra seguir a âncora junto), e as vezes.
+        // Só nos parcelados: as vezes junto do valor (dividem o total menos a entrada) e,
+        // embaixo, a entrada (parte do total) e, só com ela, o mês dela (guardado como meses
+        // antes do mês da meta, pra seguir a âncora junto).
         const parcelado = formaDaMeta(m) !== 'avista';
+        const vezes = !parcelado ? '' :
+            `<label class=metaVezes title="Vezes">${campo(m, 'parcelas', m.parcelas, `inputmode=numeric class=metaCurto placeholder="${PARCELAS_PADRAO_METAS}" aria-label="Vezes"`)}x</label>`;
         const mesEntrada = p.cicloEntrada != null && Estado.ciclos[p.cicloEntrada] ? dataISO(Estado.ciclos[p.cicloEntrada].ini).slice(0, 7) : '';
         const extras = !parcelado ? '' :
             `<label title="Parte do total; o resto vai parcelado">Entrada R$ ${campo(m, 'entrada', emReais(m.entrada), 'inputmode=decimal class=metaMedio placeholder="0,00"')}</label>` +
-            (m.entrada > 0 ? campo(m, 'mes_entrada', mesEntrada, 'type=month title="Mês da entrada" aria-label="Mês da entrada"') : '') +
-            `<label>Vezes ${campo(m, 'parcelas', m.parcelas, `inputmode=numeric class=metaCurto placeholder="${PARCELAS_PADRAO_METAS}"`)}</label>`;
+            (m.entrada > 0 ? campo(m, 'mes_entrada', mesEntrada, 'type=month title="Mês da entrada" aria-label="Mês da entrada"') : '');
         return `<div class=metaLinha data-meta=${m.id}>` +
             `<div class=metaPrincipal>` +
             campo(m, 'nome', m.nome, 'class=metaNome aria-label="Nome da meta"') +
-            `<label class=metaValor>R$ ${campo(m, 'valor', emReais(m.valor), 'inputmode=decimal aria-label="Valor da meta"')}</label>` +
+            `<label class=metaValor>R$ ${campo(m, 'valor', emReais(m.valor), 'inputmode=decimal aria-label="Valor da meta"')}</label>${vezes}` +
             `<select data-campo=ancora_meta_id aria-label="Quando">${opcoesAncora}</select>${quando}` +
             `<select data-campo=forma aria-label="Forma de pagar">${formas}</select>` +
             `<span class=metaBotoes>${botao('comprar', ICONE_COMPRAR, 'Comprar')}${botao('excluir', ICONE_EXCLUIR, 'Excluir')}</span>` +

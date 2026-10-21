@@ -944,8 +944,9 @@
       border-radius: 6px;
   }
 
+  /* Nome encolhe primeiro: nos parcelados (com as vezes) a linha toda ainda cabe numa só. */
   .metaLinha .metaNome {
-      flex: 1 1 11rem;
+      flex: 1 1 7rem;
       min-width: 0;
       font-weight: 600;
   }
@@ -953,6 +954,14 @@
   .metaValor input { width: 7.5rem; }
   .metaLinha .metaCurto { width: 4rem; }
   .metaLinha .metaMedio { width: 6.5rem; }
+
+  .metaVezes {
+      display: inline-flex;
+      align-items: center;
+      gap: .2rem;
+  }
+
+  .metaVezes .metaCurto { width: 3.2rem; }
 
   .metaDetalhe label {
       display: inline-flex;

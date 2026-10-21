@@ -177,6 +177,10 @@ test('plano em pílulas: situação, entrada, parcelas, Comprometido e falta, co
     assert.equal(tituloDoMesDaMeta({ forma: 'financiamento', entrada: 500 }), 'Mês da 1ª parcela');
     assert.equal(tituloDoMesDaMeta({ forma: 'cartao', entrada: 500 }), 'Mês da compra (1ª fatura no seguinte)');
     assert.equal(tituloDoMesDaMeta({ forma: 'auto' }), 'Mês do pagamento');
+    // As vezes ficam junto do valor total (linha de cima), não da entrada.
+    assert.match(visoes, /aria-label="Valor da meta"'\)\}<\/label>\$\{vezes\}/);
+    assert.match(visoes, /<label class=metaVezes title="Vezes">\$\{campo\(m, 'parcelas', m\.parcelas, `inputmode=numeric class=metaCurto placeholder="\$\{PARCELAS_PADRAO_METAS\}" aria-label="Vezes"`\)\}x<\/label>/);
+    assert.match(regras, /nos parcelados, com as \*\*vezes\*\* logo ao lado, `\[10\]x`, porque dividem o total/);
     // Embaixo, o mês da entrada ao lado dela, só com entrada.
     assert.match(visoes, /\(m\.entrada > 0 \? campo\(m, 'mes_entrada', mesEntrada, 'type=month title="Mês da entrada" aria-label="Mês da entrada"'\) : ''\)/);
     assert.doesNotMatch(visoes, /primeira_parcela/);
