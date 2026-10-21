@@ -489,3 +489,16 @@ test('conquistas de longo prazo, ano a ano', async () => {
   assert.deepEqual(on, ['1 ano de treino', '40 semanas batidas']);
   assert.deepEqual(erros, []); await ctx.close();
 });
+
+test('lembrete da garrafinha nos dias de treino', async () => {
+  const { ctx, pg } = await abrirApp({ relogio: new Date('2026-10-21T17:00:00') });          // quarta
+  assert.equal(await pg.isVisible('#i-agua'), true);
+  await pg.click('#i-agua-ok');
+  assert.equal(await pg.isVisible('#i-agua'), false);
+  await pg.reload(); await pg.waitForSelector('#v-inicio:not([hidden])');
+  assert.equal(await pg.isVisible('#i-agua'), false);                                        // não volta no mesmo dia
+  await ctx.close();
+  const sexta = await abrirApp({ relogio: new Date('2026-10-23T17:00:00') });
+  assert.equal(await sexta.pg.isVisible('#i-agua'), false);                                   // dia de descanso
+  await sexta.ctx.close();
+});

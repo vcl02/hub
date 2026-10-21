@@ -506,7 +506,7 @@ telas.inicio = () => {
   $('i-barra').style.width = (trav ? 100 : db.exercicios.length ? feitos / db.exercicios.length * 100 : 0) + '%';
   const d = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
   $('i-data').textContent = d[0].toUpperCase() + d.slice(1);
-  semana(); pintarTempo(); pintarJogo(estatisticas()); pintarCorpoInicio();
+  semana(); pintarTempo(); pintarJogo(estatisticas()); pintarCorpoInicio(); pintarAgua();
 };
 function semana() {
   const agora = new Date(), h = hoje(), dias = diasTreinados();
@@ -527,6 +527,14 @@ function semana() {
   $('i-msg').textContent = msg;
   $('i-cont-semana').textContent = `Semana: ${fixos}/${DIAS_FIXOS.length} fixos${extra ? ' + extra' : ''}`;
 }
+
+// Lembrete da garrafinha: nos dias de treino, até tocar em "Já peguei" ou o treino do dia acabar (fica só no aparelho)
+const K_AGUA = 'carga.agua';
+function pintarAgua() {
+  const wd = new Date().getDay(), diaDeTreino = DIAS_FIXOS.includes(wd) || DIAS_EXTRA.includes(wd);
+  $('i-agua').hidden = !diaDeTreino || store.get(K_AGUA) === hoje() || diasTreinados().has(hoje());
+}
+$('i-agua-ok').addEventListener('click', () => { store.set(K_AGUA, hoje()); pintarAgua(); });
 
 // ===== Gráfico de linha (carga ou peso corporal) =====
 function grafico(box, P, unidade, rotulo) {   // P = [{ data, valor }] em ordem cronológica
