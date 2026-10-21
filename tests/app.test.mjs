@@ -31,8 +31,8 @@ after(async () => { await navegador?.close(); servidor?.close(); });
 const CHAVES = { tr_exercicio: ['id'], tr_variacao: ['id'], tr_registro: ['variacao_id', 'data'], tr_treino: ['inicio'], tr_medida: ['data'] };
 const novaNuvem = () => ({ online: true, tabelas: Object.fromEntries(Object.keys(CHAVES).map(t => [t, []])) });
 const b64u = o => Buffer.from(JSON.stringify(o)).toString('base64url');
-async function fakeSupabase(ctx, nuvem) {
-  const user = { id: 'u1', aud: 'authenticated', role: 'authenticated', email: 'eu@teste.com', app_metadata: {}, user_metadata: {} };
+async function fakeSupabase(ctx, nuvem, id = '2f9bc201-9966-4f37-9963-2f4b9ddab849') {
+  const user = { id, aud: 'authenticated', role: 'authenticated', email: 'eu@teste.com', app_metadata: {}, user_metadata: {} };
   await ctx.route(/supabase\.co\//, async route => {
     const req = route.request(), u = new URL(req.url()), json = (corpo, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(corpo) });
     if (!nuvem.online) return route.abort('internetdisconnected');
@@ -40,7 +40,7 @@ async function fakeSupabase(ctx, nuvem) {
       const corpo = req.postDataJSON() || {};
       if (u.searchParams.get('grant_type') === 'password' && corpo.password !== 'senha123') return json({ code: 400, error_code: 'invalid_credentials', msg: 'Invalid login credentials' }, 400);
       const exp = Math.floor(Date.now() / 1000) + 3600;
-      return json({ access_token: b64u({ alg: 'HS256' }) + '.' + b64u({ sub: 'u1', exp, role: 'authenticated' }) + '.x', token_type: 'bearer', expires_in: 3600, expires_at: exp, refresh_token: 'r', user });
+      return json({ access_token: b64u({ alg: 'HS256' }) + '.' + b64u({ sub: user.id, exp, role: 'authenticated' }) + '.x', token_type: 'bearer', expires_in: 3600, expires_at: exp, refresh_token: 'r', user });
     }
     if (u.pathname === '/auth/v1/user') return json(user);
     if (u.pathname === '/auth/v1/logout') return route.fulfill({ status: 204 });
@@ -448,6 +448,17 @@ test('sair da conta volta para o login', async () => {
   assert.match(await pg.textContent('#a-info'), /eu@teste\.com.*Tudo salvo na nuvem/);
   await pg.click('#a-sair');
   await pg.waitForSelector('#v-bloqueio:not([hidden])');
-  assert.equal(await pg.evaluate(() => localStorage.getItem('tr.db.u1')), null);
+  assert.equal(await pg.evaluate(() => localStorage.getItem('tr.db.2f9bc201-9966-4f37-9963-2f4b9ddab849')), null);
+  await ctx.close();
+});
+
+test('outra conta do Supabase não entra', async () => {
+  const ctx = await navegador.newContext();
+  await fakeSupabase(ctx, novaNuvem(), 'outra-conta');
+  const pg = await ctx.newPage(); await pg.goto(url);
+  await pg.fill('#l-email', 'eu@teste.com'); await pg.fill('#l-senha', 'senha123'); await pg.click('#l-btn');
+  await pg.waitForFunction(() => $('l-erro').textContent);
+  assert.match(await pg.textContent('#l-erro'), /não tem acesso/);
+  assert.equal(await pg.isVisible('#v-inicio'), false);
   await ctx.close();
 });

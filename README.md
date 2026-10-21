@@ -12,7 +12,7 @@ PWA para registrar evolução de carga na academia: pirâmide automática, subst
 | `manifest.webmanifest` + ícones | Instalação na tela inicial |
 | `tests/app.test.mjs` | Testes de ponta a ponta |
 
-**Banco:** Supabase (projeto `fin`), login por e-mail e senha (mesma conta do fin). Cada tabela tem `user_id` e RLS "só o dono":
+**Banco:** Supabase (projeto `fin`), login por e-mail e senha (mesma conta do fin). Só a conta `DONO` (topo de `app.js`) entra; cada tabela tem `user_id` e RLS que só libera essa conta:
 
 | Tabela | Chave | Campos |
 |---|---|---|

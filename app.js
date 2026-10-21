@@ -20,6 +20,7 @@
 // ===== Supabase (chave publicável: pode ficar no código; quem protege os dados é o RLS por usuário) =====
 const SUPABASE_URL = 'https://yzmyncxoskvqzdczaill.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Fq984qUdQO8mGq4PSYmUiQ_ySaLrmEQ';
+const DONO = '2f9bc201-9966-4f37-9963-2f4b9ddab849';   // única conta com acesso (o RLS das tabelas tr_* também só libera ela)
 
 // ===== Configuração =====
 const DIAS_FIXOS = [3, 4];   // quarta, quinta (Date.getDay)
@@ -308,6 +309,7 @@ async function entrou() {
 }
 // Abre na hora com a cópia local; depois envia o que estava pendente e traz a versão da nuvem.
 async function carregar(u) {
+  if (u.id !== DONO) { try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {} telaLogin('Esta conta não tem acesso ao Diário de Carga.'); return; }
   usuario = u;
   let local = null;
   try { local = JSON.parse(store.get(K_LOCAL(u.id))); base = JSON.parse(store.get(K_BASE(u.id))); } catch (e) { local = null; }
