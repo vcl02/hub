@@ -148,7 +148,7 @@ function lancamentosComPrevistas() {
 // data (as metas disputam o mesmo guardado e o mesmo limite), e as linhas dele entram como
 // previstas na base de todos os cálculos — saldo, Aporte/Resgate, guardado, data da Reserva,
 // fatura, Livre Futuro e Comprometido já enxergam as metas (ver planoNoCiclo). A forma é a
-// escolhida: À vista, Parcelado no meu cartão ou Parcelado no débito; "auto" (o padrão antigo
+// escolhida: À vista, Parcelado Crédito ou Parcelado Débito; "auto" (o padrão antigo
 // da tabela) vale como À vista. Sem juros por enquanto: parcela = resto ÷ vezes.
 const PARCELAS_PADRAO_METAS = 10;             // vezes quando a meta não diz
 const formaDaMeta = meta => (['cartao', 'financiamento'].includes(meta.forma) ? meta.forma : 'avista');

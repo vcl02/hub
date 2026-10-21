@@ -894,7 +894,7 @@ function htmlModalCartao(dados, cartao) {
 const ICONE_ANCORA = '<svg viewBox="0 0 24 24" width=15 height=15 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true><circle cx=12 cy=5 r=2.5 /><path d="M12 7.5V21M5 13a7 7 0 0 0 14 0M8 11h8" /></svg>';
 const ICONE_COMPRAR = '<svg viewBox="0 0 24 24" width=16 height=16 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true><circle cx=9 cy=20 r=1.4 /><circle cx=18 cy=20 r=1.4 /><path d="M2 3h3l2.6 12.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L21 8H6" /></svg>';
 const ICONE_EXCLUIR = '<svg viewBox="0 0 24 24" width=16 height=16 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>';
-const FORMAS_DA_META = { avista: 'À vista', cartao: 'Parcelado no meu cartão', financiamento: 'Parcelado no débito' };
+const FORMAS_DA_META = { avista: 'À vista', cartao: 'Parcelado Crédito', financiamento: 'Parcelado Débito' };
 
 // Texto do plano de uma meta: o mês e como pagar; sem caber, quanto falta, em que mês o
 // dinheiro acaba (ou que o cartão não tem limite) e quando caberia.

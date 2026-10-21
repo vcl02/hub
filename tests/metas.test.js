@@ -232,15 +232,15 @@ test('REGRAS.md documenta metas', () => {
     assert.match(regras, /As metas podem usar o guardado abaixo da meta da Reserva/);
 });
 
-test('juros fora por enquanto e só três formas (À vista, Parcelado no meu cartão, Parcelado no débito)', () => {
+test('juros fora por enquanto e só três formas (À vista, Parcelado Crédito, Parcelado Débito)', () => {
     const financas = ler('js/finance.js');
     assert.doesNotMatch(financas + visoes, /juros_mensal|custo_mensal|Custo\/mês|JUROS_PADRAO|prestacao\(/);
     // Só três formas, sempre a escolhida; "auto" (padrão antigo da tabela) vale como À vista.
-    assert.match(visoes, /const FORMAS_DA_META = \{ avista: 'À vista', cartao: 'Parcelado no meu cartão', financiamento: 'Parcelado no débito' \};/);
+    assert.match(visoes, /const FORMAS_DA_META = \{ avista: 'À vista', cartao: 'Parcelado Crédito', financiamento: 'Parcelado Débito' \};/);
     assert.match(ler('js/finance.js'), /const formaDaMeta = meta => \(\['cartao', 'financiamento'\]\.includes\(meta\.forma\) \? meta\.forma : 'avista'\);/);
     assert.doesNotMatch(visoes + ler('js/finance.js'), /Automático/);
     assert.match(interacoes, /\{ nome: 'Nova meta', valor: 1000, mes: proximoMesISO\(\), forma: 'avista' \}/);
-    assert.match(regras, /sempre na forma escolhida — \*\*À vista\*\*, \*\*Parcelado no meu cartão\*\* ou \*\*Parcelado no débito\*\*/);
+    assert.match(regras, /sempre na forma escolhida — \*\*À vista\*\*, \*\*Parcelado Crédito\*\* ou \*\*Parcelado Débito\*\*/);
     // Comprar com entrada: primeiro a entrada (débito), depois o resto parcelado.
     assert.match(formulario, /const resto = -\(meta\.valor - \(plano\.entrada \|\| 0\)\);/);
 });
