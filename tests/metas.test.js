@@ -175,9 +175,11 @@ test('plano em pílulas: situação, entrada, parcelas, Comprometido e falta, co
     assert.equal(rotuloDoMesDaMeta({ forma: 'financiamento', entrada: 500 }), '1ª parcela');
     assert.equal(rotuloDoMesDaMeta({ forma: 'cartao', entrada: 500 }), 'Compra');
     assert.equal(rotuloDoMesDaMeta({ forma: 'auto' }), 'Pagamento');
-    // Pôr ou trocar o valor da entrada volta o mês dela pra 1 mês antes do mês da meta.
-    assert.match(interacoes, /if \(campo === 'entrada' && valor > 0 && meta\.meses_ate_parcela !== 1\) campos\.meses_ate_parcela = 1;/);
-    assert.match(regras, /padrão: 1 mês antes; pôr ou trocar o valor da entrada volta o mês dela pra 1 mês antes/);
+    // Mudar o mês da meta ou pôr uma entrada nova volta o mês dela pra 1 mês antes; mudar o
+    // mês da entrada (ou o valor de uma que já existe) mantém.
+    assert.match(interacoes, /const voltaEntrada = campo === 'mes' \|\| \(campo === 'entrada' && valor > 0 && !\(meta\.entrada > 0\)\);/);
+    assert.match(interacoes, /if \(voltaEntrada && meta\.meses_ate_parcela !== 1\) campos\.meses_ate_parcela = 1;/);
+    assert.match(regras, /mudar o mês da 1ª parcela\/compra, ou pôr uma entrada onde não havia, volta o mês dela pra 1 mês antes, e mudar o Mês da entrada ou o valor de uma entrada que já existe mantém o escolhido/);
     // As vezes ficam junto do valor total (linha de cima); o mês da entrada embaixo, só com entrada.
     assert.ok(visoes.indexOf("campo('mcValor'") < visoes.indexOf("campo('mcVezes'") && visoes.indexOf("campo('mcVezes'") < visoes.indexOf("campo('mcMes'"));
     assert.match(visoes, /\(parcelado && m\.entrada > 0 \? campo\('mcMesEntrada', 'Mês da entrada', entrada\('mes_entrada', mesEntrada, 'type=month'\)\) : ''\)/);
@@ -318,4 +320,14 @@ test('entrada sem mês escolhido: 1 mês antes do mês da meta, no débito e no 
     ]);
     assert.equal(doPlano(r, 1).cicloEntrada, 4);   // 1ª parcela Mar/27 (5), entrada Fev/27
     assert.equal(doPlano(r, 2).cicloEntrada, 6);   // compra Mai/27 (7), entrada Abr/27
+});
+
+test('"Cabe começando em": conta com a entrada 1 mês antes, como fica ao mudar o mês da meta', () => {
+    // Guardado 2.000 × (ciclo + 1). Entrada 5.000 dois meses antes da 1ª parcela (Dez/26, 2):
+    // Out/26 só tem 2.000. Mudando o mês, a entrada vai pra 1 mês antes: em Jan/27 (3), a
+    // entrada em Dez/26 (6.000) e a parcela de 1.000 em Jan/27 (8.000 − 6.000) cabem. Com a
+    // distância antiga (2 meses), só caberia em Fev/27 (4).
+    const p = doPlano(carrega([meta(1, 'Sofá', 6000, '2026-12-01', { forma: 'financiamento', entrada: 5000, parcelas: 1, meses_ate_parcela: 2 })]), 1);
+    assert.deepEqual([p.cabe, p.cicloEntrada, p.cabeEm], [false, 0, 3]);
+    assert.match(ler('js/finance.js'), /const movida = \{ \.\.\.meta, meses_ate_parcela: 1 \};/);
 });

@@ -287,12 +287,13 @@ function calcularPlanoDasMetas() {
     return metas.map(({ meta, mes, ciclo }) => {
         if (ciclo < 0) return { meta, mes, ciclo, cabe: false, cabeEm: null, linhas: [] };   // sem data ou fora dos ciclos
         // O plano fica sempre no mês pedido (o buraco, se houver, aparece no saldo daqueles
-        // ciclos); sem caber, diz também o 1º mês da meta em que tudo caberia (a entrada
-        // anda junto, com a mesma distância).
+        // ciclos); sem caber, diz também o 1º mês da meta em que tudo caberia, com a entrada
+        // 1 mês antes — o que acontece de fato ao mudar o mês da meta (ver interactions.js).
         const plano = { meta, mes, ciclo, cabeEm: null, ...planoNoCiclo(meta, ciclo, anteriores, ctx) };
         if (!plano.cabe) {
+            const movida = { ...meta, meses_ate_parcela: 1 };
             for (let c = ciclo + 1; c < Estado.ciclos.length; c++) {
-                if (planoNoCiclo(meta, c, anteriores, ctx).cabe) { plano.cabeEm = c; break; }
+                if (planoNoCiclo(movida, c, anteriores, ctx).cabe) { plano.cabeEm = c; break; }
             }
         }
         anteriores.push(...plano.linhas);

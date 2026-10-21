@@ -921,7 +921,7 @@ function partesDoPlanoDaMeta(p) {
     if (!p.cabe) {
         partes.push(p.semLimite ? { rotulo: 'Sem limite no cartão', classe: 'vm' }
             : { rotulo: 'Faltam até', valor: brl(p.falta), detalhe: `desde ${nomePeriodoAbrev(Estado.ciclos[p.cicloFalta])}`, classe: 'vm' });
-        // Mudar o mês da meta leva a entrada junto, com a mesma distância.
+        // Mudar o mês da meta volta a entrada pra 1 mês antes (a busca já conta assim).
         if (p.cabeEm != null) {
             partes.push({ rotulo: { avista: 'Cabe em', cartao: 'Cabe comprando em', financiamento: 'Cabe começando em' }[p.forma],
                 valor: nomePeriodoAbrev(Estado.ciclos[p.cabeEm]), classe: 'am' });

@@ -950,8 +950,8 @@ el('corpoMetas').addEventListener('change', e => {
     let campo = input.dataset.campo;
     let valor = valorDoCampoDaMeta(campo, input.value);
     if (!meta || valor === undefined) { mostrarToast('Valor inválido', 'Confira o campo e tente de novo.'); desenhar(); return; }
-    // Mês da entrada: grava quantos meses antes do mês da meta ela vem (anda junto quando o mês
-    // da meta muda); depois do mês da meta não vale. Vazio volta ao padrão (1 mês antes).
+    // Mês da entrada: grava quantos meses antes do mês da meta ela vem; depois do mês da meta
+    // não vale. Vazio volta ao padrão (1 mês antes).
     if (campo === 'mes_entrada') {
         const mesMeta = meta.mes;
         const meses = valor && mesMeta ? (+mesMeta.slice(0, 4) - +valor.slice(0, 4)) * 12 + (+mesMeta.slice(5, 7) - +valor.slice(5, 7)) : null;
@@ -964,10 +964,12 @@ el('corpoMetas').addEventListener('change', e => {
         valor = meses;
     }
     if ((meta[campo] ?? null) === valor) return;
-    // Pôr (ou trocar) o valor da entrada leva o mês dela pro padrão: 1 mês antes do mês da
-    // meta. Outro mês se escolhe depois, no campo Mês da entrada.
+    // Mudar o mês da meta (1ª parcela/compra) ou pôr uma entrada onde não havia leva o mês
+    // da entrada pro padrão: 1 mês antes. Mudar o mês da entrada, ou o valor de uma entrada
+    // que já existe, mantém o que foi escolhido.
     const campos = { [campo]: valor };
-    if (campo === 'entrada' && valor > 0 && meta.meses_ate_parcela !== 1) campos.meses_ate_parcela = 1;
+    const voltaEntrada = campo === 'mes' || (campo === 'entrada' && valor > 0 && !(meta.entrada > 0));
+    if (voltaEntrada && meta.meses_ate_parcela !== 1) campos.meses_ate_parcela = 1;
     gravarMudancaDaMeta('atualizar', id, campos);
 });
 el('corpoMetas').addEventListener('click', e => {
