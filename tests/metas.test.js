@@ -470,7 +470,10 @@ test('opções de vezes: mínimo que cabe e ideal com R$ 1.000 sobrando no pior 
 
 test('opções de vezes: linha embaixo do plano, clique usa o número de vezes', () => {
     assert.match(visoes, /htmlDoPlanoDaMeta\(p\) \+ htmlOpcoesDeVezes\(p\) \+/);
-    assert.match(visoes, /data-acao=usarVezes data-vezes=\$\{x\.vezes\} title="Usar \$\{x\.vezes\}x\$\{dica\}"/);
+    assert.match(visoes, /data-acao=usarVezes data-vezes=\$\{x\.vezes\} title="Usar \$\{x\.vezes\}x\$\{dica\}\$\{sobra\(x\)\}"/);
+    // A sobra fica só no hover: a pílula mostra vezes, parcela e até quando; sem "Agora".
+    assert.match(visoes, /<i>\$\{rotulo\}<\/i> <b>\$\{x\.vezes\}x \$\{brl\(x\.parcela\)\}<\/b> <span class=mpDetalhe>até \$\{ate\(x\.fim\)\}<\/span><\/button>/);
+    assert.doesNotMatch(visoes, /<i>Agora<\/i>|pior mês sobra/);
     assert.match(interacoes, /if \(acao === 'usarVezes'\) return gravarMudancaDaMeta\('atualizar', id, \{ parcelas: \+botao\.dataset\.vezes \}\);/);
     assert.match(regras, /\*\*Opções de vezes\*\* \(só parcelado\)/);
 });

@@ -1050,25 +1050,26 @@ function htmlComprometidos(p) {
         `<th class=n>Por vez</th><th class=n>Total</th></tr></thead><tbody>${dados.grupos.map(linha).join('')}</tbody></table></div>`;
 }
 
-// Opções de vezes de uma meta parcelada, embaixo do plano: o atual com a sobra do pior mês e,
-// quando diferentes dele, o **Mínimo** que cabe e o **Ideal** (sobra ao menos R$ 1.000 por mês),
-// cada um com a prévia (parcela, até quando, sobra do pior mês) e clicável pra usar.
+// Opções de vezes de uma meta parcelada, embaixo do plano: o **Mínimo** que cabe e o **Ideal**
+// (o mês típico sobra ao menos R$ 1.000), só quando diferentes do número escolhido, cada um com
+// a prévia curta (vezes, parcela, até quando) e clicável pra usar. O quanto sobra por mês fica
+// no hover (texto curto na tela) e na coluna No mês do Mês a mês.
 function htmlOpcoesDeVezes(p) {
     const o = p.opcoesVezes;
     if (!o) return '';
     const ate = j => nomePeriodoAbrev(Estado.ciclos[j]);
-    const cor = v => `<span class=${v < 0 ? 'vm' : 'vd'}>${brl(v)}</span>`;
-    // "sobra/mês ~R$ 1.200,00 · pior Dez/27 −R$ 6.831,40": o que o mês deixa, não o guardado.
-    const sobra = x => (x.tipica == null ? '' : `sobra/mês ~${cor(x.tipica)}${x.pior < x.tipica - TOLERANCIA_FINANCEIRA ? ` · pior ${ate(x.cicloPior)} ${cor(x.pior)}` : ''}`);
+    // Hover: "sobra/mês ~R$ 1.200,00 · pior Dez/27 −R$ 6.831,40" (o que o mês deixa, não o guardado).
+    const sobra = x => (x.tipica == null ? '' : ` · sobra/mês ~${brl(x.tipica)}${x.pior < x.tipica - TOLERANCIA_FINANCEIRA ? ` · pior ${ate(x.cicloPior)} ${brl(x.pior)}` : ''}`);
     const opcao = (rotulo, x, dica) => (x.vezes === o.atual.vezes ? '' :
-        `<button type=button class="mpParte mpOpcao" data-acao=usarVezes data-vezes=${x.vezes} title="Usar ${x.vezes}x${dica}">` +
-        `<i>${rotulo}</i> <b>${x.vezes}x ${brl(x.parcela)}</b> <span class=mpDetalhe>até ${ate(x.fim)} · ${sobra(x)}</span></button>`);
-    const ideal = o.ideal ? opcao('Ideal', o.ideal, ` (o mês típico sobra ao menos ${brl(FOLGA_MENSAL_IDEAL)})`)
-        : `<span class=mpParte><i>Ideal</i> <span class=mpDetalhe>nenhum número de vezes deixa ${brl(FOLGA_MENSAL_IDEAL)} no mês típico</span></span>`;
-    return `<div class=metaPlano title="Sobra/mês: o que cada mês com parcela deixa (entradas − saídas, com as metas) — o típico (mediana) e o pior. Não é o guardado acumulado: ver a coluna No mês do Mês a mês">` +
-        `<span class=mpParte><i>Agora</i> <b>${o.atual.vezes}x</b> <span class=mpDetalhe>${sobra(o.atual)}</span></span> ` +
-        (o.minimo ? opcao('Mínimo', o.minimo, ' (o menor número de vezes que cabe)') : `<span class=mpParte><i>Mínimo</i> <span class=mpDetalhe>nenhum número de vezes cabe</span></span>`) +
-        ` ${ideal}</div>`;
+        `<button type=button class="mpParte mpOpcao" data-acao=usarVezes data-vezes=${x.vezes} title="Usar ${x.vezes}x${dica}${sobra(x)}">` +
+        `<i>${rotulo}</i> <b>${x.vezes}x ${brl(x.parcela)}</b> <span class=mpDetalhe>até ${ate(x.fim)}</span></button>`);
+    const nenhum = (rotulo, dica) => `<span class=mpParte title="${dica}"><i>${rotulo}</i> <span class=mpDetalhe>nenhum</span></span>`;
+    const pilulas = [
+        o.minimo ? opcao('Mínimo', o.minimo, ' (o menor número de vezes que cabe)') : nenhum('Mínimo', 'Nenhum número de vezes cabe nos ciclos carregados'),
+        o.ideal ? opcao('Ideal', o.ideal, ` (o mês típico sobra ao menos ${brl(FOLGA_MENSAL_IDEAL)})`)
+            : nenhum('Ideal', `Nenhum número de vezes deixa ${brl(FOLGA_MENSAL_IDEAL)} num mês típico`),
+    ].filter(Boolean);
+    return pilulas.length ? `<div class=metaPlano>${pilulas.join(' ')}</div>` : '';
 }
 
 // Rótulo do mês da meta: o que ele é pra cada forma (a entrada tem o mês dela, embaixo).
