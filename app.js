@@ -295,7 +295,6 @@ function voltar() { if (pilha.length > 1) history.back(); else mostrar('inicio')
 addEventListener('popstate', () => { if (db && pilha.length > 1) { pilha.pop(); mostrar(pilha[pilha.length - 1]); } });
 
 // ===== Login (Supabase Auth, e-mail e senha) =====
-let recuperando = false;   // veio do link de "Esqueci a senha"
 function telaLogin(erro = '') {
   db = null; usuario = null; base = null;
   clearInterval(T.intervalo); T.intervalo = null; T.fim = 0; manterTela(false); $('mini').hidden = true;   // sessão salva continua
@@ -325,7 +324,6 @@ async function carregar(u) {
   db = novo; gravar();
   if (!local) await entrou();
   else if (mudou && TELAS_SEGURAS.includes(pilha[pilha.length - 1])) mostrar(pilha[pilha.length - 1]);
-  if (recuperando) { recuperando = false; semSenhaAtual = true; ir('senha'); toast('Crie uma senha nova'); }
 }
 $('l-form').addEventListener('submit', async ev => {
   ev.preventDefault();
@@ -338,15 +336,6 @@ $('l-form').addEventListener('submit', async ev => {
     await carregar(data.user);
   } catch (e) { erro.textContent = 'Sem conexão. Tente de novo.'; }
   finally { btn.disabled = false; btn.textContent = 'Entrar'; }
-});
-$('l-esqueci').addEventListener('click', async () => {
-  const email = $('l-email').value.trim(), erro = $('l-erro');
-  if (!email) { erro.textContent = 'Digite seu e-mail acima.'; $('l-email').focus(); return; }
-  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
-  erro.textContent = error ? 'Não foi possível enviar: ' + error.message : 'Enviamos um link para ' + email + '.';
-});
-sb.auth.onAuthStateChange(ev => {   // sem chamadas ao Supabase aqui dentro (evita travar o cliente)
-  if (ev === 'PASSWORD_RECOVERY') { recuperando = true; if (db) setTimeout(() => { recuperando = false; semSenhaAtual = true; ir('senha'); toast('Crie uma senha nova'); }); }
 });
 
 // ===== Migração do banco criptografado da versão antiga (fica só neste aparelho) =====
@@ -1160,20 +1149,16 @@ $('b-restaurar').addEventListener('click', async ev => {
 
 telas.backup = () => { $('m-form').hidden = !store.get(K_ANTIGO); };
 
-// Trocar senha (da conta Supabase; vale também para o fin). Vindo do link de recuperação, não pede a atual.
-let semSenhaAtual = false;
-telas.senha = () => { $('s-atual-box').hidden = semSenhaAtual; $('s-atual').required = !semSenhaAtual; };
+// Trocar senha (da conta Supabase; vale também para o fin)
 $('s-form').addEventListener('submit', async ev => {
   ev.preventDefault();
   const erro = $('s-erro'), nova = $('s-nova').value; erro.textContent = '';
   if (nova !== $('s-rep').value) { erro.textContent = 'As novas senhas não conferem.'; return; }
-  if (!semSenhaAtual) {
-    const { error } = await sb.auth.signInWithPassword({ email: usuario.email, password: $('s-atual').value });
-    if (error) { erro.textContent = /invalid/i.test(error.message) ? 'Senha atual incorreta.' : error.message; return; }
-  }
+  const { error: e1 } = await sb.auth.signInWithPassword({ email: usuario.email, password: $('s-atual').value });
+  if (e1) { erro.textContent = /invalid/i.test(e1.message) ? 'Senha atual incorreta.' : e1.message; return; }
   const { error } = await sb.auth.updateUser({ password: nova });
   if (error) { erro.textContent = 'Não foi possível trocar: ' + error.message; return; }
-  semSenhaAtual = false; ev.target.reset(); toast('Senha trocada'); voltar();
+  ev.target.reset(); toast('Senha trocada'); voltar();
 });
 
 // ===== Sempre a última versão =====
