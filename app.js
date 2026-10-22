@@ -27,6 +27,7 @@ const emailDoLogin = texto => { const t = String(texto || '').trim(); return t.i
 // ===== Configuração =====
 const DIAS_FIXOS = [3, 4];   // quarta, quinta (Date.getDay)
 const DIAS_EXTRA = [1];      // segunda (sugerido)
+const ALTURA = 1.78;         // metros, só para o IMC
 const TIPOS = ['Principal', 'Substituto', 'Halter'];
 const REGIOES = ['Pernas', 'Superior'];
 const UNIDADES = ['kg', 'lb', 'nível'];
@@ -695,6 +696,9 @@ for (const [id, campo, max] of [['e-equip', 'equip', 8], ['e-nota', 'nota', 500]
 }
 
 // ===== Peso corporal =====
+// IMC = peso / altura² · faixas da OMS (adultos)
+const imc = peso => Math.round(peso / ALTURA ** 2 * 10) / 10;
+const faixaImc = i => i < 18.5 ? 'abaixo do peso' : i < 25 ? 'normal' : i < 30 ? 'sobrepeso' : 'obesidade';
 const medidasOrdenadas = () => [...db.medidas].sort((a, b) => b.data.localeCompare(a.data));
 const horaHabitual = () => medidasOrdenadas().find(m => m.hora)?.hora || '';
 let editMedida = null;
@@ -705,7 +709,7 @@ function pintarCorpoInicio() {
   if (!u) { box.innerHTML = '<span>Peso corporal</span><b>Registrar ›</b><small>1ª pesagem</small>'; return; }
   const dif = Math.round((u.peso - prim.peso) * 10) / 10, cls = dif < 0 ? 'bom' : dif > 0 ? 'ruim' : '';
   box.innerHTML = `<span>Peso corporal <i>${quando(u.data)}</i>${atrasado ? ` · <em>hora de se pesar${hab ? ' às ' + hab : ''}</em>` : ''}</span>
-    <b>${fmt(u.peso)} kg</b><small class="${cls}">${Ls.length > 1 ? (dif > 0 ? '+' : '') + fmt(dif) + ' kg desde ' + dataCurta(prim.data) : 'primeira pesagem'}</small>`;
+    <b>${fmt(u.peso)} kg</b><small class="${cls}">${Ls.length > 1 ? (dif > 0 ? '+' : '') + fmt(dif) + ' kg desde ' + dataCurta(prim.data) + ' · ' : ''}IMC ${fmt(imc(u.peso))} (${faixaImc(imc(u.peso))})</small>`;
 }
 function avisoHorario() {   // reforça pesar sempre no mesmo horário
   const hab = horaHabitual(), h = $('c-hora').value, box = $('c-aviso');
@@ -725,7 +729,7 @@ function pintarMedidas() {
   const Ls = medidasOrdenadas();
   $('c-historico').innerHTML = Ls.length ? Ls.map(m => m.data === editMedida
     ? `<li class="editando"><i class="h-d">${dataCurta(m.data)}</i><span class="ed-inline"><input type="date" id="em-data" value="${m.data}" max="${hoje()}" aria-label="Data"><input type="time" id="em-hora" value="${m.hora}" aria-label="Horário"><input id="em-peso" inputmode="decimal" value="${virgula(m.peso)}" aria-label="Peso em kg"> kg</span><span class="ed-acoes"><button type="button" class="btn sm primary" data-salvar-medida="${m.data}">Salvar</button><button type="button" class="link" data-cancelar>Cancelar</button></span></li>`
-    : `<li><i class="h-d">${dataCurta(m.data)}${m.hora ? ' ' + m.hora : ''}</i><span class="h-v">${fmt(m.peso)} kg${m.cintura ? ` <small>cintura ${fmt(m.cintura)} cm</small>` : ''}</span><span class="ed-acoes"><button type="button" class="del" data-editar-medida="${m.data}">Editar</button><button type="button" class="del" data-apagar-medida="${m.data}">Apagar</button></span></li>`).join('')
+    : `<li><i class="h-d">${dataCurta(m.data)}${m.hora ? ' ' + m.hora : ''}</i><span class="h-v">${fmt(m.peso)} kg <small>IMC ${fmt(imc(m.peso))}</small>${m.cintura ? ` <small>cintura ${fmt(m.cintura)} cm</small>` : ''}</span><span class="ed-acoes"><button type="button" class="del" data-editar-medida="${m.data}">Editar</button><button type="button" class="del" data-apagar-medida="${m.data}">Apagar</button></span></li>`).join('')
     : '<li class="empty">Nenhuma pesagem ainda.</li>';
   grafico($('c-grafico'), Ls.slice(0, 16).reverse().map(m => ({ data: m.data, valor: m.peso })), 'kg', 'Evolução do peso corporal');
 }

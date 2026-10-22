@@ -54,6 +54,7 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 - 1 pesagem por dia (a nova substitui a do dia). Peso de 30 a 300 kg; cintura opcional.
 - O horário habitual é o da pesagem mais recente; mais de 1 h fora dele mostra "Fora do seu horário".
 - Na edição dá para mudar data, horário e peso. Data no futuro ou dia que já tem pesagem é recusado.
+- **IMC:** peso ÷ altura² com `ALTURA` = 1,78 m (topo de `app.js`), 1 casa decimal. Faixas da OMS: < 18,5 abaixo do peso, < 25 normal, < 30 sobrepeso, ≥ 30 obesidade. Aparece no card de peso da tela inicial e em cada pesagem do histórico.
 - **Calorias:** estimativa = 3,5 MET (Compendium of Physical Activities, 02054) × peso corporal (pesagem mais recente até o dia) × horas de treino.
 
 ## Pontos e conquistas
