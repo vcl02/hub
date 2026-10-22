@@ -63,7 +63,8 @@
   <p class="muted small" id="i-sync" role="status" hidden></p>
   <p class="treino-tempo" id="i-treino"></p>
   <div class="progress">
-    <div class="progress-row"><span>Registrados hoje</span><b id="i-cont">0/6</b></div>
+    <!-- Dia mostrado na lista: hoje, ou um treino anterior (arrastar a lista); "Hoje" volta -->
+    <div class="progress-row"><span id="i-cont-l">Registrados hoje</span><button type="button" class="link hoje" id="i-hoje" hidden>Hoje</button><b id="i-cont">0/6</b></div>
     <div class="track"><span id="i-barra"></span></div>
   </div>
   <ul id="i-lista" class="slots"></ul>

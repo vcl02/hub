@@ -51,7 +51,10 @@ let diaVisto = null;   // null = treino que acabou de terminar
 telas.fim = () => {
   const dia = diaVisto || hoje(), antigo = !!diaVisto, r = resumoDia(dia), { ex, va } = mapas(), t = r.treino;
   $('f-data').textContent = deIso(dia).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  $('f-ant').disabled = !diaVizinho(-1); $('f-prox').disabled = !diaVizinho(1);
+  // ‹ treino anterior · › treino seguinte, ou a lista de hoje depois do mais recente
+  $('f-ant').disabled = !diaVizinho(-1);
+  const rotulo = diaVizinho(1) ? 'Próximo treino' : 'Hoje';
+  $('f-prox').title = rotulo; $('f-prox').setAttribute('aria-label', rotulo);
   $('f-titulo').textContent = antigo ? 'Resumo do treino' : 'Treino concluído!';
   $('f-msg').textContent = !r.regs.length ? 'Nenhum exercício registrado neste dia.' : r.recordes ? `${r.recordes} ${r.recordes === 1 ? 'recorde' : 'recordes'}${antigo ? '' : ' hoje. Mandou bem!'}` : antigo ? '' : 'Mais um treino na conta. Constância é o que dá resultado.';
   const tiles = [
@@ -72,14 +75,17 @@ telas.fim = () => {
   pintarLinhaTreino(t);
   if (!antigo) parabens(dia, r, t);
 };
-// Treino anterior / seguinte a partir do dia mostrado (só dias treinados), ou null nas pontas
-function diaVizinho(dir) {
-  const dias = [...diasTreinados()].sort(), i = dias.indexOf(diaVisto || hoje()), j = i + dir;
-  return i >= 0 && j >= 0 && j < dias.length ? dias[j] : null;
+// Dia treinado anterior / seguinte a partir de um dia (o mostrado no resumo, por padrão), ou null nas pontas
+function diaVizinho(dir, de = diaVisto || hoje()) {
+  const dias = [...diasTreinados()].sort();
+  return (dir < 0 ? dias.filter(d => d < de).pop() : dias.find(d => d > de)) || null;
 }
-function irParaDia(dir) {
-  const d = diaVizinho(dir); if (!d || editTreino) return;
-  diaVisto = d; telas.fim(); window.scrollTo(0, 0);
+// Anterior: o treino de antes · seguinte: o de depois; depois do mais recente, volta para a lista de hoje
+function irParaDia(dir, de) {
+  if (editTreino) return;
+  const d = diaVizinho(dir, de);
+  if (d) { diaVisto = d; if ($('v-fim').hidden) ir('fim'); else { telas.fim(); window.scrollTo(0, 0); } }
+  else if (dir > 0 && !$('v-fim').hidden) ir('inicio');
 }
 $('f-ant').addEventListener('click', () => irParaDia(-1));
 $('f-prox').addEventListener('click', () => irParaDia(1));
