@@ -8,7 +8,8 @@ Fonte de verdade do comportamento do app. Toda mudança de regra atualiza este a
 - As dicas de execução dos exercícios (posição, postura) não são ajuda do app: ficam, dentro de "Como fazer, ajustes e anotações".
 - `aria-label` em botões só de ícone continua (não aparece na tela).
 - Tela inicial: só "Full body" no título (sem data), centralizado na altura dos botões do canto.
-- Edição de treino e de pesagem na própria linha, com botões só de ícone: lixeira (excluir, 2 toques), X (cancelar) e ✓ (salvar). No histórico de pesagens, lápis (editar) e lixeira (apagar, 2 toques).
+- Edição de treino e de pesagem na própria linha, com botões só de ícone: lixeira (excluir, toque duplo), X (cancelar) e ✓ (salvar). No histórico de pesagens, lápis (editar) e lixeira (apagar, toque duplo).
+- Confirmações (apagar, excluir, sair com dados sem enviar) são por toque duplo: o 1º toque deixa o botão vermelho por 3 s, o 2º confirma. Sem alertas nem avisos escritos pedindo confirmação.
 - Voltar: só a seta azul "<" no canto superior esquerdo (sem texto).
 - Esc: fecha a tela cheia aberta (garrafinha = X, parabéns = Ver resumo), senão cancela a edição na linha, senão volta uma tela. Na tela inicial e no login não faz nada.
 - Só tema claro, mesmo com o celular no modo escuro.
@@ -20,7 +21,7 @@ Fonte de verdade do comportamento do app. Toda mudança de regra atualiza este a
 - Mesma conta do fin. Só a conta `DONO` (`js/config.js`) entra: outra conta sai na hora com "Esta conta não tem acesso ao Diário de Carga.". O RLS das tabelas `tr_*` também só libera essa conta (migration 02).
 - Sem "Esqueci a senha" e sem "Trocar senha": a senha é a do Supabase e se troca fora do app.
 - Tela inicial, canto superior direito: balança (peso corporal), engrenagem, que vai direto para a edição de exercícios (no fim dela: instalar e o estado da conta e da nuvem), e o botão de sair, só ícone e vermelho como no fin. Não há tela de Ajustes.
-- A sessão fica salva no aparelho: o app entra direto, inclusive sem internet. "Sair" apaga a cópia local se não houver nada pendente; se houver, o 1º toque avisa e o 2º (em até 3 s) sai, mantendo a cópia para enviar no próximo login.
+- A sessão fica salva no aparelho: o app entra direto, inclusive sem internet. "Sair" apaga a cópia local se não houver nada pendente; se houver, pede toque duplo (o 1º só deixa o botão vermelho; o 2º, em até 3 s, sai), mantendo a cópia para enviar no próximo login.
 
 ## Banco e sincronização
 

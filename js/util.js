@@ -47,14 +47,10 @@ const ICONES = {
   lapis: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>'
 };
 const btIcone = (icone, titulo, attrs, classe = '') => `<button type="button" class="bt-ic ${classe}" ${attrs} title="${titulo}" aria-label="${titulo}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${ICONES[icone]}</svg></button>`;
-function confirmar(btn, texto) {   // 1º toque arma, 2º confirma
+function confirmar(btn) {   // toque duplo: o 1º só deixa o botão vermelho (3 s), o 2º confirma. Sem aviso escrito.
   if (btn.classList.contains('armed')) return true;
-  if (btn.classList.contains('bt-ic')) {   // ícone: não troca o conteúdo, avisa no toast
-    btn.classList.add('armed'); toast(texto + ' Toque de novo.', null, true);
-    setTimeout(() => btn.classList.remove('armed'), 3000); return false;
-  }
-  const antes = btn.textContent; btn.classList.add('armed'); btn.textContent = texto;
-  setTimeout(() => { if (btn.isConnected) { btn.classList.remove('armed'); btn.textContent = antes; } }, 3000);
+  btn.classList.add('armed');
+  setTimeout(() => btn.classList.remove('armed'), 3000);
   return false;
 }
 

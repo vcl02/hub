@@ -24,7 +24,7 @@ document.addEventListener('click', ev => {
   else if ('finalizar' in d) finalizarTreino();
   else if ('reabrir' in d) reabrirTreino();
   else if (d.excluirTreino) {
-    if (!confirmar(b, 'Excluir treino e exercícios do dia?')) return;
+    if (!confirmar(b)) return;
     const t = db.treinos.find(x => x.inicio === +d.excluirTreino), dia = iso(new Date(t.inicio));
     const desfazer = alterar(() => { db.treinos = db.treinos.filter(x => x !== t); db.registros = db.registros.filter(r => r.data !== dia); });
     if (dia === hoje()) { T.series = {}; T.feitas = {}; T.ajuste = {}; T.aquecimento = {}; pararDescanso(); }
@@ -48,13 +48,13 @@ document.addEventListener('click', ev => {
   }
   else if ('cancelar' in d) { editTreino = null; editMedida = null; if (!$('v-fim').hidden) pintarLinhaTreino(resumoDia(diaVisto || hoje()).treino); if (!$('v-corpo').hidden) pintarMedidas(); }
   else if (d.apagar) {
-    if (!confirmar(b, 'Confirmar')) return;
+    if (!confirmar(b)) return;
     const e = exAtual(), vid = e.variacoes[e.ativo].id;
     const desfazer = alterar(() => { db.registros = db.registros.filter(r => !(r.variacao === vid && r.data === d.apagar)); });
     toast('Registro apagado', desfazer); telas.exercicio();
   }
   else if (d.apagarMedida) {
-    if (!confirmar(b, 'Confirmar')) return;
+    if (!confirmar(b)) return;
     const desfazer = alterar(() => { db.medidas = db.medidas.filter(m => m.data !== d.apagarMedida); });
     toast('Pesagem apagada', desfazer); telas.corpo();
   }

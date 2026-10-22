@@ -6,8 +6,7 @@ let eventoInstalar = null;
 $('sair').addEventListener('click', async ev => {
   const p = temPendente(), btn = ev.currentTarget;
   if (p && !btn.classList.contains('armed')) {
-    btn.classList.add('armed'); toast('Há dados sem enviar. Toque de novo para sair.', null, true);
-    setTimeout(() => btn.classList.remove('armed'), 3000); return;
+    confirmar(btn); return;   // toque duplo, sem aviso escrito
   }
   btn.classList.remove('armed');
   const id = usuario.id;
@@ -47,7 +46,7 @@ $('ed-novo').addEventListener('click', () => { $('ed-lista').insertAdjacentHTML(
 $('ed-lista').addEventListener('click', ev => {
   const b = ev.target.closest('.ed-remover,.ed-mover'); if (!b) return;
   const f = b.closest('fieldset');
-  if (b.classList.contains('ed-remover')) { if (confirmar(b, 'Apagar com histórico?')) f.remove(); return; }
+  if (b.classList.contains('ed-remover')) { if (confirmar(b)) f.remove(); return; }
   if (+b.dataset.mv < 0 && f.previousElementSibling) f.parentNode.insertBefore(f, f.previousElementSibling);
   else if (+b.dataset.mv > 0 && f.nextElementSibling) f.parentNode.insertBefore(f.nextElementSibling, f);
   b.focus(); f.scrollIntoView({ block: 'nearest', behavior: 'smooth' });

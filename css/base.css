@@ -57,7 +57,7 @@ h3.sec{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color
 .chip:not(.ok):not(.acao){background:var(--line);color:var(--muted)}
 .slots.travado .slot{opacity:.6}
 .del{border:1px solid var(--line);background:transparent;border-radius:9px;padding:6px 10px;font-size:var(--t-sm);color:var(--muted)}
-.del.armed{border-color:var(--red);color:var(--red);font-weight:600}
+.del.armed{border-color:var(--red);background:var(--red);color:#fff;font-weight:600}
 .err{color:var(--red);font-size:var(--t-sm);min-height:1.2em}
 .track{display:block;height:6px;border-radius:6px;background:var(--line);overflow:hidden}
 .track span{display:block;height:100%;width:0;background:var(--green);transition:width .3s}

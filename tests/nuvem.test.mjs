@@ -106,7 +106,8 @@ test('sair com dados sem enviar pede um 2º toque', async () => {
   nuvem.online = false;
   await pg.click('#i-corpo'); await pg.fill('#c-peso', '91'); await pg.click('#c-form button[type=submit]'); await pg.goBack();
   await pg.click('#sair');
-  assert.match(await pg.textContent('#toast-msg'), /dados sem enviar/);
+  assert.match(await pg.getAttribute('#sair', 'class'), /armed/);                              // 1º toque: só fica vermelho
+  assert.doesNotMatch(await pg.textContent('#toast-msg'), /sem enviar|Toque/);               // sem aviso escrito
   assert.equal(await pg.isVisible('#v-inicio'), true);
   await pg.click('#sair');
   await pg.waitForSelector('#v-bloqueio:not([hidden])');
