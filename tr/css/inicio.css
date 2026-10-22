@@ -13,7 +13,7 @@
 .day.sug{border:1px dashed var(--blue);color:var(--fg)}
 .day.done{background:var(--green-soft);border-color:var(--green);color:var(--green)}
 .day.today{box-shadow:0 0 0 2px var(--fg)}
-.day.sel{border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue),inset 0 -4px 0 var(--blue)}   /* dia mostrado na lista: borda e barrinha azuis por dentro, como aba selecionada */
+.day.sel{border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}   /* dia mostrado na lista: borda azul por dentro, igual em volta toda */
 .progress-row .hoje{padding:0;margin-left:auto;margin-right:12px}
 .week-msg{font-size:var(--t-sm);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .week-msg b{font-variant-numeric:tabular-nums}
