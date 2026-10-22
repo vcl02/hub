@@ -67,7 +67,7 @@ async function abrirApp({ relogio, nuvem = novaNuvem(), antes } = {}) {
   if (relogio) await pg.clock.install({ time: relogio });
   await pg.goto(url);
   if (antes) { await pg.evaluate(antes); await pg.reload(); }
-  await pg.fill('#l-email', 'eu@teste.com'); await pg.fill('#l-senha', 'senha123'); await pg.click('#l-btn');
+  await pg.fill('#l-email', 'eu@teste.com'); await pg.fill('#l-senha', 'senha123'); await pg.press('#l-senha', 'Enter');
   await pg.waitForSelector('#v-inicio:not([hidden])');
   return { ctx, pg, erros, nuvem };
 }
@@ -406,9 +406,9 @@ test('senha errada não entra', async () => {
   const ctx = await navegador.newContext();
   await fakeSupabase(ctx, novaNuvem());
   const pg = await ctx.newPage(); await pg.goto(url);
-  await pg.fill('#l-email', 'eu@teste.com'); await pg.fill('#l-senha', 'errada'); await pg.click('#l-btn');
+  await pg.fill('#l-email', 'eu@teste.com'); await pg.fill('#l-senha', 'errada'); await pg.press('#l-senha', 'Enter');
   await pg.waitForFunction(() => $('l-erro').textContent);
-  assert.match(await pg.textContent('#l-erro'), /incorretos/);
+  assert.match(await pg.textContent('#l-erro'), /inválidos/);
   assert.equal(await pg.isVisible('#v-inicio'), false);
   await ctx.close();
 });
@@ -456,7 +456,7 @@ test('outra conta do Supabase não entra', async () => {
   const ctx = await navegador.newContext();
   await fakeSupabase(ctx, novaNuvem(), 'outra-conta');
   const pg = await ctx.newPage(); await pg.goto(url);
-  await pg.fill('#l-email', 'eu@teste.com'); await pg.fill('#l-senha', 'senha123'); await pg.click('#l-btn');
+  await pg.fill('#l-email', 'eu@teste.com'); await pg.fill('#l-senha', 'senha123'); await pg.press('#l-senha', 'Enter');
   await pg.waitForFunction(() => $('l-erro').textContent);
   assert.match(await pg.textContent('#l-erro'), /não tem acesso/);
   assert.equal(await pg.isVisible('#v-inicio'), false);
@@ -523,4 +523,17 @@ test('ver o resumo de um treino antigo', async () => {
   await pg.click('#i-semana [data-dia="2026-10-21"]');                                       // dia feito na semana também abre
   await pg.waitForSelector('#v-fim:not([hidden])');
   assert.deepEqual(erros, []); await ctx.close();
+});
+
+test('login aceita o usuário no lugar do e-mail; usuário desconhecido nem chega ao Supabase', async () => {
+  const ctx = await navegador.newContext(), nuvem = novaNuvem(), emails = [];
+  await fakeSupabase(ctx, nuvem);
+  ctx.on('request', r => { if (r.url().includes('/auth/v1/token')) emails.push(r.postDataJSON()?.email); });
+  const pg = await ctx.newPage(); await pg.goto(url);
+  await pg.fill('#l-email', 'fulano'); await pg.fill('#l-senha', 'x'); await pg.press('#l-senha', 'Enter');
+  assert.match(await pg.textContent('#l-erro'), /Usuário ou senha inválidos/);
+  await pg.fill('#l-email', 'Victor'); await pg.fill('#l-senha', 'senha123'); await pg.press('#l-senha', 'Enter');
+  await pg.waitForSelector('#v-inicio:not([hidden])');
+  assert.deepEqual(emails, ['victor.cabrera0209@gmail.com']);
+  await ctx.close();
 });

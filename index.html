@@ -14,18 +14,13 @@
 <body>
 <div class="wrap">
 
-<!-- Login (Supabase) -->
-<section id="v-bloqueio" class="view lock" hidden>
-  <p class="eyebrow">Diário de Carga</p>
-  <h1>Entrar</h1>
-  <p class="muted">Mesmo e-mail e senha do fin (só a sua conta tem acesso). Seus treinos ficam salvos na nuvem e aparecem em qualquer aparelho.</p>
-  <form id="l-form" class="form box">
-    <label for="l-email">E-mail</label>
-    <input id="l-email" type="email" autocomplete="username" required>
-    <label for="l-senha">Senha</label>
-    <input id="l-senha" type="password" autocomplete="current-password" required>
+<!-- Login (Supabase), como no fin: usuário ou e-mail + senha, Enter entra. "victor" vira o e-mail em emailDoLogin (app.js). -->
+<section id="v-bloqueio" class="view" hidden>
+  <form id="l-form" class="form login">
+    <input id="l-email" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" aria-label="Usuário" required>
+    <input id="l-senha" type="password" autocomplete="current-password" aria-label="Senha" required>
     <p id="l-erro" class="err" role="alert"></p>
-    <button class="btn primary big" id="l-btn" type="submit">Entrar</button>
+    <button id="l-btn" type="submit" hidden>Entrar</button>
   </form>
 </section>
 

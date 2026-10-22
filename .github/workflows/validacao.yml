@@ -1,0 +1,25 @@
+# Executa no GitHub a mesma validação local (scripts/check.mjs). Diferente do fin, a suíte usa
+# Playwright, então instala as dependências do package-lock e o Chromium antes.
+name: Validação
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+      - name: Configurar Node.js 22 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Instalar dependências de teste
+        run: npm ci && npx playwright install --with-deps chromium
+      - name: Executar validação local
+        run: node scripts/check.mjs

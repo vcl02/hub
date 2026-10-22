@@ -220,7 +220,7 @@ h3.sec{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color
 .form label{font-size:var(--t-sm);color:var(--muted)}
 .check{display:flex!important;gap:10px;align-items:center;color:var(--fg)!important;font-size:.95rem!important}
 .check input{width:22px;height:22px;flex:none}
-.lock{min-height:70vh;justify-content:center}
+.login{max-width:19rem;width:100%;margin:16vh auto 0}
 .sticky{position:sticky;bottom:0;padding-block:10px calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,var(--bg) 30%)}
 .sticky .btn{width:100%}
 .box.warn{border-color:var(--red)}

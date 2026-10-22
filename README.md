@@ -11,8 +11,11 @@ PWA para registrar evolução de carga na academia: pirâmide automática, subst
 | `supabase.js` | Cliente do Supabase |
 | `manifest.webmanifest` + ícones | Instalação na tela inicial |
 | `tests/app.test.mjs` | Testes de ponta a ponta |
+| `migrations/` | SQL das tabelas `tr_*` (formato DataGrip, já aplicadas) |
+| `scripts/check.mjs` | Validação completa (sintaxe, higiene textual, testes) |
+| `AGENTS.md` · `docs/` | Guia de manutenção, decisões e checklist de publicação |
 
-**Banco:** Supabase (projeto `fin`), login por e-mail e senha (mesma conta do fin). Só a conta `DONO` (topo de `app.js`) entra; cada tabela tem `user_id` e RLS que só libera essa conta:
+**Banco:** Supabase (projeto `fin`), login por usuário (`victor`) ou e-mail e senha, como no fin (mesma conta). Só a conta `DONO` (topo de `app.js`) entra; cada tabela tem `user_id` e RLS que só libera essa conta:
 
 | Tabela | Chave | Campos |
 |---|---|---|
@@ -34,7 +37,7 @@ PWA para registrar evolução de carga na academia: pirâmide automática, subst
 - **Pontos e conquistas:** calculados a partir dos dados, nada extra é guardado.
 - **Sessão do dia** (séries marcadas, reps, cronômetro, exercício aberto, peso digitado): item `carga.sessao` no `localStorage`, sem criptografia; zera quando muda o dia.
 - **Cores:** azul = app e ações, verde = feito/sucesso, vermelho = erro/abaixo da meta; tokens no topo de `style.css`.
-- **Atualização:** ao abrir, ao voltar para o app e a cada 10 min, `app.js` compara `index.html`, `app.js` e `style.css` publicados com os que estão rodando; se mudaram, recarrega (fora de telas com formulário). O `sw.js` busca da rede revalidando com o servidor e só usa o cache sem internet.
+- **Atualização:** ao abrir, ao voltar para o app e a cada 10 min, `app.js` compara `index.html`, `app.js` e `style.css` publicados com os que estão rodando; se mudaram, recarrega (fora de telas com formulário). O `sw.js` busca da rede revalidando com o servidor e só usa o cache sem internet; o cache tem nome fixo (não precisa trocar versão a cada mudança) e não guarda nada de outros domínios.
 - Dias de treino: `DIAS_FIXOS` e `DIAS_EXTRA` no topo de `app.js`.
 
 ## Testes
@@ -42,7 +45,7 @@ PWA para registrar evolução de carga na academia: pirâmide automática, subst
 ```
 npm install
 npx playwright install chromium
-npm test
+node scripts/check.mjs   # ou só os testes: npm test
 ```
 
 Os testes usam um Supabase falso em memória (sem internet).

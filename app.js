@@ -21,6 +21,8 @@
 const SUPABASE_URL = 'https://yzmyncxoskvqzdczaill.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Fq984qUdQO8mGq4PSYmUiQ_ySaLrmEQ';
 const DONO = '2f9bc201-9966-4f37-9963-2f4b9ddab849';   // única conta com acesso (o RLS das tabelas tr_* também só libera ela)
+const EMAIL_POR_USUARIO = { victor: 'victor.cabrera0209@gmail.com' };   // login aceita o usuário ou o e-mail, como no fin
+const emailDoLogin = texto => { const t = String(texto || '').trim(); return t.includes('@') ? t : EMAIL_POR_USUARIO[t.toLowerCase()] || null; };
 
 // ===== Configuração =====
 const DIAS_FIXOS = [3, 4];   // quarta, quinta (Date.getDay)
@@ -329,15 +331,16 @@ async function carregar(u) {
 }
 $('l-form').addEventListener('submit', async ev => {
   ev.preventDefault();
-  const btn = $('l-btn'), erro = $('l-erro');
-  erro.textContent = ''; btn.disabled = true; btn.textContent = 'Entrando…';
+  const erro = $('l-erro'), email = emailDoLogin($('l-email').value);
+  erro.textContent = '';
+  // Usuário desconhecido recebe a mesma mensagem de senha errada: não revela quais existem.
+  if (!email) { erro.textContent = 'Usuário ou senha inválidos.'; return; }
   try {
-    const { data, error } = await sb.auth.signInWithPassword({ email: $('l-email').value.trim(), password: $('l-senha').value });
-    if (error) { erro.textContent = /invalid/i.test(error.message) ? 'E-mail ou senha incorretos.' : 'Não foi possível entrar: ' + error.message; return; }
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: $('l-senha').value });
+    if (error) { erro.textContent = /invalid/i.test(error.message) ? 'Usuário ou senha inválidos.' : 'Não foi possível entrar: ' + error.message; return; }
     $('l-senha').value = '';
     await carregar(data.user);
   } catch (e) { erro.textContent = 'Sem conexão. Tente de novo.'; }
-  finally { btn.disabled = false; btn.textContent = 'Entrar'; }
 });
 
 // ===== Migração do banco criptografado da versão antiga (fica só neste aparelho) =====
