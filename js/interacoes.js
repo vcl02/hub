@@ -59,3 +59,14 @@ document.addEventListener('click', ev => {
     toast('Pesagem apagada', desfazer); telas.corpo();
   }
 });
+
+// Esc: fecha a tela cheia aberta (garrafinha como o X, parabéns como "Ver resumo"), cancela a edição na linha ou volta uma tela
+document.addEventListener('keydown', ev => {
+  if (ev.key !== 'Escape' || !db) return;
+  if (!$('agua').hidden) $('agua-x').click();
+  else if (!$('parabens').hidden) $('parabens-ok').click();
+  else if (document.querySelector('[data-cancelar]')) document.querySelector('[data-cancelar]').click();
+  else if (pilha[pilha.length - 1] !== 'inicio') voltar();
+  else return;
+  ev.preventDefault();
+});

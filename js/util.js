@@ -39,8 +39,19 @@ function toast(msg, desfazer, erro = false) {
   tToast = setTimeout(() => { $('toast').hidden = true; desfazerFn = null; }, desfazer ? 6000 : 2600);
 }
 $('toast-desfazer').addEventListener('click', () => { const f = desfazerFn; desfazerFn = null; $('toast').hidden = true; f?.(); });
+// Botões só com ícone (lixeira, X, ✓): title e aria-label obrigatórios
+const ICONES = {
+  lixo: '<path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  ok: '<path d="M5 12.5l4.5 4.5L19 7.5"/>'
+};
+const btIcone = (icone, titulo, attrs, classe = '') => `<button type="button" class="bt-ic ${classe}" ${attrs} title="${titulo}" aria-label="${titulo}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${ICONES[icone]}</svg></button>`;
 function confirmar(btn, texto) {   // 1º toque arma, 2º confirma
   if (btn.classList.contains('armed')) return true;
+  if (btn.classList.contains('bt-ic')) {   // ícone: não troca o conteúdo, avisa no toast
+    btn.classList.add('armed'); toast(texto + ' Toque de novo.', null, true);
+    setTimeout(() => btn.classList.remove('armed'), 3000); return false;
+  }
   const antes = btn.textContent; btn.classList.add('armed'); btn.textContent = texto;
   setTimeout(() => { if (btn.isConnected) { btn.classList.remove('armed'); btn.textContent = antes; } }, 3000);
   return false;

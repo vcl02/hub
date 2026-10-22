@@ -2,11 +2,19 @@
 /* ---------- Edição inline (horários, pesagens) ---------- */
 .btn.sm{min-height:36px;padding:6px 12px;font-size:var(--t-sm)}
 .ed-acoes{display:flex;gap:6px;align-items:center;justify-content:flex-end}
-.ed-inline{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:var(--t-sm);color:var(--muted)}
-.ed-inline input{border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:6px;font-size:var(--t-sm);color:var(--fg);max-width:6.5em}
-.ed-inline input[type=date]{max-width:9.5em}
-.hist li.editando{grid-template-columns:auto 1fr;}
-.hist li.editando .ed-acoes{grid-column:1/-1}
+.ed-inline{display:flex;gap:4px;align-items:center;flex-wrap:wrap;font-size:var(--t-sm);color:var(--muted)}
+.ed-inline input{border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:5px 6px;font-size:.85rem;color:var(--fg);max-width:4.6em}
+.ed-inline input[type=date]{max-width:7.6em}
+.ed-inline #em-peso{max-width:3.6em}
+/* sem o ícone de relógio/calendário dentro do campo: no celular, tocar no campo já abre o seletor */
+.ed-inline input::-webkit-calendar-picker-indicator{display:none}
+/* Edição numa linha só: rótulo, campos e botões de ícone; se não couber (pesagem), os botões descem à direita */
+.hist li.editando{display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:8px}
+.hist li.editando .ed-acoes{margin-left:auto;gap:4px}
+.bt-ic{width:32px;height:32px;flex:none;display:grid;place-items:center;padding:0;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--muted)}
+.bt-ic.ok{background:var(--blue);border-color:var(--blue);color:var(--on-blue)}
+.bt-ic.perigo{color:var(--red)}
+.bt-ic.armed{background:var(--red);border-color:var(--red);color:#fff}
 .treino-tempo .btn.sm{margin-left:auto}
 
 /* ---------- Fim do treino ---------- */

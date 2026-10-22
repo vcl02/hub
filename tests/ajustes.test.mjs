@@ -93,3 +93,20 @@ test('voltar é só a seta azul, sem texto', async () => {
   await pg.waitForSelector('#v-inicio:not([hidden])');
   await ctx.close();
 });
+
+test('Esc fecha tela cheia, cancela edição e volta', async () => {
+  const { ctx, pg } = await abrirApp({ agua: true });
+  await pg.tap('.slot >> nth=0');
+  assert.equal(await pg.isVisible('#agua'), true);
+  await pg.keyboard.press('Escape');
+  assert.equal(await pg.isVisible('#agua'), false);
+  assert.equal(await pg.isVisible('#v-exercicio'), true);                                    // fechou só a tela cheia
+  await pg.keyboard.press('Escape');
+  await pg.waitForSelector('#v-inicio:not([hidden])');                                         // voltou
+  await pg.click('#i-corpo'); await pg.fill('#c-peso', '90'); await pg.click('#c-form button[type=submit]');
+  await pg.click('[data-editar-medida]');
+  await pg.keyboard.press('Escape');
+  assert.equal(await pg.locator('#c-historico li.editando').count(), 0);                       // cancelou a edição
+  assert.equal(await pg.isVisible('#v-corpo'), true);
+  await ctx.close();
+});

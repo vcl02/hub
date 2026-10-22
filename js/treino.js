@@ -43,7 +43,7 @@ function abrirEdicaoTreino(inicio) {
   editTreino = inicio;
   const li = document.querySelector(`[data-editar-treino="${inicio}"]`).closest('li');
   li.className = 'editando';
-  li.innerHTML = `<i class="h-d">${NOME_DIA[new Date(t.inicio).getDay()]} ${dataCurta(iso(new Date(t.inicio)))}</i><span class="ed-inline"><input type="time" id="et-ini" value="${hhmm(t.inicio)}" aria-label="Início"> – <input type="time" id="et-fim" value="${hhmm(t.fim)}" aria-label="Fim"></span><span class="ed-acoes"><button type="button" class="del" data-excluir-treino="${inicio}">Excluir</button><button type="button" class="link" data-cancelar>Cancelar</button><button type="button" class="btn sm primary" data-salvar-treino="${inicio}">Salvar</button></span>`;
+  li.innerHTML = `<i class="h-d">${dataCurta(iso(new Date(t.inicio)))}</i><span class="ed-inline"><input type="time" id="et-ini" value="${hhmm(t.inicio)}" aria-label="Início">–<input type="time" id="et-fim" value="${hhmm(t.fim)}" aria-label="Fim"></span><span class="ed-acoes">${btIcone('lixo', 'Excluir treino', `data-excluir-treino="${inicio}"`, 'perigo')}${btIcone('x', 'Cancelar', 'data-cancelar')}${btIcone('ok', 'Salvar', `data-salvar-treino="${inicio}"`, 'ok')}</span>`;
 }
 function finalizarTreino() {
   const t = ultimoTreino();
