@@ -53,6 +53,7 @@
 
 /* ---------- Peso corporal ---------- */
 .hora{width:9em;border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:10px 12px;font-family:var(--display);font-weight:700;font-size:var(--t-lg)}
+.bom{color:var(--green);font-weight:600} .ruim{color:var(--red);font-weight:600}
 .aviso{font-size:var(--t-sm);padding:10px 12px;border-radius:10px;background:var(--blue-soft);color:var(--fg)}
 .aviso b{color:var(--blue)}
 .aviso.erro{background:var(--red-soft)} .aviso.erro b{color:var(--red)}

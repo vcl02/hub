@@ -41,7 +41,6 @@ test('IMC com 1,78 m', async () => {
   await pg.click('#i-corpo'); await pg.fill('#c-peso', '90'); await pg.click('#c-form button[type=submit]');
   assert.match(await pg.textContent('#c-historico'), /IMC 28,4/);                           // 90 / 1,78²
   assert.match(await pg.textContent('#c-perfil'), /\d+ anos · 1,78 m · basal ~1\.\d{3} kcal\/dia/);
-  await pg.goBack();
-  assert.match(await pg.textContent('#i-corpo'), /IMC 28,4 \(sobrepeso\)/);
+  assert.match(await pg.textContent('#c-perfil'), /90 kg · IMC 28,4 \(sobrepeso\)/);
   await ctx.close();
 });

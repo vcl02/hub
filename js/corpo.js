@@ -7,14 +7,10 @@ const faixaImc = i => i < 18.5 ? 'abaixo do peso' : i < 25 ? 'normal' : i < 30 ?
 const medidasOrdenadas = () => [...db.medidas].sort((a, b) => b.data.localeCompare(a.data));
 const horaHabitual = () => medidasOrdenadas().find(m => m.hora)?.hora || '';
 let editMedida = null;
+// Botão da balança na tela inicial: ponto azul enquanto não houver pesagem hoje (pesagem diária)
 function pintarCorpoInicio() {
-  const Ls = medidasOrdenadas(), u = Ls[0], prim = Ls[Ls.length - 1], box = $('i-corpo'), hab = horaHabitual();
-  const atrasado = !u || u.data !== hoje();   // pesagem diária: destaca enquanto não pesou hoje
-  box.classList.toggle('on', atrasado);
-  if (!u) { box.innerHTML = '<span>Peso corporal</span><b>Registrar ›</b><small>1ª pesagem</small>'; return; }
-  const dif = Math.round((u.peso - prim.peso) * 10) / 10, cls = dif < 0 ? 'bom' : dif > 0 ? 'ruim' : '';
-  box.innerHTML = `<span>Peso corporal <i>${quando(u.data)}</i>${atrasado ? ` · <em>hora de se pesar${hab ? ' às ' + hab : ''}</em>` : ''}</span>
-    <b>${fmt(u.peso)} kg</b><small class="${cls}">${Ls.length > 1 ? (dif > 0 ? '+' : '') + fmt(dif) + ' kg desde ' + dataCurta(prim.data) + ' · ' : ''}IMC ${fmt(imc(u.peso))} (${faixaImc(imc(u.peso))})</small>`;
+  const u = medidasOrdenadas()[0];
+  $('i-corpo').classList.toggle('pendente', !u || u.data !== hoje());
 }
 function avisoHorario() {   // só recomenda o horário de sempre: qualquer horário é aceito
   const hab = horaHabitual(), h = $('c-hora').value, box = $('c-aviso');
@@ -28,7 +24,8 @@ telas.corpo = () => {
   $('c-peso').value = u ? virgula(u.peso) : '';
   $('c-cintura').value = u?.cintura ? virgula(u.cintura) : '';
   $('c-hora').value = horaHabitual() || hhmm(Date.now());
-  $('c-perfil').textContent = `${idadeEm(hoje())} anos · ${virgula(ALTURA)} m${u ? ` · basal ~${tmb(u.peso, hoje()).toLocaleString('pt-BR')} kcal/dia` : ''}`;
+  const prim = Ls[Ls.length - 1], dif = u ? Math.round((u.peso - prim.peso) * 10) / 10 : 0;
+  $('c-perfil').innerHTML = `${idadeEm(hoje())} anos · ${virgula(ALTURA)} m${u ? ` · basal ~${tmb(u.peso, hoje()).toLocaleString('pt-BR')} kcal/dia<br><b>${fmt(u.peso)} kg</b> · IMC ${fmt(imc(u.peso))} (${faixaImc(imc(u.peso))})${Ls.length > 1 ? ` · <span class="${dif < 0 ? 'bom' : dif > 0 ? 'ruim' : ''}">${dif > 0 ? '+' : ''}${fmt(dif)} kg desde ${dataCurta(prim.data)}</span>` : ''}` : ''}`;
   avisoHorario(); pintarMedidas();
 };
 function pintarMedidas() {

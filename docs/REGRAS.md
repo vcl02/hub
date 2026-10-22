@@ -7,7 +7,7 @@ Fonte de verdade do comportamento do app. Toda mudança de regra atualiza este a
 - O app é só do mantenedor: nada de textos explicando como usar o app (dicas de uso, instruções, legendas de ajuda). Ficam só dados, rótulos curtos e avisos de erro.
 - As dicas de execução dos exercícios (posição, postura) não são ajuda do app: ficam, dentro de "Como fazer, ajustes e anotações".
 - `aria-label` em botões só de ícone continua (não aparece na tela).
-- Tela inicial: "Full body" e a data curta ("Qui, 22 de out") na mesma linha, centralizados na altura dos botões de engrenagem e sair.
+- Tela inicial: "Full body" e a data curta ("Qui, 22/10") na mesma linha, centralizados na altura dos botões de engrenagem e sair.
 - Cores: azul = app e ações, verde = feito/sucesso, vermelho = erro/abaixo da meta. Tokens no topo de `css/base.css`.
 
 ## Login e conta
@@ -15,7 +15,7 @@ Fonte de verdade do comportamento do app. Toda mudança de regra atualiza este a
 - Login por **usuário** (`victor`) ou e-mail, e senha, Enter entra (`emailDoLogin`). Usuário desconhecido nem chega ao Supabase e recebe a mesma mensagem de senha errada (`Usuário ou senha inválidos.`).
 - Mesma conta do fin. Só a conta `DONO` (`js/config.js`) entra: outra conta sai na hora com "Esta conta não tem acesso ao Diário de Carga.". O RLS das tabelas `tr_*` também só libera essa conta (migration 02).
 - Sem "Esqueci a senha" e sem "Trocar senha": a senha é a do Supabase e se troca fora do app.
-- Tela inicial, canto superior direito: engrenagem, que vai direto para a edição de exercícios (no fim dela: instalar e o estado da conta e da nuvem), e o botão de sair, só ícone e vermelho como no fin. Não há tela de Ajustes.
+- Tela inicial, canto superior direito: balança (peso corporal), engrenagem, que vai direto para a edição de exercícios (no fim dela: instalar e o estado da conta e da nuvem), e o botão de sair, só ícone e vermelho como no fin. Não há tela de Ajustes.
 - A sessão fica salva no aparelho: o app entra direto, inclusive sem internet. "Sair" apaga a cópia local se não houver nada pendente; se houver, o 1º toque avisa e o 2º (em até 3 s) sai, mantendo a cópia para enviar no próximo login.
 
 ## Banco e sincronização
@@ -55,10 +55,10 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 
 ## Peso corporal
 
-- Pesagem diária: 1 por dia (a nova substitui a do dia), em qualquer horário. Peso de 30 a 300 kg; cintura opcional. O card da tela inicial fica destacado enquanto não houver pesagem hoje.
+- Pesagem diária: 1 por dia (a nova substitui a do dia), em qualquer horário. Peso de 30 a 300 kg; cintura opcional. Na tela inicial, a balança fica no canto superior (ao lado da engrenagem), com um ponto azul enquanto não houver pesagem hoje.
 - O horário habitual é o da pesagem mais recente; mais de 1 h fora dele só recomenda voltar a ele (aviso azul), nunca bloqueia.
 - Na edição dá para mudar data, horário e peso. Data no futuro ou dia que já tem pesagem é recusado.
-- **IMC:** peso ÷ altura² com `ALTURA` = 1,78 m (`js/config.js`), 1 casa decimal. Faixas da OMS: < 18,5 abaixo do peso, < 25 normal, < 30 sobrepeso, ≥ 30 obesidade. Aparece no card de peso da tela inicial e em cada pesagem do histórico.
+- **IMC:** peso ÷ altura² com `ALTURA` = 1,78 m (`js/config.js`), 1 casa decimal. Faixas da OMS: < 18,5 abaixo do peso, < 25 normal, < 30 sobrepeso, ≥ 30 obesidade. Aparece no topo da tela de peso (com o peso atual e a variação desde a 1ª pesagem) e em cada pesagem do histórico.
 - **Perfil** (constantes no topo do código, fora do banco): altura 1,78 m, nascimento 14/09/2002, sexo masculino. A tela de peso mostra idade, altura e a taxa basal.
 - **Taxa basal (TMB):** Mifflin-St Jeor = 10 × peso + 6,25 × altura (cm) − 5 × idade + 5 (homem), em kcal/dia, com a idade no dia.
 - **Calorias:** estimativa com MET corrigido = 3,5 MET (Compendium of Physical Activities, 02054) × TMB ÷ 24 × horas de treino, com o peso da pesagem mais recente até o dia. O padrão assume 1 MET = 1 kcal/kg/h para todo mundo; usar a sua basal ajusta a conta para idade, altura e sexo.

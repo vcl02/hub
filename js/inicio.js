@@ -18,8 +18,8 @@ telas.inicio = () => {
   $('i-lista').classList.toggle('travado', !!trav);
   $('i-cont').textContent = trav ? '✓ Treino feito' : feitos + '/' + db.exercicios.length;
   $('i-barra').style.width = (trav ? 100 : db.exercicios.length ? feitos / db.exercicios.length * 100 : 0) + '%';
-  const agora = new Date();   // curta para caber na linha do título: "Qui, 22 de out"
-  $('i-data').textContent = `${NOME_DIA[agora.getDay()]}, ${agora.getDate()} de ${agora.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}`;
+  const agora = new Date();   // curta para caber na linha do título ao lado dos 3 botões: "Qui, 22/10"
+  $('i-data').textContent = `${NOME_DIA[agora.getDay()]}, ${dataCurta(hoje())}`;
   semana(); pintarTempo(); pintarJogo(estatisticas()); pintarCorpoInicio();
 };
 function semana() {

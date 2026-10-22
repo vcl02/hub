@@ -11,7 +11,7 @@ test('peso corporal, pontos e conquistas', async () => {
   await pg.fill('#c-peso', '90,4'); await pg.click('#c-form button[type=submit]');
   assert.match(await pg.textContent('#c-historico'), /90,4 kg/);
   await pg.goBack();
-  assert.match(await pg.textContent('#i-corpo'), /90,4 kg/);
+  assert.equal(await pg.getAttribute('#i-corpo', 'class'), 'icon-btn');                         // pesou hoje: sem o ponto
   await pg.tap('.slot >> nth=2'); await pg.fill('#e-carga', '30'); await pg.dispatchEvent('#e-carga', 'input');
   await pg.click('#t-feita'); await pg.click('#t-feita');
   await pg.goBack();

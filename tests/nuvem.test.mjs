@@ -26,7 +26,7 @@ test('sem internet guarda no aparelho e envia ao reconectar', async () => {
   await pg.goBack();
   assert.match(await pg.textContent('#i-sync'), /Sem internet/);
   await pg.reload(); await pg.waitForSelector('#v-inicio:not([hidden])');                     // abre offline com a cópia local
-  assert.match(await pg.textContent('#i-corpo'), /91 kg/);
+  await pg.click('#i-corpo'); assert.match(await pg.textContent('#c-historico'), /91 kg/); await pg.goBack();
   nuvem.online = true;
   await pg.evaluate(() => dispatchEvent(new Event('online')));
   await sincronizado(pg);
