@@ -51,6 +51,7 @@ const telas = {};
 let pilha = [];
 function mostrar(nome) {
   document.querySelectorAll('section.view').forEach(v => { v.hidden = v.id !== 'v-' + nome; });
+  $('agua').hidden = true; $('parabens').hidden = true;   // telas cheias: cada tela mostra a sua de novo se precisar
   telas[nome]?.();
   salvarSessao();
   window.scrollTo(0, 0);

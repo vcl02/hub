@@ -72,8 +72,18 @@ telas.fim = () => {
   $('f-tiles').innerHTML = tiles.map(([k, v, s]) => `<li><span>${k}</span><b>${v}</b><small>${s}</small></li>`).join('');
   const rec = recordesAte(dia);
   $('f-lista').innerHTML = r.regs.map(x => { const v = va.get(x.variacao); return `<li><span class="h-v">${esc(v?.nome || '')}${rec.has(x) ? ' <span class="chip ok">Recorde</span>' : ''}</span><span class="h-d">${kgsTxt(x)} ${esc(v ? unidadeTxt(v) : '')} × ${repsTxt(x)}</span></li>`; }).join('') || '<li class="empty">Nada registrado.</li>';
-  if (!antigo) vibrar([60, 80, 60]);
+  if (!antigo) parabens(dia, r, t);
 };
+// Tela cheia de parabéns ao finalizar o treino de hoje, com as conquistas e o nível ganhos no dia; "Ver resumo" fecha
+function parabens(dia, r, t) {
+  const g = ganhosDoDia(dia);
+  $('parabens-info').textContent = [t && duracao(t.fim - t.inicio), r.regs.length && `${r.regs.length} ${r.regs.length === 1 ? 'exercício' : 'exercícios'}`, r.recordes && `${r.recordes} ${r.recordes === 1 ? 'recorde' : 'recordes'}`, '+' + r.pontos + ' pts'].filter(Boolean).join(' · ');
+  $('parabens-ganhos').innerHTML = [...(g.nivel ? [`<li><b>Nível ${g.nivel}!</b></li>`] : []), ...g.conquistas.map(c => `<li><b>★ ${esc(c.nome)}</b><small>${esc(c.desc)}</small></li>`)].join('');
+  $('parabens-ganhos').hidden = !g.nivel && !g.conquistas.length;
+  $('parabens').hidden = false;
+  vibrar([60, 80, 60, 80, 200]);
+}
+$('parabens-ok').addEventListener('click', () => { $('parabens').hidden = true; });
 telas.treinos = () => {
   const dias = [...diasTreinados()].sort().reverse();
   $('t-dias').innerHTML = dias.map(dia => {

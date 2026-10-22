@@ -68,7 +68,6 @@
     <div class="pn"><span class="tempo" id="e-tempo"></span><b id="e-pos">1/6</b></div></div>
   <div class="trilha" id="e-trilha" aria-hidden="true"></div>
   <div class="travado-box" id="e-travado" hidden><p id="e-travado-msg"></p><button type="button" class="btn sm" data-reabrir>Reabrir treino de hoje</button></div>
-  <div class="box agua" id="e-agua" hidden><span>💧 <b>Pegou a garrafinha de água?</b></span><button type="button" class="btn sm" id="e-agua-ok">Já peguei</button></div>
   <p class="eyebrow" id="e-grupo"></p>
   <div class="segs" id="e-variacoes" role="radiogroup" aria-label="Variação usada hoje"></div>
   <div class="ex-head">
@@ -212,6 +211,16 @@
   <p class="muted small" id="a-info"></p>
 </section>
 
+</div>
+<!-- Lembrete da garrafinha em tela cheia: aparece ao abrir o 1º exercício do dia (js/exercicio.js) -->
+<div id="agua" role="dialog" aria-modal="true" aria-labelledby="agua-t" hidden><span class="agua-ico" aria-hidden="true">💧</span><p id="agua-t">Pegou a garrafinha de água?</p><button type="button" class="btn big" id="agua-ok">Já peguei</button></div>
+<!-- Parabéns em tela cheia ao finalizar o treino de hoje, com as conquistas ganhas no dia (js/treino.js) -->
+<div id="parabens" role="dialog" aria-modal="true" aria-labelledby="parabens-t" hidden>
+  <span class="agua-ico" aria-hidden="true">🏆</span>
+  <p id="parabens-t">Parabéns! Treino concluído</p>
+  <span id="parabens-info"></span>
+  <ul id="parabens-ganhos"></ul>
+  <button type="button" class="btn big" id="parabens-ok">Ver resumo</button>
 </div>
 <div id="toast" role="status" hidden><span id="toast-msg"></span><button type="button" id="toast-desfazer" hidden>Desfazer</button></div>
 <button type="button" id="mini" hidden><span id="mini-t">0:00</span><span id="mini-n"></span><span>Abrir ›</span></button>

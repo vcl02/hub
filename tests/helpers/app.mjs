@@ -61,7 +61,8 @@ export async function fakeSupabase(ctx, nuvem, id = '2f9bc201-9966-4f37-9963-2f4
   });
 }
 // Fontes do Google são bloqueadas para o teste não depender de internet
-export async function abrirApp({ relogio, nuvem = novaNuvem(), antes } = {}) {
+// agua: false (padrão) já marca a garrafinha do dia como pega, para a tela cheia não cobrir os toques dos testes
+export async function abrirApp({ relogio, nuvem = novaNuvem(), antes, agua = false } = {}) {
   const ctx = await app.navegador.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   await fakeSupabase(ctx, nuvem);
@@ -72,6 +73,7 @@ export async function abrirApp({ relogio, nuvem = novaNuvem(), antes } = {}) {
   if (antes) { await pg.evaluate(antes); await pg.reload(); }
   await pg.fill('#l-email', 'eu@teste.com'); await pg.fill('#l-senha', 'senha123'); await pg.press('#l-senha', 'Enter');
   await pg.waitForSelector('#v-inicio:not([hidden])');
+  if (!agua) await pg.evaluate(() => store.set(K_AGUA, hoje()));
   return { ctx, pg, erros, nuvem };
 }
 export const sincronizado = pg => pg.waitForFunction(() => !temPendente() && !enviando);

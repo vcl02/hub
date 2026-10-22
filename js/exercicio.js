@@ -15,8 +15,8 @@ $('e-foto-rm').addEventListener('click', () => { store.del('carga.foto.' + varAt
 
 // Lembrete da garrafinha: ao abrir o 1º exercício do dia, até "Já peguei" ou o dia contar como treinado (fica só no aparelho)
 const K_AGUA = 'carga.agua';
-function pintarAgua(trav = travadoHoje()) { $('e-agua').hidden = !!trav || store.get(K_AGUA) === hoje() || diasTreinados().has(hoje()); }
-$('e-agua-ok').addEventListener('click', () => { store.set(K_AGUA, hoje()); pintarAgua(); });
+function pintarAgua(trav = travadoHoje()) { $('agua').hidden = !!trav || store.get(K_AGUA) === hoje() || diasTreinados().has(hoje()); }
+$('agua-ok').addEventListener('click', () => { store.set(K_AGUA, hoje()); pintarAgua(); });
 
 // ===== Exercício =====
 let atual = null, editando = null;   // id do exercício aberto · série aberta para edição
@@ -170,7 +170,7 @@ const terminouExercicio = e => seriesFeitas(e.id) >= e.series + (T.aquecimento[e
     ativo = false;
     if (tela.hidden || !db) return;
     concluir();
-    if (ev.touches.length !== 1 || ev.target.closest('input,textarea,select,.segs,.modos,#mini,#toast')) return;
+    if (ev.touches.length !== 1 || ev.target.closest('input,textarea,select,.segs,.modos,#mini,#toast,#agua')) return;
     ativo = true; x0 = ev.touches[0].clientX; y0 = ev.touches[0].clientY; t0 = Date.now(); eixo = null; tela.classList.remove('slide');
   }, { passive: true });
   document.addEventListener('touchmove', ev => {

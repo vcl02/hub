@@ -71,7 +71,7 @@ h3.sec{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color
 .track span{display:block;height:100%;width:0;background:var(--green);transition:width .3s}
 
 /* ---------- Cabeçalhos e navegação ---------- */
-.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding-top:6px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-top:6px}
 /* Título e data na mesma linha, alinhados pela base do texto */
 .titulo{display:flex;align-items:baseline;gap:10px;min-width:0}
 .titulo h1{font-size:1.9rem;white-space:nowrap}

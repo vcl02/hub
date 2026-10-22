@@ -125,7 +125,7 @@ test('depois do último descanso vai para o próximo; no fim mostra o resumo', a
   await pg.click('#t-pular');
   await pg.waitForSelector('#v-fim:not([hidden])');
   assert.match(await pg.textContent('#f-tiles'), /6\/6/);
-  await pg.click('#v-fim [data-ir="inicio"]');
+  await pg.click('#parabens-ok'); await pg.click('#v-fim [data-ir="inicio"]');
   assert.match(await pg.textContent('#i-treino'), /Último treino/);                           // treino fechado
   assert.deepEqual(erros, []); await ctx.close();
 });
@@ -149,7 +149,7 @@ test('editar o horário do treino e ver calorias', async () => {
   await pg.clock.fastForward('10:00'); await pg.click('#t-feita');
   await pg.click('#e-finalizar');
   await pg.waitForSelector('#v-fim:not([hidden])');
-  await pg.click('#v-fim [data-ir="inicio"]');
+  await pg.click('#parabens-ok'); await pg.click('#v-fim [data-ir="inicio"]');
   await pg.click('[data-editar-treino]');
   await pg.fill('#et-fim', '19:50'); await pg.click('[data-salvar-treino]');
   assert.match(await pg.textContent('#i-treinos'), /19:00–19:50 · ~231 kcal/);              // 3,5 × basal 1.898 kcal/dia ÷ 24 × 50/60 h
@@ -170,7 +170,7 @@ test('um treino por dia: depois de finalizar, trava; dá para reabrir', async ()
   const { ctx, pg, erros } = await abrirApp();
   await pg.tap('.slot >> nth=0'); await pg.fill('#e-carga', '40'); await pg.dispatchEvent('#e-carga', 'input');
   await pg.click('#t-feita'); await pg.click('#t-feita');
-  await pg.click('#e-finalizar'); await pg.click('#v-fim [data-ir="inicio"]');
+  await pg.click('#e-finalizar'); await pg.click('#parabens-ok'); await pg.click('#v-fim [data-ir="inicio"]');
   await pg.tap('.slot >> nth=1');
   assert.equal(await pg.isVisible('#e-travado'), true);
   const antes = await pg.evaluate(() => T.series);
@@ -198,7 +198,7 @@ test('excluir um treino ao editar', async () => {
   const { ctx, pg } = await abrirApp();
   await pg.tap('.slot >> nth=0'); await pg.fill('#e-carga', '40'); await pg.dispatchEvent('#e-carga', 'input');
   await pg.click('#t-feita'); await pg.click('#t-feita');
-  await pg.click('#e-finalizar'); await pg.click('#v-fim [data-ir="inicio"]');
+  await pg.click('#e-finalizar'); await pg.click('#parabens-ok'); await pg.click('#v-fim [data-ir="inicio"]');
   await pg.click('[data-editar-treino]');
   await pg.click('[data-excluir-treino]'); await pg.click('[data-excluir-treino]');            // confirma
   assert.equal(await pg.evaluate(() => db.treinos.length + db.registros.length), 0);
@@ -231,14 +231,16 @@ test('treino finalizado sem séries salvas conta como feito e não é apagado ao
 });
 
 test('lembrete da garrafinha ao abrir o 1º exercício do dia', async () => {
-  const { ctx, pg } = await abrirApp({ relogio: new Date('2026-10-23T17:00:00') });          // sexta: vale em qualquer dia
+  const { ctx, pg } = await abrirApp({ relogio: new Date('2026-10-23T17:00:00'), agua: true }); // sexta: vale em qualquer dia
   assert.equal(await pg.locator('#v-inicio .agua').count(), 0);                               // não fica na tela inicial
   await pg.tap('.slot >> nth=0');
-  assert.equal(await pg.isVisible('#e-agua'), true);
-  await pg.click('#e-agua-ok');
-  assert.equal(await pg.isVisible('#e-agua'), false);
+  assert.equal(await pg.isVisible('#agua'), true);
+  const caixa = await pg.locator('#agua').boundingBox();
+  assert.deepEqual([caixa.x, caixa.y, caixa.width, caixa.height], [0, 0, 390, 844]);           // tela cheia
+  await pg.click('#agua-ok');
+  assert.equal(await pg.isVisible('#agua'), false);
   await pg.reload(); await pg.waitForSelector('#v-exercicio:not([hidden])');
-  assert.equal(await pg.isVisible('#e-agua'), false);                                        // não volta no mesmo dia
+  assert.equal(await pg.isVisible('#agua'), false);                                        // não volta no mesmo dia
   await ctx.close();
 });
 
@@ -261,5 +263,25 @@ test('ver o resumo de um treino antigo', async () => {
   await pg.goBack();
   await pg.click('#i-semana [data-dia="2026-10-21"]');                                       // dia feito na semana também abre
   await pg.waitForSelector('#v-fim:not([hidden])');
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
+test('parabéns em tela cheia ao finalizar, com as conquistas ganhas no treino', async () => {
+  const { ctx, pg, erros } = await abrirApp();
+  await pg.tap('.slot >> nth=0'); await pg.fill('#e-carga', '40'); await pg.dispatchEvent('#e-carga', 'input');
+  await pg.click('#t-feita'); await pg.click('#t-feita');
+  await pg.click('#e-finalizar');
+  await pg.waitForSelector('#parabens:not([hidden])');
+  const caixa = await pg.locator('#parabens').boundingBox();
+  assert.deepEqual([caixa.x, caixa.y, caixa.width, caixa.height], [0, 0, 390, 844]);
+  assert.match(await pg.textContent('#parabens-info'), /1 exercício · \+60 pts/);
+  assert.match(await pg.textContent('#parabens-ganhos'), /★ Primeiro treino/);
+  await pg.click('#parabens-ok');
+  assert.equal(await pg.isVisible('#parabens'), false);
+  assert.equal(await pg.isVisible('#v-fim'), true);
+  await pg.click('#v-fim [data-ir="inicio"]');
+  await pg.click('#i-treinos li[data-dia]');                                                   // resumo de dia antigo: sem tela cheia
+  await pg.waitForSelector('#v-fim:not([hidden])');
+  assert.equal(await pg.isVisible('#parabens'), false);
   assert.deepEqual(erros, []); await ctx.close();
 });

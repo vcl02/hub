@@ -69,6 +69,16 @@ const CONQUISTAS = [
     [`${100 * n} pirâmides perfeitas`, `Bata todas as reps em ${100 * n} pirâmides`, s => s.piramide >= 100 * n, 'Ano ' + n]
   ])
 ];
+// Conquistas e nível ganhos num dia: compara as estatísticas sem os dados do dia (e depois) com as de agora
+function ganhosDoDia(dia) {
+  const salvo = db; let antes;
+  try {
+    db = { ...db, registros: db.registros.filter(r => r.data < dia), treinos: db.treinos.filter(t => iso(new Date(t.inicio)) < dia), medidas: db.medidas.filter(m => m.data < dia) };
+    antes = estatisticas();
+  } finally { db = salvo; }
+  const depois = estatisticas();
+  return { conquistas: CONQUISTAS.filter(([, , f]) => f(depois) && !f(antes)).map(([nome, desc]) => ({ nome, desc })), nivel: depois.nivel > antes.nivel ? depois.nivel : null };
+}
 function celebrar(antes) {   // mensagens do que mudou depois de uma ação
   const depois = estatisticas(), msgs = [];
   if (depois.recorde > antes.recorde) msgs.push('Recorde! +25 pts');
