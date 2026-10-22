@@ -3,7 +3,8 @@
 -- nova no Auth (cadastro aberto) leria todas as finanças. A escrita já era só do mantenedor.
 -- A captura do Nubank usa a chave de serviço e não passa pelo RLS: não muda nada para ela.
 -- Formato do DataGrip (ver docs/DECISOES.md, "Migrations no DataGrip"). Idempotente.
--- AINDA NÃO APLICADA (22/10/2026): aplicar no DataGrip e conferir com SELECT nas policies.
+-- JÁ APLICADA em 22/10/2026 pelo mantenedor (DataGrip). Conferida por SELECT: as três policies de leitura
+-- são as do dono, e numa transação só leitura o dono lê 2483/77/4 linhas e outra conta 0.
 begin;
 
 select 'public.fin'::regclass, 'public.fin_ciclo'::regclass, 'public.fin_meta'::regclass;
