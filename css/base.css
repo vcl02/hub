@@ -72,7 +72,11 @@ h3.sec{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color
 
 /* ---------- Cabeçalhos e navegação ---------- */
 .top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding-top:6px}
-.icon-btn{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-size:1.4rem;line-height:1;flex:none}
+.icon-btn{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-size:1.4rem;line-height:1;flex:none;display:grid;place-items:center;padding:0}
+.acoes-topo{display:flex;gap:8px}
+/* Sair como no fin: vermelho; 1º toque com dados sem enviar só arma (borda cheia) */
+.icon-btn.sair{color:var(--red);background:var(--red-soft);border-color:var(--red)}
+.icon-btn.sair.armed{color:#fff;background:var(--red)}
 .bar{display:flex;align-items:center;min-height:44px}
 .nav{justify-content:space-between;gap:8px}
 .back{background:none;border:0;padding:8px 0;color:var(--blue);font-weight:600}

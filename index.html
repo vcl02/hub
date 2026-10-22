@@ -34,7 +34,15 @@
 <section id="v-inicio" class="view" hidden>
   <header class="top">
     <div><p class="eyebrow" id="i-data"></p><h1>Full body</h1></div>
-    <button class="icon-btn" type="button" data-ir="ajustes" aria-label="Ajustes">⋯</button>
+    <div class="acoes-topo">
+      <button class="icon-btn" type="button" data-ir="ajustes" title="Ajustes" aria-label="Ajustes">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+      <!-- Sair: ícone do fin (botão de desligar), vermelho -->
+      <button class="icon-btn sair" type="button" id="sair" title="Sair" aria-label="Sair">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9"/><path d="M6.4 6.4a8 8 0 1 0 11.2 0"/></svg>
+      </button>
+    </div>
   </header>
   <ul id="i-semana" class="week" aria-label="Dias de treino desta semana"></ul>
   <p class="week-msg"><span id="i-msg"></span><b id="i-cont-semana"></b></p>
@@ -198,9 +206,7 @@
   <h2>Ajustes</h2>
   <div class="menu">
     <button type="button" data-ir="editar">Editar exercícios</button>
-    <button type="button" data-ir="senha">Trocar senha</button>
     <button type="button" id="a-instalar" hidden>Instalar na tela inicial</button>
-    <button type="button" id="a-sair" class="danger-text">Sair da conta</button>
   </div>
   <p class="muted small" id="a-info"></p>
 </section>
@@ -212,18 +218,6 @@
     <div id="ed-lista" class="view"></div>
     <button type="button" class="btn" id="ed-novo">+ Adicionar exercício</button>
     <div class="sticky"><button type="submit" class="btn primary big">Salvar exercícios</button></div>
-  </form>
-</section>
-
-<section id="v-senha" class="view" hidden>
-  <div class="bar"><button class="back" type="button" data-voltar>‹ Ajustes</button></div>
-  <h2>Trocar senha</h2>
-  <form id="s-form" class="form box">
-    <label for="s-atual">Senha atual</label><input id="s-atual" type="password" autocomplete="current-password" required>
-    <label for="s-nova">Nova senha</label><input id="s-nova" type="password" autocomplete="new-password" minlength="6" required>
-    <label for="s-rep">Repita a nova senha</label><input id="s-rep" type="password" autocomplete="new-password" minlength="6" required>
-    <p id="s-erro" class="err" role="alert"></p>
-    <button class="btn primary" type="submit">Trocar senha</button>
   </form>
 </section>
 

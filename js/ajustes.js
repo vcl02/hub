@@ -1,14 +1,19 @@
 'use strict';
-// Ajustes, edição de exercícios e troca de senha.
+// Ajustes (engrenagem), edição de exercícios e sair.
 // ===== Ajustes =====
 let eventoInstalar = null;
 telas.ajustes = async () => {
   $('a-instalar').hidden = !eventoInstalar;
   $('a-info').textContent = `Conta: ${usuario?.email || '—'}. ${pintarSync()} ${db.registros.length} registro(s) e ${db.medidas.length} pesagem(ns). Versão ${versaoAtual || '—'}.`;
 };
-$('a-sair').addEventListener('click', async ev => {
-  const p = temPendente();
-  if (p && !confirmar(ev.currentTarget, 'Há dados sem enviar. Sair mesmo?')) return;
+// Sair (canto superior direito). Com dados sem enviar, o 1º toque só avisa e arma; o 2º, em até 3 s, sai.
+$('sair').addEventListener('click', async ev => {
+  const p = temPendente(), btn = ev.currentTarget;
+  if (p && !btn.classList.contains('armed')) {
+    btn.classList.add('armed'); toast('Há dados sem enviar. Toque de novo para sair.', null, true);
+    setTimeout(() => btn.classList.remove('armed'), 3000); return;
+  }
+  btn.classList.remove('armed');
   const id = usuario.id;
   if (!p) { store.del(K_LOCAL(id)); store.del(K_BASE(id)); }   // pendente fica no aparelho e envia no próximo login
   try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {}
@@ -63,16 +68,4 @@ $('ed-form').addEventListener('submit', ev => {
   const ids = new Set(novo.exercicios.flatMap(e => e.variacoes.map(v => v.id)));
   novo.registros = novo.registros.filter(r => ids.has(r.variacao));   // remove histórico de exercício removido
   db = novo; gravar(); toast('Exercícios salvos'); voltar();
-});
-
-// Trocar senha (da conta Supabase; vale também para o fin)
-$('s-form').addEventListener('submit', async ev => {
-  ev.preventDefault();
-  const erro = $('s-erro'), nova = $('s-nova').value; erro.textContent = '';
-  if (nova !== $('s-rep').value) { erro.textContent = 'As novas senhas não conferem.'; return; }
-  const { error: e1 } = await sb.auth.signInWithPassword({ email: usuario.email, password: $('s-atual').value });
-  if (e1) { erro.textContent = /invalid/i.test(e1.message) ? 'Senha atual incorreta.' : e1.message; return; }
-  const { error } = await sb.auth.updateUser({ password: nova });
-  if (error) { erro.textContent = 'Não foi possível trocar: ' + error.message; return; }
-  ev.target.reset(); toast('Senha trocada'); voltar();
 });

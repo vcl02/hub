@@ -71,3 +71,15 @@ test('sem backup manual e sem senha mestra em Ajustes', async () => {
   assert.equal(await pg.locator('#v-ajustes input[type=password]').count(), 0);
   await ctx.close();
 });
+
+test('canto superior direito: engrenagem leva a Ajustes e sair é só ícone; sem trocar senha', async () => {
+  const { ctx, pg } = await abrirApp();
+  for (const sel of ['#v-inicio .top [data-ir="ajustes"]', '#v-inicio .top #sair']) {
+    assert.ok(await pg.getAttribute(sel, 'title')); assert.ok(await pg.getAttribute(sel, 'aria-label'));
+    assert.equal((await pg.textContent(sel)).trim(), '');                                   // só ícone
+  }
+  await pg.click('[data-ir="ajustes"]');
+  assert.match(await pg.textContent('#v-ajustes .menu'), /Editar exercícios/);
+  assert.equal(await pg.locator('[data-ir="senha"], #v-senha, #a-sair').count(), 0);
+  await ctx.close();
+});

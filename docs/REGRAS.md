@@ -13,8 +13,9 @@ Fonte de verdade do comportamento do app. Toda mudança de regra atualiza este a
 
 - Login por **usuário** (`victor`) ou e-mail, e senha, Enter entra (`emailDoLogin`). Usuário desconhecido nem chega ao Supabase e recebe a mesma mensagem de senha errada (`Usuário ou senha inválidos.`).
 - Mesma conta do fin. Só a conta `DONO` (`js/config.js`) entra: outra conta sai na hora com "Esta conta não tem acesso ao Diário de Carga.". O RLS das tabelas `tr_*` também só libera essa conta (migration 02).
-- Sem "Esqueci a senha". "Trocar senha" pede a senha atual e muda a da conta (vale também no fin).
-- A sessão fica salva no aparelho: o app entra direto, inclusive sem internet. "Sair" apaga a cópia local se não houver nada pendente; se houver, pede confirmação e mantém a cópia para enviar no próximo login.
+- Sem "Esqueci a senha" e sem "Trocar senha": a senha é a do Supabase e se troca fora do app.
+- Tela inicial, canto superior direito: engrenagem (Ajustes: editar exercícios, instalar, estado da conta e da nuvem) e o botão de sair, só ícone e vermelho como no fin.
+- A sessão fica salva no aparelho: o app entra direto, inclusive sem internet. "Sair" apaga a cópia local se não houver nada pendente; se houver, o 1º toque avisa e o 2º (em até 3 s) sai, mantendo a cópia para enviar no próximo login.
 
 ## Banco e sincronização
 

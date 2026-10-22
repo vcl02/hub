@@ -70,7 +70,7 @@ test('sair da conta volta para o login', async () => {
   await sincronizado(pg);
   await pg.click('[data-ir="ajustes"]');
   assert.match(await pg.textContent('#a-info'), /eu@teste\.com.*Tudo salvo na nuvem/);
-  await pg.click('#a-sair');
+  await pg.goBack(); await pg.click('#sair');
   await pg.waitForSelector('#v-bloqueio:not([hidden])');
   assert.equal(await pg.evaluate(() => localStorage.getItem('tr.db.2f9bc201-9966-4f37-9963-2f4b9ddab849')), null);
   await ctx.close();
@@ -97,5 +97,19 @@ test('login aceita o usuário no lugar do e-mail; usuário desconhecido nem cheg
   await pg.fill('#l-email', 'Victor'); await pg.fill('#l-senha', 'senha123'); await pg.press('#l-senha', 'Enter');
   await pg.waitForSelector('#v-inicio:not([hidden])');
   assert.deepEqual(emails, ['victor.cabrera0209@gmail.com']);
+  await ctx.close();
+});
+
+test('sair com dados sem enviar pede um 2º toque', async () => {
+  const { ctx, pg, nuvem } = await abrirApp();
+  await sincronizado(pg);
+  nuvem.online = false;
+  await pg.click('#i-corpo'); await pg.fill('#c-peso', '91'); await pg.click('#c-form button[type=submit]'); await pg.goBack();
+  await pg.click('#sair');
+  assert.match(await pg.textContent('#toast-msg'), /dados sem enviar/);
+  assert.equal(await pg.isVisible('#v-inicio'), true);
+  await pg.click('#sair');
+  await pg.waitForSelector('#v-bloqueio:not([hidden])');
+  assert.notEqual(await pg.evaluate(() => localStorage.getItem('tr.db.2f9bc201-9966-4f37-9963-2f4b9ddab849')), null);   // fica para enviar depois
   await ctx.close();
 });
