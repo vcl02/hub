@@ -16,6 +16,7 @@
 | `tests/` | Estrutura do hub (`hub.test.mjs`) e navegação real no Chromium (`navegacao.test.mjs`) |
 | `scripts/check.mjs` | Validação completa: raiz, `fin/` e `tr/` |
 | `.github/workflows/` | Validação em todo push e e-mail de publicação do Pages (só funcionam na raiz) |
+| `.claude/settings.json` · `.claude/hooks/session-start.sh` | Sessões do Claude Code na nuvem: instalam o Playwright do tr ao começar, pra validação completa rodar sempre |
 
 ## Regras do hub
 
@@ -37,7 +38,7 @@
 ## Como concluir uma mudança
 
 1. Atualize as regras e os testes do app afetado (ver o guia dele).
-2. Rode `node scripts/check.mjs` na raiz. Ele roda a validação de `fin/` e `tr/` e precisa das dependências do tr (`npm ci` e `npx playwright install chromium` dentro de `tr/`). Informe precisamente o que foi validado; não alegue validação no celular ou no Supabase real se ela não ocorreu.
+2. Rode `node scripts/check.mjs` na raiz. Ele roda a validação de `fin/` e `tr/` e precisa das dependências do tr (`npm ci` e `npx playwright install chromium` dentro de `tr/`; nas sessões na nuvem, o hook de início já instala). Informe precisamente o que foi validado; não alegue validação no celular ou no Supabase real se ela não ocorreu.
 3. Faça commit e push direto na `main`: projeto pessoal, sem fluxo de PR, sem worktree nem branch auxiliar. Nunca inclua alterações alheias no commit.
 4. Nunca reescreva o histórico importado de `fin/` e `tr/` (rebase, amend, troca de autor).
 

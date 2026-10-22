@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
 const arquivos = ['index.html', 'hub.css', 'sw.js', 'manifest.webmanifest', 'AGENTS.md', 'README.md', '.editorconfig', '.gitignore', '.mcp.json',
+  '.claude/settings.json', '.claude/hooks/session-start.sh',
   ...readdirSync('tests').map(n => `tests/${n}`), ...readdirSync('scripts').map(n => `scripts/${n}`),
   ...readdirSync('.github/workflows').map(n => `.github/workflows/${n}`)];
 const erros = [];
