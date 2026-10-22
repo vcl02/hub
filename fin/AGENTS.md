@@ -50,4 +50,4 @@
 - Busque minimalismo: informação útil, textos curtos e formulários somente com campos necessários ao cadastro.
 - O app é só do mantenedor: nada de dicas, guias, instruções na tela nem botões ou modais de ajuda. Quando uma explicação for útil, no máximo um hover (`title`).
 - O mobile tem paridade total com o desktop: mesmas colunas, edição inline, Editar/Duplicar/Excluir, Crédito, Comparar, gráficos, Consolidar, simulação e cadastro. Não restrinja funcionalidade por tamanho de tela; o mobile só ajusta layout.
-- A única casca restrita é a conta da Isabella (`modoRestrito()`, pelo e-mail da sessão; `modoSimples()` é sinônimo), em qualquer dispositivo: somente leitura, só Débito, só ciclo atual e próximo, sem indicadores, tetos Besteira/Isabella, Gráfico, Visualizações, diagnóstico, Recarregar, cadastro nem simulação. O toque na linha só seleciona para somar; dados novos chegam apenas pela recarga automática. Detalhes em `docs/REGRAS.md`, seção "Conta restrita (Isabella)".
+- Não há conta restrita: a conta da Isabella saiu e a interface é uma só, a do mantenedor. A categoria `Isabella` (teto e fatura dela) continua.

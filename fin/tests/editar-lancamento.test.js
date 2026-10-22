@@ -18,7 +18,7 @@ test('botão Editar existe na barra de seleção, antes de Duplicar/Excluir', ()
 });
 
 test('só aparece com exatamente 1 linha real/simulada selecionada, nunca ajuste sintético nem fatura', () => {
-    assert.match(interacoes, /el\('seledit'\)\.hidden = restrito \|\| !chaveUnicaReal;/);
+    assert.match(interacoes, /el\('seledit'\)\.hidden = !chaveUnicaReal;/);
 });
 
 test('abre o modal de cadastro pré-preenchido em modo edição, escondendo Vezes\\/Dividir', () => {
@@ -104,5 +104,4 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /então funciona igual para um lançamento vindo do Backlog, sem data, ou de qualquer ciclo/);
     assert.match(regras, /desmarcar Crédito limpa a fatura da linha \(`fatura: null`\)/);
     assert.match(regras, /mesmo Editar\/Duplicar\/Excluir na barra de seleção/);
-    assert.match(regras, /sem Editar\/Duplicar\/Excluir\/Materializar na barra de seleção/);
 });

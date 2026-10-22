@@ -16,8 +16,7 @@ test('Consolidar tudo não tem botão próprio: roda no clique do Recarregar', (
     assert.doesNotMatch(pagina, /btConsolidarTudo/);
     assert.match(fs.readFileSync('js/bootstrap.js', 'utf8'), /await consolidarTudo\(bt, voltarAoCicloAtualELimpar\);/);
     // .tool tem paridade total com o desktop: fica sempre visível, em qualquer largura —
-    // sem regra própria escondendo este botão no mobile (só a conta restrita o esconde,
-    // junto com o resto de #rowVis, testado em preferencias-interface.test.js).
+    // sem regra própria escondendo este botão no mobile.
     assert.doesNotMatch(estilosMobile, /\.tool\s*\{\s*display:\s*none;/);
 });
 

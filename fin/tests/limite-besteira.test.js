@@ -130,7 +130,7 @@ test('aparece no título Débito de qualquer ciclo (inclusive passados), com o C
     assert.match(visoes, /<span class=limiteRotulo>\$\{dentro \? 'Usado' : 'Ultrapassado'\}<\/span> <b class="pct \$\{cor\}">\$\{percentual\}<\/b><\/span>/);
     // Teto do próprio ciclo (linha âncora) e indicador do ciclo atual em diante.
     assert.match(visoes, /const tetosDoCiclo = limitesCategoriaDoCiclo\(i\);/);
-    assert.match(visoes, /const limitesCategoria = i >= 0 && !modoRestrito\(\) \? \[/);
+    assert.match(visoes, /const limitesCategoria = i >= 0 \? \[/);
 });
 
 test('fica visivelmente separado de Saldo/Guardado por um divisor', () => {

@@ -27,7 +27,6 @@ const mostraTela = (logado, { lembrarCiclo = true } = {}) => {
 async function boot() {
     const { data: { session } } = await sb.auth.getSession();
     if (session) {
-        Estado.emailSessao = session.user?.email || null;
         mostraTela(1); load();
     } else {
         mostraTela(0);
@@ -47,7 +46,6 @@ async function entrar() {
         return;
     }
 
-    Estado.emailSessao = data.user?.email || null;
     mostraTela(1);
     load();
 }
@@ -60,7 +58,7 @@ el('senha').onkeydown = e => {
     if (e.key == 'Enter') entrar();
 };
 
-el('sair').onclick = async () => { await sb.auth.signOut(); Estado.emailSessao = null; el('senha').value = ''; mostraTela(0, { lembrarCiclo: false }); };
+el('sair').onclick = async () => { await sb.auth.signOut(); el('senha').value = ''; mostraTela(0, { lembrarCiclo: false }); };
 el('modalDiagnostico').addEventListener('click', e => {
     if (e.target == el('modalDiagnostico')) el('modalDiagnostico').close();
 });
@@ -114,11 +112,10 @@ function recarregarAposGravacao() {
 
 // Botão Recarregar (verde, no cabeçalho): numa só ação, recarrega do banco, volta ao ciclo
 // atual, limpa os filtros e roda o Consolidar tudo (consolidarTudo em form.js, que recarrega
-// primeiro e chama voltarAoCicloAtualELimpar entre a carga e a varredura). A conta restrita
-// não tem esse botão (desenhar o esconde): só a recarga automática traz dados novos.
+// primeiro e chama voltarAoCicloAtualELimpar entre a carga e a varredura).
 el('recarregar').onclick = async () => {
     const bt = el('recarregar');
-    if (bt.disabled || modoRestrito()) return;
+    if (bt.disabled) return;
     await consolidarTudo(bt, voltarAoCicloAtualELimpar);
 };
 
@@ -138,14 +135,14 @@ const telaLivreParaRecarregar = () =>
 // pelo botão; a 1ª vem 15 min depois de abrir a tela), roda o Consolidar tudo — recarrega e
 // materializa/consolida Aporte/Resgate e datas duplicadas —, mas sem voltar ao ciclo atual
 // nem limpar filtros, e em silêncio (só avisa se gravou algo). Mesmas condições de tela livre
-// da recarga; nunca na conta restrita, que não grava. Quando vence, substitui a recarga
+// da recarga. Quando vence, substitui a recarga
 // simples daquela verificação, pois já recarrega.
 const INTERVALO_CONSOLIDACAO_AUTOMATICA_MS = 15 * 60 * 1000;
 setInterval(() => {
     if (!Estado.ultimaCarga) return;
     if (!Estado.ultimaConsolidacao) Estado.ultimaConsolidacao = Date.now();
     if (!telaLivreParaRecarregar()) return;
-    if (!modoRestrito() && Date.now() - Estado.ultimaConsolidacao >= INTERVALO_CONSOLIDACAO_AUTOMATICA_MS) {
+    if (Date.now() - Estado.ultimaConsolidacao >= INTERVALO_CONSOLIDACAO_AUTOMATICA_MS) {
         consolidarTudo(el('recarregar'), () => {}, { silencioso: true });
         return;
     }

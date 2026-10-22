@@ -79,8 +79,7 @@ test('célula editável: valor positivo de verdade continua mostrando "+" verde 
 });
 
 test('Débito/Crédito (linha não editável) e o detalhamento de categoria do gráfico usam celValorLancamento, não a antiga celValor genérica', () => {
-    // Conta restrita: texto puro. Fora dela, real edita e calculada/simulada fica só leitura.
-    assert.match(tabelas, /\? \(modoRestrito\(\)\s*\n\s*\? \(r\._sug != null \? `<td class="n \$\{corValor\(r\._sug\)\}">\$\{brl\(r\._sug\)\}` : celValorLancamento\(r\)\)/);
+    // Real edita; calculada/simulada fica só leitura.
     assert.match(tabelas, /: ehLinhaReal\(r\) \? celValorEditavel\(r\) : celValorSomenteLeitura\(r\)\)/);
     assert.match(graficos, /\$\{celNome\(r\)\}\$\{celValorLancamento\(r\)\}/);
     assert.doesNotMatch(compartilhado, /const celValor = /);
@@ -129,7 +128,7 @@ test('ao lado do botão de sinal o número aparece sem "-"; sem botão, o sinal 
     assert.match(editavel, />−<\/button>/);
     assert.match(editavel, /title="Editar valor">R\$\s?1\.500,00<\/span>/);
     assert.match(celValorSomenteLeitura({ id: -3, _sid: 'fat:1', v: -500 }), /<span class=valorFixo>R\$\s?500,00<\/span>/);
-    // Só apresentação: a linha segue negativa, e sem botão (conta restrita) o "-" fica.
+    // Só apresentação: a linha segue negativa, e sem botão (saldo do dia, totais) o "-" fica.
     assert.equal(despesa.v, -1500);
     assert.match(celValorLancamento(despesa), />-R\$\s?1\.500,00$/);
 });

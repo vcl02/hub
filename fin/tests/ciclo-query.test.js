@@ -65,7 +65,7 @@ test('?ciclo=backlog restaura o Backlog (De=-1), quando a opção existe no comb
     assert.equal(elementos.compDe.value, -1);
 });
 
-test('?ciclo=backlog não é imposto quando a opção não existe (ex.: conta restrita, sem Backlog no combo)', () => {
+test('?ciclo=backlog não é imposto quando a opção não existe (sem Backlog no combo)', () => {
     const { contexto, elementos } = criarContexto('https://exemplo.test/?ciclo=backlog', { compDe: '', compAte: '' });
     contexto.regras.aplicarCicloDaUrl();
     assert.equal(elementos.compDe.value, '');   // mantém o padrão seguro, não força nada
@@ -128,7 +128,7 @@ test('Voltar/Avançar do navegador: popstate relê a URL e redesenha sem rebusca
 
 test('regra documentada em REGRAS.md', () => {
     assert.match(regrasMd, /`\?ciclo=backlog` para o Backlog \(De sozinho, Até fica desabilitado nesse modo\)/);
-    assert.match(regrasMd, /Um `ciclo=backlog` não imposto quando a opção não existe no combo De \(conta restrita nunca tem Backlog\) mantém o ciclo padrão seguro/);
+    assert.match(regrasMd, /Um `ciclo=backlog` não imposto quando a opção não existe no combo De mantém o ciclo padrão seguro/);
     assert.match(regrasMd, /Trocar de ciclo único ou entrar\/sair do Backlog empurra uma entrada no histórico do navegador/);
 });
 

@@ -40,8 +40,7 @@ test('mobile.css não esconde mais nada por largura de tela, só o que genuiname
 });
 
 test('regra documentada em REGRAS.md', () => {
-    assert.match(regras, /## Conta restrita \(Isabella\)/);
-    assert.match(regras, /identificada pelo e-mail da sessão/);
-    assert.match(regras, /a garantia real vem do RLS de `fin` \(migration 20\)/);
+    assert.match(regras, /## Acesso/);
+    assert.match(regras, /A garantia de escrita vem do RLS de `fin` \(migration 20\)/);
     assert.match(regras, /fica sempre visível, em qualquer largura — sem menu pra abrir\/fechar/);
 });

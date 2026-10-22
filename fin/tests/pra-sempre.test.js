@@ -16,10 +16,10 @@ const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const migration = fs.readFileSync('migrations/31-pra-sempre.sql', 'utf8');
 
-function colunas({ temPraSempre, restrito = false }) {
+function colunas({ temPraSempre }) {
     const inicio = estado.indexOf('const COLS = [');
     const fim = estado.indexOf('\nconst isMobile');
-    const ctx = { modoRestrito: () => restrito, Estado: { temPraSempre } };
+    const ctx = { Estado: { temPraSempre } };
     vm.runInNewContext(`${estado.slice(inicio, fim)}\nthis.colunasAtivas = colunasAtivas;`, ctx);
     return id => ctx.colunasAtivas(id).map(([chave]) => chave);
 }
@@ -29,7 +29,6 @@ test('coluna aparece depois de Comprometido só quando o banco já tem fin.pra_s
     assert.equal(com[com.indexOf('comprometido') + 1], 'pra_sempre');
     assert.ok(colunas({ temPraSempre: true })('bk').includes('pra_sempre'));
     assert.ok(!colunas({ temPraSempre: false })('db').includes('pra_sempre'));
-    assert.ok(!colunas({ temPraSempre: true, restrito: true })('db').includes('pra_sempre'));
     assert.match(api, /Estado\.temPraSempre = lancamentosCrus\.some\(r => 'pra_sempre' in r\);/);
 });
 

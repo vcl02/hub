@@ -21,7 +21,7 @@ function criarCampo(tipo) {
     };
 }
 
-async function editar(atributo, dados, texto, { evento = 'enter', simulando = false, restrito = false, falhar = false } = {}) {
+async function editar(atributo, dados, texto, { evento = 'enter', simulando = false, falhar = false } = {}) {
     const lancamento = { id: 7, ...dados };
     const resultado = { gravado: null, toasts: [], controle: null, html: '', parouPropagacao: false, lancamento };
     const cliques = [];
@@ -36,7 +36,6 @@ async function editar(atributo, dados, texto, { evento = 'enter', simulando = fa
     const ctx = {
         ...compartilhado,
         Estado: { lancamentos: [lancamento], simulando },
-        modoRestrito: () => restrito,
         desenhar() {},
         mostrarToast: (titulo, msg) => resultado.toasts.push([titulo, msg]),
         atualizarLancamento: async (id, campos) => { if (falhar) throw Error('RLS'); resultado.gravado = { ...campos }; },

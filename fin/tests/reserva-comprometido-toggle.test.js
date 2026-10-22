@@ -30,7 +30,7 @@ test('COLS inclui reserva e comprometido como colunas booleanas, sem recorte em 
 test('célula de Reserva/Comprometido mostra "—" quando falso, sem repetir texto negativo em toda linha', () => {
     assert.match(tabelas, /const celFlag = \(r, chave\) => \{/);
     assert.match(tabelas, /const texto = marcado \? ROTULO_FLAG\[chave\] : '—';/);
-    assert.match(tabelas, /!r\._sid && !modoRestrito\(\)/);
+    assert.match(tabelas, /return !r\._sid\n/);
     assert.match(tabelas, /data-tog-flag="\$\{chave\}:\$\{escapeHtml\(String\(r\.id\)\)\}"/);
     // Pago continua com o esquema antigo (sempre mostra um texto, nunca "—"); só as duas
     // colunas novas usam celFlag.
@@ -42,7 +42,6 @@ test('clique no badge Reserva/Comprometido faz PATCH imediato, com a mesma guard
     assert.ok(inicio >= 0, 'não achou o handler de togFlag');
     const trecho = interacoes.slice(inicio, interacoes.indexOf('\n});', inicio) + 4);
     assert.match(trecho, /const badge = e\.target\.closest\('\[data-tog-flag\]'\);/);
-    assert.match(trecho, /if \(modoRestrito\(\)\) return;/);
     assert.match(trecho, /const \[campo, id\] = badge\.dataset\.togFlag\.split\(':'\);/);
     assert.match(trecho, /const novoValor = !r\[campo\];/);
     // Simulação lida uma vez; um só PATCH (tudo ou nada) pras linhas reais; memória depois.
@@ -105,17 +104,15 @@ test('Comprometido marcado em laranja escuro e Reserva em amarelo claro, inclusi
     const vm = require('node:vm');
     const inicio = tabelas.indexOf('const ROTULO_FLAG =');
     const fim = tabelas.indexOf('\n};', inicio) + 3;
-    const ctx = { escapeHtml: String, restrito: false };
-    ctx.modoRestrito = () => ctx.restrito;
+    const ctx = { escapeHtml: String };
     vm.runInNewContext(`${tabelas.slice(inicio, fim)}\nthis.celFlag = celFlag;`, ctx);
     assert.match(ctx.celFlag({ id: 5, comprometido: true }, 'comprometido'), /^<span class="flagComprometido togFlag"[^>]*>Comprometido<\/span>$/);
     assert.match(ctx.celFlag({ id: 5, reserva: true }, 'reserva'), /^<span class="flagReserva togFlag"[^>]*>Reserva<\/span>$/);
     // Desmarcado: "—" sem cor.
     assert.match(ctx.celFlag({ id: 5, reserva: false }, 'reserva'), /^<span class=" togFlag"[^>]*>—<\/span>$/);
-    // Linha calculada e conta restrita: mesma cor, sem toggle.
+    // Linha calculada: mesma cor, sem toggle.
     assert.equal(ctx.celFlag({ id: -3, _sid: 'fat:1', comprometido: true }, 'comprometido'), '<span class=flagComprometido>Comprometido</span>');
-    ctx.restrito = true;
-    assert.equal(ctx.celFlag({ id: 5, reserva: true }, 'reserva'), '<span class=flagReserva>Reserva</span>');
+    assert.equal(ctx.celFlag({ id: -6, _sid: 'prev:1', reserva: true }, 'reserva'), '<span class=flagReserva>Reserva</span>');
     // O clique troca a mesma classe da marca, nunca o verde de Pago.
     assert.match(interacoes, /badge\.classList\.toggle\(COR_FLAG\[campo\], novoValor\);/);
     const estilos = fs.readFileSync('css/dashboard.css', 'utf8');

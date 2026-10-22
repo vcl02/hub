@@ -10,9 +10,9 @@ const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 
-test('Nome, Categoria e Frequência só ficam clicáveis pra linha real fora da conta restrita', () => {
-    assert.match(tabelas, /const celCateg = r => ehLinhaReal\(r\) && !modoRestrito\(\)\s*\n\s*\? `<span class="togCateg" data-tog-categ=/);
-    assert.match(tabelas, /const celFreq = r => ehLinhaReal\(r\) && !modoRestrito\(\)\s*\n\s*\? `<span class="togFreq" data-tog-freq=/);
+test('Nome, Categoria e Frequência só ficam clicáveis pra linha real', () => {
+    assert.match(tabelas, /const celCateg = r => ehLinhaReal\(r\)\s*\n\s*\? `<span class="togCateg" data-tog-categ=/);
+    assert.match(tabelas, /const celFreq = r => ehLinhaReal\(r\)\s*\n\s*\? `<span class="togFreq" data-tog-freq=/);
     assert.match(tabelas, /data-tog-nome="\$\{escapeHtml\(String\(r\.id\)\)\}"/);
 });
 
@@ -68,10 +68,8 @@ test('Esc cancela; simulação e linha simulada mudam só na memória', async ()
     assert.equal(r.lancamento.nome, 'Feira');
 });
 
-test('conta restrita não abre editor; falha no banco avisa e não muda a linha', async () => {
-    let r = await editar('data-tog-nome', { nome: 'Mercado' }, 'Feira', { restrito: true });
-    assert.equal(r.controle, null);
-    r = await editar('data-tog-nome', { nome: 'Mercado' }, 'Feira', { falhar: true });
+test('falha no banco avisa e não muda a linha', async () => {
+    const r = await editar('data-tog-nome', { nome: 'Mercado' }, 'Feira', { falhar: true });
     assert.deepEqual(r.toasts, [['Falhou ao atualizar', 'RLS']]);
     assert.equal(r.lancamento.nome, 'Mercado');
 });

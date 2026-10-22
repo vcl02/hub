@@ -19,8 +19,8 @@ test('colunas obs e canal existem em COLS, como texto', () => {
     assert.match(estado, /\['canal', 'Canal', 't'\]/);
 });
 
-test('célula Obs só é clicável pra linha real fora da conta restrita', () => {
-    assert.match(tabelas, /const celObs = r => ehLinhaReal\(r\) && !modoRestrito\(\)\s*\n\s*\? `<span class="togObs" data-tog-obs=/);
+test('célula Obs só é clicável pra linha real', () => {
+    assert.match(tabelas, /const celObs = r => ehLinhaReal\(r\)\s*\n\s*\? `<span class="togObs" data-tog-obs=/);
     assert.match(tabelas, /chave == 'obs' \? celObs\(r\)/);
 });
 
@@ -38,14 +38,13 @@ test('célula Canal é clicável igual às demais, ganha ícone de copiar sempre
 });
 
 // Extrai celCanal (e sua dependência ehUrlHttp) do arquivo real e roda isolada, com
-// ehLinhaReal/modoRestrito/escapeHtml/textoOuTraco simulados.
-function carregaCelCanal({ linhaReal = true, restrito = false } = {}) {
+// ehLinhaReal/escapeHtml/textoOuTraco simulados.
+function carregaCelCanal({ linhaReal = true } = {}) {
     const inicio = tabelas.indexOf('const ehUrlHttp = texto =>');
     const fim = tabelas.indexOf('\n};', tabelas.indexOf('const celCanal = r =>')) + 3;
     if (inicio < 0 || fim < 3) throw Error('Não encontrou celCanal em tables.js.');
     const contexto = {
         ehLinhaReal: () => linhaReal,
-        modoRestrito: () => restrito,
         escapeHtml: v => String(v),
         textoOuTraco: v => (v == null || v === '' ? '—' : v),
     };
@@ -70,8 +69,8 @@ test('Canal com URL http(s) mostra os ícones de copiar e de link; texto comum (
     assert.doesNotMatch(vazio, /class=linkCanal/);
 });
 
-test('conta restrita/linha não-real também trunca o texto do Canal (celCanalTexto), só sem o clique de edição — mas copiar/abrir continuam disponíveis', () => {
-    const celCanal = carregaCelCanal({ restrito: true });
+test('linha não-real também trunca o texto do Canal (celCanalTexto), só sem o clique de edição — mas copiar/abrir continuam disponíveis', () => {
+    const celCanal = carregaCelCanal({ linhaReal: false });
     const html = celCanal({ id: 9, canal: 'https://www.enel.com.br/minha-conta' });
     assert.match(html, /class=celCanalTexto/);
     assert.doesNotMatch(html, /data-tog-canal/);
@@ -128,6 +127,6 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /serve pra chave Pix, que não é um link pra abrir/);
     assert.match(regras, /Quando o valor também é uma URL `http\(s\)`, aparece um segundo ícone redondo de abrir link numa aba nova/);
     assert.match(regras, /Os dois ícones ficam sempre em evidência, nunca cortados pelo texto truncado/);
-    assert.match(regras, /funcionam mesmo na conta restrita\/mobile, já que copiar ou abrir não altera dado nenhum/);
+    assert.match(regras, /funcionam em qualquer tela, já que copiar ou abrir não altera dado nenhum/);
     assert.match(regras, /Nenhum dos dois campos participa de cálculo financeiro/);
 });

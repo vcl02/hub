@@ -45,7 +45,6 @@ function vCiclo() {
             };
         });
 
-    const simples = modoSimples();
     // saldo que veio do ciclo anterior — positivo ou negativo, entra como uma linha
     // normal no comeco do bloco
     const anterior = saldoDoCiclo(i - 1);
@@ -150,15 +149,13 @@ function vCiclo() {
     // justamente o que falta até o teto, então nunca entra nesta conta.
     const linhasDaPreviaNoCiclo = [...debitos, ...creditosExibidosNoCiclo(visiveis, i)].filter(r => !r._prev);
     const tetosDoCiclo = limitesCategoriaDoCiclo(i);
-    // A conta restrita não vê os tetos de Besteira/Isabella (pedido do mantenedor). Ciclo
-    // passado também mostra os dele, na linha Passado (ver linhaHojeDebito).
-    const limitesCategoria = i >= 0 && !modoRestrito() ? [
+    // Ciclo passado também mostra os tetos dele, na linha Passado (ver linhaHojeDebito).
+    const limitesCategoria = i >= 0 ? [
         { chave: 'besteira', rotulo: 'Besteira', teto: tetosDoCiclo.besteira, ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, criterioDoTeto('besteira'), tetosDoCiclo.besteira) },
         { chave: 'isabella', rotulo: 'Isabella', teto: tetosDoCiclo.isabella, ...dadosLimiteCategoriaDoCiclo(linhasDaPreviaNoCiclo, criterioDoTeto('isabella'), tetosDoCiclo.isabella) },
     ] : [];
     // Teto editável no próprio indicador, como o Aprovado do cartão: grava na linha âncora
-    // do ciclo (ver confirmarLimiteCategoria em interactions.js). A conta restrita nem tem
-    // esses indicadores. Largura pelo próprio valor (ver larguraDoCampo no título do Crédito).
+    // do ciclo (ver confirmarLimiteCategoria em interactions.js). Largura pelo próprio valor (ver larguraDoCampo no título do Crédito).
     const tetoDoIndicador = limite => {
         const texto = limite.teto.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         return `<span class=limiteCartaoBase>R$ <input class=limiteCartaoEditavel data-limite-categoria="${limite.chave}" data-ciclo="${i}" ` +
@@ -228,20 +225,6 @@ function vCiclo() {
             linhasDebito, 'db', true, '', resumoDebito
         );
     };
-
-    // Conta restrita (modoSimples) não exibe Crédito; nela basta comparar as duas linhas
-    // do Débito. Não depende de tamanho de tela — mobile normal mostra Crédito como sempre.
-    let blocoDebito;
-    if (modoSimples()) {
-        if (resumoDebitoIgual && Estado.cicloQuitadoRecolhido !== `${i}:db`) {
-            recolherBloco('db');
-            Estado.cicloQuitadoRecolhido = `${i}:db`;
-        } else if (!resumoDebitoIgual) {
-            Estado.cicloQuitadoRecolhido = null;
-        }
-        blocoDebito = criaBlocoDebito(!cicloDebitoPassado && !resumoDebitoIgual);
-        if (modoSimples()) return blocoDebito;
-    }
 
     // Só o desktop completo monta a prévia de Crédito do ciclo seguinte e seu total líquido.
     const idxCreditoExibido = i + 1;
@@ -413,8 +396,8 @@ function vCiclo() {
     // Tudo de cada cartão neste ciclo, pro modal aberto pelos botões Nubank/Mercado Pago do
     // cabeçalho (htmlModalCartao): os mesmos números do título, calculados uma vez aqui.
     // Ciclo passado mostra a fatura fechada (compras brutas e o que foi pago/antecipado),
-    // pra deslizar de volta às faturas anteriores. A conta restrita não tem modal.
-    Estado.cartoesDoCiclo = modoRestrito() ? null : {
+    // pra deslizar de volta às faturas anteriores.
+    Estado.cartoesDoCiclo = {
         nomeCiclo: nomePeriodo(periodo), temHoje, passado: cicloDebitoPassado,
         cartoes: Object.fromEntries(limitesDosCartoes.map(l => [l.cartao, {
             cartao: l.cartao, nome: NOME_CARTAO[l.cartao],
@@ -443,7 +426,7 @@ function vCiclo() {
     const resumoCredito = cicloDebitoPassado ? '' :
         `<span class=resumoTitulo>` + linhaHojeCredito + linhaFuturoCredito + `</span>`;
 
-    blocoDebito = criaBlocoDebito(exibeFuturoDebito);
+    const blocoDebito = criaBlocoDebito(exibeFuturoDebito);
 
     const blocoCredito = renderBloco(
         `Crédito${alertaTituloCredito}`, totalTituloCredito,

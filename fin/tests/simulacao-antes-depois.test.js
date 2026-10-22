@@ -65,7 +65,7 @@ test('cálculo com os dados reais devolve o resultado e restaura o estado do des
 
 test('desenho: calcula o antes primeiro, marca depois de encaixar os indicadores', () => {
     const corpo = interacoes.slice(interacoes.indexOf('function desenhar() {'));
-    const antes = corpo.indexOf('const antesDaSimulacao = Estado.simulando && Estado.retratoAntesDaSimulacao && !simples');
+    const antes = corpo.indexOf('const antesDaSimulacao = Estado.simulando && Estado.retratoAntesDaSimulacao\n');
     const real = corpo.indexOf("if (temCicloParaIndicadores) atualizarIndicadoresFinanceiros(+el('compAte').value);\n\n");
     const marca = corpo.indexOf('if (antesDaSimulacao) marcarAntesDaSimulacao(antesDaSimulacao);');
     const encaixe = corpo.indexOf('encaixarIndicadoresNoDebito(temCicloParaIndicadores && modoBlocos);');

@@ -18,7 +18,7 @@ const funcoes = (() => {
         escapeHtml: s => String(s), textoOuTraco: s => s || '—',
         cartaoDaFatura: f => (String(f).endsWith('-13') ? 'mp' : 'nubank'),
         ehTransferenciaFatura: r => r.categ == 'Antecipação Fatura',
-        nomePeriodoAbrev: () => 'Nov/26', ehLinhaReal: r => +r.id > 0, modoRestrito: () => false,
+        nomePeriodoAbrev: () => 'Nov/26', ehLinhaReal: r => +r.id > 0,
         guardadoAte: () => 100,
     };
     vm.createContext(contexto);

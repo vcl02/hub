@@ -16,12 +16,12 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - Na tabela, todo lançamento real editável mostra um botão +/− ao lado do Valor (mesmo ícone do cadastro) que inverte o sinal na hora — `UPDATE` imediato, sem precisar abrir o campo pra digitar.
   É o único jeito de trocar o sinal por ali: o campo de edição de Valor só edita a magnitude, mantendo o sinal atual (uma versão antiga embutida nesse campo não funcionava de verdade — perdia o foco e confirmava antes do clique no sinal terminar — e foi removida).
   Onde o botão aparece, o número mostra só a magnitude (`R$ 1.500,00`, sem o `-`): o sinal fica no botão e na cor, sem repetir; é só apresentação, o valor continua assinado.
-  Sem botão (conta restrita, saldo do dia, totais), o `-` continua no número.
-  Indisponível para a conta restrita e para linhas sintéticas/simuladas sem `id` real: nelas (fora da conta restrita) o botão aparece no mesmo lugar, só que desabilitado ("Somente leitura"), pra linha calculada ter o mesmo visual das reais sem permitir edição; a conta restrita continua sem botão nenhum.
+  Sem botão (saldo do dia, totais), o `-` continua no número.
+  Indisponível para linhas sintéticas/simuladas sem `id` real: nelas o botão aparece no mesmo lugar, só que desabilitado ("Somente leitura"), pra linha calculada ter o mesmo visual das reais sem permitir edição.
 - Nome, Categoria e Frequência também editam direto na tabela: clicar no próprio texto dessas colunas abre o campo (Nome e Categoria em texto livre; Frequência num `<select>` com as mesmas opções do cadastro — Mensal, Semanal, Quinzenal, Semestral, Anual, ou vazio pra "sem recorrência" — nunca texto livre, pra não gravar um valor que a geração de parcelas não reconheça).
   Categoria passa pela mesma normalização do cadastro (lista separada por vírgula, sem duplicar nem variar só por espaço/caixa/acento) antes do `UPDATE`.
   Clicar em qualquer outro ponto da linha continua apenas selecionando-a pra somar valores.
-  Mesma disponibilidade do Valor/Data/Pago: só lançamento real, nunca pra conta restrita.
+  Mesma disponibilidade do Valor/Data/Pago: só lançamento real.
 - Todo campo de dinheiro tem **máscara de R$**: o "R$" fixo à esquerda, dentro da própria caixa, e o número à direita no formato de caixa eletrônico (só dígitos; os dois últimos são os centavos: digitar `150000` mostra `R$ 1.500,00`).
   Vale no Valor do cadastro, na edição do Valor na tabela, no Valor total e na Entrada das metas e nos campos do título (tetos de Besteira/Isabella, Aprovado e Garantido, que já tinham o "R$" ao lado).
   Onde vazio tem sentido próprio (Entrada da meta, teto padrão, Aprovado herdado), apagar tudo deixa o campo vazio, nunca `R$ 0,00`. O filtro de Valor do cabeçalho é busca, não cadastro: usa a mesma máscara, sem o "R$".
@@ -45,11 +45,10 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Ao abrir esse link, a tela restaura o ciclo (pelo início do mês) ou o Backlog.
   Na tela de login a URL nunca mostra `?ciclo`: o parâmetro sai da barra de endereço e o ciclo pedido fica guardado, aplicado uma vez depois de entrar; ao clicar em Sair, nada é guardado e o próximo login abre no ciclo atual.
   Trocar de ciclo único ou entrar/sair do Backlog empurra uma entrada no histórico do navegador, então Voltar/Avançar navegam entre os ciclos já visitados nesta sessão sem precisar reabrir o Supabase; qualquer outro redesenho que não muda o ciclo (filtro, seleção de linha, edição inline…) continua só substituindo a entrada atual, sem acumular histórico.
-  Um `ciclo=backlog` não imposto quando a opção não existe no combo De (conta restrita nunca tem Backlog) mantém o ciclo padrão seguro, igual a um `AAAA-MM` sem ciclo correspondente.
+  Um `ciclo=backlog` não imposto quando a opção não existe no combo De mantém o ciclo padrão seguro, igual a um `AAAA-MM` sem ciclo correspondente.
   Comparação entre ciclos e filtros não entram na URL.
 - Em Comparar, a escolha entre **Todas** e **Diferentes** é um ícone (sinal de diferente, ≠) no início do bloco de botões do cabeçalho, antes do Gráfico: cada clique alterna entre as duas, e ligado (só Diferentes) ele fica verde.
   Ele fica sempre visível, mas só funciona com exatamente dois ciclos: fora da comparação (um ciclo só ou Backlog) ou com três ou mais ciclos fica desativado (esmaecido), porque Diferentes só existe entre dois.
-  A conta restrita não compara e não tem esse botão.
   O antigo seletor "Linhas" saiu da tela.
   A segunda mostra categorias com mudança confirmada e descarta falsos positivos causados pelo mesmo nome e categoria em meses-calendário distintos dentro de um único ciclo financeiro; o valor pode mudar entre as ocorrências e não faz parte dessa identidade.
   Se essas duas ocorrências deixarem o ciclo seguinte vazio e o mesmo nome e categoria reaparecerem no próximo, isso também é continuidade, não um novo começo ou item único.
@@ -68,12 +67,12 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   No Backlog ela vem antes de todas as outras colunas, inclusive Data, por ser o primeiro critério que importa ali.
   O Backlog ordena por essa coluna por padrão (menor primeiro); as demais tabelas continuam ordenando por Data, como sempre.
   Linha sem `prio` preenchida conta como a **menor** prioridade possível (fica depois de qualquer número, inclusive 999), nunca como zero.
-  Igual às demais colunas livres (Nome, Categoria…), edita direto clicando no texto da célula, só pra lançamento real fora da conta restrita; não participa de nenhum cálculo financeiro.
+  Igual às demais colunas livres (Nome, Categoria…), edita direto clicando no texto da célula, só pra lançamento real; não participa de nenhum cálculo financeiro.
 - `fin.obs` (observação livre) e `fin.canal` (de onde a conta é paga/consultada, ex.: o link do site da concessionária ou a chave Pix) aparecem como colunas **Obs** e **Canal** em qualquer tabela, com a mesma edição inline das demais colunas livres (clicar no texto).
-  A coluna Canal tem largura fixa: texto que não couber vira "…", mas a célula continua clicável por inteiro pra editar o texto completo (inclusive pra conta restrita ou linha não-real, que mostram o mesmo corte truncado sem o clique de edição).
+  A coluna Canal tem largura fixa: texto que não couber vira "…", mas a célula continua clicável por inteiro pra editar o texto completo (inclusive pra linha não-real, que mostra o mesmo corte truncado sem o clique de edição).
   Sempre que Canal tiver algum valor, a célula ganha um ícone redondo de copiar o texto pra área de transferência ao lado — serve pra chave Pix, que não é um link pra abrir.
   Quando o valor também é uma URL `http(s)`, aparece um segundo ícone redondo de abrir link numa aba nova.
-  Os dois ícones ficam sempre em evidência, nunca cortados pelo texto truncado (não fazem parte da caixa com overflow escondido); clicar em qualquer um deles nunca entra em modo de edição nem seleciona a linha, e funcionam mesmo na conta restrita/mobile, já que copiar ou abrir não altera dado nenhum.
+  Os dois ícones ficam sempre em evidência, nunca cortados pelo texto truncado (não fazem parte da caixa com overflow escondido); clicar em qualquer um deles nunca entra em modo de edição nem seleciona a linha, e funcionam em qualquer tela, já que copiar ou abrir não altera dado nenhum.
   Nenhum dos dois campos participa de cálculo financeiro nem de nenhuma regra de negócio; são só anotações.
 
 ### Simulação
@@ -170,8 +169,8 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - Reserva e Comprometido (`fin.reserva`/`fin.comprometido`, bits próprios desde a migration 22) têm checkbox próprio no cadastro, ao lado de Crédito/Pago — mas abrem **desmarcados** por padrão, diferente dos três de cima: são marcas raras, não o caso comum.
   Editar/Duplicar herdam os dois do lançamento de origem.
   Também aparecem como coluna própria em qualquer tabela (Débito, Crédito, Backlog), clicável igual ao badge Pago/Aberto — mas, por serem a exceção e não a regra, mostram apenas o rótulo (`Reserva`/`Comprometido`) quando marcados e "—" quando não, em vez de repetir um texto negativo em toda linha.
-  O rótulo marcado tem cor própria, diferente do verde de Pago: **Comprometido em laranja escuro** e **Reserva em amarelo claro**, tons afastados pra não se confundirem (`COR_FLAG` em `js/tables.js`), em linhas reais, calculadas ou na conta restrita; o "—" fica neutro.
-  Mesma disponibilidade das demais edições inline: só lançamento real, nunca na conta restrita.
+  O rótulo marcado tem cor própria, diferente do verde de Pago: **Comprometido em laranja escuro** e **Reserva em amarelo claro**, tons afastados pra não se confundirem (`COR_FLAG` em `js/tables.js`), em linhas reais ou calculadas; o "—" fica neutro.
+  Mesma disponibilidade das demais edições inline: só lançamento real.
   O cabeçalho das colunas traz, no tooltip, a pergunta que decide a marca: **Reserva** — "Se eu perder o emprego, preciso continuar pagando isso?"; **Comprometido** — "Começou o mês, isso já é obrigatório pagar?" (`PERGUNTA_DA_COLUNA` em `js/tables.js`, nas tabelas Débito, Crédito e Backlog).
   Reserva/Comprometido classificam o **compromisso**, identificado pelo **nome e pela categoria juntos**, não só a ocorrência clicada: marcar ou desmarcar pela tabela propaga pra todos os lançamentos com o mesmo nome **e** a mesma categoria (sem acento/caixa; a ordem das categorias não importa — `Lazer, Isabella` = `Isabella, Lazer`), reais ou simulados, em qualquer ciclo.
   Mesmo nome com outra categoria não muda (ex.: `Uber` de `Transporte` × `Uber` de `Besteira`).
@@ -181,7 +180,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Necessário porque o app gera as séries de Frequência só até `DATA_LIMITE_RECORRENCIA` (hoje 31/12/2032; até a migration 33, 31/12/2029): sem a marca, "sem fim" e "termina no limite" ficariam iguais.
   Quando o limite sobe, as séries marcadas são estendidas até o novo limite por migration (ver migration 33), a partir da ocorrência mais recente de cada uma.
   Segue exatamente o padrão de Reserva/Comprometido: checkbox próprio no cadastro (ícone de infinito, **desmarcado** por padrão), herdado por Editar/Duplicar, gravado em todas as ocorrências da série cadastrada; coluna própria nas tabelas Débito, Crédito e Backlog, que mostra `Pra sempre` em **azul** quando marcado e "—" quando não, clicável com a mesma propagação por **nome e categoria juntos**; filtro por clique; tooltip do cabeçalho "Isso se repete sem data pra acabar?".
-  A conta restrita não vê a coluna, e linha calculada ou simulada só lê, como nas outras marcas.
+  Linha calculada ou simulada só lê, como nas outras marcas.
   Enquanto o banco não tem a coluna (migration 31 não aplicada), o app não mostra a coluna nem o checkbox e não envia o campo — cadastro e toggle continuam funcionando.
 
 ### Editar pela barra de seleção
@@ -231,7 +230,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   O botão "↷" e o lote de **Consolidar tudo** também nunca marcam um lançamento de valor positivo (entrada): é recebimento, não conta recorrente, então nunca é "a mesma conta cortada pela janela do ciclo".
   Essa exclusão de entrada é exclusiva do botão/lote; o asterisco `avisoDup` de Comparar, que usa a mesma detecção de meses duplicados por outro motivo, não é afetado.
   Um clique, com confirmação, move a `data` dessa linha pro 1º dia do PRÓXIMO ciclo (`UPDATE` real, pedindo confirmação porque altera dado); some sozinho se não houver próximo ciclo cadastrado ainda (não há pra onde mover) ou, depois do PATCH, porque deixou de haver duplicidade.
-  Só pra linha real fora da conta restrita, mesma regra de edição das demais colunas.
+  Só pra linha real, mesma regra de edição das demais colunas.
   **Consolidar tudo** pelo clique no Recarregar (ver **Ciclos, saldo e gráficos**) aplica essa mesma correção em lote, em todos os ciclos varridos, sem confirmação por linha; a consolidação automática de 15 minutos não move datas.
 
 ### Excluir várias linhas
@@ -333,7 +332,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   **Deslizar troca de fatura:** puxar o modal para a esquerda vai para a fatura seguinte e para a direita, para a anterior — no celular com o dedo; no desktop arrastando o cartão com o mouse, deslizando dois dedos no trackpad ou com as setas ← → do teclado (fora dos campos).
   É a mesma navegação do ‹ › do topo: o ciclo da tela anda junto, o modal é refeito com os números daquele ciclo e o cartão entra deslizando do lado certo; sem fatura para aquele lado (o Backlog nunca conta), o cartão só balança.
   Num ciclo passado, o modal mostra a fatura fechada: as compras brutas, o que foi pago/antecipado e o que restou, sem Hoje/Futuro nem barra de uso.
-  Os botões ficam desativados em Comparar, no Backlog e quando o cartão não existe no título; a conta restrita não os vê.
+  Os botões ficam desativados em Comparar, no Backlog e quando o cartão não existe no título.
   O alerta de limite acende se qualquer um dos dois estourar.
   O limite livre de cada cartão em **Hoje** retrata o cartão real: crédito com `pago = false` é projeção e não ocupa limite; crédito com `pago = true` ocupa; antecipação **já paga** alocada à mesma fatura libera somente o que ela abate, até zero; antecipação em aberto ainda não saiu da conta e não libera nada em Hoje (mesma base de pago do resto de Hoje), só em Futuro e só na fatura dela.
   Em **Futuro**, a fatura exibida inteira (paga e aberta, líquida das antecipações) é subtraída do teto; faturas anteriores são tratadas como quitadas e compras confirmadas de faturas posteriores também continuam consumindo limite, **por inteiro**.
@@ -408,7 +407,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Várias gravações seguidas viram uma só carga; se o próprio fluxo já recarregou depois de gravar, não repete.
   Espera a tela ficar livre — nenhum campo em edição, nenhum modal aberto, nenhuma carga ou Consolidar em andamento — pra não apagar o que está sendo digitado.
   Gravação sem resposta do banco (pode ter salvado) também recarrega, pra mostrar se entrou.
-  Na simulação e na conta restrita nada é gravado, então nada recarrega por isso; uma gravação real que termina depois de ligar a simulação espera, porque a carga apagaria os lançamentos simulados — desligar a simulação já recarrega.
+  Na simulação nada é gravado, então nada recarrega por isso; uma gravação real que termina depois de ligar a simulação espera, porque a carga apagaria os lançamentos simulados — desligar a simulação já recarrega.
 - **Recarga silenciosa** (automática de 5 min, após gravar, consolidação de 15 min) nunca redesenha por cima de uma célula da tabela em edição: os dados novos entram na memória e a tela espera o campo perder o foco pra redesenhar; se a própria edição já redesenhar ao confirmar, não redesenha de novo. Campo fora da tabela (ex.: cadastro) não segura o redesenho, e o clique no Recarregar redesenha na hora.
 - Recarga automática: 5 minutos depois da última carga bem-sucedida, a tela busca os dados no banco de novo (só a carga — sem voltar ao ciclo atual, limpar filtros nem consolidar, que são só do clique no botão Recarregar), pra mostrar o que mudou em outro aparelho ou no DataGrip.
   Ela só acontece com a tela logada e visível, sem modal aberto, sem campo em edição, sem linha selecionada, sem simulação (apagaria os lançamentos simulados) e sem outra carga ou consolidação em andamento; ocupada, a tela tenta de novo a cada 30 segundos.
@@ -469,12 +468,10 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   O teto de cada ciclo é individual: o indicador aparece no título do Débito de cada ciclo — inclusive dos passados, na linha Passado, com o total daquele ciclo (pago + aberto), como o Saldo e o Guardado dessa linha —, com o teto editável ao lado ("de R$ […]", mesmo esquema do Aprovado do cartão).
   O valor é gravado na linha daquele ciclo em `fin_ciclo` (`limite_besteira`/`limite_isabella`) — vai pro banco, e não só pro navegador, porque muda o saldo e precisa ser igual em qualquer aparelho; campo vazio volta ao padrão do código.
   Também dá pra editar direto no DataGrip (tabela `fin_ciclo`).
-  A conta restrita só vê o teto, sem campo.
   Passar o mouse no nome **Besteira** ou **Isabella** do indicador mostra o que entra naquele teto (`DESCRICAO_LIMITE_CATEGORIA` em `js/domain.js`); o nome tem sublinhado pontilhado discreto pra indicar a dica.
   **Clicar no nome** é um toggle de filtro: as tabelas Débito e Crédito do ciclo exibido passam a mostrar só o que conta naquele teto — pela mesma regra do indicador (`contaNoTeto`: gasto negativo, sem antecipação/pagamento de fatura, Besteira como item inteiro, Isabella por `ehGastoIsabella`) e sem as linhas previstas, que o indicador também ignora; somando o que sobra dá o Usado de Futuro.
   O nome ligado fica em verde, como os outros controles ativos; clicar de novo mostra tudo e clicar no outro troca de teto.
   O filtro soma-se às buscas por coluna, vale em qualquer ciclo navegado (Hoje, Futuro e Passado mostram o mesmo toggle), reabre os blocos Débito/Crédito se estiverem recolhidos, só lê (funciona também na simulação) e sai com o clique no Recarregar; Backlog e Comparar não mudam.
-  A conta restrita não tem os indicadores, então também não tem o filtro.
   Passar o mouse no rótulo Categorias do cadastro resume esse guia num hover (`title`), sem botão nem modal de ajuda.
 - A pizza de gastos usa o ciclo inteiro conforme seu escopo próprio descrito em **Escopo e exclusões das visões**.
   As demais categorias separadas por vírgula ficam selecionáveis individualmente; `*` vermelho indica classificação compartilhada e aparece primeiro no seletor.
@@ -527,31 +524,23 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Se a recarga falhar, para ali: não navega nem consolida em cima de dado desatualizado.
   Sem ciclo atual (hoje fora de qualquer ciclo), recarrega e limpa os filtros, sem consolidar.
   Na simulação não recarrega (apagaria os lançamentos simulados): volta ao ciclo atual, limpa e consolida só na memória.
-  A conta restrita não tem esse botão.
   Como o clique pode gravar (materializar Aporte sugerido/Resgate necessário e mover recorrência duplicada), ele é a confirmação dessa varredura; a recarga automática de 5 minutos só lê, e a consolidação automática de 15 minutos (ver **Aportes e resgates**) grava o mesmo que o Consolidar tudo, sem navegar nem limpar filtros.
 - O botão **Simular** (lançamentos provisórios) é sempre laranja — ícone, borda e fundo suave —, assim como o **Recarregar** é sempre verde; ligado (simulação ativa) ou com o mouse em cima, fica preenchido de laranja com o ícone escuro.
 - Todo controle desativado (botão, seletor ou campo) mostra, ao passar o mouse, o cursor de bloqueado (círculo cortado) em **vermelho**, além do visual esmaecido próprio de cada um.
 
 ## Login
 
-- O campo de login aceita **usuário** ou e-mail: `victor` e `isabella` são traduzidos para o e-mail de cada conta (`EMAIL_POR_USUARIO`/`emailDoLogin` em `js/app-state.js`); texto com `@` é usado como e-mail, direto.
+- O campo de login aceita **usuário** ou e-mail: `victor` é traduzido para o e-mail da conta (`EMAIL_POR_USUARIO`/`emailDoLogin` em `js/app-state.js`); texto com `@` é usado como e-mail, direto.
   O Supabase continua autenticando por e-mail e senha — nada muda no Auth, na sessão nem no RLS (que usa `auth.uid()`).
   Usuário desconhecido nem chega ao Supabase e recebe a mesma mensagem de senha errada (`Usuário ou senha inválidos.`), sem revelar quais usuários existem.
 
-## Conta restrita (Isabella)
+## Acesso
 
-- Existe uma única conta com a interface restrita, identificada pelo e-mail da sessão (`EMAIL_ISABELLA`, checado por `modoRestrito()` em `js/app-state.js`) — não por tamanho de tela.
-  `modoSimples()` é sinônimo de `modoRestrito()`: em qualquer dispositivo, essa conta sempre vê a casca simplificada.
-- Essa conta só vê o bloco Débito (sem Crédito), e só navega entre o ciclo atual e o próximo (sem Backlog, sem ciclos mais antigos ou mais distantes, sem Comparar por intervalo — `atualizarCombos()` em `js/data-ui.js` nem oferece essas opções nos seletores).
-- A interface fica somente leitura: tabelas sem edição inline, sem Editar/Duplicar/Excluir/Materializar na barra de seleção (só soma e Limpar), sem cadastro de novo lançamento (`#abreNovo` escondido) e sem simulação (`#toggleSimulacao` escondido).
-  Tocar uma linha ainda seleciona/desmarca pra somar valores — isso não grava nada.
-- Os indicadores financeiros (no Débito e no cabeçalho), Gráfico, Visualizações, os indicadores de teto **Besteira**/**Isabella** nas faixas Hoje/Futuro do Débito, o botão de **diagnóstico** e o botão **Recarregar** ficam escondidos; não há filtro por coluna nas tabelas.
-  As tabelas dessa conta não têm as colunas **ID**, **Reserva**, **Comprometido** e **Pra sempre**.
-  Dados novos chegam só pela recarga automática de 5 minutos (que nunca consolida nessa conta).
-- A casca somente leitura é só a interface; a garantia real vem do RLS de `fin` (migration 20): somente o mantenedor grava — `INSERT`, `UPDATE` e `DELETE` exigem o `auth.uid()` dele —, qualquer outra conta logada (inclusive a restrita) apenas lê e o papel anônimo não tem nenhum acesso.
+- Só existe a conta do mantenedor: a antiga conta restrita da Isabella saiu (login `isabella`, `modoRestrito()`/`modoSimples()` e a casca somente leitura foram removidos).
+- A garantia de escrita vem do RLS de `fin` (migration 20): somente o mantenedor grava — `INSERT`, `UPDATE` e `DELETE` exigem o `auth.uid()` dele — e o papel anônimo não tem nenhum acesso.
   Uma escrita negada volta vazia ou com erro e a tela mostra o toast de falha, sem fingir sucesso.
   O DataGrip usa o papel dono do banco e não passa pelo RLS.
-- A categoria textual `Isabella` (fatura detalhada do cartão, ver "Faturas") é um conceito totalmente diferente: continua sendo só uma categoria em lançamentos, sem relação com a conta/e-mail restrita.
+- A categoria textual `Isabella` (teto e fatura detalhada do cartão dela, ver "Faturas") continua: é só uma categoria em lançamentos, sem relação com conta ou e-mail.
 
 ## Migrations
 
@@ -656,7 +645,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 ## Metas
 
 - **Metas** (botão-ícone de alvo no cabeçalho, tabela `fin_meta`, migration 36) são compras futuras que se sabe que vão acontecer (carro, móveis, geladeira, vistoria do AP): só **nome**, **valor total** e **mês** são obrigatórios; o resto o app calcula.
-  O botão só aparece com a tabela no banco e nunca na conta restrita.
+  O botão só aparece com a tabela no banco.
   O mês de uma meta é o ciclo que começa naquele mês (o mesmo nome da navegação, ex.: Mar/27); fora dos ciclos carregados, não há plano.
 - **Plano**, recalculado a cada desenho, em cascata pela data (as metas disputam o mesmo guardado e o mesmo limite; empate, a mais antiga), sempre na forma escolhida — **À vista**, **Parcelado Crédito** ou **Parcelado Débito** (pagar a loja ou outra pessoa, carnê, boleto, financiamento); meta nova nasce À vista, e o padrão antigo da tabela (`auto`) vale como À vista.
   **À vista:** o valor inteiro no mês da meta.

@@ -127,9 +127,8 @@ test('tabelas e cálculos usam a mesma base; o indicador ignora a prevista', () 
 
 test('teto editável no título do ciclo atual e seguintes; grava em fin_ciclo, vazio = padrão', () => {
     assert.match(visoes, /data-limite-categoria="\$\{limite\.chave\}" data-ciclo="\$\{i\}"/);
-    // A conta restrita nem tem os indicadores: o teto é sempre o campo editável.
     assert.match(visoes, /const tetoDoIndicador = limite => \{\s*\n\s*const texto = limite\.teto\.toLocaleString/);
-    assert.match(visoes, /const limitesCategoria = i >= 0 && !modoRestrito\(\) \? \[/);
+    assert.match(visoes, /const limitesCategoria = i >= 0 \? \[/);
     assert.match(interacoes, /if \(input\.dataset\.limiteCategoria\) return input\.dataset\.limiteCategoria === 'isabella' \? 'limite_isabella' : 'limite_besteira';/);
     assert.match(interacoes, /const valor = texto \? Math\.round\(numeroDoLimiteDigitado\(texto\) \* 100\) \/ 100 : null;/);
     assert.match(interacoes, /const gravada = !Estado\.simulando \? await salvarLimiteDoCiclo\(cicloId, campo, valor\) : null;/);
@@ -163,7 +162,7 @@ test('previstas e faturas: Mensal, Aberto, Comprometido e Pra sempre só na exib
         assert.doesNotMatch(ler(arquivo).replace(/pra_sempre: true,/g, ''), /\.pra_sempre|\[['"]pra_sempre['"]\]/, arquivo);
     }
     // Pago clicável só em lançamento real; linha calculada mostra texto.
-    assert.match(ler('js/tables.js'), /modoRestrito\(\) \|\| !ehLinhaReal\(r\) \? `<span class="\$\{r\[chave\] \? 'vd' : 'vm'\}">/);
+    assert.match(ler('js/tables.js'), /\(!ehLinhaReal\(r\) \? `<span class="\$\{r\[chave\] \? 'vd' : 'vm'\}">/);
     // Marcado em linha só leitura fica na mesma cor das linhas reais.
     assert.match(ler('js/tables.js'), /: \(marcado \? `<span class=\$\{COR_FLAG\[chave\]\}>\$\{texto\}<\/span>` : texto\);/);
     // O indicador Comprometido continua lendo só lançamentos reais.

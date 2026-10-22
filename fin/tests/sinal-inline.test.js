@@ -22,7 +22,7 @@ test('clique no botão de sinal inverte na hora (UPDATE imediato), igual ao togg
     const inicio = interacoes.indexOf("el('out').addEventListener('click', async e => {\n    const botao = e.target.closest('[data-tog-sinal]');");
     assert.ok(inicio >= 0, 'não achou o handler do botão de sinal');
     const trecho = interacoes.slice(inicio, interacoes.indexOf('\n});', inicio) + 4);
-    assert.match(trecho, /if \(modoRestrito\(\)\) return;/);
+    assert.doesNotMatch(trecho, /modoRestrito/);
     assert.match(trecho, /const novoValor = -\(r\.v \|\| 0\);/);
     assert.match(trecho, /if \(!Estado\.simulando && !r\._sim\) await atualizarLancamento\(r\.id, \{ valor: novoValor \}\);/);
     assert.match(trecho, /r\.valor = novoValor;\s*\n\s*r\.v = novoValor;/);
@@ -31,7 +31,7 @@ test('clique no botão de sinal inverte na hora (UPDATE imediato), igual ao togg
 
 test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /botão \+\/− ao lado do Valor \(mesmo ícone do cadastro\) que inverte o sinal na hora/);
-    assert.match(regras, /Indisponível para a conta restrita e para linhas sintéticas\/simuladas sem `id` real: nelas \(fora da conta restrita\) o botão aparece no mesmo lugar, só que desabilitado/);
+    assert.match(regras, /Indisponível para linhas sintéticas\/simuladas sem `id` real: nelas o botão aparece no mesmo lugar, só que desabilitado/);
     assert.match(estilosPainel, /\.valorLinha \.togValor,\s*\n\s*\.valorLinha \.valorFixo \{/);
 });
 

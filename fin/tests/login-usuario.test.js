@@ -1,4 +1,4 @@
-// Login por usuário: o app traduz victor/isabella para o e-mail da conta antes do Supabase.
+// Login por usuário: o app traduz victor para o e-mail da conta antes do Supabase.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
@@ -10,7 +10,7 @@ const pagina = fs.readFileSync('index.html', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 
 function carregar() {
-    const inicio = estado.indexOf("const EMAIL_ISABELLA =");
+    const inicio = estado.indexOf("const EMAIL_POR_USUARIO =");
     const fim = estado.indexOf('};', estado.indexOf('const emailDoLogin')) + 2;
     const ctx = { Estado: {} };
     vm.runInNewContext(`${estado.slice(inicio, fim)}\nthis.emailDoLogin = emailDoLogin;`, ctx);
@@ -21,7 +21,7 @@ test('usuário vira o e-mail da conta; com @ vai direto; desconhecido não vira 
     const emailDoLogin = carregar();
     assert.equal(emailDoLogin('victor'), 'victor.cabrera0209@gmail.com');
     assert.equal(emailDoLogin('  Victor '), 'victor.cabrera0209@gmail.com');
-    assert.equal(emailDoLogin('isabella'), 'isabella.251200@gmail.com');
+    assert.equal(emailDoLogin('isabella'), null);   // a conta dela saiu
     assert.equal(emailDoLogin('outra@exemplo.test'), 'outra@exemplo.test');
     assert.equal(emailDoLogin('fulano'), null);
     assert.equal(emailDoLogin(''), null);

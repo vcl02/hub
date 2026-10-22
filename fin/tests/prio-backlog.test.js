@@ -23,11 +23,11 @@ test('Backlog ("bk") ordena por prio por padrão; as demais tabelas continuam po
 });
 
 // Extrai COLS/colunasAtivas do arquivo real e roda num contexto isolado.
-function carregaColunasAtivas(restrito = false) {
+function carregaColunasAtivas() {
     const inicio = estado.indexOf('const COLS = [');
     const fim = estado.indexOf('\nconst isMobile');
     if (inicio < 0 || fim < 0) throw Error('Não encontrou COLS/colunasAtivas em app-state.js.');
-    const contexto = { modoRestrito: () => restrito, Estado: { temPraSempre: true } };
+    const contexto = { Estado: { temPraSempre: true } };
     vm.createContext(contexto);
     vm.runInContext(`${estado.slice(inicio, fim)}\nglobalThis.colunasAtivas = colunasAtivas;`, contexto);
     return contexto.colunasAtivas;
@@ -80,8 +80,8 @@ test('outras tabelas continuam ordenando por data normalmente, ignorando a regra
     assert.deepEqual(ordenadas, ['a', 'b']);
 });
 
-test('célula Prio só é clicável pra linha real fora da conta restrita, igual às demais colunas livres', () => {
-    assert.match(tabelas, /const celPrio = r => ehLinhaReal\(r\) && !modoRestrito\(\)\s*\n\s*\? `<span class="togPrio" data-tog-prio=/);
+test('célula Prio só é clicável pra linha real, igual às demais colunas livres', () => {
+    assert.match(tabelas, /const celPrio = r => ehLinhaReal\(r\)\s*\n\s*\? `<span class="togPrio" data-tog-prio=/);
     assert.match(tabelas, /chave == 'prio' \? celPrio\(r\)/);
 });
 
@@ -117,11 +117,7 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /Linha sem `prio` preenchida conta como a \*\*menor\*\* prioridade possível/);
 });
 
-test('conta restrita não vê ID, Reserva nem Comprometido; o mantenedor vê tudo', () => {
-    const doMantenedor = carregaColunasAtivas(false)('db').map(([chave]) => chave);
-    assert.ok(['id', 'reserva', 'comprometido', 'pra_sempre'].every(c => doMantenedor.includes(c)));
-    const daRestrita = carregaColunasAtivas(true)('db').map(([chave]) => chave);
-    assert.deepEqual([...daRestrita], ['data', 'nome', 'valor', 'categ', 'freq', 'pago', 'obs', 'canal']);   // nem Pra sempre
-    assert.match(fs.readFileSync('css/dashboard.css', 'utf8'), /table\.larguraFixa:not\(:has\(col\.col-id\)\) \{\s*\n\s*min-width: 56rem;/);
-    assert.match(fs.readFileSync('docs/REGRAS.md', 'utf8'), /As tabelas dessa conta não têm as colunas \*\*ID\*\*, \*\*Reserva\*\*, \*\*Comprometido\*\* e \*\*Pra sempre\*\*/);
+test('Débito mostra todas as colunas, inclusive ID, Reserva, Comprometido e Pra sempre', () => {
+    const colunas = carregaColunasAtivas()('db').map(([chave]) => chave);
+    assert.ok(['id', 'reserva', 'comprometido', 'pra_sempre'].every(c => colunas.includes(c)));
 });

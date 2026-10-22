@@ -22,7 +22,7 @@ const trechoAte = (fonte, inicio, fim) => {
 // Roda os códigos reais (limparFiltros, voltarAoCicloAtualELimpar e o clique do Recarregar)
 // com um DOM mínimo. consolidarTudo é simulado no contrato dele: recarrega e, só se a carga
 // der certo, chama depoisDaCarga antes de varrer.
-function montaTela(idxHoje, { restrito = false, cargaOk = true } = {}) {
+function montaTela(idxHoje, { cargaOk = true } = {}) {
     const elementos = {};
     const etapas = [];
     const ctx = {
@@ -35,7 +35,6 @@ function montaTela(idxHoje, { restrito = false, cargaOk = true } = {}) {
         excluidasDoGrafico: [],
         etapas,
     };
-    ctx.modoRestrito = () => restrito;
     ctx.desenhar = () => etapas.push('desenhar');
     ctx.abrirBlocosFinanceiros = () => { ctx.Estado.fechados.db = false; };
     ctx.load = async () => { etapas.push('recarregar'); return cargaOk; };
@@ -75,12 +74,6 @@ test('carga com falha para tudo: não navega, não limpa nem consolida', async (
     assert.deepEqual(Object.keys(ctx.Estado.filtroTexto), ['nome']);
 });
 
-test('conta restrita: o botão nem aparece e, se acionado, não faz nada (nunca consolida)', async () => {
-    const { ctx, etapas } = montaTela(3, { restrito: true });
-    await ctx.clica();
-    assert.deepEqual(etapas, []);
-});
-
 test('sem ciclo atual: limpa os filtros e deixa De/Até vazios, como a página abre', async () => {
     const { ctx, elementos } = montaTela(-1);
     await ctx.clica();
@@ -110,7 +103,6 @@ test('o botão verde é o único: sem Atual, Limpar filtros nem Consolidar tudo'
     assert.doesNotMatch(estilos, /\.btHoje\b/);
     assert.match(regras, /O botão verde \*\*Recarregar\*\* do cabeçalho \(mesmo ícone de setas\) faz, num só clique e nesta ordem: recarrega os dados do banco, volta De\/Até ao ciclo atual, limpa os filtros/);
     assert.match(regras, /Não existem mais botões "Atual", "Limpar filtros" nem "Consolidar tudo" separados\./);
-    assert.match(regras, /A conta restrita não tem esse botão\./);
 });
 
 test('Todas/Diferentes, Gráfico e Visualizações ficam no bloco de botões, antes da simulação', () => {
@@ -119,10 +111,9 @@ test('Todas/Diferentes, Gráfico e Visualizações ficam no bloco de botões, an
     assert.doesNotMatch(pagina.slice(pagina.indexOf('id=navComparar'), pagina.indexOf('id=rowVis')), /btGrafico|btVis|btSomenteDif/);
     assert.match(acoes, /<button type=button id=btGrafico class=btIcone title="Gráfico" aria-label="Gráfico">\s*\n\s*<svg/);
     assert.ok(acoes.indexOf('id=btGrafico') < acoes.indexOf('id=visIcone'));
-    // Fora de #rowVis: a conta restrita precisa escondê-los à parte.
     const barra = pagina.slice(pagina.indexOf('id=rowVis'), pagina.indexOf('id=indicadoresFinanceiros'));
     assert.doesNotMatch(barra, /btGrafico|btVis/);
-    assert.match(interacoes, /el\('btGrafico'\)\.hidden = simples;\s*\n\s*el\('visIcone'\)\.hidden = simples;/);
+    assert.doesNotMatch(interacoes, /el\('btGrafico'\)\.hidden|el\('visIcone'\)\.hidden/);
     assert.match(estilos, /\.menuIcone \{\s*\n\s*position: absolute;\s*\n\s*top: calc\(100% \+ \.45rem\);/);
     assert.match(regras, /\*\*Visualizações\*\* é um ícone \(olho\) no bloco de botões do cabeçalho, logo depois do Gráfico/);
     assert.match(fs.readFileSync('css/base.css', 'utf8'), /\.acoesCabecalho \.btIcone \{\s*\n\s*width: 2rem;\s*\n\s*height: 2rem;/);

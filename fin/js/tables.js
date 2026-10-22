@@ -46,8 +46,6 @@ function cabecalhoTabela(idTabela) {
         return `<th class="${tipo == 'n' ? 'n' : ''}"${dica} onclick="sortCol('${idTabela}','${chave}')">${rotulo}${seta}`;
     }).join('');
     // 2a linha do header: campo de busca por coluna, so nas colunas de texto (tipo 't').
-    // Conta restrita (modo simples) não tem busca — só ordenar pelo cabeçalho.
-    if (modoSimples()) return linhaTitulos;
     const filtroAtual = estadoFiltroTexto(idTabela);
     // Colunas de texto, Data e Valor têm campo de busca. Valor compara número (ver
     // passaFiltroTexto), não texto, mas a caixinha é a mesma das outras colunas — com a
@@ -235,17 +233,16 @@ const ehLinhaReal = r => Number.isInteger(+r.id) && +r.id > 0 && !r._sid && !r._
 // portanto nao existe mais marca de fechamento/D+1.
 const textoData = r => r.data ? dataBR(r.data) : '—';
 // mesma ideia de celValorEditavel: clicar abre um <input type=date> inline. So' pra
-// lancamentos REAIS (id do banco, da' pra dar PATCH); a conta restrita (modoRestrito)
-// continua vendo so' texto, igual o Valor — qualquer outro dispositivo edita normalmente.
+// lancamentos REAIS (id do banco, da' pra dar PATCH).
 const celData = r => {
-    const texto = ehLinhaReal(r) && !modoRestrito()
+    const texto = ehLinhaReal(r)
         ? `<span class="togData" data-tog-data="${escapeHtml(String(r.id))}" title="Editar data">${textoData(r)}</span>`
         : textoData(r);
     // _dupCiclo (marcado em marcaOcorrenciasDuplicadasNoCiclo, js/cycle-views.js): essa
     // ocorrência é a mais recente de uma recorrência que caiu 2x no mesmo ciclo. O botão
     // corrige com 1 clique, movendo pro 1º dia do próximo ciclo (handler data-corrige-dup
-    // em interactions.js) — só pra linha real fora da conta restrita, mesma regra de edição.
-    const corrige = r._dupCiclo && ehLinhaReal(r) && !modoRestrito()
+    // em interactions.js) — só pra linha real, mesma regra de edição.
+    const corrige = r._dupCiclo && ehLinhaReal(r)
         ? ` <button type=button class=corrigeDupData data-corrige-dup="${escapeHtml(String(r.id))}" title="Recorrência caiu 2x neste ciclo — mover pro 1º dia do próximo" aria-label="Mover esta ocorrência pro 1º dia do próximo ciclo">↷</button>`
         : '';
     return `${texto}${corrige}`;
@@ -271,23 +268,23 @@ const celNome = r => {
         : '';
     // Só o nome é cortado com "…" quando não cabe; as marcas ficam sempre inteiras ao lado
     // (senão o aviso "Resgatou tudo" sumia dentro das reticências).
-    const textoNome = ehLinhaReal(r) && !modoRestrito()
+    const textoNome = ehLinhaReal(r)
         ? `<span class="nomeTexto togNome" data-tog-nome="${escapeHtml(String(r.id))}">${nome}</span>`
         : `<span class=nomeTexto>${nome}</span>`;
     return `<span class=nomeLinha>${sim}${textoNome}${badgeFatura}${badgeResgate}</span>`;
 };
 // Categoria e Frequência (colunas de texto livre/vocabulário controlado): mesmo esquema de
-// clique-pra-editar do Nome/Data, só pra linha REAL e fora da conta restrita.
-const celCateg = r => ehLinhaReal(r) && !modoRestrito()
+// clique-pra-editar do Nome/Data, só pra linha REAL.
+const celCateg = r => ehLinhaReal(r)
     ? `<span class="togCateg" data-tog-categ="${escapeHtml(String(r.id))}" title="Editar categoria">${escapeHtml(textoOuTraco(r.categ))}</span>`
     : textoOuTraco(r.categ);
-const celFreq = r => ehLinhaReal(r) && !modoRestrito()
+const celFreq = r => ehLinhaReal(r)
     ? `<span class="togFreq" data-tog-freq="${escapeHtml(String(r.id))}" title="Editar frequência">${escapeHtml(textoOuTraco(r.freq))}</span>`
     : textoOuTraco(r.freq);
 // Prioridade de elevação do Backlog pra um ciclo: numero livre que o usuario preenche na
 // mao (1 = mais provavel, quanto maior menos chance, ex.: 999) — mesmo esquema de clique-
 // pra-editar das demais colunas de texto/numero livre.
-const celPrio = r => ehLinhaReal(r) && !modoRestrito()
+const celPrio = r => ehLinhaReal(r)
     ? `<span class="togPrio" data-tog-prio="${escapeHtml(String(r.id))}" title="Editar prioridade de elevação">${escapeHtml(textoOuTraco(r.prio))}</span>`
     : textoOuTraco(r.prio);
 // Observação (texto livre, qualquer anotação) e Canal (de onde a conta e' paga/consultada —
@@ -295,7 +292,7 @@ const celPrio = r => ehLinhaReal(r) && !modoRestrito()
 // colunas livres. Canal ganha um ícone extra pra abrir o link numa aba nova quando o texto
 // e' uma URL http(s) — clicar nele não entra em edição nem seleciona a linha (mesmo truque
 // de stopPropagation de abrirDetalheCelComparar em cycle-views.js).
-const celObs = r => ehLinhaReal(r) && !modoRestrito()
+const celObs = r => ehLinhaReal(r)
     ? `<span class="togObs" data-tog-obs="${escapeHtml(String(r.id))}">${escapeHtml(textoOuTraco(r.obs))}</span>`
     : textoOuTraco(r.obs);
 const ehUrlHttp = texto => /^https?:\/\//i.test(String(texto ?? '').trim());
@@ -303,9 +300,9 @@ const celCanal = r => {
     const bruto = String(r.canal ?? '').trim();
     const textoVisivel = escapeHtml(textoOuTraco(r.canal));
     // Largura fixa (ver .togCanal/.celCanalTexto no CSS): o que nao couber vira "...", mas
-    // continua clicavel pra editar o texto inteiro. A conta restrita/linha nao-real tambem
+    // continua clicavel pra editar o texto inteiro. A linha nao-real tambem
     // trunca, so' sem o clique de edicao.
-    const texto = ehLinhaReal(r) && !modoRestrito()
+    const texto = ehLinhaReal(r)
         ? `<span class="togCanal" data-tog-canal="${escapeHtml(String(r.id))}" title="Editar canal">${textoVisivel}</span>`
         : `<span class=celCanalTexto>${textoVisivel}</span>`;
     if (!bruto) return texto;
@@ -329,7 +326,7 @@ const celCanal = r => {
 // migration 22 — e fin.pra_sempre — migration 31 — a maioria dos lançamentos não é nenhuma): diferente de Pago, que é sempre
 // um estado relevante pra qualquer lançamento real, aqui "falso" fica em "—" em vez de
 // repetir um texto negativo em toda linha; só "verdadeiro" ganha destaque. Mesma permissão
-// de Pago (nunca em linha sintética nem na conta restrita), clicável pra alternar na hora.
+// de Pago (nunca em linha sintética), clicável pra alternar na hora.
 const ROTULO_FLAG = { reserva: 'Reserva', comprometido: 'Comprometido', pra_sempre: 'Pra sempre' };
 // Cada marca tem a sua cor pra não se confundir com o verde de Pago: Comprometido laranja
 // escuro, Reserva amarelo claro, Pra sempre azul — tons afastados pros três não se
@@ -340,26 +337,23 @@ const COR_FLAG = { reserva: 'flagReserva', comprometido: 'flagComprometido', pra
 const celFlag = (r, chave) => {
     const marcado = !!r[chave];
     const texto = marcado ? ROTULO_FLAG[chave] : '—';
-    // Somente leitura (linha calculada, conta restrita) mantém a mesma cor quando marcada.
-    return !r._sid && !modoRestrito()
+    // Somente leitura (linha calculada) mantém a mesma cor quando marcada.
+    return !r._sid
         ? `<span class="${marcado ? COR_FLAG[chave] : ''} togFlag" data-tog-flag="${chave}:${escapeHtml(String(r.id))}" title="Alternar ${ROTULO_FLAG[chave]}">${texto}</span>`
         : (marcado ? `<span class=${COR_FLAG[chave]}>${texto}</span>` : texto);
 };
 
 // monta as celulas <td> de uma linha, conforme o tipo de cada coluna. A edição por toque/
-// clique (Valor, Pago, Data) é a mesma em qualquer dispositivo; a conta restrita
-// (modoRestrito) e as linhas calculadas (fatura, previstas — não existem no banco) veem tudo
-// como texto simples, nunca editável.
+// clique (Valor, Pago, Data) é a mesma em qualquer dispositivo; as linhas calculadas
+// (fatura, previstas — não existem no banco) veem tudo como texto simples, nunca editável.
 const celulasDaLinha = (r, idTabela) => colunasAtivas(idTabela).map(([chave, , tipo]) => chave == 'valor'
-    ? (modoRestrito()
-        ? (r._sug != null ? `<td class="n ${corValor(r._sug)}">${brl(r._sug)}` : celValorLancamento(r))
-        // Fora da conta restrita, toda linha mostra o botão de sinal; só a real o usa.
-        : r._sug != null ? celValorSomenteLeitura(r, r._sug, corValor(r._sug))
+    // Toda linha mostra o botão de sinal; só a real o usa.
+    ? (r._sug != null ? celValorSomenteLeitura(r, r._sug, corValor(r._sug))
         : ehLinhaReal(r) ? celValorEditavel(r) : celValorSomenteLeitura(r)).replace(/$/,
             r._saldo != null ? `<span class=sd>${brl(r._saldo)}</span>` : '')
     : tipo == 'b' && chave != 'pago' ? `<td>${celFlag(r, chave)}`
     : tipo == 'b' ? `<td>${r[chave] == null ? '—'
-        : (modoRestrito() || !ehLinhaReal(r) ? `<span class="${r[chave] ? 'vd' : 'vm'}">${r[chave] ? 'Pago' : 'Aberto'}</span>`
+        : (!ehLinhaReal(r) ? `<span class="${r[chave] ? 'vd' : 'vm'}">${r[chave] ? 'Pago' : 'Aberto'}</span>`
             : `<span class="${r[chave] ? 'vd' : 'vm'} togPago" data-tog-pago="${escapeHtml(String(r.id))}" title="Alternar status">${r[chave] ? 'Pago' : 'Aberto'}</span>`)}`
     // Nome e Obs ficam numa linha só, cortados com "…"; o texto inteiro aparece no hover
     // (title da célula). Clicar continua editando o texto completo.
@@ -411,7 +405,6 @@ const renderTabela = (linhasBrutas, idTabela, selecionavel) => {
     }
 
     // O toque/clique na linha sempre serve para somar valores, em qualquer dispositivo.
-    // Só a conta restrita (modoRestrito) tem a barra limitada a soma e Limpar.
     const podeSelecionar = selecionavel;
     // <colgroup> com uma classe por coluna: as larguras são fixas no CSS (table.larguraFixa),
     // então filtrar Reserva, Comprometido ou o sinal não faz as colunas "dançarem".

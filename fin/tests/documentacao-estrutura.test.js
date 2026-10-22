@@ -43,7 +43,7 @@ test('REGRAS.md legível: uma frase por linha nos itens e subtítulos nas seçõ
     assert.ok(!linhas.some(l => /^  (- |#|\d+\. )/.test(l)));
     for (const titulo of ['## Convenções gerais', '### Valores, linhas reais e edição na tabela', '### Diagnóstico da carga',
         '## Faturas', '### Dois cartões e limites', '## Aportes e resgates', '### Recargas e consolidação automática',
-        '## Mobile', '### Cabeçalho e controles', '## Conta restrita (Isabella)']) {
+        '## Mobile', '### Cabeçalho e controles', '## Acesso']) {
         assert.ok(linhas.includes(titulo), titulo);
     }
 });

@@ -234,8 +234,8 @@ test('vCiclo chama a marcação antes de montar os blocos, só com o próximo ci
     assert.match(visoes, /marcaOcorrenciasDuplicadasNoCiclo\(debitos, Estado\.ciclos\[i \+ 1\]\);/);
 });
 
-test('celData (tables.js) mostra o botão "↷" só pra linha real com _dupCiclo, fora da conta restrita', () => {
-    assert.match(tabelas, /const corrige = r\._dupCiclo && ehLinhaReal\(r\) && !modoRestrito\(\)/);
+test('celData (tables.js) mostra o botão "↷" só pra linha real com _dupCiclo', () => {
+    assert.match(tabelas, /const corrige = r\._dupCiclo && ehLinhaReal\(r\)/);
     assert.match(tabelas, /class=corrigeDupData data-corrige-dup="\$\{escapeHtml\(String\(r\.id\)\)\}"/);
     assert.match(tabelas, /return `\$\{texto\}\$\{corrige\}`;/);
 });

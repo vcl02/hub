@@ -87,19 +87,19 @@ test('sem dados do cartão no ciclo exibido, o modal avisa em vez de quebrar', (
     assert.match(carrega()(null, 'nubank'), /Sem compras deste cartão no ciclo exibido/);
 });
 
-test('botões no cabeçalho, desativados sem dados, escondidos na conta restrita; modal refeito a cada desenho', () => {
+test('botões no cabeçalho, desativados sem dados; modal refeito a cada desenho', () => {
     assert.match(pagina, /<button type=button id=btNubank class="btIcone btCartao cartao-nubank" data-cartao=nubank title="Nubank"\s*\n\s*aria-label="Cartão Nubank" disabled>/);
     assert.match(pagina, /<button type=button id=btMercadoPago class="btIcone btCartao cartao-mp" data-cartao=mp title="Mercado Pago"\s*\n\s*aria-label="Cartão Mercado Pago" disabled>/);
     assert.match(pagina, /<dialog id=modalCartao tabindex=-1>/);
     // Sem título visível: o nome do cartão fica só pra leitor de tela.
     assert.match(pagina, /<h2 id=tituloCartao class=srOnly>Cartão<\/h2>/);
-    assert.match(interacoes, /el\(id\)\.hidden = restrito;\s*\n\s*el\(id\)\.disabled = restrito \|\| !Estado\.cartoesDoCiclo\?\.cartoes\?\.\[cartao\];/);
+    assert.match(interacoes, /el\(id\)\.disabled = !Estado\.cartoesDoCiclo\?\.cartoes\?\.\[cartao\];/);
     assert.match(interacoes, /if \(el\('modalCartao'\)\.open\) preencherModalCartao\(\);/);
     assert.match(interacoes, /Estado\.cartoesDoCiclo = null;/);
     assert.match(interacoes, /alinharResumosDosTitulos\(\);\s*\n\s*atualizarCartoes\(\);/);
     // Aprovado/Garantido gravam pelos mesmos handlers no modal (fora do #out).
     assert.match(interacoes, /ligarCamposDeLimite\(el\('out'\)\);\s*\n\s*ligarCamposDeLimite\(el\('modalCartao'\)\);/);
-    assert.match(visoes, /Estado\.cartoesDoCiclo = modoRestrito\(\) \? null :/);
+    assert.match(visoes, /Estado\.cartoesDoCiclo = \{/);
 });
 
 test('Hoje/Futuro com o rótulo em cima e as três colunas na largura toda; cabeçalho quebra no celular', () => {
@@ -112,7 +112,7 @@ test('Hoje/Futuro com o rótulo em cima e as três colunas na largura toda; cabe
 
 test('REGRAS.md documenta o modal do cartão', () => {
     assert.match(regras, /\*\*Modal do cartão:\*\* dois botões no cabeçalho, junto dos demais ícones — \*\*Nubank\*\* \(cartão roxo\) e \*\*Mercado Pago\*\* \(cartão azul\)/);
-    assert.match(regras, /Os botões ficam desativados em Comparar, no Backlog e quando o cartão não existe no título; a conta restrita não os vê\./);
+    assert.match(regras, /Os botões ficam desativados em Comparar, no Backlog e quando o cartão não existe no título\./);
 });
 
 test('cartão Nubank no estilo do de verdade: círculos da bandeira e o "nu"; o MP não tem', () => {

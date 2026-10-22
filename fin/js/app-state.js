@@ -31,20 +31,16 @@ const COLS = [
 const colunasDaTabela = idTabela => idTabela === 'bk'
     ? [COLS.find(([chave]) => chave === 'prio'), ...COLS.filter(([chave]) => chave !== 'prio')]
     : COLS.filter(([chave]) => chave !== 'prio');
-// A conta restrita (Isabella) não vê ID, Reserva, Comprometido nem Pra sempre (pedido do
-// mantenedor): são colunas de controle do mantenedor, sem uso pra quem só consulta.
-const COLUNAS_FORA_DA_CONTA_RESTRITA = ['id', 'reserva', 'comprometido', 'pra_sempre'];
 // Pra sempre só aparece quando o banco já tem a coluna (migration 31): antes dela, mostrar
 // ou gravar o campo faria o cadastro e o toggle falharem.
 const colunasAtivas = idTabela => colunasDaTabela(idTabela)
-    .filter(([chave]) => !(modoRestrito() && COLUNAS_FORA_DA_CONTA_RESTRITA.includes(chave)))
     .filter(([chave]) => chave !== 'pra_sempre' || Estado.temPraSempre);
 const isMobile = () => matchMedia('(max-width: 640px)').matches;
 
 // Único estado mutável da tela. Dados vindos do banco são normalizados em carregarDados;
 // as flags iniciadas com "_" pertencem apenas à interface e nunca são persistidas.
 const Estado = {
-    ciclos: [], faturas: [], lancamentos: [], valorFaturaPorCiclo: {}, emailSessao: null,
+    ciclos: [], faturas: [], lancamentos: [], valorFaturaPorCiclo: {},
     selecionados: new Map(), ordenacaoPorTabela: {}, filtroTexto: {}, linhasVisiveis: {},
     fechados: {}, cicloQuitadoRecolhido: null, ordComp: { k: 'total', d: 2 }, simulando: false,
     _proxIdSimulado: 0,
@@ -65,25 +61,14 @@ const Estado = {
     filtroTeto: null,
 };
 
-// Única conta que enxerga a interface restrita: só Débito, só ciclo atual e próximo, somente
-// leitura total (sem Crédito, Comparar, Visualizações, gráficos, cadastro ou edição nenhuma).
-// A checagem é por e-mail da sessão — a mesma ideia que existia antes de ser removida, agora
-// reintroduzida por pedido explícito do mantenedor. Vale em qualquer tela, não só no mobile:
-// é uma restrição de CONTA, não de largura de tela.
-const EMAIL_ISABELLA = 'isabella.251200@gmail.com';
-const modoRestrito = () => String(Estado.emailSessao || '').trim().toLowerCase() === EMAIL_ISABELLA;
 // Login por usuário: o Supabase Auth só entra com e-mail, então o app traduz o usuário
 // digitado para o e-mail da conta. Com "@", o texto já é o e-mail e vai direto. Nada muda
 // no Supabase (senha, sessão e RLS por auth.uid() continuam iguais).
-const EMAIL_POR_USUARIO = { victor: 'victor.cabrera0209@gmail.com', isabella: EMAIL_ISABELLA };
+const EMAIL_POR_USUARIO = { victor: 'victor.cabrera0209@gmail.com' };
 const emailDoLogin = texto => {
     const digitado = String(texto || '').trim();
     return digitado.includes('@') ? digitado : EMAIL_POR_USUARIO[digitado.toLowerCase()] || null;
 };
-// "modoSimples" sempre foi o nome da casca simplificada (só Débito, sem filtros avançados);
-// antes ela também entrava no mobile por largura de tela — agora o mobile tem paridade total
-// com o desktop, e só a conta restrita continua vendo essa casca, em qualquer dispositivo.
-const modoSimples = () => modoRestrito();
 // Backlog ordena por padrão pela prioridade de elevação (1 = mais provável de entrar num
 // ciclo, maior = menos chance); as demais tabelas continuam por data, como sempre.
 const estadoOrdenacao = id => Estado.ordenacaoPorTabela[id] || (Estado.ordenacaoPorTabela[id] = { k: id === 'bk' ? 'prio' : 'data', d: 1 });

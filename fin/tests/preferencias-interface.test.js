@@ -210,7 +210,7 @@ test('botão Excluir aceita várias linhas reais selecionadas, ignorando sintét
     // fica visível com qualquer quantidade de linhas reais marcadas, e linhas sintéticas (ex.:
     // Saldo do mês anterior) na mesma seleção são ignoradas, pois não existem no banco.
     assert.match(interacoes, /const chavesReaisSelecionadas = chaves\.filter\(c => !ehSintetica\(c\)\);/);
-    assert.match(interacoes, /el\('seldel'\)\.hidden = restrito \|\| !chavesReaisSelecionadas\.length;/);
+    assert.match(interacoes, /el\('seldel'\)\.hidden = !chavesReaisSelecionadas\.length;/);
     assert.doesNotMatch(formulario, /const chave = \[\.\.\.Estado\.selecionados\.keys\(\)\]\[0\];\s*\n\s*const i = Estado\.lancamentos\.findIndex\(x => String\(x\.id\) == chave\);\s*\n\s*if \(i < 0\) return;/);
     assert.match(formulario, /const linhas = \[\.\.\.Estado\.selecionados\.keys\(\)\]/);
     assert.match(formulario, /for \(const r of linhas\) \{/);
@@ -236,49 +236,32 @@ test('comparar mantém apenas todas ou diferentes confirmados sem recorrência d
     assert.match(regras, /dois ciclos seguintes/);
 });
 
-test('conta restrita (Isabella) é identificada por e-mail, não a interface geral', () => {
-    // Reintroduzido por pedido explícito do mantenedor: modoSimples volta a significar
-    // "conta restrita", não mais "tela estreita" — mobile normal tem paridade total.
-    assert.match(estado, /const EMAIL_ISABELLA = 'isabella\.251200@gmail\.com';/);
-    assert.match(estado, /const modoRestrito = \(\) => String\(Estado\.emailSessao \|\| ''\)\.trim\(\)\.toLowerCase\(\) === EMAIL_ISABELLA;/);
-    assert.match(estado, /const modoSimples = \(\) => modoRestrito\(\);/);
-    assert.match(bootstrap, /Estado\.emailSessao = session\.user\?\.email \|\| null;/);
-    assert.match(bootstrap, /Estado\.emailSessao = data\.user\?\.email \|\| null;/);
-    // Flag antiga de modo restrito (form com checkbox fIsa) continua fora — essa
-    // reintrodução é só a checagem de e-mail, não aquele mecanismo antigo. `reserva` em
-    // formulario já não é mais esse flag: é o bit fin.reserva do PRÓPRIO lançamento
-    // (reserva de emergência, sem nenhuma relação com a conta — ver migration 22 e
-    // tests/comparar-reserva.test.js), reintroduzido de propósito.
+test('conta da Isabella saiu: nenhuma casca restrita, login só do mantenedor', () => {
+    const codigo = ['js/app-state.js', 'js/bootstrap.js', 'js/cycle-views.js', 'js/data-ui.js', 'js/interactions.js', 'js/tables.js']
+        .map(arquivo => fs.readFileSync(arquivo, 'utf8')).join('\n') + pagina;
+    assert.doesNotMatch(codigo, /modoRestrito|modoSimples|EMAIL_ISABELLA|isabella\.251200/);
+    assert.match(estado, /const EMAIL_POR_USUARIO = \{ victor: 'victor\.cabrera0209@gmail\.com' \};/);
+    // Flag antiga de modo restrito (form com checkbox fIsa) continua fora. `reserva` em
+    // formulario é o bit fin.reserva do PRÓPRIO lançamento (reserva de emergência).
     assert.doesNotMatch(pagina, /id=fIsa|id=fReservaEmergencia/);
     assert.doesNotMatch(formulario, /\bisa\b/);
     assert.doesNotMatch(graficos, /data-tog-reserva-emergencia/);
-    // A categoria textual "Isabella" (fatura do cartão) é outro conceito: a nota de que
-    // "ela" (a categoria) não muda a interface continua valendo, sem relação com a conta.
+    // A categoria textual "Isabella" (teto e fatura do cartão dela) é outro conceito e fica.
     assert.match(regras, /A categoria `Isabella` identifica esses lançamentos/);
+    assert.doesNotMatch(regras, /## Conta restrita/);
 });
 
 test('mobile tem paridade total: mesmas colunas, edição e ações do desktop', () => {
     assert.match(estado, /const colunasDaTabela = idTabela => idTabela === 'bk'\s*\n\s*\? \[COLS\.find\(\(\[chave\]\) => chave === 'prio'\), \.\.\.COLS\.filter\(\(\[chave\]\) => chave !== 'prio'\)\]\s*\n\s*: COLS\.filter\(\(\[chave\]\) => chave !== 'prio'\);/);
     assert.doesNotMatch(estado, /COLS_MOBILE/);
-    assert.match(tabelas, /const texto = ehLinhaReal\(r\) && !modoRestrito\(\)\s*\n\s*\? `<span class="togData"/);
+    assert.match(tabelas, /const texto = ehLinhaReal\(r\)\s*\n\s*\? `<span class="togData"/);
     assert.match(tabelas, /: ehLinhaReal\(r\) \? celValorEditavel\(r\) : celValorSomenteLeitura\(r\)\)/);
     assert.doesNotMatch(tabelas, /celValorMobile/);
     assert.match(tabelas, /const podeSelecionar = selecionavel;/);
     assert.doesNotMatch(interacoes, /const linha = e\.target\.closest\('tr\[data-sid\]'\);[\s\S]*?if \(isMobile\(\)\) return;/);
-    assert.match(interacoes, /el\('seldup'\)\.hidden = restrito/);
-    assert.match(interacoes, /el\('seldel'\)\.hidden = restrito/);
+    assert.match(interacoes, /el\('seldup'\)\.hidden = !chaveUnicaReal && !ehAjusteMaterializavel;/);
+    assert.match(interacoes, /el\('seldel'\)\.hidden = !chavesReaisSelecionadas\.length;/);
     assert.match(regras, /O mobile tem paridade total com o desktop/);
-});
-
-test('conta restrita fica só no Débito, ciclo atual/próximo, somente leitura e sem toolbar', () => {
-    assert.match(visoes, /if \(modoSimples\(\)\) return blocoDebito;/);
-    assert.ok(visoes.indexOf('if (modoSimples()) return blocoDebito;') < visoes.indexOf('const creditosExibidos = creditosExibidosNoCiclo'));
-    assert.match(dadosUi, /const usados = modoRestrito\(\)\s*\n\s*\? \[idxAtual, idxAtual \+ 1\]\.filter\(i => i >= 0 && i < Estado\.ciclos\.length\)/);
-    assert.match(dadosUi, /opcoesPeriodoDe = \(modoRestrito\(\) \? '' : '<option value="">Todos<\/option><option value=-1>Backlog'\)/);
-    assert.match(interacoes, /el\('rowVis'\)\.hidden = simples;/);
-    assert.match(interacoes, /el\('abreNovo'\)\.hidden = simples;/);
-    assert.match(interacoes, /el\('toggleSimulacao'\)\.hidden = simples;/);
-    assert.match(regras, /só vê o bloco Débito \(sem Crédito\), e só navega entre o ciclo atual e o próximo/);
 });
 
 test('indicadores sem olho: os quatro sempre visíveis, no padrão da faixa', () => {
@@ -330,7 +313,7 @@ test('ícone Todas/Diferentes: sempre visível, só funciona com 2 ciclos e alte
     assert.equal(botao.title, 'Mostrar todas as linhas');
     ctx.clica();
     assert.equal(filtro.value, 'N');
-    assert.match(interacoes, /el\('btSomenteDif'\)\.hidden = simples;/);
+    assert.doesNotMatch(interacoes, /el\('btSomenteDif'\)\.hidden/);
     assert.match(regras, /Ele fica sempre visível, mas só funciona com exatamente dois ciclos: fora da comparação \(um ciclo só ou Backlog\) ou com três ou mais ciclos fica desativado/);
     assert.match(regras, /a escolha entre \*\*Todas\*\* e \*\*Diferentes\*\* é um ícone \(sinal de diferente, ≠\) no início do bloco de botões do cabeçalho, antes do Gráfico/);
 });
@@ -423,18 +406,15 @@ test('Simular é sempre laranja, como o Recarregar é sempre verde; ligado fica 
     assert.match(regras, /O botão \*\*Simular\*\* \(lançamentos provisórios\) é sempre laranja/);
 });
 
-test('conta restrita sem tetos Besteira/Isabella, sem diagnóstico e sem Recarregar (só a recarga automática)', () => {
+test('tetos Besteira/Isabella, diagnóstico e Recarregar sempre presentes; consolidação automática sem exceção de conta', () => {
     const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
     const boot = fs.readFileSync('js/bootstrap.js', 'utf8');
-    assert.match(visoes, /const limitesCategoria = i >= 0 && !modoRestrito\(\) \? \[/);
-    assert.match(interacoes, /el\('btDiagnostico'\)\.hidden = simples;/);
-    assert.match(interacoes, /el\('recarregar'\)\.hidden = simples;/);
-    assert.match(boot, /if \(bt\.disabled \|\| modoRestrito\(\)\) return;\s*\n\s*await consolidarTudo\(bt, voltarAoCicloAtualELimpar\);/);
-    // A recarga automática continua valendo pra ela (nunca consolida: só modoRestrito() fora).
-    assert.match(boot, /if \(!modoRestrito\(\) && Date\.now\(\) - Estado\.ultimaConsolidacao >= INTERVALO_CONSOLIDACAO_AUTOMATICA_MS\)/);
+    assert.match(visoes, /const limitesCategoria = i >= 0 \? \[/);
+    assert.doesNotMatch(interacoes, /el\('btDiagnostico'\)\.hidden|el\('recarregar'\)\.hidden/);
+    assert.match(boot, /if \(bt\.disabled\) return;\s*\n\s*await consolidarTudo\(bt, voltarAoCicloAtualELimpar\);/);
+    assert.match(boot, /if \(Date\.now\(\) - Estado\.ultimaConsolidacao >= INTERVALO_CONSOLIDACAO_AUTOMATICA_MS\)/);
     assert.match(boot, /if \(Date\.now\(\) - Estado\.ultimaCarga >= INTERVALO_RECARGA_AUTOMATICA_MS\) recarregarDados\(\);/);
-    assert.match(regras, /os indicadores de teto \*\*Besteira\*\*\/\*\*Isabella\*\* nas faixas Hoje\/Futuro do Débito, o botão de \*\*diagnóstico\*\* e o botão \*\*Recarregar\*\* ficam escondidos/);
     const agentes = fs.readFileSync('AGENTS.md', 'utf8');
     assert.match(agentes, /O mobile tem paridade total com o desktop/);
-    assert.doesNotMatch(agentes, /Isabella e mobile usam o mesmo `modoSimples`/);
+    assert.doesNotMatch(agentes, /modoRestrito|modoSimples/);
 });

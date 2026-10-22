@@ -218,7 +218,7 @@ test('Comprometido do ciclo enxerga as linhas das metas; cadastro e tela ligados
     assert.match(api, /if \(!\/: 404 \|PGRST205\/\.test\(err\.message\)\) throw err;/);
     assert.match(pagina, /<button type=button id=btMetas class=btIcone title="Metas" aria-label="Metas" hidden>/);
     assert.match(pagina, /<dialog id=modalMetas tabindex=-1>/);
-    assert.match(interacoes, /el\('btMetas'\)\.hidden = !Estado\.temMetas \|\| modoRestrito\(\);/);
+    assert.match(interacoes, /el\('btMetas'\)\.hidden = !Estado\.temMetas;/);
     assert.match(interacoes, /if \(!confirm\(`Excluir "\$\{meta\.nome\}"\?/);
     assert.match(visoes, /function htmlModalMetas\(planos\) \{/);
     assert.doesNotMatch(visoes + interacoes + ler('js/finance.js'), /ancora_meta_id|deslocamento|novaAncora|ICONE_ANCORA|mesDaMeta|Mês próprio/);

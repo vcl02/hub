@@ -14,7 +14,7 @@ O projeto usa `.editorconfig` e checagem nativa de tabs, espaços finais e newli
 
 ## Linguagem visual
 
-O tema é sempre escuro, mas em cinza grafite legível, sem uma tela predominantemente preta. Ações compactas usam ícones com `title` e rótulo acessível; textos permanecem curtos e só aparecem quando esclarecem uma decisão. Formulários recebem somente campos necessários. O mobile tem paridade total com o desktop e só ajusta o layout. A única casca restrita é a da conta da Isabella, reconhecida pelo e-mail da sessão (`modoRestrito()`, com `modoSimples()` como sinônimo), em qualquer aparelho; o detalhe fica em `docs/REGRAS.md`, seção "Conta restrita (Isabella)". `Isabella` como categoria continua sendo uma categoria comum.
+O tema é sempre escuro, mas em cinza grafite legível, sem uma tela predominantemente preta. Ações compactas usam ícones com `title` e rótulo acessível; textos permanecem curtos e só aparecem quando esclarecem uma decisão. Formulários recebem somente campos necessários. O mobile tem paridade total com o desktop e só ajusta o layout. A conta restrita da Isabella saiu (out/2026): a interface é uma só. `Isabella` como categoria continua sendo uma categoria comum.
 
 ## Cadastro com layout fixo
 

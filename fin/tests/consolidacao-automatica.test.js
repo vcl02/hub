@@ -9,14 +9,14 @@ const compartilhado = fs.readFileSync('js/shared.js', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 
 // Roda o setInterval real do bootstrap com relógio e chamadas falsas.
-function relogio({ restrito = false, livre = true } = {}) {
+function relogio({ livre = true } = {}) {
     const inicio = inicializacao.indexOf('const INTERVALO_CONSOLIDACAO_AUTOMATICA_MS');
     const fim = inicializacao.indexOf('}, 30 * 1000);', inicio) + '}, 30 * 1000);'.length;
     const ctx = {
         agora: 0, chamadas: [], tick: null,
         Estado: { ultimaCarga: 1, ultimaConsolidacao: 0 },
         INTERVALO_RECARGA_AUTOMATICA_MS: 5 * 60 * 1000,
-        telaLivreParaRecarregar: () => livre, modoRestrito: () => restrito,
+        telaLivreParaRecarregar: () => livre,
         el: id => ({ id }),
         setInterval: f => { ctx.tick = f; },
     };
@@ -37,10 +37,7 @@ test('consolida sozinho a cada 15 min, em silêncio; no meio, só recarrega a ca
     assert.deepEqual(c.chamadas, [['recarregar'], ['recarregar'], ['consolidar', 'recarregar', true]]);
 });
 
-test('nunca na conta restrita nem com a tela ocupada', () => {
-    const restrita = relogio({ restrito: true });
-    restrita.ir(0); restrita.ir(16);
-    assert.ok(!restrita.chamadas.some(([tipo]) => tipo == 'consolidar'));
+test('nunca com a tela ocupada', () => {
     const ocupada = relogio({ livre: false });
     ocupada.ir(0); ocupada.ir(16);
     assert.deepEqual(ocupada.chamadas, []);

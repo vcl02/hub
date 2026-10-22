@@ -235,7 +235,6 @@ document.fonts?.ready.then(() => requestAnimationFrame(alinharResumosDosTitulos)
 function desenhar() {
     Estado.redesenhoPendente = false;   // este desenho já mostra os dados (ver desenharQuandoLivre)
     limparCachesFinanceiros();   // recalcula 1x neste render
-    const simples = modoSimples();
 
     el('fciclo').hidden = true;   // #ciclo e' so' a fonte de verdade interna que vCiclo() le, nunca aparece
 
@@ -247,17 +246,11 @@ function desenhar() {
         el('compAte').value = Estado.idxHoje;
     }
 
-    // "modo blocos" (De==Ate, De=Backlog, ou modo simples — a conta restrita sempre
-    // navega ciclo a ciclo) delega a tela pra vCiclo() (via vComp()); fora disso e'
+    // "modo blocos" (De==Ate ou De=Backlog) delega a tela pra vCiclo() (via vComp()); fora disso e'
     // "modo matriz". So' existe esse UM criterio — a antiga visao "Ciclo"/"Comparar"
     // separada foi removida, unificada dentro do fluxo Comparar (De==Ate cobre
     // exatamente o que a visao Ciclo cobria), e o navegador ‹›Atual tambem saiu — De/Ate
     // ficam sempre visiveis, e Backlog e' so' mais uma opcao do De.
-    if (simples && el('compDe').value !== el('compAte').value) {
-        // simples troca pro ciclo ATUAL (nunca deixa De != Ate escapar pro modo simples)
-        const idx = Estado.idxHoje >= 0 ? Estado.idxHoje : 0;
-        el('compDe').value = idx; el('compAte').value = idx;
-    }
     const ehBacklog = el('compDe').value == '-1';
     const modoBlocos = ehBacklog || (!!el('compDe').value && el('compDe').value == el('compAte').value);
     // Backlog nao compara com outro periodo — o Ate fica desabilitado e ignorado
@@ -266,39 +259,24 @@ function desenhar() {
     if (modoBlocos) el('ciclo').value = ehBacklog ? -1 : el('compDe').value;   // vCiclo() le o combo interno
     sincronizarCicloNaUrl();
 
-    // Conta restrita (modo simples) não tem Visualizações, Gráfico,
-    // Consolidar tudo nem indicadores — e nenhum fluxo de alteração, nem cadastro nem
-    // simulação. Nada disso depende de largura de tela: continua assim em qualquer
-    // dispositivo, inclusive desktop.
-    el('rowVis').hidden = simples;
-    // Gráfico e Visualizações moram na navegação de ciclo (fora de #rowVis): escondem à parte.
-    el('btGrafico').hidden = simples;
-    el('visIcone').hidden = simples;
-    el('btSomenteDif').hidden = simples;   // conta restrita não compara: o botão nem aparece
     popularAlvosVisualizacao();   // reordena do mais perto de acabar pro mais longe a cada redesenho
-    el('abreNovo').hidden = simples;
-    el('btDiagnostico').hidden = simples;   // diagnóstico de dados é coisa do mantenedor
-    // Sem Recarregar na conta restrita: os dados chegam só pela recarga automática de 5 min.
-    el('recarregar').hidden = simples;
-    el('toggleSimulacao').hidden = simples;
-    // Botões dos cartões: a conta restrita não vê Crédito. vCiclo preenche os dados do ciclo
-    // exibido; Comparar e Backlog não têm um ciclo de cartão, então ficam desativados.
+    // Botões dos cartões: vCiclo preenche os dados do ciclo exibido; Comparar e Backlog não têm um ciclo de cartão, então ficam desativados.
     Estado.cartoesDoCiclo = null;
     const noBacklog = modoBlocos && +el('ciclo').value < 0;
 
     // O mesmo botão abre a pizza no ciclo único e a evolução na comparação. Ele permanece
     // no lugar e só fica desabilitado quando não existe período válido (Backlog).
     el('btGrafico').dataset.idx = el('ciclo').value;
-    el('btGrafico').disabled = simples || (modoBlocos ? noBacklog : !el('compDe').value || !el('compAte').value);
+    el('btGrafico').disabled = modoBlocos ? noBacklog : !el('compDe').value || !el('compAte').value;
     // Reserva e Comprometido são leituras do ciclo final (Até), inclusive quando há
-    // comparação. No Backlog e no modo simples não há uma referência financeira válida.
-    const temCicloParaIndicadores = !simples && !noBacklog && !!el('compAte').value;
+    // comparação. No Backlog não há uma referência financeira válida.
+    const temCicloParaIndicadores = !noBacklog && !!el('compAte').value;
     // O nó dos indicadores é sempre o mesmo (atualizarIndicadoresFinanceiros escreve pelos ids): volta pro
     // cabeçalho antes de #out ser reescrito, senão iria embora junto com o HTML antigo.
     el('acoesAcompanhamento').append(el('indicadoresFinanceiros'));
     // Simulação: os mesmos números com os dados reais, pra marcar "antes →" no que mudou.
     // Vem antes dos indicadores de verdade, que sobrescrevem os textos calculados aqui.
-    const antesDaSimulacao = Estado.simulando && Estado.retratoAntesDaSimulacao && !simples
+    const antesDaSimulacao = Estado.simulando && Estado.retratoAntesDaSimulacao
         ? comDadosAntesDaSimulacao(() => {
             if (temCicloParaIndicadores) atualizarIndicadoresFinanceiros(+el('compAte').value);
             const raiz = document.createElement('div');
@@ -337,7 +315,7 @@ function desenhar() {
     // saber que o filtro existe e a navegação não pular. "Diferentes" só faz sentido com
     // EXATAMENTE 2 períodos — vComp() deixa isso em Estado._comparacao2Periodos, porque só
     // ali se sabe quantos períodos a matriz de fato usou —; com 3 ou mais fica desabilitado.
-    atualizarBotaoSomenteDif(!modoBlocos && !simples && !!el('compDe').value && !!el('compAte').value);
+    atualizarBotaoSomenteDif(!modoBlocos && !!el('compDe').value && !!el('compAte').value);
     if (trocouModo) {
         el('out').classList.remove('fadeIn');
         void el('out').offsetWidth;   // forca reflow pra reiniciar a animacao mesmo se ja rodou antes
@@ -358,9 +336,7 @@ function desenhar() {
 function atualizaBarraSelecao() {
     if (!Estado.selecionados.size) { el('selbar').style.display = 'none'; return; }
 
-    // A restrição de "sem ações que alteram dados" é da conta (modoRestrito), não do
-    // tamanho da tela — o mobile normal tem as mesmas ações do desktop.
-    const restrito = modoRestrito();
+    // O mobile tem as mesmas ações do desktop.
     const chaves = [...Estado.selecionados.keys()];
     // Linhas sinteticas nao existem no banco e, por isso, nao podem ser duplicadas nem
     // excluidas. As excecoes de ACAO sao os ajustes "sug:" e "res:": Aporte sugerido
@@ -378,21 +354,20 @@ function atualizaBarraSelecao() {
     const chavesReaisSelecionadas = chaves.filter(c => !ehSintetica(c));
 
     // uma linha real: a barra e' so pra editar/duplicar. Varias (ou uma sintetica sozinha):
-    // e' pra somar e selecionar/limpar. Na conta restrita, a barra nunca oferece ações que
-    // alteram dados: fica somente a soma e o botão Limpar. Editar nunca se aplica a um
+    // e' pra somar e selecionar/limpar. Editar nunca se aplica a um
     // ajuste sintetico (sug:/res:) nem a uma linha de fatura (fat:) — so' lancamento com id
     // de verdade, real ou simulado, que da' pra transformar Debito <-> Credito e escolher
     // a fatura/data sem precisar excluir e recadastrar.
-    el('seledit').hidden = restrito || !chaveUnicaReal;
-    el('seldup').hidden = restrito || (!chaveUnicaReal && !ehAjusteMaterializavel);
+    el('seledit').hidden = !chaveUnicaReal;
+    el('seldup').hidden = !chaveUnicaReal && !ehAjusteMaterializavel;
     el('seldup').textContent = ehAjusteMaterializavel
         ? (Estado.simulando ? 'Simular' : (ajusteExistente ? 'Consolidar' : 'Materializar'))
         : 'Duplicar';
-    el('seldel').hidden = restrito || !chavesReaisSelecionadas.length;
+    el('seldel').hidden = !chavesReaisSelecionadas.length;
     el('seldel').textContent = Estado.simulando && chavesReaisSelecionadas.length ? 'Ocultar' : 'Excluir';
-    el('selacao').hidden = !restrito && (!!chaveUnicaReal || ehAjusteMaterializavel);
+    el('selacao').hidden = !!chaveUnicaReal || ehAjusteMaterializavel;
 
-    if (chaveUnica && !restrito) {
+    if (chaveUnica) {
         const r = linhaDaChaveSelecao(chaveUnica);
         el('selinfo').innerHTML =
             `<span class=cnt>Selecionado</span>` +
@@ -524,7 +499,6 @@ window.alternarBloco = idTabela => {
 el('out').addEventListener('click', async e => {
     const badge = e.target.closest('[data-tog-pago]');
     if (!badge) return;
-    if (modoRestrito()) return;
     // stopPropagation NAO basta aqui: os dois listeners estao no MESMO elemento (#out),
     // entao ambos disparam na mesma fase de bubbling nao importa o que este pare de
     // propagar — precisa de stopImmediatePropagation pra impedir o listener de selecao
@@ -590,7 +564,6 @@ const ROTULO_FLAG_TOGGLE = { reserva: 'Reserva', comprometido: 'Comprometido', p
 el('out').addEventListener('click', async e => {
     const badge = e.target.closest('[data-tog-flag]');
     if (!badge) return;
-    if (modoRestrito()) return;
     e.stopImmediatePropagation();
 
     const [campo, id] = badge.dataset.togFlag.split(':');
@@ -647,7 +620,6 @@ el('out').addEventListener('click', e => {
 el('out').addEventListener('click', async e => {
     const botao = e.target.closest('[data-tog-sinal]');
     if (!botao) return;
-    if (modoRestrito()) return;
     e.stopImmediatePropagation();
 
     const id = botao.dataset.togSinal;
@@ -677,7 +649,6 @@ el('out').addEventListener('click', async e => {
 el('out').addEventListener('click', e => {
     const span = e.target.closest('[data-tog-valor]');
     if (!span) return;
-    if (modoRestrito()) return;
     // ja esta em edicao (input aberto): so' impede o clique de vazar pra selecao de
     // linha por baixo — o proprio <input> cuida do cursor/foco nativamente.
     if (span.classList.contains('editando')) { e.stopImmediatePropagation(); return; }
@@ -780,10 +751,8 @@ function preencherModalCartao() {
     el('corpoCartao').innerHTML = htmlModalCartao(Estado.cartoesDoCiclo, cartao);
 }
 function atualizarCartoes() {
-    const restrito = modoRestrito();
     Object.entries(BOTAO_DO_CARTAO).forEach(([cartao, id]) => {
-        el(id).hidden = restrito;
-        el(id).disabled = restrito || !Estado.cartoesDoCiclo?.cartoes?.[cartao];
+        el(id).disabled = !Estado.cartoesDoCiclo?.cartoes?.[cartao];
     });
     if (el('modalCartao').open) preencherModalCartao();
 }
@@ -869,10 +838,10 @@ el('modalCartao').addEventListener('click', e => {
 // ===================================================================
 // METAS (botão do cabeçalho → #modalMetas)
 // ===================================================================
-// Botão só com a tabela (migration 36) e fora da conta restrita. O modal é refeito a cada
+// Botão só com a tabela (migration 36). O modal é refeito a cada
 // desenho com ele aberto: um campo salvo redesenha a tela, e o plano de todas as metas muda.
 function atualizarMetas() {
-    el('btMetas').hidden = !Estado.temMetas || modoRestrito();
+    el('btMetas').hidden = !Estado.temMetas;
     if (el('modalMetas').open) el('corpoMetas').innerHTML = htmlModalMetas(planoDasMetas());
     if (el('modalPlanoMeta').open) {
         const plano = planoDasMetas().find(p => p.meta.id === +el('modalPlanoMeta').dataset.meta);
@@ -1093,7 +1062,6 @@ function reclassificaPeriodo(r) {
 el('out').addEventListener('click', e => {
     const span = e.target.closest('[data-tog-data]');
     if (!span) return;
-    if (modoRestrito()) return;
     if (span.classList.contains('editando')) { e.stopImmediatePropagation(); return; }
     e.stopImmediatePropagation();
 
@@ -1165,7 +1133,6 @@ function registrarEditorInline({ atributo, campo, original, controle, ler, vazio
     el('out').addEventListener('click', e => {
         const span = e.target.closest(`[${atributo}]`);
         if (!span) return;
-        if (modoRestrito()) return;
         // stopImmediatePropagation: o clique não pode vazar pra seleção da linha (#out).
         if (span.classList.contains('editando')) { e.stopImmediatePropagation(); return; }
         e.stopImmediatePropagation();
@@ -1270,8 +1237,8 @@ registrarEditorInline({
 });
 
 // clique no botão de copiar do Canal: copia o texto bruto pra área de transferência — link
-// ou chave Pix, tanto faz, não entra em edição nem seleciona a linha (disponível mesmo na
-// conta restrita/mobile, já que copiar não altera dado nenhum).
+// ou chave Pix, tanto faz, não entra em edição nem seleciona a linha (disponível em qualquer
+// tela, já que copiar não altera dado nenhum).
 el('out').addEventListener('click', e => {
     const botao = e.target.closest('[data-copiar-canal]');
     if (!botao) return;
@@ -1295,7 +1262,6 @@ el('out').addEventListener('click', async e => {
     const botao = e.target.closest('[data-corrige-dup]');
     if (!botao) return;
     e.stopImmediatePropagation();
-    if (modoRestrito()) return;
     const id = botao.dataset.corrigeDup;
     const r = Estado.lancamentos.find(x => String(x.id) == id);
     if (!r || !r._dupCiclo) return;
