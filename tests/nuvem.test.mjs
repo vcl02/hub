@@ -113,3 +113,13 @@ test('sair com dados sem enviar pede um 2º toque', async () => {
   assert.notEqual(await pg.evaluate(() => localStorage.getItem('tr.db.2f9bc201-9966-4f37-9963-2f4b9ddab849')), null);   // fica para enviar depois
   await ctx.close();
 });
+
+test('login: campos brancos sobre o fundo cinza, com o nome dentro', async () => {
+  const ctx = await app.navegador.newContext();
+  await fakeSupabase(ctx, novaNuvem());
+  const pg = await ctx.newPage(); await pg.goto(app.url); await pg.waitForSelector('#v-bloqueio:not([hidden])');
+  assert.equal(await pg.evaluate(() => getComputedStyle($('l-email')).backgroundColor), 'rgb(255, 255, 255)');
+  assert.equal(await pg.getAttribute('#l-email', 'placeholder'), 'Usuário');
+  assert.equal(await pg.getAttribute('#l-senha', 'placeholder'), 'Senha');
+  await ctx.close();
+});

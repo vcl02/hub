@@ -14,7 +14,7 @@ Fonte de verdade do comportamento do app. Toda mudança de regra atualiza este a
 
 ## Login e conta
 
-- Login por **usuário** (`victor`) ou e-mail, e senha, Enter entra (`emailDoLogin`). Usuário desconhecido nem chega ao Supabase e recebe a mesma mensagem de senha errada (`Usuário ou senha inválidos.`).
+- Login por **usuário** (`victor`) ou e-mail, e senha, Enter entra. Campos brancos com borda e o nome do campo dentro ("Usuário", "Senha") (`emailDoLogin`). Usuário desconhecido nem chega ao Supabase e recebe a mesma mensagem de senha errada (`Usuário ou senha inválidos.`).
 - Mesma conta do fin. Só a conta `DONO` (`js/config.js`) entra: outra conta sai na hora com "Esta conta não tem acesso ao Diário de Carga.". O RLS das tabelas `tr_*` também só libera essa conta (migration 02).
 - Sem "Esqueci a senha" e sem "Trocar senha": a senha é a do Supabase e se troca fora do app.
 - Tela inicial, canto superior direito: balança (peso corporal), engrenagem, que vai direto para a edição de exercícios (no fim dela: instalar e o estado da conta e da nuvem), e o botão de sair, só ícone e vermelho como no fin. Não há tela de Ajustes.
