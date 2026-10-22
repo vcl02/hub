@@ -33,7 +33,7 @@
 <!-- Início: semana + lista de exercícios -->
 <section id="v-inicio" class="view" hidden>
   <header class="top">
-    <div><p class="eyebrow" id="i-data"></p><h1>Full body</h1></div>
+    <div class="titulo"><h1>Full body</h1><p class="eyebrow" id="i-data"></p></div>
     <div class="acoes-topo">
       <button class="icon-btn" type="button" data-ir="editar" title="Editar exercícios" aria-label="Editar exercícios">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -46,7 +46,6 @@
   </header>
   <ul id="i-semana" class="week" aria-label="Dias de treino desta semana"></ul>
   <p class="week-msg"><span id="i-msg"></span><b id="i-cont-semana"></b></p>
-  <div class="box agua" id="i-agua" hidden><span>💧 <b>Pegou a garrafinha de água?</b></span><button type="button" class="btn sm" id="i-agua-ok">Já peguei</button></div>
   <button type="button" class="game" data-ir="conquistas">
     <span class="g-top"><b id="g-nivel">Nível 1</b><span id="g-pts">0 pts</span></span>
     <span class="track"><span id="g-barra"></span></span>
@@ -69,6 +68,7 @@
     <div class="pn"><span class="tempo" id="e-tempo"></span><b id="e-pos">1/6</b></div></div>
   <div class="trilha" id="e-trilha" aria-hidden="true"></div>
   <div class="travado-box" id="e-travado" hidden><p id="e-travado-msg"></p><button type="button" class="btn sm" data-reabrir>Reabrir treino de hoje</button></div>
+  <div class="box agua" id="e-agua" hidden><span>💧 <b>Pegou a garrafinha de água?</b></span><button type="button" class="btn sm" id="e-agua-ok">Já peguei</button></div>
   <p class="eyebrow" id="e-grupo"></p>
   <div class="segs" id="e-variacoes" role="radiogroup" aria-label="Variação usada hoje"></div>
   <div class="ex-head">

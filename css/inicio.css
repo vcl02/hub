@@ -12,6 +12,7 @@
 .week-msg{font-size:var(--t-sm);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .week-msg b{font-variant-numeric:tabular-nums}
 .agua{flex-direction:row;align-items:center;justify-content:space-between;border:1px solid var(--blue);background:var(--blue-soft)}
+.agua .btn{white-space:nowrap}
 .game{width:100%;text-align:left;display:flex;flex-direction:column;gap:6px;padding:12px 14px}
 .g-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .g-top b{font-family:var(--display);font-size:var(--t-xl);font-weight:700;line-height:1;color:var(--blue)}

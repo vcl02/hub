@@ -13,8 +13,11 @@ test('pesagem guarda o horário e avisa quando foge do habitual', async () => {
   assert.match(await pg.textContent('#c-historico'), /07:00/);
   assert.equal(await pg.inputValue('#c-hora'), '07:00');                                    // horário habitual já vem preenchido
   await pg.fill('#c-hora', '15:30'); await pg.dispatchEvent('#c-hora', 'input');
-  assert.match(await pg.textContent('#c-aviso'), /Fora do seu horário/);
-  assert.equal(await pg.getAttribute('#c-aviso', 'class'), 'aviso erro');
+  assert.match(await pg.textContent('#c-aviso'), /Fora do seu horário de sempre \(07:00\)/);
+  assert.equal(await pg.getAttribute('#c-aviso', 'class'), 'aviso');                          // só recomenda, sem cor de erro
+  await pg.fill('#c-peso', '89,5'); await pg.click('#c-form button[type=submit]');            // e salva fora do horário
+  assert.match(await pg.textContent('#c-historico'), /15:30.*89,5 kg/);
+  assert.equal(await pg.locator('#c-historico li').count(), 1);                                // 1 por dia
   assert.deepEqual(erros, []); await ctx.close();
 });
 

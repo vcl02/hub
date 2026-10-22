@@ -13,6 +13,11 @@ $('e-foto').addEventListener('change', async ev => {
 });
 $('e-foto-rm').addEventListener('click', () => { store.del('carga.foto.' + varAtual().id); toast('Foto removida'); telas.exercicio(); });
 
+// Lembrete da garrafinha: ao abrir o 1º exercício do dia, até "Já peguei" ou o dia contar como treinado (fica só no aparelho)
+const K_AGUA = 'carga.agua';
+function pintarAgua(trav = travadoHoje()) { $('e-agua').hidden = !!trav || store.get(K_AGUA) === hoje() || diasTreinados().has(hoje()); }
+$('e-agua-ok').addEventListener('click', () => { store.set(K_AGUA, hoje()); pintarAgua(); });
+
 // ===== Exercício =====
 let atual = null, editando = null;   // id do exercício aberto · série aberta para edição
 const exAtual = () => db.exercicios.find(e => e.id === atual);
@@ -22,6 +27,7 @@ telas.exercicio = () => {
   const trav = travadoHoje();
   $('v-exercicio').classList.toggle('travado', !!trav);
   $('e-travado').hidden = !trav;
+  pintarAgua(trav);
   if (trav) $('e-travado-msg').textContent = `O treino de hoje foi finalizado às ${hhmm(trav.fim)}. Um treino por dia.`;
   e.ativo = variacaoAtiva(e); editando = null;
   const v = e.variacoes[e.ativo], pos = db.exercicios.indexOf(e), u = ultimo(v.id), guia = GUIA[v.nome.toLowerCase()];

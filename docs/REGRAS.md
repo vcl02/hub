@@ -7,6 +7,7 @@ Fonte de verdade do comportamento do app. Toda mudança de regra atualiza este a
 - O app é só do mantenedor: nada de textos explicando como usar o app (dicas de uso, instruções, legendas de ajuda). Ficam só dados, rótulos curtos e avisos de erro.
 - As dicas de execução dos exercícios (posição, postura) não são ajuda do app: ficam, dentro de "Como fazer, ajustes e anotações".
 - `aria-label` em botões só de ícone continua (não aparece na tela).
+- Tela inicial: "Full body" e a data curta ("Qui, 22 de out") na mesma linha.
 - Cores: azul = app e ações, verde = feito/sucesso, vermelho = erro/abaixo da meta. Tokens no topo de `css/base.css`.
 
 ## Login e conta
@@ -49,12 +50,12 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 - **Um treino por dia:** depois de encerrado, o dia trava até "Reabrir". Abrir o app e não treinar (sem registro e sem finalizar) recomeça a contagem no próximo toque, sem criar 2º treino.
 - **Dia treinado:** tem registro **ou** treino finalizado (`fechado`), mesmo sem séries salvas. Conta para a semana, os pontos e as conquistas; o dia aparece como "✓ Treino feito".
 - **Resumo:** no fim do treino e ao tocar num dia feito (semana, "Últimos treinos" ou "Ver todos os treinos"): duração, calorias, exercícios, volume, pontos e o que foi feito.
-- **Lembrete da garrafinha:** nos dias de treino, até "Já peguei" ou o dia contar como treinado.
+- **Lembrete da garrafinha:** aparece ao abrir o 1º exercício do dia (qualquer dia), até "Já peguei" ou o dia contar como treinado.
 
 ## Peso corporal
 
-- 1 pesagem por dia (a nova substitui a do dia). Peso de 30 a 300 kg; cintura opcional.
-- O horário habitual é o da pesagem mais recente; mais de 1 h fora dele mostra "Fora do seu horário".
+- Pesagem diária: 1 por dia (a nova substitui a do dia), em qualquer horário. Peso de 30 a 300 kg; cintura opcional. O card da tela inicial fica destacado enquanto não houver pesagem hoje.
+- O horário habitual é o da pesagem mais recente; mais de 1 h fora dele só recomenda voltar a ele (aviso azul), nunca bloqueia.
 - Na edição dá para mudar data, horário e peso. Data no futuro ou dia que já tem pesagem é recusado.
 - **IMC:** peso ÷ altura² com `ALTURA` = 1,78 m (`js/config.js`), 1 casa decimal. Faixas da OMS: < 18,5 abaixo do peso, < 25 normal, < 30 sobrepeso, ≥ 30 obesidade. Aparece no card de peso da tela inicial e em cada pesagem do histórico.
 - **Perfil** (constantes no topo do código, fora do banco): altura 1,78 m, nascimento 14/09/2002, sexo masculino. A tela de peso mostra idade, altura e a taxa basal.

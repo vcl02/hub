@@ -230,17 +230,16 @@ test('treino finalizado sem séries salvas conta como feito e não é apagado ao
   assert.deepEqual(erros, []); await ctx.close();
 });
 
-test('lembrete da garrafinha nos dias de treino', async () => {
-  const { ctx, pg } = await abrirApp({ relogio: new Date('2026-10-21T17:00:00') });          // quarta
-  assert.equal(await pg.isVisible('#i-agua'), true);
-  await pg.click('#i-agua-ok');
-  assert.equal(await pg.isVisible('#i-agua'), false);
-  await pg.reload(); await pg.waitForSelector('#v-inicio:not([hidden])');
-  assert.equal(await pg.isVisible('#i-agua'), false);                                        // não volta no mesmo dia
+test('lembrete da garrafinha ao abrir o 1º exercício do dia', async () => {
+  const { ctx, pg } = await abrirApp({ relogio: new Date('2026-10-23T17:00:00') });          // sexta: vale em qualquer dia
+  assert.equal(await pg.locator('#v-inicio .agua').count(), 0);                               // não fica na tela inicial
+  await pg.tap('.slot >> nth=0');
+  assert.equal(await pg.isVisible('#e-agua'), true);
+  await pg.click('#e-agua-ok');
+  assert.equal(await pg.isVisible('#e-agua'), false);
+  await pg.reload(); await pg.waitForSelector('#v-exercicio:not([hidden])');
+  assert.equal(await pg.isVisible('#e-agua'), false);                                        // não volta no mesmo dia
   await ctx.close();
-  const sexta = await abrirApp({ relogio: new Date('2026-10-23T17:00:00') });
-  assert.equal(await sexta.pg.isVisible('#i-agua'), false);                                   // dia de descanso
-  await sexta.ctx.close();
 });
 
 test('ver o resumo de um treino antigo', async () => {

@@ -9,18 +9,18 @@ const horaHabitual = () => medidasOrdenadas().find(m => m.hora)?.hora || '';
 let editMedida = null;
 function pintarCorpoInicio() {
   const Ls = medidasOrdenadas(), u = Ls[0], prim = Ls[Ls.length - 1], box = $('i-corpo'), hab = horaHabitual();
-  const atrasado = !u || diasDesde(u.data) >= 7;
+  const atrasado = !u || u.data !== hoje();   // pesagem diária: destaca enquanto não pesou hoje
   box.classList.toggle('on', atrasado);
   if (!u) { box.innerHTML = '<span>Peso corporal</span><b>Registrar ›</b><small>1ª pesagem</small>'; return; }
   const dif = Math.round((u.peso - prim.peso) * 10) / 10, cls = dif < 0 ? 'bom' : dif > 0 ? 'ruim' : '';
   box.innerHTML = `<span>Peso corporal <i>${quando(u.data)}</i>${atrasado ? ` · <em>hora de se pesar${hab ? ' às ' + hab : ''}</em>` : ''}</span>
     <b>${fmt(u.peso)} kg</b><small class="${cls}">${Ls.length > 1 ? (dif > 0 ? '+' : '') + fmt(dif) + ' kg desde ' + dataCurta(prim.data) + ' · ' : ''}IMC ${fmt(imc(u.peso))} (${faixaImc(imc(u.peso))})</small>`;
 }
-function avisoHorario() {   // reforça pesar sempre no mesmo horário
+function avisoHorario() {   // só recomenda o horário de sempre: qualquer horário é aceito
   const hab = horaHabitual(), h = $('c-hora').value, box = $('c-aviso');
   const longe = hab && h && Math.abs(minutos(h) - minutos(hab)) > 60;
-  box.classList.toggle('erro', !!longe);
-  box.innerHTML = longe ? `<b>Fora do seu horário (${hab}).</b>` : '';
+  box.hidden = !longe;
+  box.innerHTML = longe ? `Fora do seu horário de sempre (<b>${hab}</b>): para comparar os dias, prefira pesar perto dele.` : '';
 }
 $('c-hora').addEventListener('input', avisoHorario);
 telas.corpo = () => {
