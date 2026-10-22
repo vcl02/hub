@@ -1,9 +1,10 @@
 'use strict';
-// Ajustes, edição de exercícios, backup e troca de senha.
+// Ajustes, edição de exercícios e troca de senha.
 // ===== Ajustes =====
 let eventoInstalar = null;
 telas.ajustes = async () => {
   $('a-instalar').hidden = !eventoInstalar;
+  $('m-form').hidden = !store.get(K_ANTIGO);
   $('a-info').textContent = `Conta: ${usuario?.email || '—'}. ${pintarSync()} ${db.registros.length} registro(s) e ${db.medidas.length} pesagem(ns). Versão ${versaoAtual || '—'}.`;
 };
 $('a-sair').addEventListener('click', async ev => {
@@ -64,24 +65,6 @@ $('ed-form').addEventListener('submit', ev => {
   novo.registros = novo.registros.filter(r => ids.has(r.variacao));   // remove histórico de exercício removido
   db = novo; gravar(); toast('Exercícios salvos'); voltar();
 });
-
-// Backup
-$('b-baixar').addEventListener('click', () => {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([JSON.stringify(db, null, 1)], { type: 'application/json' }));
-  a.download = 'carga-backup-' + hoje() + '.json';
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-});
-$('b-restaurar').addEventListener('click', async ev => {
-  const erro = $('b-erro'), f = $('b-arquivo').files[0]; erro.textContent = '';
-  if (!f) { erro.textContent = 'Escolha o arquivo de backup.'; return; }
-  let novo; try { novo = preparar(JSON.parse(await f.text())); } catch (e) { erro.textContent = 'Arquivo inválido. Use um backup gerado por este app.'; return; }
-  if (!confirmar(ev.currentTarget, 'Confirmar: substituir tudo')) return;
-  db = novo; gravar(); $('b-arquivo').value = ''; toast('Backup restaurado'); ir('inicio');
-});
-
-telas.backup = () => { $('m-form').hidden = !store.get(K_ANTIGO); };
 
 // Trocar senha (da conta Supabase; vale também para o fin)
 $('s-form').addEventListener('submit', async ev => {

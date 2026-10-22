@@ -198,12 +198,18 @@
   <h2>Ajustes</h2>
   <div class="menu">
     <button type="button" data-ir="editar">Editar exercícios</button>
-    <button type="button" data-ir="backup">Backup</button>
     <button type="button" data-ir="senha">Trocar senha</button>
     <button type="button" id="a-instalar" hidden>Instalar na tela inicial</button>
     <button type="button" id="a-sair" class="danger-text">Sair da conta</button>
   </div>
   <p class="muted small" id="a-info"></p>
+  <!-- Só aparece com o cofre da versão antiga neste aparelho e sem a chave salva -->
+  <form class="box form" id="m-form" hidden>
+    <p><b>Dados da versão antiga</b></p>
+    <label for="m-senha">Senha mestra antiga</label><input id="m-senha" type="password" autocomplete="off" required>
+    <p id="m-erro" class="err" role="alert"></p>
+    <button class="btn primary" type="submit">Juntar à conta</button>
+  </form>
 </section>
 
 <section id="v-editar" class="view" hidden>
@@ -213,25 +219,6 @@
     <div id="ed-lista" class="view"></div>
     <button type="button" class="btn" id="ed-novo">+ Adicionar exercício</button>
     <div class="sticky"><button type="submit" class="btn primary big">Salvar exercícios</button></div>
-  </form>
-</section>
-
-<section id="v-backup" class="view" hidden>
-  <div class="bar"><button class="back" type="button" data-voltar>‹ Ajustes</button></div>
-  <h2>Backup</h2>
-  <div class="box">
-    <button type="button" class="btn primary" id="b-baixar">Baixar backup</button>
-  </div>
-  <div class="box">
-    <input type="file" id="b-arquivo" accept=".json,application/json" aria-label="Arquivo de backup">
-    <p id="b-erro" class="err" role="alert"></p>
-    <button type="button" class="btn danger" id="b-restaurar">Restaurar backup</button>
-  </div>
-  <form class="box form" id="m-form" hidden>
-    <p><b>Dados da versão antiga</b></p>
-    <label for="m-senha">Senha mestra antiga</label><input id="m-senha" type="password" autocomplete="off" required>
-    <p id="m-erro" class="err" role="alert"></p>
-    <button class="btn primary" type="submit">Juntar à conta</button>
   </form>
 </section>
 

@@ -63,3 +63,13 @@ test('não recarrega no meio de um formulário', async () => {
   assert.equal(await pg.evaluate(() => atualizacaoPendente), true);                          // atualiza ao sair dela
   await ctx.close();
 });
+
+test('sem backup manual; senha da versão antiga só aparece em Ajustes quando há cofre sem chave', async () => {
+  const { ctx, pg } = await abrirApp();
+  await pg.click('[data-ir="ajustes"]');
+  assert.equal(await pg.locator('[data-ir="backup"], #v-backup').count(), 0);
+  assert.equal(await pg.isVisible('#m-form'), false);
+  await pg.evaluate(() => { localStorage.setItem('carga.vault.v1', '{}'); mostrar('ajustes'); });
+  assert.equal(await pg.isVisible('#m-form'), true);
+  await ctx.close();
+});

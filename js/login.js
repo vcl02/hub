@@ -66,11 +66,11 @@ function juntar(nuvem, local) {
     medidas: [...nuvem.medidas.filter(m => !local.medidas.some(x => x.data === m.data)), ...local.medidas]
   });
 }
-// Com "manter desbloqueado" a chave está salva e a migração é automática; sem ela, pede a senha antiga na tela de Backup.
+// Com "manter desbloqueado" a chave está salva e a migração é automática; sem ela, pede a senha antiga em Ajustes.
 async function migrarAntigo(atual) {
   const k = store.get(K_ANTIGO_CHAVE);
   if (!store.get(K_ANTIGO) || !window.crypto?.subtle) return atual;
-  if (!k) { setTimeout(() => toast('Há dados da versão antiga neste aparelho: Ajustes › Backup'), 300); return atual; }
+  if (!k) { setTimeout(() => toast('Há dados da versão antiga neste aparelho: Ajustes'), 300); return atual; }
   try {
     const velho = await abrirAntigo(await crypto.subtle.importKey('raw', deB64(k), { name: 'AES-GCM' }, false, ['decrypt']));
     store.del(K_ANTIGO); store.del(K_ANTIGO_CHAVE);

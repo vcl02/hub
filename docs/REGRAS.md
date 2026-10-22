@@ -32,8 +32,9 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 - Sem internet, a mudança fica pendente e envia ao reconectar, ao voltar para o app ou a cada 1 min. Ao abrir, envia o pendente e só então baixa a versão da nuvem, que passa a valer.
 - Pendência ou erro de envio aparece em uma linha na tela inicial; em Ajustes aparece o estado ("Tudo salvo na nuvem.").
 - Registro de variação que não existe mais é descartado.
-- **Versão antiga** (cofre criptografado `carga.vault.v1`): no 1º login é juntada à conta automaticamente se a chave estava salva; senão, Ajustes › Backup pede a senha mestra antiga. No mesmo dia (treino), variação+dia (registro) ou dia (pesagem), vale o do aparelho.
-- Fica só no aparelho, fora do banco e do backup: fotos das máquinas (`carga.foto.<variação>`), sessão do dia (`carga.sessao`), lembrete da água (`carga.agua`).
+- **Versão antiga** (cofre criptografado `carga.vault.v1`): no 1º login é juntada à conta automaticamente se a chave estava salva; senão, Ajustes pede a senha mestra antiga. No mesmo dia (treino), variação+dia (registro) ou dia (pesagem), vale o do aparelho.
+- Sem backup manual (baixar ou restaurar .json): os dados já ficam no Supabase.
+- Fica só no aparelho, fora do banco: fotos das máquinas (`carga.foto.<variação>`), sessão do dia (`carga.sessao`), lembrete da água (`carga.agua`).
 
 ## Treino
 
