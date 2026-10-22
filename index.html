@@ -68,7 +68,7 @@
 
 <!-- Exercício: variação, pirâmide, descanso e histórico (arraste para trocar) -->
 <section id="v-exercicio" class="view" hidden>
-  <div class="bar nav"><button class="back" type="button" data-voltar>‹ Treino</button>
+  <div class="bar nav"><button class="back" type="button" data-voltar title="Voltar" aria-label="Voltar"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
     <div class="pn"><span class="tempo" id="e-tempo"></span><b id="e-pos">1/6</b></div></div>
   <div class="trilha" id="e-trilha" aria-hidden="true"></div>
   <div class="travado-box" id="e-travado" hidden><p id="e-travado-msg"></p><button type="button" class="btn sm" data-reabrir>Reabrir treino de hoje</button></div>
@@ -154,14 +154,14 @@
 
 <!-- Todos os treinos (toque num dia para ver o resumo) -->
 <section id="v-treinos" class="view" hidden>
-  <div class="bar"><button class="back" type="button" data-voltar>‹ Treino</button></div>
+  <div class="bar"><button class="back" type="button" data-voltar title="Voltar" aria-label="Voltar"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button></div>
   <h2>Treinos</h2>
   <ul class="hist dias" id="t-dias"></ul>
 </section>
 
 <!-- Peso corporal -->
 <section id="v-corpo" class="view" hidden>
-  <div class="bar"><button class="back" type="button" data-voltar>‹ Treino</button></div>
+  <div class="bar"><button class="back" type="button" data-voltar title="Voltar" aria-label="Voltar"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button></div>
   <h2>Peso corporal</h2>
   <div class="peso-card" id="c-resumo" hidden></div>
   <p class="muted small" id="c-perfil"></p>
@@ -197,7 +197,7 @@
 
 <!-- Pontos e conquistas -->
 <section id="v-conquistas" class="view" hidden>
-  <div class="bar"><button class="back" type="button" data-voltar>‹ Treino</button></div>
+  <div class="bar"><button class="back" type="button" data-voltar title="Voltar" aria-label="Voltar"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button></div>
   <h2>Conquistas</h2>
   <div class="box" id="q-resumo"></div>
   <ul class="conq" id="q-lista"></ul>
@@ -205,7 +205,7 @@
 </section>
 
 <section id="v-editar" class="view" hidden>
-  <div class="bar"><button class="back" type="button" data-voltar>‹ Treino</button></div>
+  <div class="bar"><button class="back" type="button" data-voltar title="Voltar" aria-label="Voltar"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button></div>
   <h2>Exercícios</h2>
   <form id="ed-form" class="view">
     <div id="ed-lista" class="view"></div>

@@ -83,3 +83,13 @@ test('canto superior direito: engrenagem vai direto para editar exercícios e sa
   assert.equal(await pg.locator('[data-ir="senha"], #v-senha, #a-sair, #v-ajustes').count(), 0);
   await ctx.close();
 });
+
+test('voltar é só a seta azul, sem texto', async () => {
+  const { ctx, pg } = await abrirApp();
+  await pg.tap('.slot >> nth=0');
+  const b = '#v-exercicio .back';
+  assert.equal((await pg.textContent(b)).trim(), ''); assert.equal(await pg.getAttribute(b, 'aria-label'), 'Voltar');
+  await pg.click(b);
+  await pg.waitForSelector('#v-inicio:not([hidden])');
+  await ctx.close();
+});

@@ -79,7 +79,7 @@ h3.sec{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color
 .icon-btn.sair.armed{color:#fff;background:var(--red)}
 .bar{display:flex;align-items:center;min-height:44px}
 .nav{justify-content:space-between;gap:8px}
-.back{background:none;border:0;padding:8px 0;color:var(--blue);font-weight:600}
+.back{background:none;border:0;padding:0;margin-left:-8px;width:44px;height:44px;display:grid;place-items:center;color:var(--blue)}   /* só a seta "<" */
 .pn{display:flex;align-items:center;gap:6px}
 .pn b{font-variant-numeric:tabular-nums;font-size:var(--t-sm);color:var(--muted);font-weight:500;min-width:2.4em;text-align:center}
 .tempo{font-size:var(--t-sm);font-weight:600;color:var(--blue);font-variant-numeric:tabular-nums;margin-right:4px;white-space:nowrap}

@@ -8,6 +8,7 @@ Fonte de verdade do comportamento do app. Toda mudança de regra atualiza este a
 - As dicas de execução dos exercícios (posição, postura) não são ajuda do app: ficam, dentro de "Como fazer, ajustes e anotações".
 - `aria-label` em botões só de ícone continua (não aparece na tela).
 - Tela inicial: "Full body" e a data curta ("Qui, 22/10") na mesma linha, centralizados na altura dos botões de engrenagem e sair.
+- Voltar: só a seta azul "<" no canto superior esquerdo (sem texto).
 - Só tema claro, mesmo com o celular no modo escuro.
 - Cores: azul = app e ações, verde = feito/sucesso, vermelho = erro/abaixo da meta. Tokens no topo de `css/base.css`.
 
