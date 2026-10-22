@@ -10,16 +10,8 @@
   --body:'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   --r:14px;
   --t-xs:.75rem; --t-sm:.875rem; --t-md:1rem; --t-lg:1.25rem; --t-xl:1.75rem; --t-2xl:2.25rem; --t-3xl:4.25rem;
+  color-scheme:light;   /* só tema claro, mesmo com o celular no modo escuro */
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0b0e12; --surface:#141920; --line:#262d37; --fg:#f2f4f7; --muted:#9aa4b2;
-  --blue:#7c9dff; --blue-soft:#18233d; --on-blue:#0b1020;
-  --green:#4fd18b; --green-soft:#10291c; --red:#ff7b7b; --red-soft:#331617; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0b0e12; --surface:#141920; --line:#262d37; --fg:#f2f4f7; --muted:#9aa4b2;
-  --blue:#7c9dff; --blue-soft:#18233d; --on-blue:#0b1020;
-  --green:#4fd18b; --green-soft:#10291c; --red:#ff7b7b; --red-soft:#331617; color-scheme:dark}
-
 /* ---------- Base ---------- */
 *{box-sizing:border-box}
 [hidden]{display:none!important}

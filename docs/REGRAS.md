@@ -8,6 +8,7 @@ Fonte de verdade do comportamento do app. Toda mudança de regra atualiza este a
 - As dicas de execução dos exercícios (posição, postura) não são ajuda do app: ficam, dentro de "Como fazer, ajustes e anotações".
 - `aria-label` em botões só de ícone continua (não aparece na tela).
 - Tela inicial: "Full body" e a data curta ("Qui, 22/10") na mesma linha, centralizados na altura dos botões de engrenagem e sair.
+- Só tema claro, mesmo com o celular no modo escuro.
 - Cores: azul = app e ações, verde = feito/sucesso, vermelho = erro/abaixo da meta. Tokens no topo de `css/base.css`.
 
 ## Login e conta
@@ -58,7 +59,7 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 - Pesagem diária: 1 por dia (a nova substitui a do dia), em qualquer horário. Peso de 30 a 300 kg; cintura opcional. Na tela inicial, a balança fica no canto superior (ao lado da engrenagem), com um ponto azul enquanto não houver pesagem hoje.
 - O horário habitual é o da pesagem mais recente; mais de 1 h fora dele só recomenda voltar a ele (aviso azul), nunca bloqueia.
 - Na edição dá para mudar data, horário e peso. Data no futuro ou dia que já tem pesagem é recusado.
-- **IMC:** peso ÷ altura² com `ALTURA` = 1,78 m (`js/config.js`), 1 casa decimal. Faixas da OMS: < 18,5 abaixo do peso, < 25 normal, < 30 sobrepeso, ≥ 30 obesidade. Aparece no topo da tela de peso (com o peso atual e a variação desde a 1ª pesagem) e em cada pesagem do histórico.
+- **IMC:** peso ÷ altura² com `ALTURA` = 1,78 m (`js/config.js`), 1 casa decimal. Faixas da OMS: < 18,5 abaixo do peso, < 25 normal, < 30 sobrepeso, ≥ 30 obesidade. Aparece no card do topo da tela de peso (peso atual em destaque, IMC e variação desde a 1ª pesagem) e em cada pesagem do histórico.
 - **Perfil** (constantes no topo do código, fora do banco): altura 1,78 m, nascimento 14/09/2002, sexo masculino. A tela de peso mostra idade, altura e a taxa basal.
 - **Taxa basal (TMB):** Mifflin-St Jeor = 10 × peso + 6,25 × altura (cm) − 5 × idade + 5 (homem), em kcal/dia, com a idade no dia.
 - **Calorias:** estimativa com MET corrigido = 3,5 MET (Compendium of Physical Activities, 02054) × TMB ÷ 24 × horas de treino, com o peso da pesagem mais recente até o dia. O padrão assume 1 MET = 1 kcal/kg/h para todo mundo; usar a sua basal ajusta a conta para idade, altura e sexo.

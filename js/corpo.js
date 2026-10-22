@@ -24,8 +24,11 @@ telas.corpo = () => {
   $('c-peso').value = u ? virgula(u.peso) : '';
   $('c-cintura').value = u?.cintura ? virgula(u.cintura) : '';
   $('c-hora').value = horaHabitual() || hhmm(Date.now());
+  // Card do peso atual: número grande, IMC e variação desde a 1ª pesagem
   const prim = Ls[Ls.length - 1], dif = u ? Math.round((u.peso - prim.peso) * 10) / 10 : 0;
-  $('c-perfil').innerHTML = `${idadeEm(hoje())} anos · ${virgula(ALTURA)} m${u ? ` · basal ~${tmb(u.peso, hoje()).toLocaleString('pt-BR')} kcal/dia<br><b>${fmt(u.peso)} kg</b> · IMC ${fmt(imc(u.peso))} (${faixaImc(imc(u.peso))})${Ls.length > 1 ? ` · <span class="${dif < 0 ? 'bom' : dif > 0 ? 'ruim' : ''}">${dif > 0 ? '+' : ''}${fmt(dif)} kg desde ${dataCurta(prim.data)}</span>` : ''}` : ''}`;
+  $('c-resumo').hidden = !u;
+  if (u) $('c-resumo').innerHTML = `<b>${fmt(u.peso)}<small>kg</small></b><span class="pc-lado"><span><i>${quando(u.data)}</i></span><span>IMC <b>${fmt(imc(u.peso))}</b> · ${faixaImc(imc(u.peso))}</span>${Ls.length > 1 ? `<span class="${dif < 0 ? 'bom' : dif > 0 ? 'ruim' : ''}">${dif > 0 ? '+' : ''}${fmt(dif)} kg desde ${dataCurta(prim.data)}</span>` : ''}</span>`;
+  $('c-perfil').textContent = `${idadeEm(hoje())} anos · ${virgula(ALTURA)} m${u ? ` · basal ~${tmb(u.peso, hoje()).toLocaleString('pt-BR')} kcal/dia` : ''}`;
   avisoHorario(); pintarMedidas();
 };
 function pintarMedidas() {

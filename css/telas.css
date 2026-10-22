@@ -54,6 +54,12 @@
 /* ---------- Peso corporal ---------- */
 .hora{width:9em;border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:10px 12px;font-family:var(--display);font-weight:700;font-size:var(--t-lg)}
 .bom{color:var(--green);font-weight:600} .ruim{color:var(--red);font-weight:600}
+/* Peso corporal: card do peso atual no topo da tela */
+.peso-card{display:flex;align-items:center;gap:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.peso-card>b{font-family:var(--display);font-size:var(--t-3xl);font-weight:700;line-height:.9;white-space:nowrap}
+.peso-card>b small{font-size:var(--t-lg);margin-left:4px;color:var(--muted);font-family:var(--body);font-weight:500}
+.pc-lado{display:flex;flex-direction:column;gap:2px;font-size:var(--t-sm);min-width:0}
+.pc-lado i{color:var(--muted)}
 .aviso{font-size:var(--t-sm);padding:10px 12px;border-radius:10px;background:var(--blue-soft);color:var(--fg)}
 .aviso b{color:var(--blue)}
 .aviso.erro{background:var(--red-soft)} .aviso.erro b{color:var(--red)}

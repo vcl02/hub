@@ -41,6 +41,13 @@ test('IMC com 1,78 m', async () => {
   await pg.click('#i-corpo'); await pg.fill('#c-peso', '90'); await pg.click('#c-form button[type=submit]');
   assert.match(await pg.textContent('#c-historico'), /IMC 28,4/);                           // 90 / 1,78²
   assert.match(await pg.textContent('#c-perfil'), /\d+ anos · 1,78 m · basal ~1\.\d{3} kcal\/dia/);
-  assert.match(await pg.textContent('#c-perfil'), /90 kg · IMC 28,4 \(sobrepeso\)/);
+  assert.match(await pg.textContent('#c-resumo'), /90kg.*IMC 28,4 · sobrepeso/);
+  await ctx.close();
+});
+
+test('só tema claro, mesmo com o celular no modo escuro', async () => {
+  const { ctx, pg } = await abrirApp();
+  await pg.emulateMedia({ colorScheme: 'dark' });
+  assert.equal(await pg.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(242, 244, 247)');
   await ctx.close();
 });
