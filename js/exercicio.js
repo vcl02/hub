@@ -16,7 +16,7 @@ $('e-foto-rm').addEventListener('click', () => { store.del('carga.foto.' + varAt
 // Lembrete da garrafinha: ao abrir o 1º exercício do dia, até "Já peguei" ou o dia contar como treinado (fica só no aparelho)
 const K_AGUA = 'carga.agua';
 function pintarAgua(trav = travadoHoje()) { $('agua').hidden = !!trav || store.get(K_AGUA) === hoje() || diasTreinados().has(hoje()); }
-$('agua-ok').addEventListener('click', () => { store.set(K_AGUA, hoje()); pintarAgua(); });
+for (const id of ['agua-ok', 'agua-x']) $(id).addEventListener('click', () => { store.set(K_AGUA, hoje()); pintarAgua(); });   // o X também dispensa até amanhã
 
 // ===== Exercício =====
 let atual = null, editando = null;   // id do exercício aberto · série aberta para edição

@@ -237,7 +237,8 @@ test('lembrete da garrafinha ao abrir o 1º exercício do dia', async () => {
   assert.equal(await pg.isVisible('#agua'), true);
   const caixa = await pg.locator('#agua').boundingBox();
   assert.deepEqual([caixa.x, caixa.y, caixa.width, caixa.height], [0, 0, 390, 844]);           // tela cheia
-  await pg.click('#agua-ok');
+  assert.equal(await pg.getAttribute('#agua-x', 'aria-label'), 'Fechar');
+  await pg.click('#agua-x');                                                                    // X no canto também dispensa
   assert.equal(await pg.isVisible('#agua'), false);
   await pg.reload(); await pg.waitForSelector('#v-exercicio:not([hidden])');
   assert.equal(await pg.isVisible('#agua'), false);                                        // não volta no mesmo dia
@@ -276,7 +277,9 @@ test('parabéns em tela cheia ao finalizar, com as conquistas ganhas no treino',
   assert.deepEqual([caixa.x, caixa.y, caixa.width, caixa.height], [0, 0, 390, 844]);
   assert.match(await pg.textContent('#parabens-info'), /1 exercício · \+60 pts/);
   assert.match(await pg.textContent('#parabens-ganhos'), /★ Primeiro treino/);
-  await pg.click('#parabens-ok');
+  const x = await pg.locator('#parabens-x').boundingBox();
+  assert.ok(x.x > 300 && x.y < 80, 'X no canto superior direito');
+  await pg.click('#parabens-x');
   assert.equal(await pg.isVisible('#parabens'), false);
   assert.equal(await pg.isVisible('#v-fim'), true);
   await pg.click('#v-fim [data-ir="inicio"]');

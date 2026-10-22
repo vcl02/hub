@@ -49,9 +49,9 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 - **Tempo de treino:** começa no 1º toque dentro de um exercício. "Finalizar" ou 30 min sem mexer encerram (no horário da última interação).
 - **Um treino por dia:** depois de encerrado, o dia trava até "Reabrir". Abrir o app e não treinar (sem registro e sem finalizar) recomeça a contagem no próximo toque, sem criar 2º treino.
 - **Dia treinado:** tem registro **ou** treino finalizado (`fechado`), mesmo sem séries salvas. Conta para a semana, os pontos e as conquistas; o dia aparece como "✓ Treino feito".
-- **Parabéns:** ao finalizar o treino de hoje, tela cheia verde com duração, exercícios, recordes, pontos e o que foi ganho no dia (nível novo e conquistas desbloqueadas pelos dados do dia). "Ver resumo" fecha e mostra o resumo.
+- **Parabéns:** ao finalizar o treino de hoje, tela cheia verde com duração, exercícios, recordes, pontos e o que foi ganho no dia (nível novo e conquistas desbloqueadas pelos dados do dia). "Ver resumo" ou o X (canto superior direito) fecha e mostra o resumo.
 - **Resumo:** no fim do treino e ao tocar num dia feito (semana, "Últimos treinos" ou "Ver todos os treinos"): duração, calorias, exercícios, volume, pontos e o que foi feito.
-- **Lembrete da garrafinha:** tela cheia azul ao abrir o 1º exercício do dia (qualquer dia), até "Já peguei" ou o dia contar como treinado.
+- **Lembrete da garrafinha:** tela cheia azul ao abrir o 1º exercício do dia (qualquer dia), até "Já peguei" ou o X (canto superior direito) ou o dia contar como treinado.
 
 ## Peso corporal
 
