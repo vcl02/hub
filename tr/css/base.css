@@ -2,15 +2,16 @@
    Cores com significado: azul = app e ações · verde = feito/sucesso · vermelho = erro/abaixo da meta · preto e branco = conteúdo.
    Hierarquia: números e títulos em condensada negrito · nomes em semi-negrito · rótulos em texto normal · datas e dicas em itálico. */
 :root{
-  --bg:#f2f4f7; --surface:#ffffff; --line:#dde2e8; --fg:#0d1117; --muted:#5b6573;
-  --blue:#1f4fd1; --blue-soft:#e7eefc; --on-blue:#ffffff;
-  --green:#12804a; --green-soft:#e3f4ea;
-  --red:#c42b2b; --red-soft:#fbe9e9;
+  --bg:#1B1E21; --surface:#24272B; --line:#3B4147; --line-strong:#4A5158; --fg:#E9ECEF; --muted:#AAB1B8;
+  --blue:#6E9BFF; --blue-soft:#22304A; --on-blue:#0F1724;
+  --green:#4CCB78; --green-soft:#1E392A; --on-green:#0F2418;
+  --red:#F06A61; --red-soft:#402624; --on-red:#1B1E21;
+  --shadow:rgba(0,0,0,.35);
   --display:'Barlow Condensed','Arial Narrow','Roboto Condensed',sans-serif;
   --body:'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   --r:14px;
   --t-xs:.75rem; --t-sm:.875rem; --t-md:1rem; --t-lg:1.25rem; --t-xl:1.75rem; --t-2xl:2.25rem; --t-3xl:4.25rem;
-  color-scheme:light;   /* só tema claro, mesmo com o celular no modo escuro */
+  color-scheme:dark;   /* só tema escuro (o do hub e do fin), mesmo com o celular no modo claro */
 }
 /* ---------- Base ---------- */
 *{box-sizing:border-box}
@@ -44,7 +45,7 @@ h3.sec{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color
 .log{padding:14px;display:flex;flex-direction:column;gap:12px}
 .btn{border-radius:12px;border:1px solid var(--line);background:var(--surface);padding:12px 16px;font-weight:600;min-height:48px}
 .btn.primary{background:var(--blue);border-color:var(--blue);color:var(--on-blue)}
-.btn.danger{background:var(--red);border-color:var(--red);color:#fff}
+.btn.danger{background:var(--red);border-color:var(--red);color:var(--on-red)}
 .btn.big{min-height:56px;font-size:1.05rem}
 .btn.wide{width:100%}
 .btn:disabled{opacity:.55}
@@ -57,7 +58,7 @@ h3.sec{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color
 .chip:not(.ok):not(.acao){background:var(--line);color:var(--muted)}
 .slots.travado .slot{opacity:.6}
 .del{border:1px solid var(--line);background:transparent;border-radius:9px;padding:6px 10px;font-size:var(--t-sm);color:var(--muted)}
-.del.armed{border-color:var(--red);background:var(--red);color:#fff;font-weight:600}
+.del.armed{border-color:var(--red);background:var(--red);color:var(--on-red);font-weight:600}
 .err{color:var(--red);font-size:var(--t-sm);min-height:1.2em}
 .track{display:block;height:6px;border-radius:6px;background:var(--line);overflow:hidden}
 .track span{display:block;height:100%;width:0;background:var(--green);transition:width .3s}
@@ -66,7 +67,7 @@ h3.sec{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color
 .top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-top:6px}
 .titulo{min-width:0}
 .titulo h1{font-size:1.8rem;white-space:nowrap}
-.icon-btn{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-size:1.4rem;line-height:1;flex:none;display:grid;place-items:center;padding:0}
+.icon-btn{text-decoration:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-size:1.4rem;line-height:1;flex:none;display:grid;place-items:center;padding:0}
 .acoes-topo{display:flex;gap:6px}
 .acoes-topo .icon-btn{width:40px;height:40px}
 /* Ponto azul na balança: falta a pesagem de hoje */
@@ -74,7 +75,7 @@ h3.sec{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color
 .icon-btn.pendente::after{content:'';position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--blue)}
 /* Sair como no fin: vermelho; 1º toque com dados sem enviar só arma (borda cheia) */
 .icon-btn.sair{color:var(--red);background:var(--red-soft);border-color:var(--red)}
-.icon-btn.sair.armed{color:#fff;background:var(--red)}
+.icon-btn.sair.armed{color:var(--on-red);background:var(--red)}
 .bar{display:flex;align-items:center;min-height:44px}
 .nav{justify-content:space-between;gap:8px}
 .back{background:none;border:0;padding:0;margin-left:-8px;width:44px;height:44px;display:grid;place-items:center;color:var(--blue)}   /* só a seta "<" */

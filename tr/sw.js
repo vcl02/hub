@@ -13,9 +13,10 @@ self.addEventListener('install', evento => {
   )).then(() => self.skipWaiting()));
 });
 
-// Apaga os caches das versões antigas ("carga-v1" … "carga-v21").
+// Apaga os caches das versões antigas ("carga-v1" … "carga-v21"). Só os "carga-": no hub, fin e
+// a página inicial dividem a mesma origem e os mesmos caches.
 self.addEventListener('activate', evento => evento.waitUntil(
-  caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE_ESTATICO).map(k => caches.delete(k)))).then(() => self.clients.claim())
+  caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('carga-') && k !== CACHE_ESTATICO).map(k => caches.delete(k)))).then(() => self.clients.claim())
 ));
 
 self.addEventListener('fetch', evento => {

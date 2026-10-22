@@ -31,7 +31,7 @@
 .t-top{display:flex;justify-content:flex-start}
 .modos{display:flex;gap:4px;background:var(--line);padding:3px;border-radius:10px}
 .modos button{border:0;background:transparent;border-radius:8px;padding:5px 10px;font-size:var(--t-xs);color:var(--muted)}
-.modos button[aria-checked="true"]{background:var(--surface);color:var(--blue);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.modos button[aria-checked="true"]{background:var(--surface);color:var(--blue);font-weight:600;box-shadow:0 1px 2px var(--shadow)}
 .plano .st{color:var(--muted);text-align:center}
 .plano li.ok .st{color:var(--green);font-weight:700}
 .plano li.aberta{background:var(--surface);box-shadow:inset 0 0 0 2px var(--blue)}

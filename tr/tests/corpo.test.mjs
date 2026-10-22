@@ -45,10 +45,10 @@ test('IMC com 1,78 m', async () => {
   await ctx.close();
 });
 
-test('só tema claro, mesmo com o celular no modo escuro', async () => {
+test('só tema escuro (o do hub), mesmo com o celular no modo claro', async () => {
   const { ctx, pg } = await abrirApp();
-  await pg.emulateMedia({ colorScheme: 'dark' });
-  assert.equal(await pg.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(242, 244, 247)');
+  await pg.emulateMedia({ colorScheme: 'light' });
+  assert.equal(await pg.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(27, 30, 33)');
   await ctx.close();
 });
 

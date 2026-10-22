@@ -4,7 +4,7 @@
 .seg{border:0;background:transparent;border-radius:9px;padding:8px 6px;display:flex;flex-direction:column;gap:2px;text-align:center;min-width:0;color:var(--muted)}
 .seg-k{font-size:.7rem;text-transform:uppercase;letter-spacing:.07em}
 .seg-n{font-size:var(--t-sm);line-height:1.2;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.seg[aria-checked="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.seg[aria-checked="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px var(--shadow)}
 .seg[aria-checked="true"] .seg-k{color:var(--blue);font-weight:600}
 .presc{font-size:var(--t-sm);color:var(--muted);font-variant-numeric:tabular-nums}
 .presc b{color:var(--fg)}
@@ -54,7 +54,7 @@
 /* ---------- Peso corporal ---------- */
 .hora{width:9em;border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:10px 12px;font-family:var(--display);font-weight:700;font-size:var(--t-lg)}
 /* Login direto no fundo cinza: campos brancos com borda forte para aparecerem */
-.form.login input{background:var(--surface);border:1px solid #b9c2cd;padding:12px;font-size:1rem}
+.form.login input{background:var(--surface);border:1px solid var(--line-strong);padding:12px;font-size:1rem}
 .form.login input:focus{outline:2px solid var(--blue);outline-offset:-1px;border-color:var(--blue)}
 /* Login: "Entrando…" com bolinha girando; fieldset sem a borda padrão */
 #l-campos{border:0;padding:0;margin:0;min-width:0}

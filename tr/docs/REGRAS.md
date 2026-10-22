@@ -12,15 +12,15 @@ Fonte de verdade do comportamento do app. Toda mudança de regra atualiza este a
 - Confirmações (apagar, excluir, sair com dados sem enviar) são por toque duplo: o 1º toque deixa o botão vermelho por 3 s, o 2º confirma. Sem alertas nem avisos escritos pedindo confirmação.
 - Voltar: só a seta azul "<" no canto superior esquerdo (sem texto).
 - Esc: fecha a tela cheia aberta (garrafinha = X, parabéns = Ver resumo), senão cancela a edição na linha, senão volta uma tela. Na tela inicial e no login não faz nada.
-- Só tema claro, mesmo com o celular no modo escuro.
+- Só tema escuro, o mesmo do hub e do fin (cinza grafite `#1B1E21`), mesmo com o celular no modo claro.
 - Cores: azul = app e ações, verde = feito/sucesso, vermelho = erro/abaixo da meta. Tokens no topo de `css/base.css`.
 
 ## Login e conta
 
-- Login por **usuário** (`victor`) ou e-mail, e senha, Enter entra. Campos brancos com borda e o nome do campo dentro ("Usuário", "Senha"). Enquanto entra (login e 1ª carga), os campos travam e aparece "Entrando…"; a senha só é limpa depois de entrar (erro mantém) (`emailDoLogin`). Usuário desconhecido nem chega ao Supabase e recebe a mesma mensagem de senha errada (`Usuário ou senha inválidos.`).
+- Login por **usuário** (`victor`) ou e-mail, e senha, Enter entra. Campos na cor das superfícies (`#24272B`) com borda e o nome do campo dentro ("Usuário", "Senha"). Enquanto entra (login e 1ª carga), os campos travam e aparece "Entrando…"; a senha só é limpa depois de entrar (erro mantém) (`emailDoLogin`). Usuário desconhecido nem chega ao Supabase e recebe a mesma mensagem de senha errada (`Usuário ou senha inválidos.`).
 - Mesma conta do fin. Só a conta `DONO` (`js/config.js`) entra: outra conta sai na hora com "Esta conta não tem acesso ao Diário de Carga.". O RLS das tabelas `tr_*` também só libera essa conta (migration 02).
 - Sem "Esqueci a senha" e sem "Trocar senha": a senha é a do Supabase e se troca fora do app.
-- Tela inicial, canto superior direito: balança (peso corporal), engrenagem, que vai direto para a edição de exercícios (no fim dela: instalar e o estado da conta e da nuvem), e o botão de sair, só ícone e vermelho como no fin. Não há tela de Ajustes.
+- Tela inicial, canto superior direito: grade (volta ao hub, `../`), balança (peso corporal), engrenagem, que vai direto para a edição de exercícios (no fim dela: instalar e o estado da conta e da nuvem), e o botão de sair, só ícone e vermelho como no fin. Não há tela de Ajustes.
 - A sessão fica salva no aparelho: o app entra direto, inclusive sem internet. "Sair" apaga a cópia local se não houver nada pendente; se houver, pede toque duplo (o 1º só deixa o botão vermelho; o 2º, em até 3 s, sai), mantendo a cópia para enviar no próximo login.
 
 ## Banco e sincronização

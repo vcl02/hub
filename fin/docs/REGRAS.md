@@ -512,6 +512,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ### Cabeçalho e controles
 
+- O ícone de grade (**Hub**), logo antes de Encerrar, volta à página inicial do hub (`../`), que abre os outros apps; é um link, não grava nada.
 - Os seletores **De** e **Até** mostram cada ciclo pelo mês abreviado (`Out/26`, mês do início do ciclo), com o nome completo (`Outubro 2026`) no tooltip da opção.
   Os dois ficam lado a lado, sem texto ou traço entre eles (`Out/26` `Nov/26`).
 - O cabeçalho (navegação De/Até, simulação, cadastro, recarregar, diagnóstico, sair) é o mesmo em qualquer largura; quando não cabe numa linha só, quebra para a seguinte.

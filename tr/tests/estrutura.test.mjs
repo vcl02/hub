@@ -81,3 +81,11 @@ test('higiene textual do .editorconfig (scripts/check-style.mjs)', () => {
   const r = spawnSync(process.execPath, ['scripts/check-style.mjs'], { cwd: RAIZ, encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
 });
+
+test('hub: grade na tela inicial volta para ../ e o service worker só apaga os próprios caches', () => {
+  assert.match(html, /<a class="icon-btn" href="\.\.\/" id="i-hub" title="Hub" aria-label="Hub">/);
+  assert.ok(html.indexOf('id="i-hub"') < html.indexOf('id="i-corpo"'));
+  // fin e a página inicial do hub dividem a origem (e os caches) com o tr.
+  assert.match(ler('sw.js'), /ks\.filter\(k => k\.startsWith\('carga-'\) && k !== CACHE_ESTATICO\)/);
+  assert.match(ler('docs/REGRAS.md'), /grade \(volta ao hub, `\.\.\/`\)/);
+});
