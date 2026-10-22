@@ -1,6 +1,6 @@
 # Diário de Carga
 
-PWA para registrar evolução de carga na academia: pirâmide automática, substituto por exercício, cronômetro de descanso, peso corporal e pontos/conquistas. Dados no Supabase do projeto `fin` (tabelas `tr_*`), com cópia local para funcionar sem internet.
+PWA para registrar a evolução de carga na academia: pirâmide automática, substituto por exercício, cronômetro de descanso, peso corporal e pontos/conquistas. Dados no Supabase do projeto `fin` (tabelas `tr_*`), com cópia local para funcionar sem internet.
 
 | Arquivo | O que é |
 |---|---|
