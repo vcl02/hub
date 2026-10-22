@@ -38,8 +38,9 @@ function mostrarDia(dia) {
   semanasAtras = Math.round((deIso(semanaDe(hoje())) - deIso(semanaDe(diaInicio || hoje()))) / (7 * 864e5));
   pintarInicio();
 }
-// Para a esquerda: o treino anterior ao dia mostrado · para a direita: o seguinte, até hoje
-const arrastarDia = dir => { const d = diaVizinho(dir, diaInicio || hoje()); if (d) mostrarDia(d); else if (dir > 0 && diaInicio) mostrarDia(null); };
+// Na lista o sentido é o contrário das semanas (pedido do mantenedor): para a direita, o treino anterior
+// ao dia mostrado · para a esquerda, o seguinte, até hoje
+const arrastarDia = lado => { const dir = -lado, d = diaVizinho(dir, diaInicio || hoje()); if (d) mostrarDia(d); else if (dir > 0 && diaInicio) mostrarDia(null); };
 arrastarLado($('i-lista'), arrastarDia); arrastarLado(document.querySelector('#v-inicio .progress'), arrastarDia);
 $('i-hoje').addEventListener('click', () => mostrarDia(null));
 // Semana mostrada: 0 = atual; ‹ volta até a semana do 1º dia treinado, › avança até a atual

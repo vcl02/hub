@@ -375,7 +375,7 @@ test('parabéns em tela cheia ao finalizar, com as conquistas ganhas no treino',
   assert.deepEqual(erros, []); await ctx.close();
 });
 
-test('arrastar para a esquerda volta: semanas e, na própria tela inicial, a lista mostra o treino anterior', async () => {
+test('semanas: para a esquerda volta; lista da tela inicial: para a direita mostra o treino anterior ali mesmo', async () => {
   const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-22T19:00:00') });   // quinta
   await pg.evaluate(() => {
     for (const d of ['2026-10-08', '2026-10-15', '2026-10-21']) db.treinos.push({ inicio: new Date(d + 'T18:00').getTime(), fim: new Date(d + 'T19:00').getTime(), fechado: true });
@@ -393,23 +393,23 @@ test('arrastar para a esquerda volta: semanas e, na própria tela inicial, a lis
   assert.match(await pg.textContent('#i-msg'), /05\/10 a 11\/10/);
   await arrastar(ctx, pg, 60, 330, await y('#i-semana')); await arrastar(ctx, pg, 60, 330, await y('#i-semana'));
   assert.match(await pg.textContent('#i-msg'), /Hoje é dia de treino fixo/);
-  // Lista de hoje: para a esquerda mostra o treino de ontem aqui mesmo, sem sair da tela
-  await arrastar(ctx, pg, 330, 60, await y('.slot >> nth=2'));
+  // Lista de hoje: para a DIREITA (o contrário das semanas) mostra o treino de ontem aqui mesmo
+  await arrastar(ctx, pg, 60, 330, await y('.slot >> nth=2'));
   assert.equal(await pg.isVisible('#v-inicio'), true);
   assert.equal(await pg.textContent('#i-cont-l'), 'Qua, 21/10');
   assert.equal(await pg.textContent('#i-cont'), '1/6');
   assert.match(await pg.textContent('.slot >> nth=0'), /✓ Feito[\s\S]*✗ Falhou[\s\S]*100kg[\s\S]*8\/10✗\/12 · 21\/10/);
   assert.match(await pg.textContent('.slot >> nth=1'), /Não feito/);
   assert.match(await pg.getAttribute('#i-semana [data-dia="2026-10-21"]', 'class'), /sel/);  // o dia fica marcado na semana
-  await arrastar(ctx, pg, 330, 60, await y('.slot >> nth=2'));                                // o de antes: outra semana
+  await arrastar(ctx, pg, 60, 330, await y('.slot >> nth=2'));                                // o de antes: outra semana
   assert.equal(await pg.textContent('#i-cont-l'), 'Qui, 15/10');
   assert.match(await pg.textContent('#i-msg'), /12\/10 a 18\/10/);
-  await arrastar(ctx, pg, 60, 330, await y('.slot >> nth=2'));                                // para a direita: 21
+  await arrastar(ctx, pg, 330, 60, await y('.slot >> nth=2'));                                // para a esquerda: 21
   assert.equal(await pg.textContent('#i-cont-l'), 'Qua, 21/10');
-  await arrastar(ctx, pg, 60, 330, await y('.slot >> nth=2'));                                // e hoje
+  await arrastar(ctx, pg, 330, 60, await y('.slot >> nth=2'));                                // e hoje
   assert.equal(await pg.textContent('#i-cont-l'), 'Registrados hoje');
   assert.equal(await pg.isVisible('#i-hoje'), false);
-  await arrastar(ctx, pg, 330, 60, await y('.slot >> nth=2')); await pg.click('#i-hoje');    // "Hoje" volta direto
+  await arrastar(ctx, pg, 60, 330, await y('.slot >> nth=2')); await pg.click('#i-hoje');    // "Hoje" volta direto
   assert.equal(await pg.textContent('#i-cont-l'), 'Registrados hoje');
   // Resumo de um dia (toque no ✓): ‹ › e arrastar vão de um treino para o outro; depois do mais recente, a lista de hoje
   await pg.click('#i-semana [data-dia="2026-10-21"]');
