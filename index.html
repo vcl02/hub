@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1B1E21">
+<meta name="color-scheme" content="dark">
+<title>hub</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/hub-192.png">
+<link rel="apple-touch-icon" href="icons/hub-192.png">
+<link rel="stylesheet" href="hub.css">
+</head>
+<body>
+<main class="hub">
+  <h1>hub</h1>
+  <!-- Um card por app, cada um na sua pasta. App novo: pasta nova + um card aqui
+       (e o teste tests/hub.test.mjs confere que a pasta tem index.html). -->
+  <nav class="apps" aria-label="Apps">
+    <a class="app" href="fin/">
+      <img src="fin/icons/fin-192.png" alt="" width="56" height="56">
+      <span>fin</span>
+    </a>
+    <a class="app" href="tr/">
+      <img src="tr/icon-192.png" alt="" width="56" height="56">
+      <span>Diário de Carga</span>
+    </a>
+  </nav>
+</main>
+<script>
+// Página inicial do hub: só registra o cache offline dela (sw.js), os apps têm o próprio.
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
+</script>
+</body>
+</html>

@@ -8,7 +8,7 @@
 
 ## Arquitetura
 
-- `index.html` é o único documento da aplicação. Mantenha-o assim enquanto o deploy for estático no GitHub Pages; não introduza fragmentos HTML ou um framework sem uma decisão explícita.
+- O fin mora em `fin/` do repositório `vcl02/hub`, publicado junto com a página inicial do hub e os outros apps (guia geral em `../AGENTS.md`). Dentro de `fin/`, `fin/index.html` é o único documento do app; não introduza fragmentos HTML ou um framework sem uma decisão explícita. Outras páginas do hub ficam fora desta pasta.
 - Os estilos são carregados nesta ordem: `css/base.css`, `css/dashboard.css`, `css/forms.css`, `css/charts.css`, `css/utilities.css`, `css/mobile.css`. `mobile.css` precisa ser o último, pois contém os overrides responsivos.
 - Os scripts clássicos são carregados nesta ordem: `app-state`, `domain`, `shared`, `supabase-api`, `finance`, `data-ui`, `tables`, `cycle-views`, `interactions`, `charts`, `form`, `bootstrap`. Respeite as dependências globais entre eles.
 - Preserve a responsabilidade de cada módulo: estado/configuração, utilitários, API, cálculos, carga, tabelas, visões, interações, gráficos, formulário e inicialização.
@@ -35,8 +35,8 @@
 2. Acrescente ou ajuste testes de regressão para o comportamento alterado. Prefira `node:test`, determinístico e sem criar lançamentos de teste no banco.
 3. Documente no código a intenção de regras financeiras, arredondamentos, filtros e efeitos de linhas sintéticas. Comentários devem explicar o porquê, não reescrever a sintaxe.
 4. Rode `node --test tests/*.test.js`, `git diff --check` e verificações de sintaxe aplicáveis. A suíte deve incluir a checagem de estrutura HTML/CSS: todo `<div>` precisa fechar na ordem correta e cada stylesheet precisa ter chaves balanceadas. Informe precisamente o que foi validado; não alegue validação visual ou Supabase se ela não ocorreu.
-   O atalho oficial é `node scripts/check.mjs`, que executa a validação local completa sem dependências adicionais, inclusive higiene textual definida no `.editorconfig`.
-5. Depois de os testes passarem, faça commit e push para `origin/main` por padrão, salvo pedido contrário do usuário. Nunca inclua alterações alheias no commit.
+   O atalho oficial é `node scripts/check.mjs` (dentro de `fin/`), que executa a validação local completa sem dependências adicionais, inclusive higiene textual definida no `.editorconfig`. Antes do push, rode também `node scripts/check.mjs` na raiz do hub, que valida a página inicial, o fin e o tr juntos.
+5. Depois de os testes passarem, faça commit e push para `origin/main` do `vcl02/hub` por padrão, salvo pedido contrário do usuário. Nunca inclua alterações alheias no commit.
 6. Trabalhe sempre no checkout principal, direto na branch `main`: este é um projeto pessoal, sem fluxo de PR. Nunca crie git worktree, branch auxiliar nem peça revisão antes de puxar pra `main` — pedido explícito do mantenedor.
 
 ## Preferências do mantenedor

@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
 
-const workflow = fs.readFileSync('.github/workflows/avisar-pages-publicado.yml', 'utf8');
+const workflow = fs.readFileSync('../.github/workflows/avisar-pages-publicado.yml', 'utf8');   // na raiz do hub
 
 test('avisa somente o build publicado pelo Pages, identificando o commit e sem expor credenciais', () => {
     assert.match(workflow, /^on:\n  page_build:/m);

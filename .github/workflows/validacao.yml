@@ -1,5 +1,5 @@
-# Executa no GitHub a mesma validação local (scripts/check.mjs). Diferente do fin, a suíte usa
-# Playwright, então instala as dependências do package-lock e o Chromium antes.
+# Executa no GitHub a mesma validação local do hub (raiz, fin e tr). O tr e o teste de navegação
+# usam Playwright, instalado em tr/ junto com o Chromium.
 name: Validação
 
 on:
@@ -20,6 +20,7 @@ jobs:
         with:
           node-version: 22
       - name: Instalar dependências de teste
+        working-directory: tr
         run: npm ci && npx playwright install --with-deps chromium
       - name: Executar validação local
         run: node scripts/check.mjs

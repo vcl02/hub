@@ -1,0 +1,5 @@
+# Dependências de teste do tr (Playwright), instaladas por npm ci em tr/.
+node_modules/
+# Configuração local do Claude Code (plugins, worktrees temporários, permissões locais) — ferramenta
+# de quem edita o repo, não parte dos apps. Nunca deve ir pro commit.
+.claude/

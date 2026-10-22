@@ -18,8 +18,12 @@ PWA para registrar a evolução de carga na academia: pirâmide automática, sub
 
 ## Testes
 
+Dentro de `tr/`:
+
 ```
 npm install
 npx playwright install chromium
 node scripts/check.mjs   # ou só os testes: npm test
 ```
+
+Fica em `tr/` do repositório `hub`; antes do push rode também `node scripts/check.mjs` na raiz.

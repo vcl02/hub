@@ -16,12 +16,12 @@ test('mantém regras em docs e remove referências ao diretório legado', () => 
 });
 
 test('recomenda apenas extensões opcionais alinhadas ao projeto', () => {
-    const recomendacoes = JSON.parse(fs.readFileSync('.vscode/extensions.json', 'utf8')).recommendations;
+    const recomendacoes = JSON.parse(fs.readFileSync('../.vscode/extensions.json', 'utf8')).recommendations;
     assert.deepEqual(recomendacoes, ['editorconfig.editorconfig']);
 });
 
 test('limita o MCP do Supabase ao projeto fin e a consultas', () => {
-    const configuracao = JSON.parse(fs.readFileSync('.mcp.json', 'utf8'));
+    const configuracao = JSON.parse(fs.readFileSync('../.mcp.json', 'utf8'));
     const servidor = configuracao.mcpServers.supabase;
     const url = new URL(servidor.url);
 

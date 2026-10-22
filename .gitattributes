@@ -1,7 +1,7 @@
 # Força LF em todo texto, consistente com end_of_line=lf do .editorconfig. Sem isto, o
 # core.autocrlf do Git no Windows grava CRLF no checkout e quebra testes que leem o
-# código fonte e comparam com regex ancorada em \n (ex.: tests/editar-lancamento.test.js,
-# tests/sinal-inline.test.js).
+# código fonte e comparam com regex ancorada em \n (ex.: fin/tests/editar-lancamento.test.js,
+# fin/tests/sinal-inline.test.js).
 * text=auto eol=lf
 
 *.png binary
