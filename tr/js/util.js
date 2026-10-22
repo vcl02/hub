@@ -54,6 +54,28 @@ function confirmar(btn) {   // toque duplo: o 1º só deixa o botão vermelho (3
   return false;
 }
 
+// ===== Arrastar para o lado (semanas, dias de treino) =====
+// ir(1) = arrastou para a esquerda (o seguinte, mais novo) · ir(-1) = para a direita (o anterior). Mesmo limiar do
+// arrastar entre exercícios: 80 px, ou 40 px num gesto rápido. Campo de texto não arrasta.
+function arrastarLado(el, ir) {
+  let x0 = 0, y0 = 0, t0 = 0, ativo = false, eixo = null;
+  el.addEventListener('touchstart', ev => {
+    ativo = ev.touches.length === 1 && !ev.target.closest('input,textarea,select'); eixo = null;
+    if (ativo) { x0 = ev.touches[0].clientX; y0 = ev.touches[0].clientY; t0 = Date.now(); }
+  }, { passive: true });
+  el.addEventListener('touchmove', ev => {
+    if (!ativo || eixo) return;
+    const dx = ev.touches[0].clientX - x0, dy = ev.touches[0].clientY - y0;
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) eixo = Math.abs(dx) > Math.abs(dy) * 1.3 ? 'x' : 'y';
+  }, { passive: true });
+  el.addEventListener('touchend', ev => {
+    if (!ativo) return; ativo = false;
+    const dx = ev.changedTouches[0].clientX - x0, rapido = Date.now() - t0 < 300;
+    if (eixo === 'x' && (Math.abs(dx) > 80 || (rapido && Math.abs(dx) > 40))) ir(dx < 0 ? 1 : -1);
+  });
+  el.addEventListener('touchcancel', () => { ativo = false; });
+}
+
 // ===== Navegação =====
 const telas = {};
 let pilha = [];

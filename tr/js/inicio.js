@@ -46,3 +46,6 @@ function semana() {
 }
 $('i-sem-ant').addEventListener('click', () => { semanasAtras++; semana(); });
 $('i-sem-prox').addEventListener('click', () => { semanasAtras = Math.max(0, semanasAtras - 1); semana(); });
+// Arrastar a linha da semana: para a direita volta uma semana, para a esquerda avança (mesmos limites do ‹ ›)
+const arrastarSemana = dir => { const b = dir > 0 ? $('i-sem-prox') : $('i-sem-ant'); if (!b.disabled) b.click(); };
+arrastarLado($('i-semana'), arrastarSemana); arrastarLado(document.querySelector('.week-msg'), arrastarSemana);

@@ -375,6 +375,35 @@ test('parabéns em tela cheia ao finalizar, com as conquistas ganhas no treino',
   assert.deepEqual(erros, []); await ctx.close();
 });
 
+test('arrastar a semana para os lados e, no resumo, de um treino para o outro', async () => {
+  const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-22T19:00:00') });   // quinta
+  await pg.evaluate(() => {
+    for (const d of ['2026-10-08', '2026-10-15']) db.treinos.push({ inicio: new Date(d + 'T18:00').getTime(), fim: new Date(d + 'T19:00').getTime(), fechado: true });
+    gravar(); mostrar('inicio');
+  });
+  const y = async sel => { const b = await pg.locator(sel).boundingBox(); return b.y + b.height / 2; };
+  await arrastar(ctx, pg, 60, 330, await y('#i-semana'));                                     // para a direita: semana anterior
+  assert.match(await pg.textContent('#i-msg'), /12\/10 a 18\/10/);
+  await arrastar(ctx, pg, 60, 330, await y('.week-msg'));                                     // também pela linha de baixo
+  assert.match(await pg.textContent('#i-msg'), /05\/10 a 11\/10/);
+  await arrastar(ctx, pg, 60, 330, await y('#i-semana'));                                     // semana do 1º treino: para
+  assert.match(await pg.textContent('#i-msg'), /05\/10 a 11\/10/);
+  await arrastar(ctx, pg, 330, 60, await y('#i-semana'));                                     // para a esquerda: avança
+  assert.match(await pg.textContent('#i-msg'), /12\/10 a 18\/10/);
+  await pg.click('#i-semana [data-dia="2026-10-15"]');                                        // resumo de um treino
+  await pg.waitForSelector('#v-fim:not([hidden])');
+  assert.match(await pg.textContent('#f-data'), /15 de outubro/);
+  await arrastar(ctx, pg, 60, 330, 400);                                                      // para a direita: treino anterior
+  assert.match(await pg.textContent('#f-data'), /8 de outubro/);
+  assert.equal(await pg.isDisabled('#f-ant'), true);                                          // o 1º treino: para
+  await arrastar(ctx, pg, 60, 330, 400);
+  assert.match(await pg.textContent('#f-data'), /8 de outubro/);
+  await pg.click('#f-prox');                                                                  // e os botões ‹ › fazem o mesmo
+  assert.match(await pg.textContent('#f-data'), /15 de outubro/);
+  assert.equal(await pg.isDisabled('#f-prox'), true);                                         // sem treino depois
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
 test('voltar as semanas até a do 1º treino', async () => {
   const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-22T19:00:00') });   // quinta
   await pg.evaluate(() => { db.treinos.push({ inicio: new Date('2026-10-08T18:00').getTime(), fim: new Date('2026-10-08T19:00').getTime(), fechado: true }); gravar(); mostrar('inicio'); });

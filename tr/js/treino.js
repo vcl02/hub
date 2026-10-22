@@ -51,6 +51,7 @@ let diaVisto = null;   // null = treino que acabou de terminar
 telas.fim = () => {
   const dia = diaVisto || hoje(), antigo = !!diaVisto, r = resumoDia(dia), { ex, va } = mapas(), t = r.treino;
   $('f-data').textContent = deIso(dia).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  $('f-ant').disabled = !diaVizinho(-1); $('f-prox').disabled = !diaVizinho(1);
   $('f-titulo').textContent = antigo ? 'Resumo do treino' : 'Treino concluído!';
   $('f-msg').textContent = !r.regs.length ? 'Nenhum exercício registrado neste dia.' : r.recordes ? `${r.recordes} ${r.recordes === 1 ? 'recorde' : 'recordes'}${antigo ? '' : ' hoje. Mandou bem!'}` : antigo ? '' : 'Mais um treino na conta. Constância é o que dá resultado.';
   const tiles = [
@@ -71,6 +72,18 @@ telas.fim = () => {
   pintarLinhaTreino(t);
   if (!antigo) parabens(dia, r, t);
 };
+// Treino anterior / seguinte a partir do dia mostrado (só dias treinados), ou null nas pontas
+function diaVizinho(dir) {
+  const dias = [...diasTreinados()].sort(), i = dias.indexOf(diaVisto || hoje()), j = i + dir;
+  return i >= 0 && j >= 0 && j < dias.length ? dias[j] : null;
+}
+function irParaDia(dir) {
+  const d = diaVizinho(dir); if (!d || editTreino) return;
+  diaVisto = d; telas.fim(); window.scrollTo(0, 0);
+}
+$('f-ant').addEventListener('click', () => irParaDia(-1));
+$('f-prox').addEventListener('click', () => irParaDia(1));
+arrastarLado($('v-fim'), irParaDia);
 // Linha do horário no resumo, com Editar (horário ou excluir o treino do dia)
 function pintarLinhaTreino(t) {
   $('f-treino').hidden = !t;
