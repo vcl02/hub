@@ -1,0 +1,32 @@
+/* Edição inline (horários, pesagens), resumo do treino e dia travado. */
+/* ---------- Edição inline (horários, pesagens) ---------- */
+.btn.sm{min-height:36px;padding:6px 12px;font-size:var(--t-sm)}
+.ed-acoes{display:flex;gap:6px;align-items:center;justify-content:flex-end}
+.ed-inline{display:flex;gap:4px;align-items:center;flex-wrap:wrap;font-size:var(--t-sm);color:var(--muted)}
+.ed-inline input{border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:5px 6px;font-size:.85rem;color:var(--fg);max-width:4.6em}
+.ed-inline input[type=date]{max-width:7.6em}
+.ed-inline #em-peso,.ed-inline #em-cint{max-width:3.4em}
+/* sem o ícone de relógio/calendário dentro do campo: no celular, tocar no campo já abre o seletor */
+.ed-inline input::-webkit-calendar-picker-indicator{display:none}
+/* Edição numa linha só: rótulo, campos e botões de ícone; se não couber (pesagem), os botões descem à direita */
+.hist li.editando{display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:8px}
+.hist li.editando .ed-acoes{margin-left:auto;gap:4px}
+.bt-ic{width:32px;height:32px;flex:none;display:grid;place-items:center;padding:0;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--muted)}
+.bt-ic.ok{background:var(--blue);border-color:var(--blue);color:var(--on-blue)}
+.bt-ic.perigo{color:var(--red)}
+.bt-ic.armed{background:var(--red);border-color:var(--red);color:#fff}
+.treino-tempo .btn.sm{margin-left:auto}
+
+/* ---------- Fim do treino ---------- */
+.fim-top{display:flex;flex-direction:column;gap:6px;padding-top:12px}
+.fim-top h1{color:var(--green);font-size:2.6rem}
+.tiles{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tiles li{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:2px}
+.tiles li:first-child{grid-column:1/-1;border-color:var(--green);background:var(--green-soft)}
+.tiles span{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.tiles b{font-family:var(--display);font-size:var(--t-xl);font-weight:700;line-height:1.1}
+.tiles small{font-size:var(--t-xs);color:var(--muted);font-style:italic}
+
+/* ---------- Um treino por dia ---------- */
+.travado-box{display:flex;flex-direction:column;gap:8px;align-items:flex-start;background:var(--green-soft);border:1px solid var(--green);border-radius:var(--r);padding:12px 14px;font-size:var(--t-sm)}
+.travado .log,.travado .timer,.travado .segs{opacity:.45;pointer-events:none}

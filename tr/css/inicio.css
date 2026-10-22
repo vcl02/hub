@@ -1,0 +1,41 @@
+/* Tela inicial: semana, jogo, peso corporal, lista de exercícios. */
+/* ---------- Início ---------- */
+.week-msg{align-items:center;flex-wrap:nowrap}
+.week-msg #i-msg{flex:1;min-width:0}
+.sem-nav{width:30px;height:30px;color:var(--blue)}
+.sem-nav:disabled{opacity:.3}
+.week{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.day{display:flex;flex-direction:column;align-items:center;gap:1px;padding:7px 0 6px;border-radius:10px;border:1px solid transparent;color:var(--muted);font-variant-numeric:tabular-nums}
+.day .dn{font-size:.7rem;text-transform:uppercase;letter-spacing:.05em}
+.day .dd{font-family:var(--display);font-weight:700;font-size:1.25rem;line-height:1.1}
+.day .dm{font-size:.62rem;min-height:1em;text-transform:uppercase;letter-spacing:.04em}
+.day.fix{background:var(--blue-soft);color:var(--blue);border-color:var(--blue)}
+.day.sug{border:1px dashed var(--blue);color:var(--fg)}
+.day.done{background:var(--green-soft);border-color:var(--green);color:var(--green)}
+.day.today{box-shadow:0 0 0 2px var(--fg)}
+.week-msg{font-size:var(--t-sm);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.week-msg b{font-variant-numeric:tabular-nums}
+.game{width:100%;text-align:left;display:flex;flex-direction:column;gap:6px;padding:12px 14px}
+.g-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.g-top b{font-family:var(--display);font-size:var(--t-xl);font-weight:700;line-height:1;color:var(--blue)}
+.g-top span{font-variant-numeric:tabular-nums;font-weight:600}
+.game .track span{background:var(--blue)}
+.g-info{font-size:var(--t-sm);color:var(--muted)}
+.treino-tempo{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;font-size:var(--t-sm)}
+.treino-tempo b{font-family:var(--display);font-size:1.5rem;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.treino-tempo i{color:var(--muted)}
+.treino-tempo.on{border-color:var(--blue)} .treino-tempo.on b{color:var(--blue)}
+.progress{display:flex;flex-direction:column;gap:6px}
+.progress-row{display:flex;justify-content:space-between;font-size:var(--t-sm);color:var(--muted)}
+.progress-row b{color:var(--fg);font-variant-numeric:tabular-nums}
+.slots{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.slot{width:100%;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;text-align:left;padding:14px}
+.slot:active{transform:scale(.99)}
+.slot-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+.slot .name{font-weight:600;font-size:1.06rem}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.chips:empty{display:none}
+.slot-load{display:flex;flex-direction:column;align-items:flex-end;text-align:right}
+.w{font-family:var(--display);font-weight:700;font-size:2rem;line-height:1;font-variant-numeric:tabular-nums}
+.w small{font-size:var(--t-sm);margin-left:2px;color:var(--muted);font-family:var(--body);font-weight:400}
+.r{font-size:var(--t-sm);color:var(--muted);font-variant-numeric:tabular-nums}

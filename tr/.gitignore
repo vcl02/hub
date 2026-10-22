@@ -1,0 +1,4 @@
+node_modules/
+# Configuração local do Claude Code (plugins, worktrees temporários, permissões locais) — ferramenta
+# de quem edita o repo, não parte do app. Nunca deve ir pro commit.
+.claude/

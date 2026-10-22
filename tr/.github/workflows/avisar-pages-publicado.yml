@@ -1,0 +1,53 @@
+# Envia o aviso apenas quando o build nativo do GitHub Pages confirma um commit publicado.
+name: Avisar Pages publicado
+
+on:
+  page_build:
+
+jobs:
+  avisar:
+    # page_build também ocorre em falhas; só um build concluído representa uma versão publicada.
+    if: github.event.build.status == 'built'
+    runs-on: ubuntu-latest
+    steps:
+      # ubuntu-latest já fornece Node com fetch; evitar setup-node reduz o atraso do aviso.
+      - name: Enviar e-mail da versão publicada
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_FROM: ${{ vars.RESEND_FROM }}
+          RESEND_TO: ${{ vars.RESEND_TO }}
+          PAGES_COMMIT: ${{ github.event.build.commit }}
+          REPOSITORIO: ${{ github.repository }}
+          SERVIDOR_GITHUB: ${{ github.server_url }}
+        run: |
+          node <<'NODE'
+          async function enviar() {
+            const obrigatorios = ['RESEND_API_KEY', 'RESEND_FROM', 'RESEND_TO', 'PAGES_COMMIT'];
+            const ausentes = obrigatorios.filter(nome => !process.env[nome]);
+            if (ausentes.length) throw new Error(`Configuração ausente: ${ausentes.join(', ')}`);
+
+            const commit = process.env.PAGES_COMMIT;
+            const commitCurto = commit.slice(0, 7);
+            const linkCommit = `${process.env.SERVIDOR_GITHUB}/${process.env.REPOSITORIO}/commit/${commit}`;
+            const resposta = await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+                'Content-Type': 'application/json',
+                'Idempotency-Key': `tr-pages-${commit}`,
+              },
+              body: JSON.stringify({
+                from: process.env.RESEND_FROM,
+                to: [process.env.RESEND_TO],
+                subject: `Diário de Carga publicado — ${commitCurto}`,
+                html: `<p><strong>Diário de Carga</strong> foi publicado no GitHub Pages.</p><p>Commit: <a href="${linkCommit}"><code>${commitCurto}</code></a></p>`,
+              }),
+            });
+            if (!resposta.ok) throw new Error(`Resend: ${resposta.status} ${await resposta.text()}`);
+          }
+
+          enviar().catch(erro => {
+            console.error(erro);
+            process.exitCode = 1;
+          });
+          NODE
