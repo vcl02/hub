@@ -18,8 +18,6 @@ telas.inicio = () => {
   $('i-lista').classList.toggle('travado', !!trav);
   $('i-cont').textContent = trav ? '✓ Treino feito' : feitos + '/' + db.exercicios.length;
   $('i-barra').style.width = (trav ? 100 : db.exercicios.length ? feitos / db.exercicios.length * 100 : 0) + '%';
-  const agora = new Date();   // curta para caber na linha do título ao lado dos 3 botões: "Qui, 22/10"
-  $('i-data').textContent = `${NOME_DIA[agora.getDay()]}, ${dataCurta(hoje())}`;
   semana(); pintarTempo(); pintarJogo(estatisticas()); pintarCorpoInicio();
 };
 // Semana mostrada: 0 = atual; ‹ volta até a semana do 1º dia treinado, › avança até a atual

@@ -7,7 +7,7 @@ Fonte de verdade do comportamento do app. Toda mudança de regra atualiza este a
 - O app é só do mantenedor: nada de textos explicando como usar o app (dicas de uso, instruções, legendas de ajuda). Ficam só dados, rótulos curtos e avisos de erro.
 - As dicas de execução dos exercícios (posição, postura) não são ajuda do app: ficam, dentro de "Como fazer, ajustes e anotações".
 - `aria-label` em botões só de ícone continua (não aparece na tela).
-- Tela inicial: "Full body" e a data curta ("Qui, 22/10") na mesma linha, centralizados na altura dos botões de engrenagem e sair.
+- Tela inicial: só "Full body" no título (sem data), centralizado na altura dos botões do canto.
 - Edição de treino e de pesagem na própria linha, com botões só de ícone: lixeira (excluir, 2 toques), X (cancelar) e ✓ (salvar).
 - Voltar: só a seta azul "<" no canto superior esquerdo (sem texto).
 - Esc: fecha a tela cheia aberta (garrafinha = X, parabéns = Ver resumo), senão cancela a edição na linha, senão volta uma tela. Na tela inicial e no login não faz nada.
