@@ -541,7 +541,7 @@ $('i-agua-ok').addEventListener('click', () => { store.set(K_AGUA, hoje()); pint
 
 // ===== Gráfico de linha (carga ou peso corporal) =====
 function grafico(box, P, unidade, rotulo) {   // P = [{ data, valor }] em ordem cronológica
-  if (P.length < 2) { box.innerHTML = '<p>O gráfico aparece a partir do 2º registro.</p>'; return; }
+  if (P.length < 2) { box.innerHTML = ''; return; }
   const W = 320, H = 120, l = 40, r = 12, t = 12, b = 22;
   let lo = Math.min(...P.map(p => p.valor)), hi = Math.max(...P.map(p => p.valor));
   if (lo === hi) { lo -= 1; hi += 1; }
@@ -602,7 +602,7 @@ telas.exercicio = () => {
   $('e-foto-rm').hidden = !store.get('carga.foto.' + v.id);
   $('e-ultima').innerHTML = u
     ? `<span>Última vez: <b>${kgsTxt(u)} ${esc(unidadeTxt(v))}</b> × ${repsTxt(u)} · <i>${quando(u.data)}</i></span>${completo(u, e) ? '<span class="chip acao">↑ Completou: suba a carga</span>' : ''}`
-    : '<i class="muted">Primeiro registro desta variação. Comece leve.</i>';
+    : '';
   const rs = rascunho[v.id];   // valor digitado e ainda não salvo tem prioridade
   $('e-carga').value = rs ? rs.carga : u ? virgula(u.series[0].kg) : '';
   pintarPeso(e); pintarDescanso(e); pintarSalvo(e); pintarHistorico(e);
@@ -656,7 +656,7 @@ function pintarSalvo(e) {
   const falta = !r && k > 0;
   $('e-salvo').classList.toggle('ok', !!r); $('e-salvo').classList.toggle('erro', falta);
   $('e-salvo').innerHTML = r ? `✓ Salvo: <b>${kgsTxt(r)} ${esc(unidadeTxt(v))}</b> × ${repsTxt(r)}`
-    : falta ? 'Coloque o peso da 1ª série para salvar.' : '<i>Salva sozinho a cada série marcada.</i>';
+    : falta ? 'Sem peso: não salvo.' : '';
   $('e-finalizar').hidden = !emAndamento(ultimoTreino());
 }
 const CAMPOS = { carga: 'e-carga', peso: 'c-peso', cintura: 'c-cintura' };
@@ -711,9 +711,7 @@ function avisoHorario() {   // reforça pesar sempre no mesmo horário
   const hab = horaHabitual(), h = $('c-hora').value, box = $('c-aviso');
   const longe = hab && h && Math.abs(minutos(h) - minutos(hab)) > 60;
   box.classList.toggle('erro', !!longe);
-  box.innerHTML = !hab ? '<b>Escolha um horário e mantenha toda semana.</b> O peso muda ao longo do dia (água, comida), então só dá para comparar pesagens feitas no mesmo horário.'
-    : longe ? `<b>Fora do seu horário.</b> Você costuma se pesar às <b>${hab}</b>. Pesando às ${h}, a diferença pode ser só de horário, não de gordura.`
-    : `<b>Mesmo horário de sempre: ${hab}.</b> Assim dá para comparar uma semana com a outra.`;
+  box.innerHTML = longe ? `<b>Fora do seu horário (${hab}).</b>` : '';
 }
 $('c-hora').addEventListener('input', avisoHorario);
 telas.corpo = () => {
@@ -726,7 +724,7 @@ telas.corpo = () => {
 function pintarMedidas() {
   const Ls = medidasOrdenadas();
   $('c-historico').innerHTML = Ls.length ? Ls.map(m => m.data === editMedida
-    ? `<li class="editando"><i class="h-d">${dataCurta(m.data)}</i><span class="ed-inline"><input type="time" id="em-hora" value="${m.hora}" aria-label="Horário"><input id="em-peso" inputmode="decimal" value="${virgula(m.peso)}" aria-label="Peso em kg"> kg</span><span class="ed-acoes"><button type="button" class="btn sm primary" data-salvar-medida="${m.data}">Salvar</button><button type="button" class="link" data-cancelar>Cancelar</button></span></li>`
+    ? `<li class="editando"><i class="h-d">${dataCurta(m.data)}</i><span class="ed-inline"><input type="date" id="em-data" value="${m.data}" max="${hoje()}" aria-label="Data"><input type="time" id="em-hora" value="${m.hora}" aria-label="Horário"><input id="em-peso" inputmode="decimal" value="${virgula(m.peso)}" aria-label="Peso em kg"> kg</span><span class="ed-acoes"><button type="button" class="btn sm primary" data-salvar-medida="${m.data}">Salvar</button><button type="button" class="link" data-cancelar>Cancelar</button></span></li>`
     : `<li><i class="h-d">${dataCurta(m.data)}${m.hora ? ' ' + m.hora : ''}</i><span class="h-v">${fmt(m.peso)} kg${m.cintura ? ` <small>cintura ${fmt(m.cintura)} cm</small>` : ''}</span><span class="ed-acoes"><button type="button" class="del" data-editar-medida="${m.data}">Editar</button><button type="button" class="del" data-apagar-medida="${m.data}">Apagar</button></span></li>`).join('')
     : '<li class="empty">Nenhuma pesagem ainda.</li>';
   grafico($('c-grafico'), Ls.slice(0, 16).reverse().map(m => ({ data: m.data, valor: m.peso })), 'kg', 'Evolução do peso corporal');
@@ -773,7 +771,8 @@ function pintarTempo() {
   $('e-tempo').textContent = ativo ? '⏱ ' + duracao(Date.now() - t.inicio) : '';
   box.classList.toggle('on', ativo);
   const cal = t && !ativo ? kcal(t) : null;
-  box.innerHTML = !t ? '<i class="muted">O tempo do treino começa no 1º toque dentro de um exercício.</i>'
+  box.hidden = !t;
+  box.innerHTML = !t ? ''
     : ativo ? `<span>Treino em andamento desde ${hhmm(t.inicio)}</span><b>${duracao(Date.now() - t.inicio)}</b><button type="button" class="btn sm" data-finalizar>Finalizar</button>`
     : `<span>Último treino <i>${quando(iso(new Date(t.inicio)))}, ${hhmm(t.inicio)}–${hhmm(t.fim)}${cal ? ` · ~${cal} kcal` : ''}</i></span><b>${duracao(t.fim - t.inicio)}</b>${travadoHoje() ? '<button type="button" class="btn sm" data-reabrir>Reabrir</button>' : ''}`;
   if (editTreino) return;   // não redesenha a lista enquanto um horário está sendo editado
@@ -808,7 +807,7 @@ telas.fim = () => {
   $('f-msg').textContent = !r.regs.length ? 'Nenhum exercício registrado neste dia.' : r.recordes ? `${r.recordes} ${r.recordes === 1 ? 'recorde' : 'recordes'}${antigo ? '' : ' hoje. Mandou bem!'}` : antigo ? '' : 'Mais um treino na conta. Constância é o que dá resultado.';
   const tiles = [
     ['Duração', t ? duracao(t.fim - t.inicio) : '—', t ? `${hhmm(t.inicio)}–${hhmm(t.fim)}` : ''],
-    ['Calorias', r.kcal != null ? '~' + r.kcal : '—', r.kcal != null ? 'kcal, estimativa' : 'registre seu peso para estimar'],
+    ['Calorias', r.kcal != null ? '~' + r.kcal : '—', r.kcal != null ? 'kcal, estimativa' : ''],
     ['Exercícios', `${r.regs.length}/${db.exercicios.length}`, `${r.series} ${r.series === 1 ? 'série' : 'séries'}`],
     ['Volume', r.volume ? fmt(Math.round(r.volume)) : '—', r.volume ? 'kg levantados' : ''],
     ['Pontos', '+' + r.pontos, `${r.completas} pirâmides completas`]
@@ -832,7 +831,6 @@ function trocarExercicio(dir) {
   if (!podeTrocar(dir)) return;
   atual = db.exercicios[db.exercicios.findIndex(e => e.id === atual) + dir].id;
   telas.exercicio(); salvarSessao(); marcarAtividade(); tick(); window.scrollTo(0, 0);
-  store.set('carga.arrastou', '1'); $('e-dica').hidden = true;
 }
 // Depois do último descanso (ou de pular), vai sozinho para o próximo exercício que falta; se não falta nenhum, fim.
 function avancar() {
@@ -879,7 +877,6 @@ const terminouExercicio = e => seriesFeitas(e.id) >= e.series + (T.aquecimento[e
     }, 170) };
   });
   document.addEventListener('touchcancel', () => { if (ativo) { ativo = false; soltar(); } });
-  if (store.get('carga.arrastou')) $('e-dica').hidden = true;
 })();
 
 // ===== Sessão do dia (fora do banco, sobrevive a fechar o app) =====
@@ -972,7 +969,7 @@ function pintarRelogio(e, P = planoAtual(e)) {
   $('t-rodando').hidden = !rodando;
   $('t-feita').textContent = prox ? `${prox.nome} feita · descansar` : '';
   $('t-nota').textContent = n >= P.length ? (rodando ? 'Último descanso: depois vai para o próximo exercício.' : 'Exercício feito e salvo.')
-    : !prox.kg ? 'Coloque o peso acima para calcular a pirâmide.'
+    : !prox.kg ? ''
     : (rodando ? 'Próxima: ' : 'Agora: ') + prox.nome.toLowerCase() + ' · ' + pesoTxt(prox.kg, v) + ' × ' + prox.reps;
 }
 // Ajuste de uma série: feita → muda o que foi feito; ainda não feita → muda o plano
@@ -1059,9 +1056,11 @@ document.addEventListener('click', ev => {
   }
   else if (d.editarMedida) { editMedida = d.editarMedida; pintarMedidas(); }
   else if (d.salvarMedida) {
-    const peso = num($('em-peso').value), hora = $('em-hora').value;
+    const peso = num($('em-peso').value), hora = $('em-hora').value, data = $('em-data').value;
     if (!(peso >= 30 && peso <= 300)) { toast('Informe o peso em kg', null, true); return; }
-    const desfazer = alterar(() => { const m = db.medidas.find(x => x.data === d.salvarMedida); m.peso = peso; m.hora = hora; });
+    if (!dataOk(data) || data > hoje()) { toast('Data inválida', null, true); return; }
+    if (data !== d.salvarMedida && db.medidas.some(x => x.data === data)) { toast('Já tem pesagem em ' + dataCurta(data), null, true); return; }   // 1 pesagem por dia
+    const desfazer = alterar(() => { const m = db.medidas.find(x => x.data === d.salvarMedida); m.peso = peso; m.hora = hora; m.data = data; });
     editMedida = null; telas.corpo(); toast('Pesagem atualizada', desfazer);
   }
   else if ('cancelar' in d) { editTreino = null; editMedida = null; pintarTempo(); if (!$('v-corpo').hidden) pintarMedidas(); }

@@ -43,10 +43,8 @@ h3.sec{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color
 .eyebrow i{text-transform:none;letter-spacing:0;font-size:var(--t-sm)}
 .muted{color:var(--muted)}
 .small{font-size:var(--t-sm)}
-.hint,.rule,.swipe-hint,.t-note{font-style:italic;color:var(--muted);font-size:var(--t-sm)}
-.hint b,.rule b{font-style:normal;color:var(--fg)}
-.rule{border-top:1px solid var(--line);padding-top:12px}
-.swipe-hint{margin-top:-8px}
+.hint,.t-note{font-style:italic;color:var(--muted);font-size:var(--t-sm)}
+.hint b{font-style:normal;color:var(--fg)}
 
 /* ---------- Superfícies e controles ---------- */
 .box,.log,.chart,.hist,.menu,.dicas,.game,.treino-tempo,.corpo-card,.slot,.ed{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
@@ -287,7 +285,6 @@ button,a,summary{touch-action:manipulation}
 .linha-ed span{display:flex;align-items:center;gap:4px}
 .linha-ed button{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--bg);font-size:1.1rem;font-weight:600;color:var(--fg)}
 .linha-ed input{width:3.6em;text-align:center;border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:6px 4px;font-family:var(--display);font-weight:700;font-size:var(--t-lg);color:var(--fg)}
-.t-dica{font-style:italic;color:var(--muted);font-size:var(--t-xs);margin-top:-4px}
 .fin{align-self:center}
 
 /* ---------- Edição inline (horários, pesagens) ---------- */
@@ -295,6 +292,7 @@ button,a,summary{touch-action:manipulation}
 .ed-acoes{display:flex;gap:6px;align-items:center;justify-content:flex-end}
 .ed-inline{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:var(--t-sm);color:var(--muted)}
 .ed-inline input{border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:6px;font-size:var(--t-sm);color:var(--fg);max-width:6.5em}
+.ed-inline input[type=date]{max-width:9.5em}
 .hist li.editando{grid-template-columns:auto 1fr;}
 .hist li.editando .ed-acoes{grid-column:1/-1}
 .treino-tempo .btn.sm{margin-left:auto}

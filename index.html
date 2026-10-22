@@ -47,7 +47,6 @@
   </div>
   <ul id="i-lista" class="slots"></ul>
   <div id="i-hist-box" class="view" hidden><h3 class="sec">Últimos treinos</h3><ul id="i-treinos" class="hist"></ul><button type="button" class="link" data-ir="treinos">Ver todos os treinos ›</button></div>
-  <p class="rule">Dias fixos: quarta e quinta; segunda é o extra sugerido. Pirâmide: você põe o peso da 1ª série e o app calcula as outras (+10% de peso, −2 reps). O 1º exercício de pernas e o 1º de parte de cima começam com aquecimento. Bateu todas as reps da pirâmide? Suba o peso inicial.</p>
 </section>
 
 <!-- Exercício: variação, pirâmide, descanso e histórico (arraste para trocar) -->
@@ -56,7 +55,6 @@
     <div class="pn"><span class="tempo" id="e-tempo"></span><b id="e-pos">1/6</b></div></div>
   <div class="trilha" id="e-trilha" aria-hidden="true"></div>
   <div class="travado-box" id="e-travado" hidden><p id="e-travado-msg"></p><button type="button" class="btn sm" data-reabrir>Reabrir treino de hoje</button></div>
-  <p class="swipe-hint" id="e-dica">Arraste para o lado para trocar de exercício</p>
   <p class="eyebrow" id="e-grupo"></p>
   <div class="segs" id="e-variacoes" role="radiogroup" aria-label="Variação usada hoje"></div>
   <div class="ex-head">
@@ -79,7 +77,7 @@
       <li><b>Abdômen firme</b> o tempo todo.</li>
     </ul>
     <label class="nota-l" for="e-nota">Suas anotações</label>
-    <textarea id="e-nota" rows="2" placeholder="Ex.: banco no furo 4, pés no meio da plataforma"></textarea>
+    <textarea id="e-nota" rows="2"></textarea>
     <div class="row acoes">
       <a class="btn" id="e-youtube" target="_blank" rel="noopener">▶ Ver no YouTube</a>
       <label class="btn" for="e-foto" id="e-foto-l">Foto da máquina</label>
@@ -104,7 +102,6 @@
   <div class="box timer">
     <div class="t-top"><div class="modos" id="t-modos" role="radiogroup" aria-label="Tipo de pirâmide"></div></div>
     <ol class="plano" id="t-plano"></ol>
-    <p class="t-dica">Toque numa série para mudar peso ou reps.</p>
     <div class="t-clock" id="t-relogio" role="timer">1:15</div>
     <p class="t-note" id="t-nota"></p>
     <div class="row" id="t-parado"><button type="button" class="btn primary big" id="t-feita">Série feita · descansar</button></div>
@@ -135,7 +132,6 @@
   <ul class="tiles" id="f-tiles"></ul>
   <h3 class="sec">O que você fez</h3>
   <ul class="hist" id="f-lista"></ul>
-  <p class="hint">Calorias: estimativa por MET 3,5 (musculação) × seu peso × tempo de treino; inclui o gasto em repouso.</p>
   <button type="button" class="btn primary big wide" data-ir="inicio">Voltar ao início</button>
 </section>
 
@@ -150,7 +146,6 @@
 <section id="v-corpo" class="view" hidden>
   <div class="bar"><button class="back" type="button" data-voltar>‹ Treino</button></div>
   <h2>Peso corporal</h2>
-  <p class="hint">1 vez por semana, <b>sempre no mesmo horário</b>, de preferência de manhã, em jejum e depois de ir ao banheiro. A tendência ao longo das semanas importa mais que um dia isolado.</p>
   <form id="c-form" class="log">
     <div class="field">
       <label for="c-hora">Horário da pesagem</label>
@@ -166,7 +161,7 @@
       </div>
     </div>
     <div class="field">
-      <label for="c-cintura">Cintura (opcional, na altura do umbigo)</label>
+      <label for="c-cintura">Cintura</label>
       <div class="stepper">
         <button type="button" data-passo="cintura" data-dir="-1" aria-label="Diminuir cintura">−</button>
         <div class="mid"><input id="c-cintura" inputmode="decimal" autocomplete="off" placeholder="—"><span class="unit">cm</span></div>
@@ -187,7 +182,7 @@
   <h2>Conquistas</h2>
   <div class="box" id="q-resumo"></div>
   <ul class="conq" id="q-lista"></ul>
-  <div class="box"><p><b>Como ganhar pontos</b></p><ul class="q-pontos" id="q-pontos"></ul><p class="hint">Nível sobe a cada 300 pontos. Sequência = semanas seguidas com 2 ou mais treinos; a semana atual só entra quando bate a meta.</p></div>
+  <div class="box"><p><b>Como ganhar pontos</b></p><ul class="q-pontos" id="q-pontos"></ul></div>
 </section>
 
 <!-- Ajustes -->
@@ -195,10 +190,10 @@
   <div class="bar"><button class="back" type="button" data-voltar>‹ Treino</button></div>
   <h2>Ajustes</h2>
   <div class="menu">
-    <button type="button" data-ir="editar">Editar exercícios<span>Ordem, nomes, substitutos, passo de peso, séries, reps e descanso</span></button>
-    <button type="button" data-ir="backup">Backup<span>Baixar ou restaurar seus registros</span></button>
-    <button type="button" data-ir="senha">Trocar senha<span>Vale também para o fin (mesma conta)</span></button>
-    <button type="button" id="a-instalar" hidden>Instalar na tela inicial<span>Funciona offline depois de instalado</span></button>
+    <button type="button" data-ir="editar">Editar exercícios</button>
+    <button type="button" data-ir="backup">Backup</button>
+    <button type="button" data-ir="senha">Trocar senha</button>
+    <button type="button" id="a-instalar" hidden>Instalar na tela inicial</button>
     <button type="button" id="a-sair" class="danger-text">Sair da conta</button>
   </div>
   <p class="muted small" id="a-info"></p>
@@ -207,7 +202,6 @@
 <section id="v-editar" class="view" hidden>
   <div class="bar"><button class="back" type="button" data-voltar>‹ Ajustes</button></div>
   <h2>Exercícios</h2>
-  <p class="hint">Cada exercício tem principal, substituto em máquina e último recurso com halter; deixe em branco o que não usar. <b>Passo</b> é quanto o peso sobe de uma placa ou halter para o próximo (ex.: 5 kg na máquina, 2 kg no halter). Use “nível” para máquinas marcadas por número de placa. <b>Região</b> define o aquecimento: o 1º exercício de cada região ganha uma série leve. Use ↑ ↓ para mudar a ordem.</p>
   <form id="ed-form" class="view">
     <div id="ed-lista" class="view"></div>
     <button type="button" class="btn" id="ed-novo">+ Adicionar exercício</button>
@@ -219,17 +213,15 @@
   <div class="bar"><button class="back" type="button" data-voltar>‹ Ajustes</button></div>
   <h2>Backup</h2>
   <div class="box">
-    <p>Seus dados já ficam na nuvem. O backup é uma cópia extra em .json <b>sem criptografia</b>.</p>
     <button type="button" class="btn primary" id="b-baixar">Baixar backup</button>
   </div>
   <div class="box">
-    <p><b>Restaurar</b> substitui tudo o que está na sua conta.</p>
     <input type="file" id="b-arquivo" accept=".json,application/json" aria-label="Arquivo de backup">
     <p id="b-erro" class="err" role="alert"></p>
     <button type="button" class="btn danger" id="b-restaurar">Restaurar backup</button>
   </div>
   <form class="box form" id="m-form" hidden>
-    <p><b>Dados da versão antiga</b> estão neste aparelho, criptografados. Digite a senha mestra antiga para juntar à sua conta.</p>
+    <p><b>Dados da versão antiga</b></p>
     <label for="m-senha">Senha mestra antiga</label><input id="m-senha" type="password" autocomplete="off" required>
     <p id="m-erro" class="err" role="alert"></p>
     <button class="btn primary" type="submit">Juntar à conta</button>

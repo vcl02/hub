@@ -1,0 +1,74 @@
+# Regras do Diário de Carga
+
+Fonte de verdade do comportamento do app. Toda mudança de regra atualiza este arquivo e os testes na mesma alteração.
+
+## Interface
+
+- O app é só do mantenedor: nada de textos explicando como usar o app (dicas de uso, instruções, legendas de ajuda). Ficam só dados, rótulos curtos e avisos de erro.
+- As dicas de execução dos exercícios (posição, postura) não são ajuda do app: ficam, dentro de "Como fazer, ajustes e anotações".
+- `aria-label` em botões só de ícone continua (não aparece na tela).
+- Cores: azul = app e ações, verde = feito/sucesso, vermelho = erro/abaixo da meta. Tokens no topo de `style.css`.
+
+## Login e conta
+
+- Login por **usuário** (`victor`) ou e-mail, e senha, Enter entra (`emailDoLogin`). Usuário desconhecido nem chega ao Supabase e recebe a mesma mensagem de senha errada (`Usuário ou senha inválidos.`).
+- Mesma conta do fin. Só a conta `DONO` (topo de `app.js`) entra: outra conta sai na hora com "Esta conta não tem acesso ao Diário de Carga.". O RLS das tabelas `tr_*` também só libera essa conta (migration 02).
+- Sem "Esqueci a senha". "Trocar senha" pede a senha atual e muda a da conta (vale também no fin).
+- A sessão fica salva no aparelho: o app entra direto, inclusive sem internet. "Sair" apaga a cópia local se não houver nada pendente; se houver, pede confirmação e mantém a cópia para enviar no próximo login.
+
+## Banco e sincronização
+
+Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
+
+| Tabela | Chave | Campos |
+|---|---|---|
+| `tr_exercicio` | `id` | ordem, grupo, regiao, series, reps, descanso, modo, ativo |
+| `tr_variacao` | `id` | exercicio_id, ordem (0 principal, 1 substituto, 2 halter), nome, unidade, passo, lados, equip, nota |
+| `tr_registro` | `variacao_id, data` | series `[{ kg, reps }]` |
+| `tr_treino` | `inicio` | fim, fechado |
+| `tr_medida` | `data` | hora, peso, cintura |
+
+- O app grava primeiro uma cópia local (`tr.db.<usuário>`) e, 0,8 s depois de cada mudança, envia só as linhas que mudaram em relação à última versão confirmada (`tr.base.<usuário>`): upsert de pais para filhos, delete de filhos para pais.
+- Sem internet, a mudança fica pendente e envia ao reconectar, ao voltar para o app ou a cada 1 min. Ao abrir, envia o pendente e só então baixa a versão da nuvem, que passa a valer.
+- Pendência ou erro de envio aparece em uma linha na tela inicial; em Ajustes aparece o estado ("Tudo salvo na nuvem.").
+- Registro de variação que não existe mais é descartado.
+- **Versão antiga** (cofre criptografado `carga.vault.v1`): no 1º login é juntada à conta automaticamente se a chave estava salva; senão, Ajustes › Backup pede a senha mestra antiga. No mesmo dia (treino), variação+dia (registro) ou dia (pesagem), vale o do aparelho.
+- Fica só no aparelho, fora do banco e do backup: fotos das máquinas (`carga.foto.<variação>`), sessão do dia (`carga.sessao`), lembrete da água (`carga.agua`).
+
+## Treino
+
+- **Dias:** `DIAS_FIXOS` (quarta, quinta) e `DIAS_EXTRA` (segunda) no topo de `app.js`.
+- **Pirâmide:** `modo` crescente (+10% de peso, −2 reps), reta (mesma carga) ou invertida. Você põe o peso da 1ª série; as outras sobem pelo `passo` do aparelho. Cada série pode ter peso e reps ajustados. Bateu todas as reps-alvo = pirâmide completa ("↑ Subir carga").
+- **Unidades:** `kg`, `lb` (mostra o equivalente em kg) ou `nível`. `lados: 2` = peso por lado (mostra o total).
+- **Aquecimento:** o 1º exercício de cada `regiao` (Pernas / Superior) no dia ganha 1 série de 50% × 15, com 45 s de descanso.
+- **Série sem peso:** não pode ser marcada (sem peso o registro não é salvo).
+- **Registro:** 1 por exercício por dia, salvo a cada série marcada, ajuste, peso ou troca de variação.
+- **Tempo de treino:** começa no 1º toque dentro de um exercício. "Finalizar" ou 30 min sem mexer encerram (no horário da última interação).
+- **Um treino por dia:** depois de encerrado, o dia trava até "Reabrir". Abrir o app e não treinar (sem registro e sem finalizar) recomeça a contagem no próximo toque, sem criar 2º treino.
+- **Dia treinado:** tem registro **ou** treino finalizado (`fechado`), mesmo sem séries salvas. Conta para a semana, os pontos e as conquistas; o dia aparece como "✓ Treino feito".
+- **Resumo:** no fim do treino e ao tocar num dia feito (semana, "Últimos treinos" ou "Ver todos os treinos"): duração, calorias, exercícios, volume, pontos e o que foi feito.
+- **Lembrete da garrafinha:** nos dias de treino, até "Já peguei" ou o dia contar como treinado.
+
+## Peso corporal
+
+- 1 pesagem por dia (a nova substitui a do dia). Peso de 30 a 300 kg; cintura opcional.
+- O horário habitual é o da pesagem mais recente; mais de 1 h fora dele mostra "Fora do seu horário".
+- Na edição dá para mudar data, horário e peso. Data no futuro ou dia que já tem pesagem é recusado.
+- **Calorias:** estimativa = 3,5 MET (Compendium of Physical Activities, 02054) × peso corporal (pesagem mais recente até o dia) × horas de treino.
+
+## Pontos e conquistas
+
+- Calculados a partir dos dados, nada extra é guardado. +50 por dia treinado, +10 por exercício, +10 por pirâmide completa, +25 por recorde, +20 por treino extra, +10 por semana com pesagem. Nível sobe a cada 300 pontos.
+- Sequência = semanas seguidas com 2+ treinos; a semana atual só entra quando bate a meta.
+- **Longo prazo, ano a ano (1 a 5):** base de ~80 treinos e ~40 semanas batidas por ano. Ano N: N anos desde o 1º treino com 80×N treinos · 40×N semanas batidas (não precisam ser seguidas) · 25×N recordes · 100×N pirâmides perfeitas.
+
+## Atualização e offline
+
+- Ao abrir, ao voltar para o app e a cada 10 min, `app.js` compara `index.html`, `app.js` e `style.css` publicados com os que estão rodando; se mudaram, recarrega, nunca no meio do treino nem em tela com formulário.
+- `sw.js`: rede primeiro (revalidando com o servidor), cache só sem internet. Cache de nome fixo e nada de outros domínios (Supabase, fontes).
+- `supabase.js` = `@supabase/supabase-js` 2.118.0 (UMD), copiado para funcionar offline.
+
+## Testes
+
+- Playwright + `node:test` em `tests/`, com um Supabase falso em memória (nenhum dado de teste no banco real).
+- `node scripts/check.mjs` roda sintaxe, higiene textual, testes e `git diff --check`; o GitHub Actions roda o mesmo.

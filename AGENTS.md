@@ -3,7 +3,7 @@
 ## Propósito e fontes de verdade
 
 - App estático (HTML/CSS/JavaScript clássico, sem build) para registrar a evolução de carga na academia. Usa o Supabase do projeto `fin` (tabelas com prefixo `tr_`) somente pelo cliente do navegador.
-- `README.md` é a fonte de verdade das regras do app (pirâmide, unidades, sincronização, tempo de treino, pontos). Não duplique regras aqui: atualize o README quando uma regra mudar.
+- `docs/REGRAS.md` é a fonte de verdade das regras e do comportamento visível. Não duplique regras aqui: atualize aquele arquivo quando uma regra mudar.
 - `docs/DECISOES.md` guarda o porquê das decisões de arquitetura. Este arquivo define como trabalhar no repositório. Em caso de conflito, uma solicitação explícita do usuário vence este guia.
 
 ## Arquitetura
@@ -25,7 +25,7 @@
 
 ## Como concluir uma mudança
 
-1. Atualize a regra afetada no `README.md` na mesma alteração.
+1. Mapeie a regra afetada em `docs/REGRAS.md` e atualize-a na mesma alteração.
 2. Acrescente ou ajuste testes de regressão em `tests/` (Playwright + `node:test`, com o Supabase falso).
 3. Rode `node scripts/check.mjs` (sintaxe, higiene textual do `.editorconfig`, testes e `git diff --check`). Informe precisamente o que foi validado; não alegue validação no celular ou no Supabase real se ela não ocorreu.
 4. Depois de os testes passarem, faça commit e push para `origin/main`. Nunca inclua alterações alheias no commit.
@@ -37,4 +37,4 @@
 - Para cada nova feature ou correção, regras e testes são parte obrigatória da entrega.
 - Ao relatar a entrega, diferencie teste local, validação no celular e validação integrada com o Supabase.
 - Use o mínimo de recursos do Supabase (plano gratuito): nada de Storage, Edge Functions ou Realtime sem pedido explícito. Fotos das máquinas e lembretes ficam só no aparelho.
-- Textos curtos em português; a tela de login é só usuário e senha.
+- Textos curtos em português. O app é só do mantenedor: nada de textos explicando como usar o app; a tela de login é só usuário e senha.

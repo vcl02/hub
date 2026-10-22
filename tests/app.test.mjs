@@ -204,7 +204,7 @@ test('migra dados de versões antigas', async () => {
 test('pesagem guarda o horário e avisa quando foge do habitual', async () => {
   const { ctx, pg, erros } = await abrirApp();
   await pg.click('#i-corpo');
-  assert.match(await pg.textContent('#c-aviso'), /mesmo horário/i);
+  assert.equal(await pg.textContent('#c-aviso'), '');
   await pg.fill('#c-hora', '07:00'); await pg.fill('#c-peso', '90'); await pg.click('#c-form button[type=submit]');
   assert.match(await pg.textContent('#c-historico'), /07:00/);
   assert.equal(await pg.inputValue('#c-hora'), '07:00');                                    // horário habitual já vem preenchido
@@ -536,4 +536,19 @@ test('login aceita o usuário no lugar do e-mail; usuário desconhecido nem cheg
   await pg.waitForSelector('#v-inicio:not([hidden])');
   assert.deepEqual(emails, ['victor.cabrera0209@gmail.com']);
   await ctx.close();
+});
+
+test('mudar a data de uma pesagem', async () => {
+  const { ctx, pg, nuvem, erros } = await abrirApp({ relogio: new Date('2026-10-22T08:00:00') });
+  await pg.click('#i-corpo');
+  await pg.fill('#c-peso', '90'); await pg.click('#c-form button[type=submit]');
+  await pg.evaluate(() => { db.medidas.push({ data: '2026-10-15', hora: '07:00', peso: 91 }); gravar(); telas.corpo(); });
+  await pg.click('[data-editar-medida="2026-10-22"]');
+  await pg.fill('#em-data', '2026-10-15'); await pg.click('[data-salvar-medida]');
+  assert.match(await pg.textContent('#toast-msg'), /Já tem pesagem em 15\/10/);           // 1 por dia
+  await pg.fill('#em-data', '2026-10-20'); await pg.click('[data-salvar-medida]');
+  assert.match(await pg.textContent('#c-historico'), /20\/10.*90 kg/);
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.tr_medida.map(m => m.data).sort(), ['2026-10-15', '2026-10-20']);
+  assert.deepEqual(erros, []); await ctx.close();
 });
