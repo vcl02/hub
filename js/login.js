@@ -32,18 +32,23 @@ async function carregar(u) {
   if (!local) await entrou();
   else if (mudou && TELAS_SEGURAS.includes(pilha[pilha.length - 1])) mostrar(pilha[pilha.length - 1]);
 }
+// Enquanto entra (login + 1ª carga dos dados): campos travados e "Entrando…". A senha só é limpa depois de entrar.
+const travarLogin = sim => { $('l-campos').disabled = sim; $('l-carregando').hidden = !sim; };
 $('l-form').addEventListener('submit', async ev => {
   ev.preventDefault();
+  if ($('l-campos').disabled) return;
   const erro = $('l-erro'), email = emailDoLogin($('l-email').value);
   erro.textContent = '';
   // Usuário desconhecido recebe a mesma mensagem de senha errada: não revela quais existem.
   if (!email) { erro.textContent = 'Usuário ou senha inválidos.'; return; }
+  travarLogin(true);
   try {
     const { data, error } = await sb.auth.signInWithPassword({ email, password: $('l-senha').value });
     if (error) { erro.textContent = /invalid/i.test(error.message) ? 'Usuário ou senha inválidos.' : 'Não foi possível entrar: ' + error.message; return; }
-    $('l-senha').value = '';
     await carregar(data.user);
+    if (db) $('l-senha').value = '';
   } catch (e) { erro.textContent = 'Sem conexão. Tente de novo.'; }
+  finally { travarLogin(false); }
 });
 
 // ===== Migração do banco criptografado da versão antiga (fica só neste aparelho) =====

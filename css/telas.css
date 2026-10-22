@@ -56,6 +56,12 @@
 /* Login direto no fundo cinza: campos brancos com borda forte para aparecerem */
 .form.login input{background:var(--surface);border:1px solid #b9c2cd;padding:12px;font-size:1rem}
 .form.login input:focus{outline:2px solid var(--blue);outline-offset:-1px;border-color:var(--blue)}
+/* Login: "Entrando…" com bolinha girando; fieldset sem a borda padrão */
+#l-campos{border:0;padding:0;margin:0;min-width:0}
+#l-campos:disabled{opacity:.6}
+.carregando{display:flex;align-items:center;gap:8px;color:var(--blue);font-weight:600;font-size:var(--t-sm)}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--blue-soft);border-top-color:var(--blue);animation:girar .8s linear infinite}
+@keyframes girar{to{transform:rotate(360deg)}}
 /* Histórico de pesagens: IMC e cintura numa 2ª linha pequena */
 .hist .h-v .h-sub{display:block;margin-left:0;font-size:var(--t-xs)}
 .bom{color:var(--green);font-weight:600} .ruim{color:var(--red);font-weight:600}

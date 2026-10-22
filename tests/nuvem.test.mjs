@@ -123,3 +123,17 @@ test('login: campos brancos sobre o fundo cinza, com o nome dentro', async () =>
   assert.equal(await pg.getAttribute('#l-senha', 'placeholder'), 'Senha');
   await ctx.close();
 });
+
+test('login trava os campos e mostra "Entrando…" sem apagar a senha antes de entrar', async () => {
+  const ctx = await app.navegador.newContext(), nuvem = novaNuvem();
+  await fakeSupabase(ctx, nuvem);
+  const pg = await ctx.newPage(); await pg.goto(app.url);
+  nuvem.atraso = 800;
+  await pg.fill('#l-email', 'victor'); await pg.fill('#l-senha', 'senha123'); await pg.press('#l-senha', 'Enter');
+  assert.equal(await pg.isVisible('#l-carregando'), true);
+  assert.equal(await pg.isDisabled('#l-senha'), true);
+  assert.equal(await pg.inputValue('#l-senha'), 'senha123');                                    // não some enquanto entra
+  await pg.waitForSelector('#v-inicio:not([hidden])', { timeout: 15000 });
+  assert.equal(await pg.inputValue('#l-senha'), '');
+  await ctx.close();
+});

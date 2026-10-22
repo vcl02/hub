@@ -8,7 +8,7 @@ prepararApp();
 test('reordenar exercícios no editor', async () => {
   const { ctx, pg } = await abrirApp();
   await pg.click('[data-ir="editar"]');
-  await pg.click('fieldset >> nth=1 >> .ed-mover[data-mv="-1"]');
+  await pg.click('#ed-lista fieldset >> nth=1 >> .ed-mover[data-mv="-1"]');
   await pg.click('#ed-form button[type=submit]');
   await pg.waitForSelector('#v-inicio:not([hidden])');
   assert.match(await pg.textContent('.slot >> nth=0'), /Cadeira flexora/);

@@ -3,6 +3,7 @@
 // ===== Peso corporal =====
 // IMC = peso / altura² · faixas da OMS (adultos)
 const imc = peso => Math.round(peso / ALTURA ** 2 * 10) / 10;
+const cinturaOk = c => c >= 40 && c <= 200;   // cm: mesma faixa no cadastro e na edição
 const faixaImc = i => i < 18.5 ? 'abaixo do peso' : i < 25 ? 'normal' : i < 30 ? 'sobrepeso' : 'obesidade';
 const medidasOrdenadas = () => [...db.medidas].sort((a, b) => b.data.localeCompare(a.data));
 const horaHabitual = () => medidasOrdenadas().find(m => m.hora)?.hora || '';
@@ -52,6 +53,7 @@ $('c-form').addEventListener('submit', ev => {
   ev.preventDefault();
   const peso = num($('c-peso').value), cintura = num($('c-cintura').value), hora = $('c-hora').value;
   if (!(peso >= 30 && peso <= 300)) { toast('Informe o peso em kg', null, true); $('c-peso').focus(); return; }
+  if ($('c-cintura').value.trim() && !cinturaOk(cintura)) { toast('Cintura em cm (40 a 200)', null, true); $('c-cintura').focus(); return; }
   const h = hoje(), antes = estatisticas();
   const desfazer = alterar(() => {
     db.medidas = db.medidas.filter(m => m.data !== h);

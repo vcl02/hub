@@ -39,6 +39,7 @@ export async function fakeSupabase(ctx, nuvem, id = '2f9bc201-9966-4f37-9963-2f4
   await ctx.route(/supabase\.co\//, async route => {
     const req = route.request(), u = new URL(req.url()), json = (corpo, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(corpo) });
     if (!nuvem.online) return route.abort('internetdisconnected');
+    if (nuvem.atraso) await new Promise(r => setTimeout(r, nuvem.atraso));   // simula rede lenta
     if (u.pathname === '/auth/v1/token') {
       const corpo = req.postDataJSON() || {};
       if (u.searchParams.get('grant_type') === 'password' && corpo.password !== 'senha123') return json({ code: 400, error_code: 'invalid_credentials', msg: 'Invalid login credentials' }, 400);
