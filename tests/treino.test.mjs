@@ -238,8 +238,13 @@ test('lembrete da garrafinha ao abrir o 1º exercício do dia', async () => {
   const caixa = await pg.locator('#agua').boundingBox();
   assert.deepEqual([caixa.x, caixa.y, caixa.width, caixa.height], [0, 0, 390, 844]);           // tela cheia
   assert.equal(await pg.getAttribute('#agua-x', 'aria-label'), 'Fechar');
-  await pg.click('#agua-x');                                                                    // X no canto também dispensa
+  await pg.click('#agua-x');                                                                    // X só fecha
   assert.equal(await pg.isVisible('#agua'), false);
+  await pg.evaluate(() => trocarExercicio(1));
+  assert.equal(await pg.isVisible('#agua'), false);                                          // não volta a cada exercício
+  await pg.reload(); await pg.waitForSelector('#v-exercicio:not([hidden])');
+  assert.equal(await pg.isVisible('#agua'), true);                                           // começou de novo: volta
+  await pg.click('#agua-ok');                                                                   // "Já peguei" vale o dia
   await pg.reload(); await pg.waitForSelector('#v-exercicio:not([hidden])');
   assert.equal(await pg.isVisible('#agua'), false);                                        // não volta no mesmo dia
   await ctx.close();
@@ -277,9 +282,8 @@ test('parabéns em tela cheia ao finalizar, com as conquistas ganhas no treino',
   assert.deepEqual([caixa.x, caixa.y, caixa.width, caixa.height], [0, 0, 390, 844]);
   assert.match(await pg.textContent('#parabens-info'), /1 exercício · \+60 pts/);
   assert.match(await pg.textContent('#parabens-ganhos'), /★ Primeiro treino/);
-  const x = await pg.locator('#parabens-x').boundingBox();
-  assert.ok(x.x > 300 && x.y < 80, 'X no canto superior direito');
-  await pg.click('#parabens-x');
+  assert.equal(await pg.locator('#parabens .fechar').count(), 0);                             // sem X: só "Ver resumo"
+  await pg.click('#parabens-ok');
   assert.equal(await pg.isVisible('#parabens'), false);
   assert.equal(await pg.isVisible('#v-fim'), true);
   await pg.click('#v-fim [data-ir="inicio"]');

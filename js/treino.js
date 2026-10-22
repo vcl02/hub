@@ -83,7 +83,7 @@ function parabens(dia, r, t) {
   $('parabens').hidden = false;
   vibrar([60, 80, 60, 80, 200]);
 }
-for (const id of ['parabens-ok', 'parabens-x']) $(id).addEventListener('click', () => { $('parabens').hidden = true; });
+$('parabens-ok').addEventListener('click', () => { $('parabens').hidden = true; });
 telas.treinos = () => {
   const dias = [...diasTreinados()].sort().reverse();
   $('t-dias').innerHTML = dias.map(dia => {
