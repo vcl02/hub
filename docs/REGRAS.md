@@ -7,12 +7,12 @@ Fonte de verdade do comportamento do app. Toda mudança de regra atualiza este a
 - O app é só do mantenedor: nada de textos explicando como usar o app (dicas de uso, instruções, legendas de ajuda). Ficam só dados, rótulos curtos e avisos de erro.
 - As dicas de execução dos exercícios (posição, postura) não são ajuda do app: ficam, dentro de "Como fazer, ajustes e anotações".
 - `aria-label` em botões só de ícone continua (não aparece na tela).
-- Cores: azul = app e ações, verde = feito/sucesso, vermelho = erro/abaixo da meta. Tokens no topo de `style.css`.
+- Cores: azul = app e ações, verde = feito/sucesso, vermelho = erro/abaixo da meta. Tokens no topo de `css/base.css`.
 
 ## Login e conta
 
 - Login por **usuário** (`victor`) ou e-mail, e senha, Enter entra (`emailDoLogin`). Usuário desconhecido nem chega ao Supabase e recebe a mesma mensagem de senha errada (`Usuário ou senha inválidos.`).
-- Mesma conta do fin. Só a conta `DONO` (topo de `app.js`) entra: outra conta sai na hora com "Esta conta não tem acesso ao Diário de Carga.". O RLS das tabelas `tr_*` também só libera essa conta (migration 02).
+- Mesma conta do fin. Só a conta `DONO` (`js/config.js`) entra: outra conta sai na hora com "Esta conta não tem acesso ao Diário de Carga.". O RLS das tabelas `tr_*` também só libera essa conta (migration 02).
 - Sem "Esqueci a senha". "Trocar senha" pede a senha atual e muda a da conta (vale também no fin).
 - A sessão fica salva no aparelho: o app entra direto, inclusive sem internet. "Sair" apaga a cópia local se não houver nada pendente; se houver, pede confirmação e mantém a cópia para enviar no próximo login.
 
@@ -37,7 +37,7 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 
 ## Treino
 
-- **Dias:** `DIAS_FIXOS` (quarta, quinta) e `DIAS_EXTRA` (segunda) no topo de `app.js`.
+- **Dias:** `DIAS_FIXOS` (quarta, quinta) e `DIAS_EXTRA` (segunda) em `js/config.js`.
 - **Pirâmide:** `modo` crescente (+10% de peso, −2 reps), reta (mesma carga) ou invertida. Você põe o peso da 1ª série; as outras sobem pelo `passo` do aparelho. Cada série pode ter peso e reps ajustados. Bateu todas as reps-alvo = pirâmide completa ("↑ Subir carga").
 - **Unidades:** `kg`, `lb` (mostra o equivalente em kg) ou `nível`. `lados: 2` = peso por lado (mostra o total).
 - **Aquecimento:** o 1º exercício de cada `regiao` (Pernas / Superior) no dia ganha 1 série de 50% × 15, com 45 s de descanso.
@@ -54,7 +54,7 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 - 1 pesagem por dia (a nova substitui a do dia). Peso de 30 a 300 kg; cintura opcional.
 - O horário habitual é o da pesagem mais recente; mais de 1 h fora dele mostra "Fora do seu horário".
 - Na edição dá para mudar data, horário e peso. Data no futuro ou dia que já tem pesagem é recusado.
-- **IMC:** peso ÷ altura² com `ALTURA` = 1,78 m (topo de `app.js`), 1 casa decimal. Faixas da OMS: < 18,5 abaixo do peso, < 25 normal, < 30 sobrepeso, ≥ 30 obesidade. Aparece no card de peso da tela inicial e em cada pesagem do histórico.
+- **IMC:** peso ÷ altura² com `ALTURA` = 1,78 m (`js/config.js`), 1 casa decimal. Faixas da OMS: < 18,5 abaixo do peso, < 25 normal, < 30 sobrepeso, ≥ 30 obesidade. Aparece no card de peso da tela inicial e em cada pesagem do histórico.
 - **Perfil** (constantes no topo do código, fora do banco): altura 1,78 m, nascimento 14/09/2002, sexo masculino. A tela de peso mostra idade, altura e a taxa basal.
 - **Taxa basal (TMB):** Mifflin-St Jeor = 10 × peso + 6,25 × altura (cm) − 5 × idade + 5 (homem), em kcal/dia, com a idade no dia.
 - **Calorias:** estimativa com MET corrigido = 3,5 MET (Compendium of Physical Activities, 02054) × TMB ÷ 24 × horas de treino, com o peso da pesagem mais recente até o dia. O padrão assume 1 MET = 1 kcal/kg/h para todo mundo; usar a sua basal ajusta a conta para idade, altura e sexo.
@@ -67,11 +67,12 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 
 ## Atualização e offline
 
-- Ao abrir, ao voltar para o app e a cada 10 min, `app.js` compara `index.html`, `app.js` e `style.css` publicados com os que estão rodando; se mudaram, recarrega, nunca no meio do treino nem em tela com formulário.
+- Ao abrir, ao voltar para o app e a cada 10 min, o app compara `index.html` e os arquivos de `css/` e `js/` publicados com os que estão rodando; se mudaram, recarrega, nunca no meio do treino nem em tela com formulário.
 - `sw.js`: rede primeiro (revalidando com o servidor), cache só sem internet. Cache de nome fixo e nada de outros domínios (Supabase, fontes).
 - `supabase.js` = `@supabase/supabase-js` 2.118.0 (UMD), copiado para funcionar offline.
 
 ## Testes
 
-- Playwright + `node:test` em `tests/`, com um Supabase falso em memória (nenhum dado de teste no banco real).
+- Playwright + `node:test` em `tests/` (um arquivo por área, infra em `tests/helpers/app.mjs`), com um Supabase falso em memória: nenhum dado de teste no banco real.
+- `tests/estrutura.test.mjs` (sem navegador): cabeçalho de responsabilidade em todo arquivo, tags do HTML e chaves do CSS balanceadas, ordem de carga igual à do `sw.js`, PWA, migrations no formato do DataGrip com RLS só do dono e nenhum segredo no repositório.
 - `node scripts/check.mjs` roda sintaxe, higiene textual, testes e `git diff --check`; o GitHub Actions roda o mesmo.

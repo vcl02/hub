@@ -1,6 +1,6 @@
 -- Tabelas do Diário de Carga (prefixo tr_) no projeto fin. JÁ APLICADA em 2026-10-21 (via MCP).
--- Cada usuário só vê e altera as próprias linhas (user_id = auth.uid()); anon não tem acesso.
--- Formato DataGrip: sem do $$, sem ponto e vírgula em comentário, tudo entre begin e commit.
+-- Cada usuário só vê e altera as próprias linhas (user_id = auth.uid()), anon não tem acesso.
+-- Formato DataGrip: sem bloco anônimo, sem ponto e vírgula em comentário, tudo entre begin e commit.
 begin;
 
 create table public.tr_exercicio (

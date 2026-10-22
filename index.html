@@ -9,12 +9,18 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="style.css">
+<!-- Estilos em ordem de cascata (ver AGENTS.md) -->
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/inicio.css">
+<link rel="stylesheet" href="css/telas.css">
+<link rel="stylesheet" href="css/flutuantes.css">
+<link rel="stylesheet" href="css/exercicio.css">
+<link rel="stylesheet" href="css/resumo.css">
 </head>
 <body>
 <div class="wrap">
 
-<!-- Login (Supabase), como no fin: usuário ou e-mail + senha, Enter entra. "victor" vira o e-mail em emailDoLogin (app.js). -->
+<!-- Login (Supabase), como no fin: usuário ou e-mail + senha, Enter entra. "victor" vira o e-mail em emailDoLogin (js/config.js). -->
 <section id="v-bloqueio" class="view" hidden>
   <form id="l-form" class="form login">
     <input id="l-email" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" aria-label="Usuário" required>
@@ -244,7 +250,21 @@
 </div>
 <div id="toast" role="status" hidden><span id="toast-msg"></span><button type="button" id="toast-desfazer" hidden>Desfazer</button></div>
 <button type="button" id="mini" hidden><span id="mini-t">0:00</span><span id="mini-n"></span><span>Abrir ›</span></button>
+<!-- Scripts clássicos em ordem de dependência (ver AGENTS.md) -->
 <script src="supabase.js"></script>
-<script src="app.js"></script>
+<script src="js/config.js"></script>
+<script src="js/util.js"></script>
+<script src="js/piramide.js"></script>
+<script src="js/banco.js"></script>
+<script src="js/login.js"></script>
+<script src="js/pontos.js"></script>
+<script src="js/inicio.js"></script>
+<script src="js/exercicio.js"></script>
+<script src="js/corpo.js"></script>
+<script src="js/treino.js"></script>
+<script src="js/series.js"></script>
+<script src="js/interacoes.js"></script>
+<script src="js/ajustes.js"></script>
+<script src="js/bootstrap.js"></script>
 </body>
 </html>

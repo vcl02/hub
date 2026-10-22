@@ -1,0 +1,24 @@
+/* Edição inline (horários, pesagens), resumo do treino e dia travado. */
+/* ---------- Edição inline (horários, pesagens) ---------- */
+.btn.sm{min-height:36px;padding:6px 12px;font-size:var(--t-sm)}
+.ed-acoes{display:flex;gap:6px;align-items:center;justify-content:flex-end}
+.ed-inline{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:var(--t-sm);color:var(--muted)}
+.ed-inline input{border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:6px;font-size:var(--t-sm);color:var(--fg);max-width:6.5em}
+.ed-inline input[type=date]{max-width:9.5em}
+.hist li.editando{grid-template-columns:auto 1fr;}
+.hist li.editando .ed-acoes{grid-column:1/-1}
+.treino-tempo .btn.sm{margin-left:auto}
+
+/* ---------- Fim do treino ---------- */
+.fim-top{display:flex;flex-direction:column;gap:6px;padding-top:12px}
+.fim-top h1{color:var(--green);font-size:2.6rem}
+.tiles{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tiles li{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:2px}
+.tiles li:first-child{grid-column:1/-1;border-color:var(--green);background:var(--green-soft)}
+.tiles span{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.tiles b{font-family:var(--display);font-size:var(--t-xl);font-weight:700;line-height:1.1}
+.tiles small{font-size:var(--t-xs);color:var(--muted);font-style:italic}
+
+/* ---------- Um treino por dia ---------- */
+.travado-box{display:flex;flex-direction:column;gap:8px;align-items:flex-start;background:var(--green-soft);border:1px solid var(--green);border-radius:var(--r);padding:12px 14px;font-size:var(--t-sm)}
+.travado .log,.travado .timer,.travado .segs{opacity:.45;pointer-events:none}

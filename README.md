@@ -5,12 +5,12 @@ PWA para registrar evolução de carga na academia: pirâmide automática, subst
 | Arquivo | O que é |
 |---|---|
 | `index.html` | Telas |
-| `style.css` | Visual |
-| `app.js` | Lógica e banco (formato comentado no topo) |
+| `css/` | Visual, em 6 arquivos (ordem no `index.html`) |
+| `js/` | Lógica em 14 módulos; formato do banco comentado em `js/config.js` |
 | `sw.js` | Cache offline |
 | `supabase.js` | Cliente do Supabase |
 | `manifest.webmanifest` + ícones | Instalação na tela inicial |
-| `tests/app.test.mjs` | Testes de ponta a ponta |
+| `tests/` | Testes por área + `estrutura.test.mjs`; infra em `tests/helpers/` |
 | `migrations/` | SQL das tabelas `tr_*` (formato DataGrip, já aplicadas) |
 | `scripts/check.mjs` | Validação completa (sintaxe, higiene textual, testes) |
 | `docs/REGRAS.md` | Regras do app (fonte de verdade) |

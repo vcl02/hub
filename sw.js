@@ -2,7 +2,10 @@
 // Mesmo padrão do fin: cache de nome fixo (sem versão para trocar a cada deploy) e nada de outros
 // domínios — Supabase e fontes do Google ficam fora deste worker.
 const CACHE_ESTATICO = 'carga-estatico';
-const ARQUIVOS_ESTATICOS = ['./', './index.html', './style.css', './app.js', './supabase.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
+const ARQUIVOS_ESTATICOS = [
+  './js/config.js', './js/util.js', './js/piramide.js', './js/banco.js', './js/login.js', './js/pontos.js', './js/inicio.js', './js/exercicio.js', './js/corpo.js', './js/treino.js', './js/series.js', './js/interacoes.js', './js/ajustes.js', './js/bootstrap.js',
+  './css/base.css', './css/inicio.css', './css/telas.css', './css/flutuantes.css', './css/exercicio.css', './css/resumo.css',
+  './', './index.html', './supabase.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', evento => {
   evento.waitUntil(caches.open(CACHE_ESTATICO).then(cache => Promise.all(
@@ -18,7 +21,7 @@ self.addEventListener('activate', evento => evento.waitUntil(
 self.addEventListener('fetch', evento => {
   if (evento.request.method !== 'GET') return;
   const url = new URL(evento.request.url);
-  if (url.origin !== self.location.origin || url.search) return;   // ?v=... é a checagem de versão do app.js: direto na rede
+  if (url.origin !== self.location.origin || url.search) return;   // ?v=... é a checagem de versão (js/bootstrap.js): direto na rede
   evento.respondWith(fetch(evento.request, { cache: 'no-cache' }).then(async resposta => {
     // Cache é só uma cópia de segurança da última versão que a rede entregou.
     if (resposta.ok) await (await caches.open(CACHE_ESTATICO)).put(evento.request, resposta.clone());

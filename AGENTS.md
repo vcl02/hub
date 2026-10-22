@@ -9,14 +9,17 @@
 ## Arquitetura
 
 - `index.html` é o único documento: cada tela é uma `<section class="view">`. Não crie outras páginas HTML nem introduza framework sem decisão explícita.
-- `app.js` é um script clássico único, dividido em seções `// ===== ... =====` (configuração, banco/sincronização, login, telas). `supabase.js` é o `@supabase/supabase-js` copiado byte a byte (UMD) para funcionar offline: atualize versão e arquivo juntos, de preferência para uma versão publicada há pelo menos duas semanas.
+- Os estilos são carregados nesta ordem (cascata): `css/base.css`, `inicio.css`, `telas.css`, `flutuantes.css`, `exercicio.css`, `resumo.css`.
+- Os scripts clássicos são carregados nesta ordem, depois de `supabase.js`: `config`, `util`, `piramide`, `banco`, `login`, `pontos`, `inicio`, `exercicio`, `corpo`, `treino`, `series`, `interacoes`, `ajustes`, `bootstrap`. Eles compartilham o escopo global: código que roda ao carregar (não dentro de função) só pode usar o que veio de um arquivo anterior. Preserve a responsabilidade de cada módulo, descrita na 1ª linha dele.
+- Arquivo novo em `css/` ou `js/` entra no `index.html` e no `ARQUIVOS_ESTATICOS` do `sw.js`; o teste `tests/estrutura.test.mjs` confere.
+- `supabase.js` é o `@supabase/supabase-js` copiado byte a byte (UMD) para funcionar offline: atualize versão e arquivo juntos, de preferência para uma versão publicada há pelo menos duas semanas.
 - `sw.js` busca da rede primeiro e só usa o cache sem internet; não intercepta outros domínios (Supabase, fontes). Ao criar arquivo estático novo, inclua-o em `ARQUIVOS_ESTATICOS`.
 - Todo arquivo `.js`, `.mjs`, `.css` e `.sql` começa com um comentário curto de responsabilidade.
 
 ## Regras de dados e segurança
 
-- Login por e-mail e senha do Supabase (mesma conta do fin). Só a conta `DONO` (topo de `app.js`) entra, e o RLS das tabelas `tr_*` só libera essa conta (migration 02). Nova policy ou grant precisa preservar isso; `anon` não tem acesso.
-- A chave do Supabase em `app.js` é a publicável; nunca coloque chave de serviço nem segredo no repositório, que é público.
+- Login por e-mail e senha do Supabase (mesma conta do fin). Só a conta `DONO` (`js/config.js`) entra, e o RLS das tabelas `tr_*` só libera essa conta (migration 02). Nova policy ou grant precisa preservar isso; `anon` não tem acesso.
+- A chave do Supabase em `js/config.js` é a publicável; nunca coloque chave de serviço nem segredo no repositório, que é público.
 - Consultas somente de leitura ao Supabase (`SELECT`, schema, advisors, logs) podem ser feitas para diagnóstico. A disponibilidade de uma ferramenta de escrita no MCP não é autorização para usá-la.
 - Antes de qualquer operação remota que mude estado — `INSERT`, `UPDATE`, `DELETE`, `UPSERT`, `CREATE`/`ALTER`/`DROP`, grants, RLS, Auth, Storage ou execução de migration — peça confirmação explícita do mantenedor nesta conversa, com alvo e efeito informados. Não crie dados de teste no banco: os testes usam um Supabase falso em memória.
 - Preserve migrations aplicadas. Para mudar o esquema, crie uma migration nova e numerada em `migrations/`; não reescreva as históricas.
@@ -26,7 +29,7 @@
 ## Como concluir uma mudança
 
 1. Mapeie a regra afetada em `docs/REGRAS.md` e atualize-a na mesma alteração.
-2. Acrescente ou ajuste testes de regressão em `tests/` (Playwright + `node:test`, com o Supabase falso).
+2. Acrescente ou ajuste testes de regressão em `tests/`: um arquivo por área (`treino`, `corpo`, `pontos`, `nuvem`, `ajustes`) com Playwright + `node:test` e a infra em `tests/helpers/app.mjs` (servidor, Supabase falso); `estrutura.test.mjs` protege cabeçalhos, HTML/CSS balanceados, ordem de carga, PWA, migrations/RLS e segredos.
 3. Rode `node scripts/check.mjs` (sintaxe, higiene textual do `.editorconfig`, testes e `git diff --check`). Informe precisamente o que foi validado; não alegue validação no celular ou no Supabase real se ela não ocorreu.
 4. Depois de os testes passarem, faça commit e push para `origin/main`. Nunca inclua alterações alheias no commit.
 5. Trabalhe direto na branch `main`: projeto pessoal, sem fluxo de PR. Não crie worktree, branch auxiliar nem peça revisão antes de puxar pra `main`.

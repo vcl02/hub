@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 
 const testes = readdirSync('tests').filter(nome => nome.endsWith('.test.mjs')).map(nome => `tests/${nome}`);
 const comandos = [
-  ...['app.js', 'sw.js'].map(arquivo => [process.execPath, ['--check', arquivo]]),
+  ...['sw.js', ...readdirSync('js').filter(nome => nome.endsWith('.js')).map(nome => `js/${nome}`)].map(arquivo => [process.execPath, ['--check', arquivo]]),
   [process.execPath, ['scripts/check-style.mjs']],
   [process.execPath, ['--test', ...testes]],
   ['git', ['diff', '--check']],
