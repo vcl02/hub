@@ -64,7 +64,7 @@ test('cintura: editar, ver no card e evolução em gráfico', async () => {
   assert.match(await pg.textContent('#c-resumo'), /Cintura 102 cm · -2 cm/);
   await pg.click('[data-editar-medida="2026-10-22"]');
   await pg.fill('#em-cint', '101,5'); await pg.click('[data-salvar-medida]');
-  assert.match(await pg.textContent('#c-historico'), /cintura 101,5 cm/);
+  assert.match(await pg.textContent('#c-historico'), /kg · 101,5 cm · IMC/);                // peso e cintura juntos, IMC logo depois
   await pg.click('[data-editar-medida="2026-10-22"]');
   await pg.fill('#em-cint', ''); await pg.click('[data-salvar-medida]');                     // apagar a cintura
   assert.equal(await pg.evaluate(() => db.medidas.find(m => m.data === '2026-10-22').cintura), undefined);

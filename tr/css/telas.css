@@ -69,7 +69,11 @@
 .spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--blue-soft);border-top-color:var(--blue);animation:girar .8s linear infinite}
 @keyframes girar{to{transform:rotate(360deg)}}
 /* Histórico de pesagens: IMC e cintura numa 2ª linha pequena */
-.hist .h-v .h-sub{display:block;margin-left:0;font-size:var(--t-xs)}
+.hist .h-v .h-sub{margin-left:0;font-size:var(--t-sm)}
+/* Pesagem: peso · cintura · IMC numa linha só (a hora fica embaixo da data) */
+.hist li.pesagem{gap:10px}
+.hist li.pesagem .h-d{line-height:1.2}
+.hist li.pesagem .h-v{white-space:nowrap}
 .bom{color:var(--green);font-weight:600} .ruim{color:var(--red);font-weight:600}
 /* Peso corporal: card do peso atual no topo da tela */
 .peso-card{display:flex;align-items:center;gap:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
