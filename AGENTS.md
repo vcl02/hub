@@ -26,7 +26,8 @@
 - Sair existe só no hub: fin e tr não têm botão de sair.
 - App aberto sem sessão (link direto, ícone antigo) vai para o login do hub com `?volta=<pasta>/…` e, depois de entrar, o hub devolve para ele. `?volta` só é aceito se for a pasta de um card (nunca outro site ou `..`). A tela de login própria dos apps só aparece com eles servidos fora do hub (testes).
 - O app é só do mantenedor: na página inicial, só o login e os cards; nada de textos explicando como usar.
-- Cada app volta para a página inicial pelo ícone de grade (link para `../`).
+- Cada app volta para a página inicial pelo ícone do hub (a marca em traço: nó central ligado a quatro pontas; link para `../`).
+- A marca do hub é `icons/hub.svg` (favicon, título e login); `hub-32.png` (favicon de reserva), `hub-180.png` (iPhone) e `hub-192/512.png` (manifest, fundo inteiro para o sistema recortar) saem dela.
 - Caminhos sempre relativos (`./`, `../`): o site roda em `/hub/`, e os apps em `/hub/fin/` e `/hub/tr/`.
 - Mesma origem para todos: `localStorage`, caches e a sessão do Supabase são compartilhados.
   - Chaves de `localStorage` e nomes de cache sempre com prefixo do app (`fin-`, `carga-`/`tr.`, `hub-`). Nenhum service worker apaga cache de outro prefixo.
@@ -35,7 +36,7 @@
 
 ## Novo app
 
-1. Crie a pasta (`nome/`) com `index.html`, caminhos relativos e o ícone de grade para `../`.
+1. Crie a pasta (`nome/`) com `index.html`, caminhos relativos e o ícone do hub para `../`.
 2. Acrescente o card em `index.html` (o teste `tests/hub.test.mjs` confere a lista e que a pasta tem `index.html`) e a pasta ao `scripts/check.mjs` se ela tiver validação própria.
 3. Use a paleta escura e prefixe chaves de `localStorage` e caches.
 

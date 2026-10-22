@@ -7,8 +7,9 @@
 <meta name="color-scheme" content="dark">
 <title>hub</title>
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icons/hub-192.png">
-<link rel="apple-touch-icon" href="icons/hub-192.png">
+<link rel="icon" href="icons/hub.svg" type="image/svg+xml">
+<link rel="icon" href="icons/hub-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="icons/hub-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Barlow:wght@400;500;600&display=swap">
@@ -22,7 +23,7 @@
      hub.js mostra esta tela ou a dos apps; até decidir, as duas ficam escondidas. -->
 <main class="entrar" id="v-login" hidden>
   <form class="cartao-login" id="l-form" novalidate>
-    <h1>hub</h1>
+    <h1><img class="marca" src="icons/hub.svg" alt="" width="56" height="56"><span>hub</span></h1>
     <fieldset id="l-campos">
       <input id="l-usuario" type="text" placeholder="Usuário" aria-label="Usuário" autocomplete="username" autocapitalize="none" spellcheck="false">
       <input id="l-senha" type="password" placeholder="Senha" aria-label="Senha" autocomplete="current-password">
@@ -34,7 +35,7 @@
 
 <main class="hub" id="v-apps" hidden>
   <header class="topo">
-    <h1>hub</h1>
+    <h1><img class="marca" src="icons/hub.svg" alt="" width="48" height="48"><span>hub</span></h1>
     <!-- Sair: encerra a sessão neste aparelho (vale para todos os apps); toque duplo. -->
     <button type="button" class="sair" id="sair" title="Sair" aria-label="Sair">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v9"/><path d="M6.4 6.4a8 8 0 1 0 11.2 0"/></svg>

@@ -10,7 +10,7 @@ test('ícone Hub é o último do cabeçalho e leva à página inicial do hub; n�
     const acoes = pagina.slice(pagina.indexOf('<div class=acoesCabecalho>'));
     assert.match(acoes, /<a id=voltarHub class=btIcone href="\.\.\/" title="Hub" aria-label="Hub">[\s\S]*?<\/a>\s*<\/div>/);
     assert.doesNotMatch(pagina, /id=sair\b/);
-    assert.match(regras, /O ícone de grade \(\*\*Hub\*\*\), o último do cabeçalho, volta à página inicial do hub/);
+    assert.match(regras, /O ícone do hub \(\*\*Hub\*\*, a marca do hub em traço\), o último do cabeçalho, volta à página inicial do hub/);
 });
 
 test('sem sessão dentro do hub, vai pro login do hub levando o ?ciclo; fora do hub, login próprio', () => {

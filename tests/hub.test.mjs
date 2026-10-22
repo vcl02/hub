@@ -72,3 +72,17 @@ test('login do hub antes dos apps: mesma conta e mesmo supabase-js do tr', () =>
   assert.ok(readFileSync(path.join(RAIZ, 'supabase.js')).equals(readFileSync(path.join(RAIZ, 'tr/supabase.js'))), 'supabase.js igual ao do tr');
   assert.match(html, /<script src="supabase\.js"><\/script>\n<script src="hub\.js"><\/script>/);
 });
+
+test('marca do hub em todo lugar: favicon, celular, título, login e o botão de volta nos apps', () => {
+  assert.match(html, /<link rel="icon" href="icons\/hub\.svg" type="image\/svg\+xml">/);
+  assert.match(html, /<link rel="icon" href="icons\/hub-32\.png" sizes="32x32" type="image\/png">/);
+  assert.match(html, /<link rel="apple-touch-icon" href="icons\/hub-180\.png">/);
+  assert.equal([...html.matchAll(/<h1><img class="marca" src="icons\/hub\.svg" alt=""/g)].length, 2);   // login e cards
+  for (const arquivo of ['icons/hub.svg', 'icons/hub-32.png', 'icons/hub-180.png', 'icons/hub-192.png', 'icons/hub-512.png']) assert.ok(existe(arquivo), arquivo);
+  const png = arquivo => { const b = readFileSync(path.join(RAIZ, arquivo)); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };
+  for (const [arquivo, lado] of [['icons/hub-32.png', 32], ['icons/hub-180.png', 180], ['icons/hub-192.png', 192], ['icons/hub-512.png', 512]]) assert.deepEqual(png(arquivo), [lado, lado], arquivo);
+  // Mesmo desenho em traço no botão que volta ao hub, nos dois apps.
+  const marca = codigo => codigo.match(/<circle cx="12" cy="12" r="3" ?\/><path d="M9\.9 9\.9 6\.6 6\.6[^"]*" ?\/>(<circle cx="(5|19)" cy="(5|19)" r="2" ?\/>){4}/);
+  assert.ok(marca(ler('fin/index.html').slice(ler('fin/index.html').indexOf('id=voltarHub'))), 'fin');
+  assert.ok(marca(ler('tr/index.html').slice(ler('tr/index.html').indexOf('id="i-hub"'))), 'tr');
+});

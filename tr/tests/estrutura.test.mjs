@@ -82,12 +82,12 @@ test('higiene textual do .editorconfig (scripts/check-style.mjs)', () => {
   assert.equal(r.status, 0, r.stderr);
 });
 
-test('hub: grade na tela inicial volta para ../ e o service worker só apaga os próprios caches', () => {
+test('hub: marca do hub na tela inicial volta para ../ e o service worker só apaga os próprios caches', () => {
   assert.match(html, /<a class="icon-btn" href="\.\.\/" id="i-hub" title="Hub" aria-label="Hub">/);
   assert.ok(html.indexOf('id="i-hub"') < html.indexOf('id="i-corpo"'));
   // fin e a página inicial do hub dividem a origem (e os caches) com o tr.
   assert.match(ler('sw.js'), /ks\.filter\(k => k\.startsWith\('carga-'\) && k !== CACHE_ESTATICO\)/);
-  assert.match(ler('docs/REGRAS.md'), /grade \(volta ao hub, `\.\.\/`\)/);
+  assert.match(ler('docs/REGRAS.md'), /marca do hub \(volta ao hub, `\.\.\/`\)/);
 });
 
 test('sem sessão dentro do hub, vai pro login do hub; servido fora dele (como nos testes), login próprio', () => {

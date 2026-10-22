@@ -101,16 +101,29 @@ body {
 }
 
 h1 {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   margin: 0;
   font-family: var(--display);
   font-size: 3.5rem;
   font-weight: 700;
   line-height: 1;
   letter-spacing: .01em;
+}
+
+/* Só o texto leva o degradê; a marca (icons/hub.svg) ao lado é a mesma do favicon e do celular. */
+h1 span {
   background: linear-gradient(100deg, var(--fg) 5%, var(--purple) 55%, var(--blue) 95%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+.marca {
+  flex: none;
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(167, 139, 250, .35);
 }
 
 /* ---------- Cards dos apps ---------- */
@@ -243,8 +256,8 @@ h1 {
 }
 
 .cartao-login h1 {
+  justify-content: center;
   margin-bottom: 24px;
-  text-align: center;
 }
 
 .cartao-login fieldset {
