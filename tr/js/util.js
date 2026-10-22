@@ -97,6 +97,9 @@ addEventListener('popstate', () => { if (db && pilha.length > 1) { pilha.pop(); 
 
 // ===== Gráfico de linha (carga ou peso corporal) =====
 function grafico(box, P, unidade, rotulo) {   // P = [{ data, valor }] em ordem cronológica
+  // Com menos de 2 pontos não há linha: some o gráfico e o título dele (h3 logo antes), sem caixa vazia
+  const titulo = box.previousElementSibling?.matches('h3.sec') ? box.previousElementSibling : null;
+  box.hidden = P.length < 2; if (titulo) titulo.hidden = box.hidden;
   if (P.length < 2) { box.innerHTML = ''; return; }
   const W = 320, H = 120, l = 40, r = 12, t = 12, b = 22;
   let lo = Math.min(...P.map(p => p.valor)), hi = Math.max(...P.map(p => p.valor));

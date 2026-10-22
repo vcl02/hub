@@ -37,6 +37,17 @@ test('mudar a data de uma pesagem', async () => {
   assert.deepEqual(erros, []); await ctx.close();
 });
 
+test('gráfico só aparece com 2 pesagens ou mais; com 1, nem a caixa vazia nem o título', async () => {
+  const { ctx, pg } = await abrirApp({ relogio: new Date('2026-10-22T08:00:00') });
+  await pg.click('#i-corpo'); await pg.fill('#c-peso', '102,3'); await pg.click('#c-form button[type=submit]');
+  assert.equal(await pg.isVisible('#c-grafico'), false);
+  assert.equal(await pg.isVisible('#v-corpo h3.sec:has(+ #c-grafico)'), false);
+  await pg.evaluate(() => { db.medidas.push({ data: '2026-10-21', hora: '07:40', peso: 103 }); gravar(); telas.corpo(); });
+  assert.equal(await pg.isVisible('#c-grafico'), true);
+  assert.equal(await pg.isVisible('#v-corpo h3.sec:has(+ #c-grafico)'), true);
+  await ctx.close();
+});
+
 test('IMC com 1,78 m', async () => {
   const { ctx, pg } = await abrirApp();
   await pg.click('#i-corpo'); await pg.fill('#c-peso', '90'); await pg.click('#c-form button[type=submit]');
