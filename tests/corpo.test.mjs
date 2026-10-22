@@ -51,3 +51,21 @@ test('só tema claro, mesmo com o celular no modo escuro', async () => {
   assert.equal(await pg.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(242, 244, 247)');
   await ctx.close();
 });
+
+test('cintura: editar, ver no card e evolução em gráfico', async () => {
+  const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-22T08:00:00') });
+  await pg.evaluate(() => { db.medidas.push({ data: '2026-10-15', hora: '08:00', peso: 99, cintura: 104 }); gravar(); });
+  await pg.click('#i-corpo');
+  assert.equal(await pg.isVisible('#c-cint-box'), false);                                    // só 1 medida de cintura
+  await pg.fill('#c-peso', '98'); await pg.fill('#c-cintura', '102'); await pg.click('#c-form button[type=submit]');
+  assert.equal(await pg.isVisible('#c-cint-box'), true);
+  assert.equal(await pg.locator('#c-grafico-cint svg').count(), 1);
+  assert.match(await pg.textContent('#c-resumo'), /Cintura 102 cm · -2 cm/);
+  await pg.click('[data-editar-medida="2026-10-22"]');
+  await pg.fill('#em-cint', '101,5'); await pg.click('[data-salvar-medida]');
+  assert.match(await pg.textContent('#c-historico'), /cintura 101,5 cm/);
+  await pg.click('[data-editar-medida="2026-10-22"]');
+  await pg.fill('#em-cint', ''); await pg.click('[data-salvar-medida]');                     // apagar a cintura
+  assert.equal(await pg.evaluate(() => db.medidas.find(m => m.data === '2026-10-22').cintura), undefined);
+  assert.deepEqual(erros, []); await ctx.close();
+});

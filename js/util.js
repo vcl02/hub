@@ -43,7 +43,8 @@ $('toast-desfazer').addEventListener('click', () => { const f = desfazerFn; desf
 const ICONES = {
   lixo: '<path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/>',
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
-  ok: '<path d="M5 12.5l4.5 4.5L19 7.5"/>'
+  ok: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  lapis: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>'
 };
 const btIcone = (icone, titulo, attrs, classe = '') => `<button type="button" class="bt-ic ${classe}" ${attrs} title="${titulo}" aria-label="${titulo}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${ICONES[icone]}</svg></button>`;
 function confirmar(btn, texto) {   // 1º toque arma, 2º confirma
