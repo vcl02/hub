@@ -9,7 +9,7 @@ const RAIZ = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ler = arquivo => readFileSync(path.join(RAIZ, arquivo), 'utf8');
 const existe = arquivo => existsSync(path.join(RAIZ, arquivo));
 const html = ler('index.html');
-const cards = [...html.matchAll(/<a class="app" href="([^"]+)">\s*<img src="([^"]+)"/g)].map(m => ({ href: m[1], icone: m[2] }));
+const cards = [...html.matchAll(/<a class="app" href="([^"]+)" style="--cor:#[0-9A-F]{6}">\s*<img class="app-icone" src="([^"]+)"/g)].map(m => ({ href: m[1], icone: m[2] }));
 
 test('um card por app; cada um aponta para uma pasta com index.html e um ícone que existe', () => {
   assert.deepEqual(cards.map(c => c.href), ['fin/', 'tr/']);

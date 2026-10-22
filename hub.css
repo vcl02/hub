@@ -1,4 +1,4 @@
-/* Página inicial do hub: mesma paleta escura do fin e do tr, um card por app. */
+/* Página inicial do hub: paleta escura do fin e do tr, brilhos nas cores dos apps e cards de vidro. */
 :root {
   --bg: #1B1E21;
   --surface: #24272B;
@@ -6,6 +6,9 @@
   --fg: #E9ECEF;
   --muted: #AAB1B8;
   --blue: #6E9BFF;
+  --purple: #A78BFA;
+  --display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --body: 'Barlow', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color-scheme: dark;
 }
 
@@ -16,54 +19,178 @@
 html,
 body {
   margin: 0;
+  min-height: 100%;
   background: var(--bg);
   color: var(--fg);
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--body);
   -webkit-tap-highlight-color: transparent;
 }
 
+/* ---------- Fundo: dois brilhos borrados, roxo (fin) e azul (tr) ---------- */
+.brilho {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.brilho i {
+  position: absolute;
+  width: 70vmax;
+  height: 70vmax;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: .22;
+}
+
+.brilho i:first-child {
+  top: -35vmax;
+  left: -25vmax;
+  background: var(--purple);
+}
+
+.brilho i:last-child {
+  right: -30vmax;
+  bottom: -40vmax;
+  background: var(--blue);
+}
+
+/* ---------- Conteúdo ---------- */
 .hub {
-  max-width: 560px;
+  position: relative;
+  z-index: 1;
+  max-width: 640px;
   margin: 0 auto;
-  padding: max(24px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px));
+  padding: max(40px, calc(env(safe-area-inset-top, 0px) + 24px)) max(20px, env(safe-area-inset-right, 0px)) 48px max(20px, env(safe-area-inset-left, 0px));
+}
+
+.topo {
+  margin-bottom: 28px;
+}
+
+.data {
+  margin: 0 0 2px;
+  color: var(--muted);
+  font-size: .95rem;
+  font-weight: 500;
+}
+
+.data::first-letter {
+  text-transform: uppercase;
 }
 
 h1 {
-  margin: 0 0 20px;
-  font-size: 1.75rem;
+  margin: 0;
+  font-family: var(--display);
+  font-size: 3.5rem;
   font-weight: 700;
+  line-height: 1;
+  letter-spacing: .01em;
+  background: linear-gradient(100deg, var(--fg) 5%, var(--purple) 55%, var(--blue) 95%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
+/* ---------- Cards dos apps ---------- */
 .apps {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
 }
 
 .app {
+  --cor: var(--blue);
+  position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 20px 12px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--surface);
+  gap: 4px;
+  min-height: 176px;
+  padding: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 22px;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--cor) 22%, transparent), transparent 60%),
+    rgba(36, 39, 43, .72);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .05);
   color: var(--fg);
-  font-weight: 600;
-  text-align: center;
   text-decoration: none;
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+  animation: entrar .45s ease both;
 }
 
-.app:hover {
-  border-color: var(--muted);
+.app:nth-child(2) {
+  animation-delay: .07s;
+}
+
+.app:nth-child(3) {
+  animation-delay: .14s;
+}
+
+.app-icone {
+  width: 64px;
+  height: 64px;
+  margin-bottom: auto;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--cor) 45%, transparent);
+}
+
+.app-nome {
+  margin-top: 18px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.app-tipo {
+  color: var(--muted);
+  font-size: .9rem;
+}
+
+.app-seta {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  color: var(--muted);
+  transition: transform .2s ease, color .2s ease;
+}
+
+.app:hover,
+.app:focus-visible {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--cor) 55%, transparent);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .45), 0 0 0 1px color-mix(in srgb, var(--cor) 25%, transparent);
+}
+
+.app:hover .app-seta,
+.app:focus-visible .app-seta {
+  color: var(--cor);
+  transform: translate(2px, -2px);
+}
+
+.app:active {
+  transform: scale(.98);
 }
 
 .app:focus-visible {
-  outline: 3px solid var(--blue);
-  outline-offset: 2px;
+  outline: none;
 }
 
-.app img {
-  border-radius: 12px;
+@keyframes entrar {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app,
+  .app-seta {
+    animation: none;
+    transition: none;
+  }
 }

@@ -9,26 +9,40 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/hub-192.png">
 <link rel="apple-touch-icon" href="icons/hub-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Barlow:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="hub.css">
 </head>
 <body>
+<!-- Brilhos do fundo, nas cores dos apps (só decoração). -->
+<div class="brilho" aria-hidden="true"><i></i><i></i></div>
 <main class="hub">
-  <h1>hub</h1>
-  <!-- Um card por app, cada um na sua pasta. App novo: pasta nova + um card aqui
-       (e o teste tests/hub.test.mjs confere que a pasta tem index.html). -->
+  <header class="topo">
+    <!-- Preenchido pelo script do fim da página ("quinta-feira, 22 de outubro"). -->
+    <p class="data" id="data"></p>
+    <h1>hub</h1>
+  </header>
+  <!-- Um card por app, cada um na sua pasta, com a cor dele em --cor. App novo: pasta nova +
+       um card aqui (o teste tests/hub.test.mjs confere que a pasta tem index.html). -->
   <nav class="apps" aria-label="Apps">
-    <a class="app" href="fin/">
-      <img src="fin/icons/fin-192.png" alt="" width="56" height="56">
-      <span>fin</span>
+    <a class="app" href="fin/" style="--cor:#A78BFA">
+      <img class="app-icone" src="fin/icons/fin-192.png" alt="" width="64" height="64">
+      <span class="app-nome">fin</span>
+      <span class="app-tipo">Finanças</span>
+      <svg class="app-seta" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg>
     </a>
-    <a class="app" href="tr/">
-      <img src="tr/icon-192.png" alt="" width="56" height="56">
-      <span>Diário de Carga</span>
+    <a class="app" href="tr/" style="--cor:#6E9BFF">
+      <img class="app-icone" src="tr/icon-192.png" alt="" width="64" height="64">
+      <span class="app-nome">Diário de Carga</span>
+      <span class="app-tipo">Treino</span>
+      <svg class="app-seta" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg>
     </a>
   </nav>
 </main>
 <script>
-// Página inicial do hub: só registra o cache offline dela (sw.js), os apps têm o próprio.
+// Página inicial do hub: data do dia no topo e o cache offline dela (sw.js); os apps têm o próprio.
+document.getElementById('data').textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
 </script>
 </body>

@@ -40,7 +40,7 @@ async function abrir(url) {
 
 test('página inicial mostra os apps e cada card abre o app dentro de /hub/', async () => {
   const { ctx, pg, faltando } = await abrir(base);
-  assert.deepEqual(await pg.$$eval('.app span', s => s.map(x => x.textContent)), ['fin', 'Diário de Carga']);
+  assert.deepEqual(await pg.$$eval('.app-nome', s => s.map(x => x.textContent)), ['fin', 'Diário de Carga']);
   assert.equal(await pg.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(27, 30, 33)');
   await pg.click('a[href="fin/"]');
   await pg.waitForURL(`${base}fin/`);
