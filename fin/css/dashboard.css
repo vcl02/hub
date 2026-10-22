@@ -1,0 +1,1594 @@
+  /* =========================================================
+       FILTROS / TOOLBAR
+       ========================================================= */
+
+  /* Só sobrou o filtro Linhas (aparece ao comparar dois ciclos): sem divisor nem folga, e
+     sem ocupar espaço nenhum quando não há filtro visível — a tabela Débito vem logo depois
+     do cabeçalho. */
+  .tool {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 1rem;
+  }
+
+  .tool:not(:has(.f:not([hidden]))) {
+      display: none;
+  }
+
+  .row {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      align-items: flex-end;
+  }
+
+  .f {
+      display: flex;
+      flex-direction: column;
+      gap: .35rem;
+  }
+
+  .f>span {
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: var(--mu);
+  }
+
+  /* Filtros e comandos permanecem na mesma faixa horizontal. */
+  .tool > .row {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      padding-bottom: .1rem;
+  }
+
+  /* Indicadores na mesma linha do cabeçalho, entre a navegação de ciclo e os botões de
+     ação: ocupam o espaço do meio e empurram os botões pra direita. */
+  /* Base 0: o bloco entra na linha do cabeçalho desde que caiba o maior item; o resto do
+     espaço livre é dele, e os itens que não couberem quebram pra baixo dentro do bloco. */
+  #rowVis {
+      display: flex;
+      flex: 1 1 0;
+      align-items: center;
+      gap: .55rem;
+      margin-left: .6rem;
+  }
+
+  /* Janela estreita demais pra navegação + indicadores + botões numa linha só (os
+     maior indicador, com a variação, tem ~400px): eles descem pra uma linha própria logo
+     abaixo, e a navegação e os botões continuam juntos em cima — nunca um por cima do outro. */
+  @media (max-width: 1250px) {
+      #rowVis {
+          order: 1;
+          flex-basis: 100%;
+          margin-left: 0;
+      }
+
+      /* Com os indicadores na faixa do Débito, a linha própria ficaria vazia. */
+      #rowVis.semIndicadores {
+          display: none;
+      }
+  }
+
+  #acoesAcompanhamento {
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+  }
+
+  /* Indicadores em fluxo, no mesmo desenho dos itens da faixa do Débito (onde moram no
+     ciclo único): rótulo, valor em negrito colorido e complemento apagado; se não couberem
+     todos numa linha, quebram pra baixo, cada um inteiro. O divisor é a borda esquerda de
+     cada item; a lista recua uma borda+folga e o contêiner corta o que sobra, então o
+     primeiro item de cada linha nunca começa com divisor. */
+  #indicadoresFinanceiros {
+      min-width: 0;
+      overflow: hidden;
+  }
+
+  .listaIndicadores {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: .15rem .4rem;
+      margin-left: calc(-.8rem - 1px);
+      font-variant-numeric: tabular-nums;
+  }
+
+  /* Item maior que a linha inteira (celular) quebra entre palavras e antes da variação,
+     nunca no meio de um valor (os <b> são inline-block); senão desce inteiro. */
+  .indicadorItem {
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0 .4rem;
+      padding-left: .8rem;
+      border-left: 1px solid var(--ln);
+  }
+
+  /* normal: a faixa do Débito herda nowrap nos seus itens e cortaria o fim no celular. */
+  .indicadorRegra {
+      font-size: .84rem;
+      white-space: normal;
+  }
+
+  /* Percentual com a largura de "100%" (como Besteira/Isabella), colado no rótulo. */
+  .indicadorRegra b {
+      display: inline-block;
+      text-align: left;
+  }
+
+  .indicadorRegra b.pct {
+      min-width: 5ch;
+  }
+
+  /* Simulação: o valor real, apagado, antes do simulado ("71,6% → 83,2%"), nos títulos e
+     nos indicadores (marcarAntesDaSimulacao). */
+  .valorAntes {
+      color: var(--mu);
+      font-weight: 400;
+      white-space: nowrap;
+  }
+
+  /* A variação possui cor semântica própria, independente da situação atual do indicador. */
+  .variacaoIndicador {
+      font-size: .76rem;
+      font-variant-numeric: tabular-nums;
+  }
+
+  .variacaoIndicador.neutro { color: var(--mu); }
+  .variacaoIndicador.vd { color: var(--vd); }
+  .variacaoIndicador.vm { color: var(--vm); }
+  .separadorVariacao { color: var(--mu); }
+  /* Variação logo depois do próprio indicador, no mesmo item, como texto miúdo: nunca
+     parece de outro indicador quando os itens quebram de linha. */
+  .variacaoLinha {
+      white-space: nowrap;
+  }
+
+  select {
+      font: inherit;
+      color: var(--fg);
+      background-color: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 9px;
+      padding: .42rem 1.9rem .42rem .7rem;
+      cursor: pointer;
+      appearance: none;
+
+      background-image:
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%239CA3AA' stroke-width='1.5'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+
+      background-repeat: no-repeat;
+      background-position: right .7rem center;
+  }
+
+  select:hover {
+      background-color: var(--field-hover);
+      border-color: var(--line-strong);
+  }
+
+  select option {
+      background: var(--field);
+      color: var(--fg);
+  }
+
+  .multiSel {
+      position: relative;
+  }
+
+  .multiSelBtn {
+      font: inherit;
+      color: var(--fg);
+      background-color: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 9px;
+      padding: .42rem 1.9rem .42rem .7rem;
+      cursor: pointer;
+      text-align: left;
+      min-width: 11rem;
+      max-width: 16rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      appearance: none;
+
+      background-image:
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%239CA3AA' stroke-width='1.5'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+
+      background-repeat: no-repeat;
+      background-position: right .7rem center;
+  }
+
+  .multiSelBtn:hover {
+      background-color: var(--field-hover);
+      border-color: var(--line-strong);
+  }
+
+  .multiSelDrop {
+      display: none;
+      position: absolute;
+      top: calc(100% + .3rem);
+      left: 0;
+      z-index: 25;
+
+      background: var(--pa);
+      border: 1px solid var(--ln);
+      border-radius: 10px;
+      box-shadow: 0 12px 35px var(--shadow);
+
+      padding: .4rem;
+      min-width: 14rem;
+      max-height: 16rem;
+      overflow-y: auto;
+  }
+
+  .multiSelDrop.open {
+      display: block;
+  }
+
+  .multiSelAll {
+      width: 100%;
+      padding: .35rem .5rem;
+      border: 0;
+      border-bottom: 1px solid var(--ln);
+      color: var(--ac);
+      background: transparent;
+      font: inherit;
+      font-size: .82rem;
+      text-align: left;
+      cursor: pointer;
+  }
+
+  .multiSelAll:hover {
+      background: var(--bg-soft);
+  }
+
+  .multiSelDrop label {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .35rem .5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: .9rem;
+  }
+
+  .multiSelDrop label:hover {
+      background: var(--bg-soft);
+  }
+
+  .multiSelDrop input {
+      width: 1rem;
+      height: 1rem;
+      accent-color: #6FCB8F;
+  }
+
+  /* =========================================================
+       BLOCOS
+       ========================================================= */
+
+  .blk {
+      margin: 0 0 1.8rem;
+  }
+
+  .blk h3 {
+      font: 700 1.05rem/1.3 inherit;
+      margin: 0;
+      color: var(--fg);
+  }
+
+  .blk h3 b {
+      font-weight: 700;
+  }
+
+  /* Os títulos financeiro-resumo distinguem o retrato real de hoje da projeção sem criar
+     outro card ou duplicar a tabela. Faixas discretas preservam a leitura em duas linhas. */
+  .blk h3:has(.resumoTitulo) {
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+  }
+
+  .blk h3:has(.resumoTitulo) .tog {
+      flex: 0 0 auto;
+      margin: 0;
+  }
+
+  .tituloBloco {
+      display: inline-flex;
+      flex: 0 0 5.7rem;
+      align-items: center;
+      justify-content: space-between;
+      width: 5.7rem;
+  }
+
+  .resumoTitulo {
+      display: grid;
+      flex: 1 1 auto;
+      gap: .3rem;
+      min-width: 0;
+      margin: 0;
+      font-size: .82em;
+      font-weight: 500;
+  }
+
+  .resumoLinha {
+      display: grid;
+      grid-template-columns: 3.65rem minmax(0, 1fr);
+      align-items: center;
+      gap: .55rem;
+      padding: .28rem .48rem;
+      background: var(--bg-soft);
+      border: 1px solid var(--ln);
+      border-radius: 7px;
+  }
+
+  .resumoRotulo {
+      color: var(--mu);
+      font-size: .78em;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+  }
+
+  /* Cada item da faixa (Saldo, Guardado, Besteira, cartões…) leva o divisor na borda esquerda,
+     transparente onde não há divisão. A faixa recua uma borda+folga e o clip corta esse
+     recuo, então o item que abre uma linha nunca começa com divisor (mesma ideia da lista
+     de indicadores do cabeçalho). */
+  .resumoDados {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: .15rem .4rem;
+      min-width: 0;
+      margin-left: calc(-.8rem - 1px);
+      clip-path: inset(0 0 0 calc(.8rem + 1px));
+      font-variant-numeric: tabular-nums;
+  }
+
+  .resumoDados > * {
+      padding-left: .8rem;
+      border-left: 1px solid transparent;
+      white-space: nowrap;
+  }
+
+  /* Item grande demais pra linha quebra entre os seus pedaços, nunca no meio de um valor
+     ("de R$ 3.920,00" fica junto); a linha de baixo começa alinhada ao início do item. */
+  .resumoDados > .temPedacos {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      column-gap: .3em;
+      white-space: normal;
+  }
+
+  .pedaco {
+      white-space: nowrap;
+  }
+
+  /* Em todas as faixas (Saldo, Guardado, Besteira/Isabella, cartões) o valor em negrito fica
+     colado no próprio rótulo ("Saldo R$ 0,00"). Com uma largura fixa alinhada à direita,
+     sobrava um vão entre o rótulo e o valor, e o valor encostava no rótulo seguinte. Hoje e
+     Futuro continuam um embaixo do outro: alinharResumosDosTitulos iguala as larguras e a
+     sobra vai depois do valor. */
+  .resumoDados b {
+      display: inline-block;
+      text-align: left;
+  }
+
+  /* Percentual com a largura de "100%", pra o rótulo depois dele não andar quando o número muda. */
+  .resumoDados b.pct {
+      min-width: 5ch;
+  }
+
+  .resumoDados .limiteRotulo {
+      display: inline-block;
+  }
+
+  /* Fica visivelmente separado de Saldo/Guardado (gap maior + divisor), pois é uma leitura
+     diferente: não é saldo de caixa, é progresso contra um teto fixo de código. */
+  .resumoDados > .besteiraIndicador {
+      border-left-color: var(--ln);
+      color: var(--mu);
+  }
+
+  /* Indicadores na faixa Hoje do Débito (encaixarIndicadoresNoDebito), numa linha própria
+     dela: só o que sobrava depois de Isabella não cabia nem um olho aberto. O texto
+     acompanha o tamanho da faixa, em vez do tamanho do cabeçalho. */
+  .resumoDados > #indicadoresFinanceiros {
+      flex: 1 1 100%;
+  }
+
+  .resumoDados .indicadorRegra {
+      font-size: inherit;
+  }
+
+  /* Faixas do Crédito: respiro maior entre os pares rótulo+valor (Fatura, Usado, Livre). */
+  .resumoDados > .limiteCartao.temPedacos {
+      column-gap: .9em;
+  }
+
+  /* O limite só contextualiza o total do único cartão; não é outro saldo nem outra tabela. */
+  .limiteCartao {
+      color: var(--mu);
+      font-size: .88em;
+      font-weight: 500;
+  }
+
+  /* Espaço do aviso é fixo nos títulos: o resumo não salta quando um risco aparece. */
+  .alertaTitulo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1rem;
+      color: var(--vm);
+      font-size: 1.05em;
+      line-height: 1;
+      cursor: help;
+  }
+
+  .alertaTitulo.vazio {
+      visibility: hidden;
+  }
+
+  .limiteCartaoBase {
+      display: inline-flex;
+      align-items: baseline;
+      /* R$ / campo / Aprovado precisam ficar compactos nas linhas Hoje e Futuro. */
+      gap: .1rem;
+  }
+
+  .limiteCartaoRotulo {
+      white-space: nowrap;
+  }
+
+  /* Com dois cartões, cada faixa de limite começa pelo nome do cartão, numa cor própria
+     (Total neutro; Nubank roxo; Mercado Pago azul) pra separar as faixas de relance. */
+  .limiteCartaoNome {
+      color: var(--fg);
+      font-weight: 700;
+  }
+
+  .limiteCartaoNome.cartao-nubank {
+      color: #B79BF5;
+  }
+
+  .limiteCartaoNome.cartao-mp {
+      color: #6CC5EE;
+  }
+
+  /* Faixas separadas por um divisor vertical, igual Besteira/Isabella no Débito. */
+  .resumoDados > * + .limiteCartao {
+      border-left-color: var(--line-strong);
+  }
+
+  /* Rótulos discretos, valores em negrito; o teto ("de R$ …") e os complementos ficam em
+     itálico, como contexto do número principal. */
+  .limiteRotulo {
+      color: var(--mu);
+      font-weight: 400;
+  }
+
+  .limiteUsado {
+      color: var(--fg);
+  }
+
+  .limiteTeto,
+  .limiteGarantido {
+      font-style: italic;
+  }
+
+  /* Campo propositalmente parecido com texto: só revela que é editável ao interagir. */
+  .limiteCartaoEditavel {
+      width: 5.9em;
+      /* Onde houver suporte, o campo encolhe ao tamanho do valor, sem vão antes de Aprovado. */
+      field-sizing: content;
+      min-width: 3em;
+      padding: 0 .08em;
+      color: inherit;
+      font: inherit;
+      font-variant-numeric: tabular-nums;
+      background: transparent;
+      border: 0;
+      border-bottom: 1px dashed transparent;
+      outline: 0;
+      cursor: text;
+  }
+
+  .limiteCartaoEditavel:hover,
+  .limiteCartaoEditavel:focus {
+      color: var(--fg);
+      border-bottom-color: var(--line-strong);
+  }
+
+  .limiteCartaoEditavel::placeholder {
+      color: var(--mu);
+      opacity: .72;
+  }
+
+  .limiteGarantido {
+      color: var(--vd);
+  }
+
+  /* "N registros" logo depois do valor nos títulos compactos (Backlog, Crédito histórico). */
+  .blk h3 .contagemTitulo {
+      margin-left: .2rem;
+      font-size: .78em;
+      font-weight: 400;
+      color: var(--mu);
+  }
+
+  /* Nome com explicação no hover (Besteira, Isabella): sublinhado pontilhado discreto. */
+  .rotuloComDica {
+      cursor: help;
+      text-decoration: underline dotted;
+      text-decoration-color: var(--line-strong);
+      text-underline-offset: .2em;
+  }
+
+  /* Nome do teto como toggle de filtro: parece texto (mesmo sublinhado da dica), mas é botão;
+     ligado ganha o verde de "ativo" do restante da tela. */
+  .filtroTeto {
+      padding: 0 .2rem;
+      margin: 0 -.2rem;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      background: none;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+  }
+  .filtroTeto:hover {
+      background: var(--field-hover);
+  }
+  .filtroTeto.ativo {
+      color: var(--vd);
+      background: var(--green-soft);
+      border-color: var(--vd);
+      text-decoration: none;
+  }
+
+  /* Aviso no Resgate que levou todo o guardado. */
+  .tagAviso {
+      display: inline-block;
+      margin-left: .3rem;
+      padding: 0 .4rem;
+      font-size: .75em;
+      font-weight: 600;
+      color: #F0A83A;
+      background: var(--orange-soft);
+      border: 1px solid #6A5330;
+      border-radius: 6px;
+      white-space: nowrap;
+  }
+
+  /* "N registros · período" encaixado no fim da faixa Futuro do título, à direita. */
+  .resumoMeta {
+      margin-left: auto;
+      font-size: .9em;
+      font-weight: 400;
+      font-style: italic;
+      color: var(--mu);
+      white-space: nowrap;
+  }
+
+  /* Sem a linha de meta (encaixada no título), a tabela mantém a mesma folga abaixo dele. */
+  .blk > h3 + .wrap {
+      margin-top: .6rem;
+  }
+
+  .blk .meta,
+  .meta {
+      font-size: .85rem;
+      color: var(--mu);
+      font-style: italic;
+      margin: .1rem 0 .6rem;
+  }
+
+  .empty {
+      color: var(--mu);
+      font-style: italic;
+      font-size: .9rem;
+      padding: .8rem;
+  }
+
+  /* =========================================================
+       TABELAS
+       ========================================================= */
+
+  .wrap {
+      background: var(--pa);
+      border: 1px solid var(--ln);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, .12);
+  }
+
+  .wx {
+      overflow: auto;
+      max-height: 78vh;
+  }
+
+  table {
+      border-collapse: separate;
+      border-spacing: 0;
+      width: 100%;
+      background: var(--pa);
+  }
+
+  /* Tabelas de lançamentos (Débito, Crédito, Backlog): largura de coluna fixa, que não muda
+     conforme o filtro. As colunas de conteúdo previsível têm a largura do maior conteúdo
+     (cabeçalho, botão de filtro ou célula); as de texto livre (Nome, Categoria, Frequência,
+     Obs, Canal) dividem igualmente o que sobra e quebram linha dentro dela. O mínimo da
+     tabela evita espremer o texto: abaixo dele a própria .wrap rola de lado. */
+  table.larguraFixa {
+      table-layout: fixed;
+      min-width: 81rem;
+  }
+
+  /* Sem ID, Reserva, Comprometido e Pra sempre (conta restrita), a soma das colunas cai
+     ~25rem. */
+  table.larguraFixa:not(:has(col.col-id)) {
+      min-width: 56rem;
+  }
+
+  .col-data { width: 7rem; }
+  .col-valor { width: 9.75rem; }
+  .col-pago { width: 5rem; }
+  .col-reserva { width: 6rem; }
+  .col-comprometido { width: 8.25rem; }
+  .col-pra_sempre { width: 7rem; }
+  .col-prio { width: 4.5rem; }
+  .col-id { width: 4rem; }
+
+  table.larguraFixa td {
+      overflow-wrap: anywhere;
+  }
+
+  /* No Nome, só o texto encolhe e ganha "…"; as marcas (↳ Fat., ⚠ Resgatou tudo) ficam
+     inteiras ao lado. */
+  .nomeLinha {
+      display: flex;
+      align-items: center;
+      gap: .3rem;
+      min-width: 0;
+  }
+
+  .nomeLinha > * {
+      flex: none;
+  }
+
+  .nomeLinha > .nomeTexto {
+      flex: 0 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+  }
+
+  .nomeLinha .tagAviso,
+  .nomeLinha .tagFatura {
+      margin-left: 0;
+  }
+
+  /* Nome e Obs: uma linha só, com "…" no que não couber; o texto inteiro fica no hover. */
+  table.larguraFixa td.corta {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+  }
+
+  /* evita a selecao de texto azul do navegador ao usar shift-click pra marcar um
+     intervalo de linhas — o shift-click nativo seleciona texto, o que fica feio
+     junto com o destaque das linhas marcadas. Inputs de filtro continuam selecionaveis. */
+  tbody tr.pick {
+      user-select: none;
+  }
+
+  th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+
+      background: #1D2024;
+      color: var(--mu);
+
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      text-align: left;
+
+      padding: .55rem .7rem;
+      border-bottom: 1px solid var(--ln);
+
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+  }
+
+  th:hover {
+      color: var(--fg);
+      background: #22262A;
+  }
+
+  thead tr.filtros th {
+      position: sticky;
+      top: 1.9rem;
+      z-index: 1;
+      background: #1A1D20;
+      padding: .25rem .5rem .45rem;
+      border-bottom: 1px solid var(--ln);
+      cursor: default;
+  }
+
+  thead tr.filtros input {
+      width: 100%;
+      font: 12px/1.3 inherit;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: normal;
+
+      color: var(--fg);
+      background: var(--field);
+
+      border: 1px solid var(--ln);
+      border-radius: 6px;
+      padding: .2rem .4rem;
+  }
+
+  /* busca da coluna Valor: numero alinhado a direita, igual as celulas dessa coluna */
+  thead tr.filtros th.n input {
+      text-align: right;
+  }
+
+  thead tr.filtros input:focus {
+      border-color: #68727A;
+      background: #24292E;
+      outline: none;
+  }
+
+  thead tr.filtros input::placeholder {
+      color: #737B82;
+  }
+
+  /* Valor: mesmo desenho das células de baixo (.valorLinha) — botão de sinal num quadrado
+     fixo de 1.5rem e o campo na largura fixa do valor (6.5rem), encostados à direita —, pra
+     o sinal do filtro ficar na mesma coluna dos botões +/− das linhas. */
+  thead tr.filtros .filtroValor {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+  }
+
+  /* A célula de Valor das linhas tem folga direita de .7rem (td); a do filtro, .5rem (th).
+     Igualar só aqui põe o sinal e o campo exatamente sobre o botão e o número de baixo. */
+  thead tr.filtros th:has(.filtroValor) {
+      padding-right: .7rem;
+  }
+
+  thead tr.filtros .filtroValor .filtroEstado {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.5rem;
+      height: 1.5rem;
+      margin-right: .35rem;
+      padding: 0;
+      font-size: .9rem;
+  }
+
+  thead tr.filtros .filtroValor input {
+      flex: none;
+      width: 6.5rem;
+  }
+
+  /* Filtro por clique (sinal, Pago, Reserva, Comprometido): desligado fica discreto como
+     o placeholder dos campos; ligado ganha a cor do próprio estado e a borda. */
+  .filtroEstado {
+      flex: none;
+      padding: .12rem .45rem;
+      font: 12px/1.3 inherit;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: normal;
+      white-space: nowrap;
+      color: #737B82;
+      background: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 6px;
+      cursor: pointer;
+  }
+
+  .filtroEstado:hover {
+      border-color: #68727A;
+  }
+
+  .filtroEstado.ligado {
+      font-weight: 600;
+      border-color: currentColor;
+  }
+
+  .filtroEstado.ligado:not(.vd):not(.vm):not(.flagReserva):not(.flagComprometido):not(.flagPraSempre) {
+      color: var(--fg);
+  }
+
+  th .ar {
+      color: var(--fg);
+      font-style: normal;
+  }
+
+  td {
+      padding: .5rem .7rem;
+      border-bottom: 1px solid var(--ln);
+      color: var(--fg);
+  }
+
+  tbody tr:last-child td {
+      border-bottom: 0;
+  }
+
+  tbody tr:hover td {
+      background: #202428;
+  }
+
+  .wrap {
+      -webkit-overflow-scrolling: touch;
+  }
+
+  .n {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+  }
+
+  /* Botão de sinal + valor (ver celValorEditavel): texto corrido com text-align:right
+     empacotava os dois como um bloco só e alinhava o bloco inteiro à direita — como o
+     valor muda de largura a cada linha, o botão "andava" de posição (efeito escadinha).
+     Em flex, com o valor numa largura fixa (grande o bastante pra qualquer quantia real,
+     mesma largura do campo de edição .inpValor), o par fica colado e sempre na mesma
+     posição — sem o vão de esticar o valor até a largura total da coluna (definida pelo
+     cabeçalho/filtro) nem a escadinha de deixar a largura variar. É um wrapper PRÓPRIO
+     (não o <td> inteiro) porque o saldo do dia (.sd) é outro filho do <td>, anexado depois,
+     que precisa continuar empilhando por baixo em 'display:block' normal. */
+  .valorLinha {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      width: 100%;
+  }
+
+  .valorLinha .togValor,
+  .valorLinha .valorFixo {
+      width: 6.5rem;
+      text-align: right;
+  }
+
+  /* Colunas de estado confirmado na comparação de dois ciclos; o texto pode quebrar, mas
+     as células ficam compactas porque levam somente um check. */
+  .colDif {
+      width: 4.5rem;
+      min-width: 4.5rem;
+      text-align: center;
+      padding-left: .3rem;
+      padding-right: .3rem;
+  }
+
+  .difOk,
+  .difNovo,
+  .difUnico {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.35rem;
+      height: 1.35rem;
+      border-radius: 50%;
+      font-size: .75rem;
+      font-weight: 700;
+      line-height: 1;
+  }
+
+  /* Acabou = verde, porque a despesa deixou de existir de forma confirmada. */
+  .difOk {
+      color: #10231A;
+      background: var(--vd);
+  }
+
+  /* Começou = vermelho, porque é uma nova despesa recorrente. */
+  .difNovo {
+      color: #2B1211;
+      background: var(--vm);
+  }
+
+  /* Único = âmbar, pois apareceu uma vez e não se confirmou como recorrência. */
+  .difUnico {
+      color: #2B2110;
+      background: #F0A83A;
+  }
+
+  /* asterisco de aviso colado no ✓ de difOk/difNovo: mesmo nome+valor apareceu 2x dentro
+     do MESMO ciclo, em meses diferentes — pode ser recorrencia caindo 2x no mesmo ciclo
+     (janela do periodo atravessando a virada do mes), nao uma mudanca real. So' um alerta
+     visual discreto, sem quebrar o layout do check redondo ao lado. */
+  .avisoDup {
+      margin-left: .15rem;
+      color: #F0A83A;
+      font-weight: 700;
+      cursor: help;
+  }
+
+  /* Botão de corrigir ao lado da Data (ver celData em tables.js): mesma cor do asterisco
+     .avisoDup acima, porque é o mesmo sintoma (recorrência caindo 2x no ciclo) — só que na
+     tabela Débito ele vira uma AÇÃO de 1 clique, não só um aviso. Mesmo círculo em evidência
+     do .linkCanal/.copiarCanal, com borda âmbar pra se diferenciar visualmente. */
+  .corrigeDupData {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+      width: 1.3rem;
+      height: 1.3rem;
+      margin-left: .3rem;
+      vertical-align: middle;
+      cursor: pointer;
+      font-size: .85rem;
+      line-height: 1;
+
+      border: 1px solid #F0A83A;
+      border-radius: 50%;
+
+      background: var(--field);
+      color: #F0A83A;
+  }
+
+  .corrigeDupData:hover {
+      background: var(--field-hover);
+  }
+
+  /* =========================================================
+       CORES DE VALORES
+       ========================================================= */
+
+  .vd {
+      color: var(--vd);
+      font-weight: 600;
+  }
+
+  .vm {
+      color: var(--vm);
+      font-weight: 600;
+  }
+
+  /* Laranja: perto do teto (indicadores de limite por categoria). */
+  .am {
+      color: #F0A83A;
+      font-weight: 600;
+  }
+
+  /* Marcas Reserva/Comprometido nas tabelas (COR_FLAG em tables.js): laranja escuro e
+     amarelo claro, afastados entre si e do laranja .am dos indicadores. */
+  .flagComprometido {
+      color: #D9741E;
+      font-weight: 600;
+  }
+
+  .flagReserva {
+      color: #F6E58D;
+      font-weight: 600;
+  }
+
+  /* Pra sempre: azul, longe do amarelo/laranja das outras marcas e do verde de Pago. */
+  .flagPraSempre {
+      color: #6CB8F0;
+      font-weight: 600;
+  }
+
+  /* badge Pago/Aberto clicavel na tabela: alterna o status na hora (ver listener em
+     #out no script.js). Sublinhado tracejado so' no hover, pra nao parecer link o
+     tempo todo — mas ainda sinalizar que e' interativo ao passar o mouse. togFlag
+     (Reserva/Comprometido) usa o mesmo esquema visual, so' que normalmente mostra "—". */
+  .togPago, .togFlag {
+      cursor: pointer;
+      transition: opacity .15s ease;
+  }
+
+  .togPago:hover, .togFlag:hover {
+      text-decoration: underline dotted;
+      text-underline-offset: .2em;
+  }
+
+  /* Valor clicavel na tabela: mesma ideia do badge Pago, edicao inline (ver listener
+     em #out no script.js). */
+  .togValor {
+      cursor: pointer;
+      transition: opacity .15s ease;
+  }
+
+  .togValor:hover {
+      text-decoration: underline dotted;
+      text-underline-offset: .2em;
+  }
+
+  /* Data clicavel na tabela: mesma ideia do Valor, edicao inline com <input type=date>
+     (ver listener em #out no script.js). Nome/Categoria/Frequencia/Prio/Obs/Canal
+     (togNome/togCateg/togFreq/togPrio/togObs/togCanal) usam exatamente o mesmo esquema
+     visual, cada um com seu input/select proprio. */
+  .togData, .togNome, .togCateg, .togFreq, .togPrio, .togObs, .togCanal {
+      cursor: pointer;
+      transition: opacity .15s ease;
+  }
+
+  .togData:hover, .togNome:hover, .togCateg:hover, .togFreq:hover, .togPrio:hover,
+  .togObs:hover, .togCanal:hover {
+      text-decoration: underline dotted;
+      text-underline-offset: .2em;
+  }
+
+  /* Canal tem largura fixa: o que nao couber vira "..." (ainda clicavel por inteiro pra
+     editar o texto completo, igual Nome/Categoria). .celCanalTexto e' a mesma caixa pra
+     conta restrita/linha nao-real, que mostra o texto truncado mas sem o clique de edicao. */
+  .togCanal, .celCanalTexto {
+      display: inline-block;
+      max-width: 9rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      vertical-align: middle;
+  }
+
+  /* Botões de copiar/abrir ao lado do Canal (ver celCanal em tables.js): copiar aparece
+     sempre que houver texto (serve pra chave Pix tambem, que nao e' um link); abrir so'
+     quando o texto e' uma URL http(s) — pedido explicito: ficam em EVIDENCIA (mesmo
+     círculo do botão de ajuda do cadastro, só que sem o tom apagado), nunca cortados pelo
+     texto truncado ao lado, já que não fazem parte da caixa com overflow escondido. */
+  .linkCanal, .copiarCanal {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+      width: 1.3rem;
+      height: 1.3rem;
+      margin-left: .3rem;
+      vertical-align: middle;
+      cursor: pointer;   /* .copiarCanal e' <button>, que nao herda a maozinha como <a> */
+
+      border: 1px solid var(--line-strong);
+      border-radius: 50%;
+
+      background: var(--field);
+      color: var(--fg);
+  }
+
+  .linkCanal:hover, .copiarCanal:hover {
+      background: var(--field-hover);
+      border-color: var(--fg);
+  }
+
+  .inpData {
+      font: inherit;
+      font-variant-numeric: tabular-nums;
+      color: var(--fg);
+      background: var(--field);
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      padding: .15rem .4rem;
+  }
+
+  .inpData:focus {
+      outline: 2px solid var(--fg);
+      outline-offset: -1px;
+  }
+
+  /* o icone nativo do calendario e' preto por padrao e some no tema escuro */
+  .inpData::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      opacity: .6;
+      cursor: pointer;
+  }
+
+  .inpValor, .inpNome, .inpCateg, .inpFreq, .inpPrio, .inpObs, .inpCanal {
+      width: 6.5rem;
+      font: inherit;
+      font-variant-numeric: tabular-nums;
+      color: var(--fg);
+      background: var(--field);
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      padding: .15rem .4rem;
+  }
+
+  /* Nome, Categoria, Obs e Canal sao texto livre mais longo que o Valor: largura minima
+     maior, mas ainda flexivel pra nao quebrar o layout da celula. */
+  .inpNome, .inpCateg, .inpObs, .inpCanal {
+      width: 100%;
+      min-width: 9rem;
+  }
+
+  /* Prio e' so' um numero curto (1 a 3 digitos, tipicamente) — nao precisa da largura do Valor. */
+  .inpPrio {
+      width: 3.5rem;
+  }
+
+  .inpValor:focus, .inpNome:focus, .inpCateg:focus, .inpFreq:focus, .inpPrio:focus,
+  .inpObs:focus, .inpCanal:focus {
+      outline: 2px solid var(--fg);
+      outline-offset: -1px;
+  }
+
+  /* =========================================================
+       LINHA DE FATURA
+       ========================================================= */
+
+  tbody tr.fat td {
+      background: var(--red-soft);
+  }
+
+  tbody tr.fat:hover td {
+      background: var(--red-hover);
+  }
+
+  /* =========================================================
+       COMPRA DO MERCADO PAGO
+       ========================================================= */
+
+  /* A linha inteira com o azul do cartão quase transparente e um contorno suave (sem selo
+     "MP"). Vem antes da seleção: o verde do clique sobressai por cima. */
+  tbody tr.mp td {
+      background: rgba(108, 197, 238, .06);
+  }
+
+  tbody tr.mp:hover td {
+      background: rgba(108, 197, 238, .1);
+  }
+
+  tbody tr.mp {
+      outline: 1px solid rgba(108, 197, 238, .22);
+      outline-offset: -1px;
+  }
+
+  /* =========================================================
+       TOTAL
+       ========================================================= */
+
+  .tot td {
+      font-weight: 700;
+      border-top: 1px solid var(--line-strong);
+      border-bottom: 0;
+      background: #202428;
+  }
+
+  .tot td:first-child {
+      border-radius: 0 0 0 10px;
+  }
+
+  .tot td:last-child {
+      border-radius: 0 0 10px 0;
+  }
+
+  /* =========================================================
+       SELEÇÃO DE LINHAS
+       ========================================================= */
+
+  tbody tr.pick {
+      cursor: pointer;
+  }
+
+  tbody tr.on td {
+      background: var(--green-soft);
+  }
+
+  tbody tr.on:hover td {
+      background: var(--green-hover);
+  }
+
+  /* =========================================================
+       PRIMEIRA COLUNA FIXA
+       ========================================================= */
+
+  .wx td.c1,
+  .wx th.c1 {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      background: var(--pa);
+  }
+
+  .wx th.c1 {
+      background: #1D2024;
+  }
+
+  .wx thead th.c1 {
+      z-index: 3;
+  }
+
+  .wx tbody tr:hover td.c1 {
+      background: #202428;
+  }
+
+  .wx tbody tr.on td.c1 {
+      background: var(--green-soft);
+  }
+
+  .wx tbody tr.on:hover td.c1 {
+      background: var(--green-hover);
+  }
+
+  .wx tr.tot td.c1 {
+      background: #202428;
+  }
+
+  .wx td.c1 {
+      border-right: 1px solid var(--ln);
+  }
+
+  /* =========================================================
+       LOGIN
+       ========================================================= */
+
+  #login {
+      max-width: 19rem;
+      margin: 16vh auto 0;
+      display: none;
+      flex-direction: column;
+      gap: .7rem;
+  }
+
+  #login input {
+      font: inherit;
+      color: var(--fg);
+      padding: .55rem .7rem;
+      border: 1px solid var(--ln);
+      border-radius: 9px;
+      background: var(--field);
+  }
+
+  #login input::placeholder {
+      color: #747C83;
+  }
+
+  #login input:focus {
+      border-color: #68727A;
+      background: #24292E;
+      outline: none;
+  }
+
+  #login button {
+      font: inherit;
+      color: #111315;
+      background: var(--fg);
+      border: 0;
+      border-radius: 9px;
+      padding: .6rem;
+      cursor: pointer;
+  }
+
+  #login button:hover {
+      background: #FFFFFF;
+  }
+
+  #login .err {
+      color: var(--vm);
+      font-size: .85rem;
+      min-height: 1.1rem;
+  }
+
+  #app {
+      display: none;
+  }
+
+  /* modo simulacao ativo: uma vinheta fixa cobre as BORDAS da tela (centro limpo, sem
+     blur nenhum no conteudo/texto) — o efeito de "quadro de sonho/flashback" dos
+     quadrinhos, com um leve tom laranja (a mesma cor do toggle ligado) esfumacando os
+     cantos. E' so' um overlay visual (pointer-events:none, position:fixed acima do
+     #app): nao broca clique nem entra na "top layer" dos <dialog>, que continuam
+     abrindo por cima normalmente. */
+  body.simulando::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center,
+              transparent 58%,
+              rgba(20, 15, 10, .32) 84%,
+              rgba(16, 12, 8, .7) 100%);
+      backdrop-filter: blur(1.8px);
+      -webkit-backdrop-filter: blur(1.8px);
+      mask-image: radial-gradient(ellipse at center, transparent 56%, #000 88%);
+      -webkit-mask-image: radial-gradient(ellipse at center, transparent 56%, #000 88%);
+      opacity: 0;
+      animation: vinhetaSonho .3s ease forwards;
+  }
+
+  @keyframes vinhetaSonho {
+      to {
+          opacity: 1;
+      }
+  }
+
+  /* =========================================================
+       BARRA DE SELEÇÃO
+       ========================================================= */
+
+  #selbar {
+      position: fixed;
+      right: 1.6rem;
+      bottom: 1.6rem;
+
+      display: none;
+      align-items: center;
+      gap: 1.4rem;
+
+      background: rgba(32, 36, 40, .45);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      color: var(--fg);
+
+      padding: .9rem 1.3rem;
+      border: 1px solid var(--line-strong);
+      border-radius: 14px;
+
+      box-shadow: 0 12px 35px rgba(0, 0, 0, .45);
+      z-index: 20;
+  }
+
+  #selbar .info {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+  }
+
+  #selbar .cnt {
+      font-size: .78rem;
+      color: var(--mu);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+  }
+
+  #selbar .val {
+      font-size: 1.35rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+  }
+
+  #selbar button {
+      font: inherit;
+      color: #111315;
+      background: var(--fg);
+      border: 0;
+      border-radius: 9px;
+      padding: .5rem .9rem;
+      cursor: pointer;
+  }
+
+  #selbar button:hover {
+      background: #FFFFFF;
+  }
+
+  #selbar #seledit,
+  #selbar #seldup {
+      color: var(--fg);
+      background: var(--field);
+      border: 1px solid var(--line-strong);
+  }
+
+  #selbar #seledit:hover,
+  #selbar #seldup:hover {
+      background: var(--field-hover);
+      border-color: var(--fg);
+  }
+
+  #selbar #seledit:disabled,
+  #selbar #seldup:disabled {
+      opacity: .6;
+  }
+
+  /* Excluir: mesma forma discreta do Duplicar, so' que em vermelho — a acao e'
+     irreversivel, entao nao deve parecer o botao primario (branco) da barra. */
+  #selbar #seldel {
+      color: var(--vm);
+      background: var(--red-soft);
+      border: 1px solid var(--vm);
+  }
+
+  #selbar #seldel:hover {
+      color: #111315;
+      background: var(--vm);
+  }
+
+  #selbar #seldel:disabled {
+      opacity: .6;
+  }
+
+  /* Botões de ação só com ícone na barra (Gráfico, Consolidar tudo): quadrados, no mesmo
+     tamanho dos botões de navegação de ciclo. O texto fica no title/aria-label. */
+  .btIcone {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+      width: 2.2rem;
+      height: 2.2rem;
+      padding: 0;
+      color: var(--fg);
+      background: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 9px;
+      cursor: pointer;
+  }
+
+  .btIcone:hover:not(:disabled) {
+      background: var(--field-hover);
+      border-color: var(--line-strong);
+  }
+
+  .btIcone:disabled {
+      opacity: .5;
+  }
+
+  /* Botões dos cartões no cabeçalho: o ícone do cartão na cor dele (Nubank roxo, Mercado
+     Pago azul), com fundo levemente tingido, pra achar de relance qual abre qual. */
+  .btCartao.cartao-nubank {
+      color: #A45BEA;
+      background: rgba(130, 10, 209, .16);
+      border-color: rgba(164, 91, 234, .5);
+  }
+
+  .btCartao.cartao-mp {
+      color: #2BB0EA;
+      background: rgba(0, 158, 227, .14);
+      border-color: rgba(43, 176, 234, .5);
+  }
+
+  .btCartao.cartao-nubank:hover:not(:disabled) {
+      background: rgba(130, 10, 209, .32);
+      border-color: #B79BF5;
+  }
+
+  .btCartao.cartao-mp:hover:not(:disabled) {
+      background: rgba(0, 158, 227, .3);
+      border-color: #6CC5EE;
+  }
+
+  /* Ligado (ex.: só as linhas diferentes): mesmo verde de "ativo" do restante da tela. */
+  .btIcone.ativo {
+      color: var(--vd);
+      background: var(--green-soft);
+      border-color: var(--vd);
+  }
+
+  /* Menu do ícone Visualizações: cartão escuro solto abaixo do ícone (não colado), com
+     cantos arredondados e itens com folga, no lugar da lista nativa do <select>. */
+  .visWrap {
+      position: relative;
+      display: inline-flex;
+  }
+
+  .menuIcone {
+      position: absolute;
+      top: calc(100% + .45rem);
+      left: 0;
+      z-index: 60;
+      display: flex;
+      flex-direction: column;
+      gap: .1rem;
+      min-width: 12rem;
+      padding: .35rem;
+      background: var(--pa);
+      border: 1px solid var(--ln);
+      border-radius: 10px;
+      box-shadow: 0 10px 28px var(--shadow);
+  }
+
+  .menuIcone button {
+      padding: .5rem .75rem;
+      font: inherit;
+      font-size: .9rem;
+      text-align: left;
+      white-space: nowrap;
+      color: var(--fg);
+      background: transparent;
+      border: 0;
+      border-radius: 7px;
+      cursor: pointer;
+  }
+
+  .menuIcone button:hover,
+  .menuIcone button:focus-visible {
+      background: var(--field-hover);
+      outline: none;
+  }
+
+  /* .btFiltro (Visualizações) só tem estilo
+     próprio dentro do media query mobile (ver mobile.css) — no desktop usa a aparência
+     nativa do navegador, que nem sempre deixa claro que o botão está desabilitado durante
+     um processamento (ex.: "Consolidar tudo" enquanto roda, ver consolidarTudo em
+     form.js). Esta regra fica fora do media query de propósito, pra valer nas duas
+     larguras, mesmo esquema de opacidade do Duplicar/Editar/Excluir acima. */
+  .btFiltro:disabled {
+      opacity: .5;
+  }
+
+  /* =========================================================
+       NAVEGAÇÃO DE CICLOS
+       ========================================================= */
+
+  /* #fciclNav e' o slot fixo em .head que mostra os seletores De/Ate (#navComparar) —
+     sempre visiveis, nunca escondidos (Backlog e' so' mais uma opcao do De). */
+  #fciclNav {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+
+      flex: 0 1 auto;
+      min-width: 0;
+      margin: 0 auto 0 0;
+      padding: .3rem 0;
+  }
+
+  /* flex-wrap: com Atual, Gráfico, Visualizações e Consolidar tudo, numa janela estreita
+     (acima do breakpoint mobile) a fileira quebra em vez de passar por cima dos botões do
+     cabeçalho. */
+  #navComparar {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: .8rem;
+      row-gap: .5rem;
+  }
+
+  .btNavCiclo {
+      width: 2.2rem;
+      height: 2.2rem;
+      font-size: 1.2rem;
+      line-height: 1;
+
+      color: var(--fg);
+      background: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 9px;
+      cursor: pointer;
+  }
+
+  .btNavCiclo:hover {
+      background: var(--field-hover);
+      border-color: var(--fg);
+  }
+
+  .btNavCiclo:disabled {
+      opacity: .3;
+  }
+
+  /* visualmente escondido mas ainda lido por leitor de tela — usado no "De"/"Até", que
+     dispensa rotulo visivel (so' o select) pra ficar compacto no cabecalho */
+  .srOnly {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+  }
+
+  .fInline {
+      display: flex;
+  }
+
+  .fInline select {
+      height: 2.2rem;
+      padding-top: 0;
+      padding-bottom: 0;
+  }
+
+  /* Até desabilitado quando De=Backlog (nao da' pra comparar Backlog com outro periodo) */
+  .fInline select:disabled {
+      opacity: .4;
+  }

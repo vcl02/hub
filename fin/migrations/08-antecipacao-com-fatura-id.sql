@@ -1,0 +1,19 @@
+-- Registro de mudanca de comportamento: antecipacoes de fatura passam a usar fatura_id.
+-- Nenhum DDL necessario — a coluna fatura_id ja existe em lancamentos (migration 05)
+-- e ja e' nullable, compativel com debito.
+--
+-- A partir de 2026-09-19, ao lancar um debito com categoria "Antecipacao Fatura",
+-- o formulario exige que o usuario selecione a fatura que esta sendo quitada.
+-- O fatura_id e' gravado no banco igual ao credito (cred=false, fatura_id=<id da fatura>).
+--
+-- O algoritmo alocacaoAntecipacoes foi atualizado:
+--   - fatura_id preenchido: abate direto na fatura apontada (sem depender de ordem cronologica)
+--   - fatura_id null (antecipacoes antigas): fallback cronologico (comportamento anterior)
+--
+-- Para migrar antecipacoes antigas retroativamente, identifique-as no DataGrip:
+--   SELECT * FROM lancamentos
+--   WHERE NOT cred
+--     AND lower(unaccent(categ)) LIKE '%antecipacao%'
+--     AND lower(unaccent(categ)) LIKE '%fatura%'
+--     AND fatura_id IS NULL;
+-- e atualize fatura_id manualmente conforme a fatura correspondente.

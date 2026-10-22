@@ -1,0 +1,1586 @@
+  /* Formulários e modais: cadastro, calculadora e visualizações detalhadas.
+     Mantém o layout de entrada isolado do painel para não vazar regras de modal. */
+  /* =========================================================
+       MODAL — NOVO LANÇAMENTO
+       ========================================================= */
+
+  dialog#modalNovo,
+  dialog#modalCalc,
+  dialog#modalVisualizacoes,
+  dialog#modalVisualizacao,
+  dialog#modalGrafico,
+  dialog#modalComparativo,
+  dialog#modalDetalheCel {
+      color: var(--fg);
+      background: var(--pa);
+      border: 1px solid var(--ln);
+  }
+
+  dialog#modalFaturasParcelas,
+  dialog#modalDiagnostico,
+  dialog#modalConsolidarTudo {
+      color: var(--fg);
+      background: var(--pa);
+      border: 1px solid var(--ln);
+      border-radius: 16px;
+      padding: 1.1rem;
+      width: min(32rem, 92vw);
+      max-height: 70vh;
+      box-shadow: 0 20px 60px var(--shadow);
+  }
+
+  /* No desktop, avisos/resultado longos usam a largura disponível antes de quebrar em várias linhas. */
+  @media (min-width: 700px) {
+      dialog#modalDiagnostico,
+      dialog#modalConsolidarTudo {
+          width: min(44rem, calc(100vw - 4rem));
+          max-height: 78vh;
+      }
+  }
+
+  dialog#modalNovo {
+      border: 1px solid var(--ln);
+      border-radius: 16px;
+      padding: 0;
+      width: min(30rem, 92vw);
+      max-height: 88vh;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .6);
+  }
+
+  dialog#modalCalc {
+      border-radius: 16px;
+      padding: 1.1rem;
+      width: min(20rem, 92vw);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .6);
+  }
+
+  /* Visualizações com a mesma leitura de pago/aberto para qualquer categoria ou nome. */
+  dialog#modalVisualizacoes,
+  dialog#modalVisualizacao {
+      border: 1px solid var(--ln);
+      border-radius: 16px;
+      padding: 1.3rem;
+      width: min(30rem, 92vw);
+      max-height: 88vh;
+      max-height: 88dvh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px var(--shadow);
+  }
+
+  #modalVisualizacoes[open] {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+  }
+
+  .visPct {
+      font-size: 2.6rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-top: 1.4rem;   /* .modalHead nao tem margem propria */
+  }
+
+  .visPctSub {
+      color: var(--mu);
+      font-size: .9rem;
+      margin: .3rem 0 1.2rem;
+  }
+
+  .visBarra {
+      height: 1.7rem;
+      border-radius: 999px;
+      background: var(--vm);
+      border: 1px solid var(--ln);
+      overflow: hidden;
+  }
+
+  .visFill {
+      height: 100%;
+      background: var(--vd);
+      transition: width .45s ease;
+  }
+
+  .visLegenda {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-top: .5rem;
+      font-size: .85rem;
+      color: var(--mu);
+  }
+
+  .visTab {
+      width: 100%;
+      margin-top: 1rem;
+      border-collapse: separate;
+      border-spacing: 0 .45rem;
+      background: transparent;
+  }
+
+  .visTab td {
+      padding: .7rem .8rem;
+      background: var(--field);
+      border: 0;
+  }
+
+  .visTab td:first-child {
+      border-radius: 9px 0 0 9px;
+  }
+
+  .visTab td:last-child {
+      border-radius: 0 9px 9px 0;
+  }
+
+  .visTab td.n {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+  }
+
+  .visTab tr.tot td {
+      background: var(--field-hover);
+      font-weight: 700;
+      font-size: 1.05rem;
+  }
+
+  dialog#modalVisualizacoes::backdrop,
+  dialog#modalVisualizacao::backdrop,
+  dialog#modalNovo::backdrop,
+  dialog#modalCalc::backdrop,
+  dialog#modalGrafico::backdrop,
+  dialog#modalComparativo::backdrop,
+  dialog#modalDetalheCel::backdrop {
+      background: rgba(0, 0, 0, .68);
+  }
+
+  dialog#modalFaturasParcelas::backdrop,
+  dialog#modalDiagnostico::backdrop,
+  dialog#modalConsolidarTudo::backdrop {
+      background: rgba(0, 0, 0, .68);
+  }
+
+  #formNovo {
+      display: flex;
+      flex-direction: column;
+      padding: 1.3rem;
+      gap: 1rem;
+      overflow-y: auto;
+      max-height: 88vh;
+  }
+
+  .modalHead {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+  }
+
+  /* O título "Novo/Duplicar/Editar lançamento"/"Simular compra" (#tituloNovo) é só pra
+     leitor de tela (.srOnly, ver abreModalNovo em form.js — mesmo texto de sempre, só não
+     aparece mais na tela): a ação que abriu o modal já deixa claro o contexto, texto
+     visível vira redundância. Por ser position: absolute, não entra no fluxo do flex nem
+     consome o gap de #formNovo — sem precisar de .modalHead só pra ele, que sobraria vazio
+     e geraria espaço perdido (mesmo problema que #erroNovo tinha antes de virar :empty). */
+
+  .modalHead h2 {
+      font: 700 1.1rem/1 inherit;
+      margin: 0;
+      color: var(--fg);
+  }
+
+  .modalTituloAcoes {
+      display: flex;
+      align-items: center;
+      gap: .65rem;
+      min-width: 0;
+  }
+
+  #fechaNovo,
+  #fechaVisualizacoes,
+  #fechaVisualizacao,
+  #voltaVisualizacoes,
+  #fechaGrafico,
+  #fechaCompromissos,
+  #fechaComparativo {
+      font-size: 1.5rem;
+      line-height: 1;
+
+      background: transparent;
+      border: 0;
+      color: var(--mu);
+
+      cursor: pointer;
+      padding: .2rem .4rem;
+  }
+
+  #fechaNovo:hover,
+  #fechaVisualizacoes:hover,
+  #fechaVisualizacao:hover,
+  #voltaVisualizacoes:hover,
+  #fechaGrafico:hover,
+  #fechaCompromissos:hover,
+  #fechaComparativo:hover {
+      color: var(--fg);
+  }
+
+  #fechaNovo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      color: var(--vm);
+      background: var(--red-soft);
+      border: 1px solid var(--vm);
+      border-radius: 9px;
+  }
+
+  #fechaNovo:hover {
+      color: #fff;
+      background: var(--vm);
+      border-color: var(--vm);
+  }
+
+  /* =========================================================
+       FORMULÁRIO
+       ========================================================= */
+
+  .fm {
+      display: flex;
+      flex-direction: column;
+      gap: .35rem;
+  }
+
+  /* Lista própria para o Nome: ao contrário de datalist nativo, fica precisamente sob o campo. */
+  .fm:has(#fNome) {
+      position: relative;
+  }
+
+  .nomesExistentes {
+      position: absolute;
+      z-index: 4;
+      top: calc(100% + .2rem);
+      left: 0;
+      right: 0;
+      max-height: 12rem;
+      overflow-y: auto;
+      padding: .25rem;
+      border: 1px solid var(--line-strong);
+      border-radius: .55rem;
+      background: var(--pa);
+      box-shadow: 0 .8rem 1.8rem var(--shadow);
+  }
+
+  .nomeExistente {
+      display: flex;
+      width: 100%;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: .8rem;
+      padding: .5rem .6rem;
+      border: 0;
+      border-radius: .35rem;
+      color: var(--fg);
+      background: transparent;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+  }
+
+  .nomeExistente small {
+      color: var(--mu);
+      white-space: nowrap;
+  }
+
+  .nomeExistente:hover,
+  .nomeExistente:focus-visible {
+      outline: 0;
+      background: var(--field-hover);
+  }
+
+  .fm>span {
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--mu);
+  }
+
+  .fm .req {
+      color: var(--vm);
+      font-weight: 700;
+  }
+
+  .fm input[type=text],
+  .fm input[type=date],
+  .fm select {
+      font: 16px inherit;
+      color: var(--fg);
+
+      padding: .65rem .8rem;
+      border: 1px solid var(--ln);
+      border-radius: 10px;
+
+      background: var(--field);
+      width: 100%;
+  }
+
+  .fm input[type=text]::placeholder {
+      color: #747C83;
+  }
+
+  .fm input[type=text]:focus,
+  .fm input[type=date]:focus,
+  .fm select:focus {
+      border-color: #68727A;
+      background: #24292E;
+      outline: none;
+  }
+
+  .fm select {
+      appearance: none;
+      cursor: pointer;
+
+      background-color: var(--field);
+      background-image:
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%239CA3AA' stroke-width='1.5'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+
+      background-repeat: no-repeat;
+      background-position: right .8rem center;
+
+      padding-right: 2rem;
+  }
+
+  /* Fatura em uma linha fixa: o seletor da 1ª parcela + "+N". As demais parcelas ficam em
+     #modalFaturasParcelas (ver atualizarFaturasDoFormulario em form.js), então muitas
+     parcelas nunca esticam o cadastro. Sem outras parcelas, o "+N" fica invisível mas
+     ocupa o mesmo espaço, pra o seletor não mudar de largura. */
+  .faturaLinha {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: .6rem;
+  }
+
+  .btMaisFaturas {
+      min-width: 2.9rem;
+  }
+
+  .btMaisFaturas.vazio {
+      visibility: hidden;
+  }
+
+  #faturasPorParcela {
+      display: flex;
+      flex-direction: column;
+      gap: .7rem;
+  }
+
+  /* Campo desativado pelo modo (Vezes com Frequência, Fatura no Débito): continua no lugar,
+     mas afundado — fundo mais escuro que o painel, texto apagado, borda tracejada e sem a
+     setinha, pra ler como "não dá pra mexer" e não como um campo vazio. */
+  .fm select:disabled {
+      color: var(--mu);
+      background-color: var(--bg);
+      background-image: none;
+      border-style: dashed;
+      opacity: .7;
+  }
+
+  /* Troca de estado animada: a classe é posta só quando o campo realmente alterna entre
+     ativo e desativado com o cadastro aberto (animaTrocaDeEstado em form.js); re-renderizar
+     no mesmo estado não anima. Cada animação parte do visual do estado anterior. */
+  .fm select.trocaEstado:disabled {
+      animation: desativaCampo .35s ease-out;
+  }
+
+  .fm select.trocaEstado:enabled {
+      animation: ativaCampo .35s ease-out;
+  }
+
+  @keyframes desativaCampo {
+      from {
+          color: var(--fg);
+          background-color: var(--field);
+          opacity: 1;
+      }
+
+      40% {
+          transform: scale(.97);
+      }
+  }
+
+  @keyframes ativaCampo {
+      from {
+          color: var(--mu);
+          background-color: var(--bg);
+          opacity: .7;
+      }
+
+      40% {
+          transform: scale(1.02);
+          border-color: var(--line-strong);
+      }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+
+      .fm select.trocaEstado:disabled,
+      .fm select.trocaEstado:enabled {
+          animation: none;
+      }
+  }
+
+  .dataWrap {
+      display: flex;
+      gap: .4rem;
+      align-items: stretch;
+  }
+
+  .dataWrap input[type=date] {
+      flex: 1;
+  }
+
+  .btHojeMini {
+      flex: none;
+      font-size: .75rem;
+      font-weight: 600;
+      color: var(--mu);
+
+      padding: 0 .7rem;
+      border: 1px solid var(--ln);
+      border-radius: 10px;
+
+      background: var(--field);
+      cursor: pointer;
+  }
+
+  .btHojeMini:hover {
+      background: var(--field-hover);
+      color: var(--fg);
+      border-color: var(--line-strong);
+  }
+
+  .fmChecks {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+  }
+
+  /* Fechar (#fechaNovo) divide a mesma linha dos 4 ícones, mas empurrado pro canto direito
+     — não é mais um 5º ícone igual aos outros, continua com a cara de ação destrutiva
+     (vermelho) que já tinha isolado no cabeçalho. */
+  .fmChecks #fechaNovo {
+      margin-left: auto;
+  }
+
+  .fmChk {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+
+      padding: .6rem .7rem;
+
+      background: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 10px;
+
+      cursor: pointer;
+      font-size: .92rem;
+      user-select: none;
+  }
+
+  .fmChk:hover {
+      background: var(--field-hover);
+      border-color: var(--line-strong);
+  }
+
+  .fmChk input {
+      width: 1.15rem;
+      height: 1.15rem;
+      accent-color: #6FCB8F;
+  }
+
+  .fmChkIco {
+      justify-content: center;
+      width: 2.9rem;
+      height: 2.9rem;
+      min-width: 0;
+      padding: 0;
+  }
+
+  .fmChkIco input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+  }
+
+  .fmChkIco svg {
+      width: 1.15rem;
+      height: 1.15rem;
+      flex: 0 0 1.15rem;
+      fill: none;
+      stroke: var(--mu);
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+  }
+
+  .fmChkIco:has(input:checked) {
+      background: var(--field-hover);
+      border-color: var(--vd);
+  }
+
+  .fmChkIco:has(input:checked) svg {
+      stroke: var(--vd);
+  }
+
+  /* Vezes e Dividir na mesma linha, logo abaixo da Frequência (que é um campo comum do
+     formulário, pra receber o mesmo espaçamento dos demais). Com Frequência, Vezes só fica
+     desativado (ver atualizaModoFrequencia em form.js), nunca some. Em Editar, a linha
+     inteira some. */
+  .parcelasLinha {
+      display: flex;
+      gap: .6rem;
+      align-items: end;
+  }
+
+  #fParcelasWrap {
+      flex: 1;
+      min-width: 0;
+  }
+
+  #fDivideWrap {
+      min-height: 2.9rem;
+  }
+
+  /* =========================================================
+       DINHEIRO
+       ========================================================= */
+
+  .moneyLinha {
+      display: flex;
+      gap: .6rem;
+      align-items: stretch;
+  }
+
+  .moneyWrap {
+      display: flex;
+      align-items: stretch;
+      flex: 1;
+
+      border: 1px solid var(--ln);
+      border-radius: 10px;
+
+      overflow: hidden;
+      background: var(--field);
+  }
+
+  .sinalBt {
+      flex: none;
+      width: 2.9rem;
+
+      /* + e − têm métricas de glifo diferentes (larguras e posição vertical distintas);
+         sem centralização explícita por flex, a altura esticada pelo moneyLinha
+         (align-items: stretch) deixava os dois símbolos visivelmente desalinhados
+         entre si e com o restante do botão. */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      line-height: 1;
+
+      border: 1px solid var(--ln);
+      border-radius: 10px;
+
+      background: #191C1F;
+      color: var(--vm);
+
+      font-size: 1.15rem;
+      font-weight: 700;
+
+      cursor: pointer;
+  }
+
+  .sinalBt:hover:not(:disabled) {
+      background: var(--red-soft);
+  }
+
+  .sinalBt.pos {
+      color: var(--vd);
+  }
+
+  .sinalBt.pos:hover:not(:disabled) {
+      background: var(--green-soft);
+  }
+
+  .sinalBt.neutro {
+      color: var(--mu);
+      cursor: default;
+  }
+
+  .sinalBt:disabled {
+      opacity: .6;
+  }
+
+  /* Mesmo botão de sinal do cadastro, só compacto o bastante pra caber dentro de uma
+     célula de tabela (ver celValorEditavel) sem desalinhar a linha. */
+  .sinalBt.compacto {
+      display: inline-flex;
+      width: 1.5rem;
+      height: 1.5rem;
+      margin-right: .35rem;
+      vertical-align: middle;
+      font-size: .9rem;
+      border-radius: 6px;
+  }
+
+  .moneyWrap input {
+      border: 0;
+      border-radius: 10px;
+
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+
+      flex: 1;
+      min-width: 0;
+
+      color: var(--fg);
+      background: var(--field);
+  }
+
+  .moneyWrap input:focus {
+      outline: none;
+  }
+
+  /* "R$" fixo à esquerda dentro da caixa do Valor; o número segue à direita. */
+  .moneyWrap .dinheiroPrefixo {
+      align-self: center;
+      padding-left: .75rem;
+  }
+
+  /* Com o "R$" dentro, a caixa é o .moneyWrap: o campo perde a borda e o fundo próprios
+     (que viriam de .fm input) e o foco passa a pintar a caixa inteira. */
+  .moneyWrap input[type=text],
+  .moneyWrap input[type=text]:focus {
+      padding-left: .4rem;
+      background: transparent;
+      border: 0;
+  }
+
+  .moneyWrap:focus-within {
+      border-color: #68727A;
+      background: #24292E;
+  }
+
+  /* Campo de dinheiro (cadastro, edição na tabela, metas): "R$" fixo à esquerda, dentro da
+     mesma caixa do campo, e o número à direita com a máscara de caixa eletrônico
+     (formataMascaraDinheiro). A caixa é o span; o input fica transparente dentro dele. */
+  .dinheiro {
+      display: inline-flex;
+      align-items: center;
+      gap: .3rem;
+      box-sizing: border-box;
+  }
+
+  .dinheiroPrefixo {
+      flex: none;
+      color: var(--mu);
+      font-size: .85em;
+  }
+
+  .dinheiro > input {
+      flex: 1;
+      width: auto;
+      min-width: 0;
+      padding: 0;
+      font: inherit;
+      color: inherit;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      background: transparent;
+      border: 0;
+  }
+
+  .dinheiro > input:focus { outline: none; }
+  .dinheiro:focus-within { outline: 2px solid var(--fg); outline-offset: -1px; }
+
+  /* =========================================================
+       MENSAGEM DO MODAL
+       ========================================================= */
+
+  .erroNovo {
+      color: var(--vm);
+      font-size: .85rem;
+      margin: 0;
+      min-height: 1.1rem;
+  }
+
+  /* Sem mensagem, o min-height reservado acima some os dois lados do gap do formulário
+     (Categoria → erroNovo → Salvar), dobrando o espaço visual ali contra qualquer outro
+     par de campos. :empty colapsa a própria altura e cancela o gap de cima com margem
+     negativa, sobrando só o gap normal entre erroNovo e Salvar — mesma distância que entre
+     dois campos quaisquer. Volta ao normal sozinho assim que ganha um texto. */
+  .erroNovo:empty {
+      min-height: 0;
+      margin-top: -1rem;
+  }
+
+  .listaDiagnostico {
+      margin: .8rem 0 0;
+      padding-left: 1.2rem;
+      color: var(--vm);
+      font-size: .88rem;
+      overflow-wrap: anywhere;
+  }
+
+  .listaDiagnostico li + li {
+      margin-top: .4rem;
+  }
+
+  .secaoDiagnostico h3 {
+      margin: .9rem 0 -.35rem;
+      font-size: .9rem;
+  }
+
+  #secaoAvisos .listaDiagnostico {
+      color: var(--mu);
+  }
+
+  /* Resultado de "Consolidar tudo" é informativo, não um erro — herdar o vermelho padrão
+     de .listaDiagnostico destoaria do que realmente é (confirmação do que foi gravado). */
+  #listaConsolidarTudo {
+      color: var(--mu);
+  }
+
+  /* Toasts são alertas breves de operação; inconsistências de dados usam o modal. */
+  #toasts {
+      position: fixed;
+      right: 1rem;
+      bottom: 1rem;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: .55rem;
+      pointer-events: none;
+  }
+
+  .toast {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: .25rem .8rem;
+      width: min(22rem, calc(100vw - 2rem));
+      padding: .75rem .85rem;
+      border: 1px solid var(--ln);
+      border-left: 3px solid var(--vm);
+      border-radius: 10px;
+      background: var(--pa);
+      box-shadow: 0 10px 30px var(--shadow);
+      pointer-events: auto;
+  }
+
+  .toast strong { font-size: .88rem; }
+
+  .toast p {
+      grid-column: 1 / -1;
+      margin: 0;
+      color: var(--mu);
+      font-size: .82rem;
+      overflow-wrap: break-word;   /* chave Pix e outros textos sem espaço (ver copiarCanal
+                                       em interactions.js) não podem estourar a largura fixa */
+  }
+
+  .toast button {
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: var(--mu);
+      font: 1.1rem/1 inherit;
+      cursor: pointer;
+  }
+
+  .toast button:hover { color: var(--fg); }
+
+  /* =========================================================
+       MODAL — CALCULADORA
+       ========================================================= */
+
+  .calcVisor {
+      margin-top: .9rem;
+
+      padding: .6rem .9rem .7rem;
+      border: 1px solid var(--ln);
+      border-radius: 10px;
+      background: var(--field);
+  }
+
+  .calcExpr {
+      display: block;
+      width: 100%;
+
+      border: 0;
+      background: transparent;
+      padding: 0;
+
+      text-align: right;
+      font: 600 1.5rem/1.2 inherit;
+      font-variant-numeric: tabular-nums;
+      color: var(--fg);
+
+      overflow-x: auto;
+      white-space: nowrap;
+  }
+
+  .calcExpr:focus {
+      outline: none;
+  }
+
+  .calcResultado {
+      text-align: right;
+      font: 500 .95rem/1.3 inherit;
+      font-variant-numeric: tabular-nums;
+      color: var(--mu);
+
+      overflow-x: auto;
+      white-space: nowrap;
+  }
+
+  .calcGrid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: .5rem;
+      margin-top: .8rem;
+  }
+
+  .calcTecla {
+      padding: .8rem 0;
+      border: 1px solid var(--ln);
+      border-radius: 10px;
+
+      background: var(--field);
+      color: var(--fg);
+
+      font: 600 1.05rem/1 inherit;
+      cursor: pointer;
+  }
+
+  .calcTecla:hover {
+      background: var(--field-hover);
+      border-color: var(--line-strong);
+  }
+
+  .calcTecla.calcOp {
+      color: var(--mu);
+  }
+
+  .calcTecla.calcIgual {
+      background: #6FCB8F;
+      border-color: #6FCB8F;
+      color: #10231A;
+      font-size: 1.1rem;
+  }
+
+  .calcTecla.calcIgual:hover {
+      filter: brightness(1.08);
+  }
+
+  .erroNovo.okNovo.ok {
+      color: var(--vd);
+  }
+
+  /* =========================================================
+       BOTÕES DO MODAL
+       ========================================================= */
+
+  .btPri {
+      flex: 1;
+      padding: .75rem;
+      border-radius: 10px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      border: 0;
+      background: var(--fg);
+      color: #111315;
+      width: 100%;
+      margin-top: .3rem;
+  }
+
+  .btPri:hover {
+      background: #FFFFFF;
+  }
+
+  .btPri:disabled {
+      opacity: .5;
+  }
+
+  .sd {
+      display: block;
+      font-size: .68rem;
+      font-weight: 400;
+      color: var(--mu);
+      margin-top: .1rem;
+  }
+
+  /* =========================================================
+       MODAL — METAS (botão do cabeçalho)
+       ========================================================= */
+
+  dialog#modalMetas {
+      color: var(--fg);
+      background: var(--pa);
+      border: 1px solid var(--ln);
+      border-radius: 14px;
+      padding: 1rem;
+      width: min(56rem, 94vw);
+      max-height: 88vh;
+      max-height: 88dvh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px var(--shadow);
+  }
+
+  /* O foco ao abrir vai pro próprio modal (não abre o teclado): sem contorno nele. */
+  dialog#modalMetas:focus {
+      outline: none;
+  }
+
+  /* Mês a mês do plano de uma meta: modal menor, por cima do de Metas. */
+  dialog#modalPlanoMeta,
+  dialog#modalComprometidos {
+      color: var(--fg);
+      background: var(--pa);
+      border: 1px solid var(--ln);
+      border-radius: 14px;
+      padding: 1rem;
+      width: min(52rem, 94vw);
+      max-height: 88vh;
+      max-height: 88dvh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px var(--shadow);
+  }
+
+  dialog#modalPlanoMeta:focus,
+  dialog#modalComprometidos:focus { outline: none; }
+
+  .pmTitulo {
+      margin: 0 0 .5rem;
+      font-size: 1rem;
+  }
+
+  /* A tabela rola de lado dentro do modal se a tela for estreita, nunca a página. */
+  .pmRolagem {
+      margin-top: .7rem;
+      overflow-x: auto;
+  }
+
+  .pmTabela {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .84rem;
+      font-variant-numeric: tabular-nums;
+  }
+
+  .pmTabela th,
+  .pmTabela td {
+      padding: .35rem .5rem;
+      text-align: left;
+      white-space: nowrap;
+      border-bottom: 1px solid var(--ln);
+  }
+
+  .pmTabela th {
+      color: var(--mu);
+      font-size: .74rem;
+      font-weight: 500;
+  }
+
+  .pmTabela .n { text-align: right; }
+  .pmTabela i { color: var(--mu); }
+  .pmTabela .vd { color: var(--vd); }
+  .pmTabela .vm,
+  .pmTabela .vm i { color: var(--vm); }
+  .pmTabela tr.pmFalta td { background: var(--red-soft); }
+  .pmTabela tfoot td { border-bottom: 0; }
+
+  /* Entrada e parcela no mesmo mês ficam uma embaixo da outra. */
+  .pmItem { display: block; }
+
+  /* Pra caber: cada receita num bloco, com o que corta em lista curta; rótulo em itálico,
+     valor em negrito, meses apagados e o quanto rende em verde. */
+  .pmSubtitulo {
+      margin: 1rem 0 .4rem;
+      font-size: .9rem;
+  }
+
+  .pcReceita {
+      margin-bottom: .5rem;
+      padding: .5rem .6rem;
+      background: var(--bg-soft);
+      border: 1px solid var(--ln);
+      border-radius: 9px;
+      font-size: .84rem;
+  }
+
+  .pcTopo {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: .4rem;
+  }
+
+  .pcTopo .btIcone { margin-left: auto; }
+
+  .pcCortes {
+      margin: .4rem 0 0;
+      padding-left: 1.1rem;
+  }
+
+  .pcCortes li { margin: .15rem 0; }
+  .pcCortes i { color: var(--mu); }
+  .pcCortes .vd { color: var(--vd); }
+
+  .pcSemCortar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: .35rem;
+      margin-top: .5rem;
+      font-size: .8rem;
+  }
+
+  .pcSemCortar > i { color: var(--mu); }
+
+  /* Nenhuma receita cobre: aviso em vermelho com o botão da lista de comprometidos. */
+  .pcAviso {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      margin-top: .6rem;
+      padding: .45rem .6rem;
+      color: var(--vm);
+      background: var(--red-soft);
+      border: 1px solid #6A3A36;
+      border-radius: 9px;
+      font-size: .84rem;
+  }
+
+  .pcAviso .btIcone { margin-left: auto; }
+
+  /* Resumo do modal de comprometidos: frase mais longa que uma pílula, quebra no celular. */
+  .mpParte.pcResumo {
+      display: inline-block;
+      margin-top: .2rem;
+      white-space: normal;
+      border-radius: 9px;
+  }
+
+  /* Mês a mês, Comprar e Excluir sempre juntos, no fim da linha. */
+  .metaBotoes {
+      display: inline-flex;
+      gap: .4rem;
+      margin-left: auto;
+  }
+
+  .metasAcoes {
+      display: flex;
+      justify-content: flex-end;
+      gap: .5rem;
+      margin-bottom: .6rem;
+  }
+
+  /* Uma meta por bloco: a grade de campos rotulados e, embaixo, o plano em pílulas. */
+  .metaLinha {
+      padding: .55rem .6rem;
+      margin-bottom: .45rem;
+      background: var(--bg-soft);
+      border: 1px solid var(--ln);
+      border-radius: 9px;
+  }
+
+  /* Colunas fixas, iguais em todas as metas: nome | valor total | vezes | mês | forma | ações.
+     Embaixo, nos parcelados, a entrada sob o valor e o mês dela sob o mês: valores com
+     valores, meses com meses. À vista, a coluna das vezes fica vazia. */
+  .metaGrade {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 7.5rem 6.5rem 10rem 10.5rem auto;
+      gap: .45rem .5rem;
+      align-items: end;
+  }
+
+  .metaCampo {
+      display: flex;
+      flex-direction: column;
+      gap: .2rem;
+      min-width: 0;
+  }
+
+  .metaCampo > .metaRotulo {
+      color: var(--mu);
+      font-size: .72rem;
+  }
+
+  .mcNome { grid-column: 1; grid-row: 1; }
+  .mcValor { grid-column: 2; grid-row: 1; }
+  .mcVezes { grid-column: 3; grid-row: 1; }
+  .mcMes { grid-column: 4; grid-row: 1; }
+  .mcForma { grid-column: 5; grid-row: 1; }
+  .metaGrade > .metaBotoes { grid-column: 6; grid-row: 1; }
+  .mcEntrada { grid-column: 2; grid-row: 2; }
+  .mcMesEntrada { grid-column: 4; grid-row: 2; }
+
+  /* Mesma altura em todos (o de mês nativo é mais alto): rótulos e campos ficam em prumo. */
+  .metaLinha input,
+  .metaLinha select {
+      width: 100%;
+      min-width: 0;
+      height: 2.1rem;
+      box-sizing: border-box;
+      padding: .3rem .45rem;
+      font: inherit;
+      font-size: .88rem;
+      color: var(--fg);
+      background: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 6px;
+  }
+
+  .metaLinha .metaNome { font-weight: 600; }
+
+  /* Vezes: o número e, na mesma caixa, até quando vão as parcelas ("24 até Fev/29"). */
+  .metaLinha .vezesCaixa {
+      display: flex;
+      align-items: center;
+      gap: .2rem;
+      width: 100%;
+      height: 2.1rem;
+      padding: 0 .45rem;
+      box-sizing: border-box;
+      font-size: .88rem;
+      color: var(--fg);
+      background: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 6px;
+  }
+
+  .metaLinha .vezesCaixa:focus-within { outline: 2px solid var(--fg); outline-offset: -1px; }
+
+  .metaLinha .vezesCaixa > input {
+      flex: 0 0 1.6rem;
+      width: 1.6rem;
+      height: auto;
+      padding: 0;
+      background: transparent;
+      border: 0;
+      outline: none;
+  }
+
+  .vezesFim {
+      color: var(--mu);
+      font-size: .8em;
+      white-space: nowrap;
+  }
+
+  /* Valor e entrada: a caixa (com o "R$") tem o desenho dos outros campos da meta. */
+  .metaLinha .dinheiro {
+      width: 100%;
+      height: 2.1rem;
+      padding: 0 .45rem;
+      font-size: .88rem;
+      color: var(--fg);
+      background: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 6px;
+  }
+
+  .metaLinha .dinheiro > input {
+      width: auto;
+      height: auto;
+      padding: 0;
+      background: transparent;
+      border: 0;
+  }
+
+  /* O plano em pílulas, embaixo dos campos. Rótulo em itálico apagado, valor em negrito,
+     mês apagado; a cor diz a situação. */
+  .metaPlano {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .3rem;
+      margin-top: .5rem;
+      font-size: .8rem;
+  }
+
+  .mpParte {
+      display: inline-flex;
+      align-items: baseline;
+      gap: .3rem;
+      padding: .1rem .5rem;
+      color: var(--fg);
+      background: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+  }
+
+  .mpParte i,
+  .mpDetalhe { color: var(--mu); }
+
+  /* Opção de vezes clicável (Mínimo/Ideal): a mesma pílula, com cursor e realce de botão. */
+  .mpOpcao {
+      font: inherit;
+      cursor: pointer;
+  }
+
+  .mpOpcao:hover { border-color: var(--line-strong); background: var(--field-hover); }
+  .mpParte .vd { color: var(--vd); }
+  .mpParte .vm { color: var(--vm); }
+  .mpParte b { font-weight: 700; }
+
+  .mpParte.vd { color: var(--vd); background: var(--green-soft); border-color: #2F5A40; }
+  .mpParte.vm { color: var(--vm); background: var(--red-soft); border-color: #6A3A36; }
+  .mpParte.am { color: #F0A83A; background: var(--orange-soft); border-color: #6A5330; }
+
+  /* Nas coloridas, rótulo e mês seguem a cor, um pouco mais apagados. */
+  .mpParte.vd i, .mpParte.vm i, .mpParte.am i,
+  .mpParte.vd .mpDetalhe, .mpParte.vm .mpDetalhe, .mpParte.am .mpDetalhe {
+      color: inherit;
+      opacity: .8;
+  }
+
+  .mpSituacao { font-weight: 700; }
+  .metaPlano.neutro .mpParte { color: var(--mu); }
+
+  /* Cadastro no Crédito: Livre Hoje do cartão antes → depois da compra, discreto sob a
+     Fatura; sem limite, a linha inteira fica vermelha. */
+  .limiteNoCadastro {
+      display: block;
+      margin-top: .35rem;
+      color: var(--mu);
+      font-size: .8rem;
+      font-variant-numeric: tabular-nums;
+  }
+
+  .limiteNoCadastro.semLimite {
+      color: var(--vm);
+  }
+
+  /* =========================================================
+       MODAL — CARTÃO (botões Nubank/Mercado Pago do cabeçalho)
+       ========================================================= */
+
+  dialog#modalCartao {
+      color: var(--fg);
+      background: var(--pa);
+      border: 1px solid var(--ln);
+      border-radius: 18px;
+      padding: 1.1rem;
+      /* Largo o bastante pra Teto, Aprovado e Garantido caberem numa linha só no desktop
+         (~470px com os campos); no celular a tela manda e a linha quebra. */
+      width: min(34rem, 92vw);
+      max-height: 88vh;
+      max-height: 88dvh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px var(--shadow);
+  }
+
+  /* Deslizar pros lados troca de fatura (interactions.js): o navegador fica só com a rolagem
+     vertical, o cartão mostra que pode ser arrastado e entra deslizando do lado certo. */
+  #modalCartao {
+      touch-action: pan-y;
+  }
+
+  #modalCartao .cartaoArte {
+      cursor: grab;
+      user-select: none;
+      transition: transform .12s ease-out;
+  }
+
+  .cartaoArte.cartaoVemDaDireita {
+      animation: cartaoVemDaDireita .28s ease-out;
+  }
+
+  .cartaoArte.cartaoVemDaEsquerda {
+      animation: cartaoVemDaEsquerda .28s ease-out;
+  }
+
+  /* Sem fatura pro lado pedido: o cartão só balança. */
+  .cartaoArte.cartaoNoLimite {
+      animation: cartaoNoLimite .3s ease-in-out;
+  }
+
+  @keyframes cartaoVemDaDireita {
+      from {
+          opacity: 0;
+          transform: translateX(30%);
+      }
+
+      to {
+          opacity: 1;
+          transform: none;
+      }
+  }
+
+  @keyframes cartaoVemDaEsquerda {
+      from {
+          opacity: 0;
+          transform: translateX(-30%);
+      }
+
+      to {
+          opacity: 1;
+          transform: none;
+      }
+  }
+
+  @keyframes cartaoNoLimite {
+      0%,
+      100% {
+          transform: none;
+      }
+
+      30% {
+          transform: translateX(-4%);
+      }
+
+      65% {
+          transform: translateX(3%);
+      }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+      .cartaoArte.cartaoVemDaDireita,
+      .cartaoArte.cartaoVemDaEsquerda,
+      .cartaoArte.cartaoNoLimite {
+          animation: none;
+      }
+  }
+
+  /* O cartão desenhado: proporção de cartão de verdade (85,6 × 54 mm), no estilo do cartão
+     de cada emissor. Os elementos ficam em posições fixas proporcionais ao cartão. */
+  .cartaoArte {
+      position: relative;
+      isolation: isolate;
+      aspect-ratio: 1.586;
+      overflow: hidden;
+      color: #fff;
+      border-radius: 16px;
+      box-shadow: 0 14px 34px rgba(0, 0, 0, .45);
+  }
+
+  /* Nubank: roxo claro em diagonal, com um brilho suave no alto. */
+  .cartaoArte.cartao-nubank {
+      background: linear-gradient(160deg, #B04BE8 0%, #9A2EE0 45%, #8417CF 100%);
+  }
+
+  .cartaoArte.cartao-nubank::before {
+      content: '';
+      position: absolute;
+      inset: 0 0 45% 0;
+      z-index: -1;
+      background: linear-gradient(180deg, rgba(255, 255, 255, .14), rgba(255, 255, 255, 0));
+  }
+
+  /* Mercado Pago: grafite escuro e fosco. */
+  .cartaoArte.cartao-mp {
+      background: linear-gradient(160deg, #2E3440 0%, #232833 55%, #1C2029 100%);
+  }
+
+  .cartaoChip {
+      position: absolute;
+      top: 36%;
+      left: 9%;
+      width: 13%;
+      background: linear-gradient(135deg, #F4F4F6, #B6B8BF);
+      border-radius: 5px;
+      stroke: rgba(60, 62, 70, .45);
+      stroke-width: 1.2;
+  }
+
+  .cartaoChip rect {
+      fill: none;
+  }
+
+  .cartaoContato {
+      position: absolute;
+      width: 7%;
+      opacity: .9;
+  }
+
+  .cartao-nubank .cartaoContato {
+      top: 38%;
+      left: 24%;
+  }
+
+  .cartao-mp .cartaoContato {
+      top: 9%;
+      left: 9%;
+      width: 9%;
+  }
+
+  .cartaoBandeira {
+      position: absolute;
+      top: 9%;
+      right: 7%;
+      width: 18%;
+  }
+
+  /* "MER CADO PAGO" em três colunas verticais, lidas de baixo pra cima, quase apagadas. */
+  .cartaoMarcaDagua {
+      position: absolute;
+      left: 2%;
+      bottom: 3%;
+      z-index: -1;
+      display: flex;
+      gap: 0;
+      color: rgba(255, 255, 255, .06);
+      font-size: 4.6rem;
+      font-weight: 900;
+      line-height: .9;
+  }
+
+  .cartaoMarcaDagua span {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+  }
+
+  .cartaoVisa {
+      position: absolute;
+      top: 8%;
+      right: 6%;
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      font-size: 1.7rem;
+      font-style: italic;
+      font-weight: 900;
+      letter-spacing: .02em;
+  }
+
+  .cartaoArteRodape {
+      position: absolute;
+      right: 7%;
+      bottom: 9%;
+      left: 9%;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1rem;
+  }
+
+  .cartao-mp .cartaoArteRodape {
+      right: 20%;
+  }
+
+  .cartaoTitular {
+      display: flex;
+      align-items: flex-end;
+      gap: .8rem;
+  }
+
+  .cartaoLogoNu {
+      width: 2.6rem;
+      flex: none;
+      margin-bottom: .2rem;
+  }
+
+  .cartaoArteRodape small {
+      display: block;
+      font-size: .66rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      opacity: .8;
+  }
+
+  .cartaoArteRodape b {
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: .02em;
+      font-variant-numeric: tabular-nums;
+  }
+
+  .cartaoVence {
+      text-align: right;
+  }
+
+  .cartaoArteRodape .cartaoVence b {
+      font-size: 1rem;
+  }
+
+  /* Hoje e Futuro: o rótulo em cima; Fatura, Usado e Livre lado a lado ocupando a largura
+     toda, cada valor com o rótulo dele em cima; e a barra de uso do teto embaixo, na cor do
+     cartão (vermelha se passou do teto). Com o rótulo ao lado, os três valores se colavam. */
+  .cartaoLinha {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      align-items: end;
+      gap: .35rem .6rem;
+      margin-top: .8rem;
+      padding: .7rem .8rem;
+      background: var(--bg-soft);
+      border: 1px solid var(--ln);
+      border-radius: 12px;
+  }
+
+  .cartaoLinhaRotulo {
+      grid-column: 1 / -1;
+      color: var(--mu);
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+  }
+
+  .cartaoValor small {
+      display: block;
+      color: var(--mu);
+      font-size: .72rem;
+  }
+
+  .cartaoValor b {
+      font-size: .95rem;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+  }
+
+  .cartaoUso {
+      grid-column: 1 / -1;
+      height: .4rem;
+      overflow: hidden;
+      background: var(--field);
+      border-radius: 999px;
+  }
+
+  .cartaoUso > span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+  }
+
+  #modalCartao[data-cartao=nubank] .cartaoUso > span {
+      background: #A45BEA;
+  }
+
+  #modalCartao[data-cartao=mp] .cartaoUso > span {
+      background: #2BB0EA;
+  }
+
+  #modalCartao .cartaoUso.acima > span {
+      background: var(--vm);
+  }
+
+  .cartaoAntecipado {
+      grid-column: 1 / -1;
+      color: var(--mu);
+      font-size: .75rem;
+  }
+
+  .cartaoLimite {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: .4rem 1.1rem;
+      margin-top: .9rem;
+      color: var(--mu);
+      font-size: .85rem;
+  }
+
+  .cartaoLimite b {
+      color: var(--fg);
+  }

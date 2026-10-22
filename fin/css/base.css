@@ -1,0 +1,285 @@
+  /* Base global: tokens de cor, tipografia, elementos nativos e comportamentos comuns.
+     Os demais módulos consomem estas variáveis; não redefinir a identidade visual fora daqui. */
+  :root {
+      /* Cursor de bloqueado (círculo cortado) em vermelho, com contorno escuro pra ler sobre
+         qualquer fundo; not-allowed nativo de reserva se o SVG não carregar. */
+      --cursor-bloqueado: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Cg stroke='%231B1E21' stroke-width='5'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Cpath d='M6.5 6.5l11 11'/%3E%3C/g%3E%3Cg stroke='%23F06A61' stroke-width='2.5'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Cpath d='M6.5 6.5l11 11'/%3E%3C/g%3E%3C/svg%3E") 12 12, not-allowed;
+      --bg: #1B1E21;
+      --pa: #24272B;
+      --fg: #E9ECEF;
+      --mu: #AAB1B8;
+      --ln: #3B4147;
+
+      --vd: #4CCB78;
+      --vm: #F06A61;
+
+      --bg-soft: #202428;
+      --field: #2A2E33;
+      --field-hover: #34393F;
+      --line-strong: #4A5158;
+
+      --green-soft: #1E392A;
+      --green-hover: #254634;
+
+      --red-soft: #402624;
+      --red-hover: #4D2D2A;
+
+      --orange-soft: #403326;
+
+      --shadow: rgba(0, 0, 0, .42);
+  }
+
+  * {
+      box-sizing: border-box;
+  }
+
+  [hidden] {
+      display: none !important;
+  }
+
+  html {
+      color-scheme: dark;
+  }
+
+  body {
+      background: var(--bg);
+      color: var(--fg);
+      margin: 0;
+      padding: 2rem 1.4rem 7rem;
+      font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+
+  /* =========================================================
+       CABEÇALHO
+       ========================================================= */
+
+  .head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: .7rem;
+      margin: 0 0 1rem;
+  }
+
+  /* Todo controle desativado mostra o cursor de bloqueado vermelho. !important porque
+     vários botões definem cursor próprio (pointer) com a mesma especificidade de :disabled. */
+  :disabled {
+      cursor: var(--cursor-bloqueado) !important;
+  }
+
+  /* Botões do cabeçalho: um bloco que nunca se parte — se não couber na linha, desce inteiro.
+     Sem margin-left:auto: na mesma linha, quem o empurra pra direita é a navegação
+     (margin-right:auto) ou os indicadores (flex-grow); sozinho numa linha, fica à esquerda. */
+  .acoesCabecalho {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: .7rem;
+  }
+
+  /* Gráfico, Visualizações e Todas/Diferentes no mesmo tamanho dos outros botões do bloco. */
+  .acoesCabecalho .btIcone {
+      width: 2rem;
+      height: 2rem;
+  }
+
+  .sub {
+      font-size: .85rem;
+      color: var(--mu);
+      font-style: italic;
+      margin: 0 0 1.8rem;
+  }
+
+  /* Linha de status vazia (o caso comum) não reserva espaço entre o cabeçalho e a tabela. */
+  .sub:has(#st:empty) {
+      display: none;
+  }
+
+  /* =========================================================
+       BOTÕES DO CABEÇALHO
+       ========================================================= */
+
+  #sair {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      color: var(--vm);
+      background: var(--red-soft);
+      border: 1px solid var(--vm);
+      border-radius: 9px;
+      cursor: pointer;
+  }
+
+  #sair:hover {
+      color: #fff;
+      border-color: var(--vm);
+      background: var(--vm);
+  }
+
+  #recarregar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      color: var(--vd);
+      background: var(--green-soft);
+      border: 1px solid var(--vd);
+      border-radius: 9px;
+      cursor: pointer;
+  }
+
+  #recarregar:hover:not(:disabled) {
+      color: #10231A;
+      border-color: var(--vd);
+      background: var(--vd);
+  }
+
+  #recarregar.carregando svg {
+      animation: girar 0.8s linear infinite;
+  }
+
+  /* Diagnóstico é discreto quando a última carga está íntegra; o ponto chama atenção
+     sem poluir o cabeçalho quando há registros que precisam ser revisados. */
+  #btDiagnostico {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      color: var(--mu);
+      background: var(--field);
+      border: 1px solid var(--ln);
+      border-radius: 9px;
+      cursor: pointer;
+  }
+
+  #btDiagnostico:hover {
+      color: var(--fg);
+      border-color: var(--line-strong);
+      background: var(--field-hover);
+  }
+
+  #btDiagnostico.temInconsistencia {
+      color: var(--vm);
+      border-color: var(--vm);
+      background: var(--red-soft);
+  }
+
+  #btDiagnostico.temInconsistencia::after {
+      content: '';
+      position: absolute;
+      top: -.2rem;
+      right: -.2rem;
+      width: .5rem;
+      height: .5rem;
+      border: 1px solid var(--bg);
+      border-radius: 50%;
+      background: var(--vm);
+  }
+
+  /* Simular (lançamentos provisórios): sempre em laranja, como o Recarregar é sempre verde.
+     Ligado, o botão fica preenchido de laranja, pra não deixar dúvida de que nada está sendo
+     gravado. */
+  #toggleSimulacao {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      color: #F0A83A;
+      background: var(--orange-soft);
+      border: 1px solid #F0A83A;
+      border-radius: 9px;
+      cursor: pointer;
+  }
+
+  #toggleSimulacao:hover,
+  #toggleSimulacao.ativo {
+      color: #10231A;
+      background: #F0A83A;
+      border-color: #F0A83A;
+  }
+
+  #toggleSimulacao.ativo:hover {
+      background: #F5BC63;
+      border-color: #F5BC63;
+  }
+
+  @keyframes girar {
+      from {
+          transform: rotate(0deg);
+      }
+
+      to {
+          transform: rotate(360deg);
+      }
+  }
+
+  /* disfarca a troca de estrutura de #out ao mudar de visao (tabelas Debito/Credito <->
+     matriz Comparar) e o aparecer/sumir dos filtros exclusivos de cada visao (Origem,
+     Agrupar por, Grafico, Ver evolucao) com o MESMO fade suave, em vez de uma troca
+     abrupta — os dois usam a mesma duracao/curva pra sentirem parte do mesmo gesto. */
+  #out.fadeIn,
+  .f.fadeIn {
+      animation: fadeSuave .32s cubic-bezier(.25, .1, .25, 1);
+  }
+
+  .f.fadeOut {
+      animation: fadeSuave .18s cubic-bezier(.4, 0, 1, 1) reverse;
+  }
+
+  @keyframes fadeSuave {
+      from {
+          opacity: 0;
+      }
+
+      to {
+          opacity: 1;
+      }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+
+      #out.fadeIn,
+      .f.fadeIn,
+      .f.fadeOut {
+          animation: none;
+      }
+  }
+
+
+  #abreNovo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      color: #111315;
+      background: var(--fg);
+      border: 0;
+      border-radius: 9px;
+      cursor: pointer;
+  }
+
+  #abreNovo:hover {
+      background: #FFFFFF;
+      opacity: 1;
+  }
+
+  /* =========================================================
+       FOCO
+       ========================================================= */
+
+  :focus-visible {
+      outline: 2px solid #7BCF99;
+      outline-offset: 2px;
+  }

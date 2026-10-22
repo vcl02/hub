@@ -1,0 +1,13 @@
+# Padrão leve de edição: preserva a leitura dos módulos sem exigir formatter externo.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{css,html,sql,md}]
+indent_size = 2

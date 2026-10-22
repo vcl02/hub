@@ -1,0 +1,22 @@
+# Executa no GitHub a mesma validação local, sem instalar dependências do projeto.
+name: Validação
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+      - name: Configurar Node.js 22 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Executar validação local
+        run: node scripts/check.mjs

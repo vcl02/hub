@@ -1,0 +1,28 @@
+  /* Utilidades globais que não pertencem a um componente: scrollbar consistente
+     entre navegadores sem alterar a geometria dos painéis. */
+  /* =========================================================
+       SCROLLBAR
+       ========================================================= */
+
+  * {
+      scrollbar-width: thin;
+      scrollbar-color: #3B4147 transparent;
+  }
+
+  ::-webkit-scrollbar {
+      width: 9px;
+      height: 9px;
+  }
+
+  ::-webkit-scrollbar-track {
+      background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+      background: #363C42;
+      border-radius: 99px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+      background: #4A5259;
+  }

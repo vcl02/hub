@@ -1,0 +1,50 @@
+  /* =========================================================
+       GRÁFICOS
+       ========================================================= */
+
+  #modalGrafico {
+      width: min(44rem, 94vw);
+      max-height: 92vh;
+      padding: 1.5rem;
+  }
+
+  #modalComparativo {
+      width: min(48rem, 94vw);
+      max-height: 92vh;
+      padding: 1.5rem;
+  }
+
+  #modalGrafico canvas,
+  #modalComparativo canvas {
+      color: var(--fg);
+  }
+
+  /* Asterisco indica que a categoria divide o mesmo lançamento com outra classificação. */
+  .catCompartilhada {
+      color: var(--red);
+      margin-left: .18rem;
+  }
+
+  /* =========================================================
+       DETALHAMENTO DE CÉLULA (visão Comparar)
+       ========================================================= */
+
+  #modalDetalheCel {
+      width: min(28rem, 92vw);
+      max-height: 88vh;
+      padding: 1.3rem;
+      overflow-y: auto;
+  }
+
+  #modalDetalheCel .meta {
+      margin: .2rem 0 .8rem;
+  }
+
+  /* celula da matriz Comparar com detalhamento clicavel */
+  .celClicavel {
+      cursor: pointer;
+  }
+
+  .celClicavel:hover {
+      background: var(--field-hover);
+  }
