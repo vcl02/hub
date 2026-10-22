@@ -27,11 +27,9 @@ function pintarTempo() {
   const t = ultimoTreino(), ativo = emAndamento(t), box = $('i-treino');
   $('e-tempo').textContent = ativo ? '⏱ ' + duracao(Date.now() - t.inicio) : '';
   box.classList.toggle('on', ativo);
-  const cal = t && !ativo ? kcal(t) : null;
-  box.hidden = !t;
-  box.innerHTML = !t ? ''
-    : ativo ? `<span>Treino em andamento desde ${hhmm(t.inicio)}</span><b>${duracao(Date.now() - t.inicio)}</b><button type="button" class="btn sm" data-finalizar>Finalizar</button>`
-    : `<span>Último treino <i>${quando(iso(new Date(t.inicio)))}, ${hhmm(t.inicio)}–${hhmm(t.fim)}${cal ? ` · ~${cal} kcal` : ''}</i></span><b>${duracao(t.fim - t.inicio)}</b>${travadoHoje() ? '<button type="button" class="btn sm" data-reabrir>Reabrir</button>' : ''}`;
+  // Só durante o treino: o último treino já aparece em "Últimos treinos", no fim da tela inicial
+  box.hidden = !ativo;
+  box.innerHTML = ativo ? `<span>Treino em andamento desde ${hhmm(t.inicio)}</span><b>${duracao(Date.now() - t.inicio)}</b><button type="button" class="btn sm" data-finalizar>Finalizar</button>` : '';
   if (editTreino) return;   // não redesenha a lista enquanto um horário está sendo editado
   const fechados = (ativo ? db.treinos.slice(0, -1) : db.treinos).slice(-5).reverse();
   $('i-hist-box').hidden = !fechados.length;

@@ -69,7 +69,8 @@ test('tempo de treino fecha após 30 min sem mexer', async () => {
   await pg.clock.fastForward('25:00'); await pg.click('#t-feita');                           // última interação 19:25
   await pg.goBack(); await pg.clock.fastForward('45:00');
   await pg.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
-  assert.match(await pg.textContent('#i-treino'), /19:00–19:25.*25 min/);
+  assert.match(await pg.textContent('#i-treinos'), /19:00–19:25.*25 min/);
+  assert.equal(await pg.isVisible('#i-treino'), false);                                      // card só durante o treino
   await ctx.close();
 });
 
@@ -126,7 +127,7 @@ test('depois do último descanso vai para o próximo; no fim mostra o resumo', a
   await pg.waitForSelector('#v-fim:not([hidden])');
   assert.match(await pg.textContent('#f-tiles'), /6\/6/);
   await pg.click('#parabens-ok'); await pg.click('#v-fim [data-ir="inicio"]');
-  assert.match(await pg.textContent('#i-treino'), /Último treino/);                           // treino fechado
+  assert.equal(await pg.isVisible('#i-treino'), false);                                      // treino fechado: só no histórico
   assert.deepEqual(erros, []); await ctx.close();
 });
 
@@ -225,7 +226,7 @@ test('treino finalizado sem séries salvas conta como feito e não é apagado ao
   await pg.tap('.slot >> nth=0');
   assert.equal(await pg.isVisible('#e-travado'), true);
   await pg.goBack();
-  assert.match(await pg.textContent('#i-treino'), /17:43–18:37/);                            // não recomeçou a contagem
+  assert.match(await pg.textContent('#i-treinos'), /17:43–18:37/);                           // não recomeçou a contagem
   assert.equal(await pg.evaluate(() => db.treinos.length), 1);
   assert.deepEqual(erros, []); await ctx.close();
 });

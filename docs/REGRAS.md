@@ -47,6 +47,7 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 - **Aquecimento:** o 1º exercício de cada `regiao` (Pernas / Superior) no dia ganha 1 série de 50% × 15, com 45 s de descanso.
 - **Série sem peso:** não pode ser marcada (sem peso o registro não é salvo).
 - **Registro:** 1 por exercício por dia, salvo a cada série marcada, ajuste, peso ou troca de variação.
+- **Card de tempo na tela inicial:** só durante o treino ("Treino em andamento" + Finalizar). Treino encerrado aparece só em "Últimos treinos".
 - **Tempo de treino:** começa no 1º toque dentro de um exercício. "Finalizar" ou 30 min sem mexer encerram (no horário da última interação).
 - **Um treino por dia:** depois de encerrado, o dia trava até "Reabrir". Abrir o app e não treinar (sem registro e sem finalizar) recomeça a contagem no próximo toque, sem criar 2º treino.
 - **Dia treinado:** tem registro **ou** treino finalizado (`fechado`), mesmo sem séries salvas. Conta para a semana, os pontos e as conquistas; o dia aparece como "✓ Treino feito".
