@@ -104,26 +104,6 @@
        BOTÕES DO CABEÇALHO
        ========================================================= */
 
-  #sair {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 2rem;
-      height: 2rem;
-      padding: 0;
-      color: var(--vm);
-      background: var(--red-soft);
-      border: 1px solid var(--vm);
-      border-radius: 9px;
-      cursor: pointer;
-  }
-
-  #sair:hover {
-      color: #fff;
-      border-color: var(--vm);
-      background: var(--vm);
-  }
-
   #recarregar {
       display: flex;
       align-items: center;

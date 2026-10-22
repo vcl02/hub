@@ -74,8 +74,6 @@ h3.sec{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color
 .icon-btn.pendente{position:relative;border-color:var(--blue);color:var(--blue)}
 .icon-btn.pendente::after{content:'';position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--blue)}
 /* Sair como no fin: vermelho; 1º toque com dados sem enviar só arma (borda cheia) */
-.icon-btn.sair{color:var(--red);background:var(--red-soft);border-color:var(--red)}
-.icon-btn.sair.armed{color:var(--on-red);background:var(--red)}
 .bar{display:flex;align-items:center;min-height:44px}
 .nav{justify-content:space-between;gap:8px}
 .back{background:none;border:0;padding:0;margin-left:-8px;width:44px;height:44px;display:grid;place-items:center;color:var(--blue)}   /* só a seta "<" */

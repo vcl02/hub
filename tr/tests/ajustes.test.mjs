@@ -71,10 +71,10 @@ test('sem backup manual e sem senha mestra', async () => {
   await ctx.close();
 });
 
-test('canto superior direito: engrenagem vai direto para editar exercícios e sair é só ícone; sem trocar senha', async () => {
+test('canto superior direito: engrenagem vai direto para editar exercícios, botões só ícone; sem sair nem trocar senha', async () => {
   const { ctx, pg } = await abrirApp();
   assert.match(await pg.getAttribute('#i-corpo', 'class'), /pendente/);                        // sem pesagem hoje: ponto azul
-  for (const sel of ['#v-inicio .top #i-corpo', '#v-inicio .top [data-ir="editar"]', '#v-inicio .top #sair']) {
+  for (const sel of ['#v-inicio .top #i-hub', '#v-inicio .top #i-corpo', '#v-inicio .top [data-ir="editar"]']) {
     assert.ok(await pg.getAttribute(sel, 'title')); assert.ok(await pg.getAttribute(sel, 'aria-label'));
     assert.equal((await pg.textContent(sel)).trim(), '');                                   // só ícone
   }

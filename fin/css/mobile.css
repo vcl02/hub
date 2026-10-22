@@ -11,7 +11,7 @@
           gap: .5rem;
           justify-content: space-between;
           /* Cabeçalho inteiro (nav de ciclo, simulação, cadastro, recarregar, diagnóstico,
-             sair) é o mesmo do desktop — só quebra pra segunda linha quando não cabe,
+             hub) é o mesmo do desktop — só quebra pra segunda linha quando não cabe,
              em vez de esconder qualquer coisa. */
           flex-wrap: wrap;
       }

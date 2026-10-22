@@ -43,7 +43,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Visões especiais de acompanhamento seguem a própria base definida em cada regra.
 - A URL usa `?ciclo=AAAA-MM` para um ciclo único real (De igual a Até) e `?ciclo=backlog` para o Backlog (De sozinho, Até fica desabilitado nesse modo).
   Ao abrir esse link, a tela restaura o ciclo (pelo início do mês) ou o Backlog.
-  Na tela de login a URL nunca mostra `?ciclo`: o parâmetro sai da barra de endereço e o ciclo pedido fica guardado, aplicado uma vez depois de entrar; ao clicar em Sair, nada é guardado e o próximo login abre no ciclo atual.
+  Na tela de login a URL nunca mostra `?ciclo`: o parâmetro sai da barra de endereço e o ciclo pedido fica guardado, aplicado uma vez depois de entrar.
   Trocar de ciclo único ou entrar/sair do Backlog empurra uma entrada no histórico do navegador, então Voltar/Avançar navegam entre os ciclos já visitados nesta sessão sem precisar reabrir o Supabase; qualquer outro redesenho que não muda o ciclo (filtro, seleção de linha, edição inline…) continua só substituindo a entrada atual, sem acumular histórico.
   Um `ciclo=backlog` não imposto quando a opção não existe no combo De mantém o ciclo padrão seguro, igual a um `AAAA-MM` sem ciclo correspondente.
   Comparação entre ciclos e filtros não entram na URL.
@@ -512,11 +512,12 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ### Cabeçalho e controles
 
-- O ícone de grade (**Hub**), logo antes de Encerrar, volta à página inicial do hub (`../`), que abre os outros apps; é um link, não grava nada.
+- O ícone de grade (**Hub**), o último do cabeçalho, volta à página inicial do hub (`../`), que abre os outros apps; é um link, não grava nada.
+  Não há botão de sair no fin: o login e o Sair ficam só na página inicial do hub (a sessão é a mesma).
 - Os seletores **De** e **Até** mostram cada ciclo pelo mês abreviado (`Out/26`, mês do início do ciclo), com o nome completo (`Outubro 2026`) no tooltip da opção.
   Os dois ficam lado a lado, sem texto ou traço entre eles (`Out/26` `Nov/26`).
-- O cabeçalho (navegação De/Até, simulação, cadastro, recarregar, diagnóstico, sair) é o mesmo em qualquer largura; quando não cabe numa linha só, quebra para a seguinte.
-  Os botões (cartões Nubank e Mercado Pago, Todas/Diferentes, Gráfico, Visualizações, simulação, cadastro, recarregar, diagnóstico, sair, nessa ordem) formam um bloco só, à direita — a navegação de ciclo fica só com setas e De/Até: quando não cabem, descem **juntos** pra linha seguinte, nunca separados, e lá ficam alinhados **à esquerda**.
+- O cabeçalho (navegação De/Até, simulação, cadastro, recarregar, diagnóstico, hub) é o mesmo em qualquer largura; quando não cabe numa linha só, quebra para a seguinte.
+  Os botões (cartões Nubank e Mercado Pago, Todas/Diferentes, Gráfico, Visualizações, simulação, cadastro, recarregar, diagnóstico, hub, nessa ordem) formam um bloco só, à direita — a navegação de ciclo fica só com setas e De/Até: quando não cabem, descem **juntos** pra linha seguinte, nunca separados, e lá ficam alinhados **à esquerda**.
   Só no celular, quando o bloco não cabe nem sozinho na largura da tela, ele quebra entre os botões, também alinhado à esquerda.
   A navegação de ciclo (setas, De/Até) ganha sua própria linha e encolhe/quebra internamente em vez de estourar a tela.
   O botão verde **Recarregar** do cabeçalho (mesmo ícone de setas) faz, num só clique e nesta ordem: recarrega os dados do banco, volta De/Até ao ciclo atual, limpa os filtros — buscas por coluna, filtro de teto (Besteira/Isabella), Linhas, ordenação, blocos recolhidos, seleção e categorias excluídas do gráfico —, devolvendo a tela ao estado em que ela abre, e roda o **Consolidar tudo** (ver **Aportes e resgates**).

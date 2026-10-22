@@ -1,5 +1,5 @@
 'use strict';
-// Página inicial do hub: login (Supabase Auth) antes dos apps, data do dia, Sair e cache offline (sw.js).
+// Página inicial do hub: login (Supabase Auth) antes dos apps, Sair e cache offline (sw.js).
 // A sessão fica no localStorage da origem com a chave padrão do supabase-js, a mesma do fin e do tr:
 // entrou aqui, os apps abrem direto.
 const SUPABASE_URL = 'https://yzmyncxoskvqzdczaill.supabase.co';
@@ -63,6 +63,5 @@ $('sair').addEventListener('click', async () => {
   mostrar(false);
 });
 
-$('data').textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
 abrir();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});

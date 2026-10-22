@@ -147,16 +147,10 @@ test('tela de login tira ?ciclo da URL e aplica o ciclo pedido depois de entrar'
     assert.equal(elementos.compDe.value, 0);
 });
 
-test('ao sair, o ciclo não fica guardado pro próximo login', () => {
-    const { contexto, elementos, chamadas } = criarContexto('https://exemplo.test/?ciclo=2026-10');
-    vm.runInContext('globalThis.tirar = tirarCicloDaUrl;', contexto);
-    contexto.tirar({ guardar: false });
-    assert.equal(chamadas[0][2], '/');
-    contexto.window.location.search = '';
-    contexto.regras.aplicarCicloDaUrl();
-    assert.equal(elementos.compDe.value, '');
+test('sem Sair no fin: a tela de login sempre guarda o ciclo pedido', () => {
     const boot = fs.readFileSync('js/bootstrap.js', 'utf8');
-    assert.match(boot, /if \(!logado\) tirarCicloDaUrl\(\{ guardar: lembrarCiclo \}\);/);
-    assert.match(boot, /mostraTela\(0, \{ lembrarCiclo: false \}\); \};/);
+    assert.match(boot, /if \(!logado\) tirarCicloDaUrl\(\);/);
+    assert.doesNotMatch(boot, /el\('sair'\)|signOut/);
     assert.match(regrasMd, /Na tela de login a URL nunca mostra `\?ciclo`/);
+    assert.match(regrasMd, /Não há botão de sair no fin: o login e o Sair ficam só na página inicial do hub/);
 });

@@ -1,6 +1,7 @@
 // Login e sincronização com o Supabase (falso): outro aparelho, offline, migração da versão antiga, conta única.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { prepararApp, app, abrirApp, novaNuvem, fakeSupabase, sincronizado } from './helpers/app.mjs';
 
 prepararApp();
@@ -65,14 +66,10 @@ test('junta à conta o banco criptografado da versão antiga', async () => {
   assert.deepEqual(erros, []); await ctx.close();
 });
 
-test('sair da conta volta para o login', async () => {
+test('sem botão de sair: o Sair fica só no hub', async () => {
   const { ctx, pg } = await abrirApp();
-  await sincronizado(pg);
-  await pg.click('[data-ir="editar"]');
-  assert.match(await pg.textContent('#a-info'), /eu@teste\.com.*Tudo salvo na nuvem/);
-  await pg.goBack(); await pg.click('#sair');
-  await pg.waitForSelector('#v-bloqueio:not([hidden])');
-  assert.equal(await pg.evaluate(() => localStorage.getItem('tr.db.2f9bc201-9966-4f37-9963-2f4b9ddab849')), null);
+  assert.equal(await pg.locator('#sair').count(), 0);
+  assert.match(readFileSync(new URL('../docs/REGRAS.md', import.meta.url), 'utf8'), /o login e o Sair ficam só na página inicial do hub/);
   await ctx.close();
 });
 
@@ -97,21 +94,6 @@ test('login aceita o usuário no lugar do e-mail; usuário desconhecido nem cheg
   await pg.fill('#l-email', 'Victor'); await pg.fill('#l-senha', 'senha123'); await pg.press('#l-senha', 'Enter');
   await pg.waitForSelector('#v-inicio:not([hidden])');
   assert.deepEqual(emails, ['victor.cabrera0209@gmail.com']);
-  await ctx.close();
-});
-
-test('sair com dados sem enviar pede um 2º toque', async () => {
-  const { ctx, pg, nuvem } = await abrirApp();
-  await sincronizado(pg);
-  nuvem.online = false;
-  await pg.click('#i-corpo'); await pg.fill('#c-peso', '91'); await pg.click('#c-form button[type=submit]'); await pg.goBack();
-  await pg.click('#sair');
-  assert.match(await pg.getAttribute('#sair', 'class'), /armed/);                              // 1º toque: só fica vermelho
-  assert.doesNotMatch(await pg.textContent('#toast-msg'), /sem enviar|Toque/);               // sem aviso escrito
-  assert.equal(await pg.isVisible('#v-inicio'), true);
-  await pg.click('#sair');
-  await pg.waitForSelector('#v-bloqueio:not([hidden])');
-  assert.notEqual(await pg.evaluate(() => localStorage.getItem('tr.db.2f9bc201-9966-4f37-9963-2f4b9ddab849')), null);   // fica para enviar depois
   await ctx.close();
 });
 

@@ -1,19 +1,7 @@
 'use strict';
-// Engrenagem (vai direto para a edição de exercícios, com instalar e estado da conta no fim) e sair.
+// Engrenagem (vai direto para a edição de exercícios, com instalar e estado da conta no fim). Sair fica só no hub.
 // ===== Ajustes =====
 let eventoInstalar = null;
-// Sair (canto superior direito). Com dados sem enviar, o 1º toque só avisa e arma; o 2º, em até 3 s, sai.
-$('sair').addEventListener('click', async ev => {
-  const p = temPendente(), btn = ev.currentTarget;
-  if (p && !btn.classList.contains('armed')) {
-    confirmar(btn); return;   // toque duplo, sem aviso escrito
-  }
-  btn.classList.remove('armed');
-  const id = usuario.id;
-  if (!p) { store.del(K_LOCAL(id)); store.del(K_BASE(id)); }   // pendente fica no aparelho e envia no próximo login
-  try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {}
-  telaLogin();
-});
 addEventListener('beforeinstallprompt', ev => { ev.preventDefault(); eventoInstalar = ev; $('a-instalar').hidden = false; });
 $('a-instalar').addEventListener('click', async () => { if (!eventoInstalar) return; eventoInstalar.prompt(); try { await eventoInstalar.userChoice; } catch (e) {} eventoInstalar = null; $('a-instalar').hidden = true; });
 

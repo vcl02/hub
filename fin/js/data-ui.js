@@ -104,13 +104,13 @@ function sincronizarCicloNaUrl() {
 
 // Tela de login sem "?ciclo" na URL (pedido do mantenedor): ali não há ciclo nenhum na tela.
 // O ciclo de um link compartilhado fica guardado e é aplicado depois de entrar
-// (aplicarCicloDaUrl); ao sair, não guarda — o próximo login abre no ciclo atual.
+// (aplicarCicloDaUrl). Não há Sair no fin: a sessão se encerra no hub.
 let cicloPedidoAntesDoLogin = null;
-function tirarCicloDaUrl({ guardar = true } = {}) {
+function tirarCicloDaUrl() {
     const url = new URL(window.location.href);
     const chave = url.searchParams.get('ciclo');
     _ultimaChaveCicloUrl = undefined;   // a 1ª sincronização depois de entrar substitui, não empilha
-    cicloPedidoAntesDoLogin = guardar ? chave : null;
+    cicloPedidoAntesDoLogin = chave;
     if (chave === null) return;
     url.searchParams.delete('ciclo');
     window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
