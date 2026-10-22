@@ -4,7 +4,6 @@
 let eventoInstalar = null;
 telas.ajustes = async () => {
   $('a-instalar').hidden = !eventoInstalar;
-  $('m-form').hidden = !store.get(K_ANTIGO);
   $('a-info').textContent = `Conta: ${usuario?.email || '—'}. ${pintarSync()} ${db.registros.length} registro(s) e ${db.medidas.length} pesagem(ns). Versão ${versaoAtual || '—'}.`;
 };
 $('a-sair').addEventListener('click', async ev => {

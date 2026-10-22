@@ -52,10 +52,6 @@ async function abrirAntigo(chave) {
   const c = JSON.parse(store.get(K_ANTIGO));
   return preparar(JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: deB64(c.iv) }, chave, deB64(c.ct)))));
 }
-async function chaveDaSenha(senha) {
-  const c = JSON.parse(store.get(K_ANTIGO)), base = await crypto.subtle.importKey('raw', new TextEncoder().encode(senha), 'PBKDF2', false, ['deriveKey']);
-  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: deB64(c.salt), iterations: c.it || 310000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
-}
 // Junta os dados antigos do aparelho com os da nuvem; no mesmo dia (treino), variação+dia (registro) ou dia (pesagem), vale o do aparelho.
 function juntar(nuvem, local) {
   const dia = t => iso(new Date(t.inicio)), dias = new Set(local.treinos.map(dia));
@@ -66,11 +62,11 @@ function juntar(nuvem, local) {
     medidas: [...nuvem.medidas.filter(m => !local.medidas.some(x => x.data === m.data)), ...local.medidas]
   });
 }
-// Com "manter desbloqueado" a chave está salva e a migração é automática; sem ela, pede a senha antiga em Ajustes.
+// Com "manter desbloqueado" a chave está salva e a migração é automática. Sem a chave não há como abrir: a senha agora é só a do Supabase.
 async function migrarAntigo(atual) {
   const k = store.get(K_ANTIGO_CHAVE);
   if (!store.get(K_ANTIGO) || !window.crypto?.subtle) return atual;
-  if (!k) { setTimeout(() => toast('Há dados da versão antiga neste aparelho: Ajustes'), 300); return atual; }
+  if (!k) return atual;
   try {
     const velho = await abrirAntigo(await crypto.subtle.importKey('raw', deB64(k), { name: 'AES-GCM' }, false, ['decrypt']));
     store.del(K_ANTIGO); store.del(K_ANTIGO_CHAVE);
@@ -78,11 +74,3 @@ async function migrarAntigo(atual) {
     return juntar(atual, velho);
   } catch (e) { return atual; }
 }
-$('m-form').addEventListener('submit', async ev => {
-  ev.preventDefault();
-  const erro = $('m-erro'); erro.textContent = '';
-  let velho; try { velho = await abrirAntigo(await chaveDaSenha($('m-senha').value)); } catch (e) { erro.textContent = 'Senha incorreta.'; return; }
-  db = juntar(db, velho); gravar();
-  store.del(K_ANTIGO); store.del(K_ANTIGO_CHAVE);
-  $('m-senha').value = ''; toast('Dados antigos juntados à sua conta'); ir('inicio');
-});

@@ -64,12 +64,10 @@ test('não recarrega no meio de um formulário', async () => {
   await ctx.close();
 });
 
-test('sem backup manual; senha da versão antiga só aparece em Ajustes quando há cofre sem chave', async () => {
+test('sem backup manual e sem senha mestra em Ajustes', async () => {
   const { ctx, pg } = await abrirApp();
   await pg.click('[data-ir="ajustes"]');
-  assert.equal(await pg.locator('[data-ir="backup"], #v-backup').count(), 0);
-  assert.equal(await pg.isVisible('#m-form'), false);
-  await pg.evaluate(() => { localStorage.setItem('carga.vault.v1', '{}'); mostrar('ajustes'); });
-  assert.equal(await pg.isVisible('#m-form'), true);
+  assert.equal(await pg.locator('[data-ir="backup"], #v-backup, #m-form').count(), 0);
+  assert.equal(await pg.locator('#v-ajustes input[type=password]').count(), 0);
   await ctx.close();
 });
