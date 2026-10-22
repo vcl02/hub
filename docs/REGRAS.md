@@ -55,7 +55,9 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 - O horário habitual é o da pesagem mais recente; mais de 1 h fora dele mostra "Fora do seu horário".
 - Na edição dá para mudar data, horário e peso. Data no futuro ou dia que já tem pesagem é recusado.
 - **IMC:** peso ÷ altura² com `ALTURA` = 1,78 m (topo de `app.js`), 1 casa decimal. Faixas da OMS: < 18,5 abaixo do peso, < 25 normal, < 30 sobrepeso, ≥ 30 obesidade. Aparece no card de peso da tela inicial e em cada pesagem do histórico.
-- **Calorias:** estimativa = 3,5 MET (Compendium of Physical Activities, 02054) × peso corporal (pesagem mais recente até o dia) × horas de treino.
+- **Perfil** (constantes no topo do código, fora do banco): altura 1,78 m, nascimento 14/09/2002, sexo masculino. A tela de peso mostra idade, altura e a taxa basal.
+- **Taxa basal (TMB):** Mifflin-St Jeor = 10 × peso + 6,25 × altura (cm) − 5 × idade + 5 (homem), em kcal/dia, com a idade no dia.
+- **Calorias:** estimativa com MET corrigido = 3,5 MET (Compendium of Physical Activities, 02054) × TMB ÷ 24 × horas de treino, com o peso da pesagem mais recente até o dia. O padrão assume 1 MET = 1 kcal/kg/h para todo mundo; usar a sua basal ajusta a conta para idade, altura e sexo.
 
 ## Pontos e conquistas
 

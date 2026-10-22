@@ -27,7 +27,9 @@ const emailDoLogin = texto => { const t = String(texto || '').trim(); return t.i
 // ===== Configuração =====
 const DIAS_FIXOS = [3, 4];   // quarta, quinta (Date.getDay)
 const DIAS_EXTRA = [1];      // segunda (sugerido)
-const ALTURA = 1.78;         // metros, só para o IMC
+// Perfil (só no código): IMC, taxa metabólica basal e calorias
+const ALTURA = 1.78;         // metros
+const NASCIMENTO = '2002-09-14', SEXO = 'M';
 const TIPOS = ['Principal', 'Substituto', 'Halter'];
 const REGIOES = ['Pernas', 'Superior'];
 const UNIDADES = ['kg', 'lb', 'nível'];
@@ -479,7 +481,11 @@ telas.conquistas = () => {
 };
 // Calorias: MET × peso corporal (kg) × horas. Usa a pesagem mais recente até o dia do treino.
 function pesoEm(dia) { const L = [...db.medidas].sort((a, b) => b.data.localeCompare(a.data)); return (L.find(m => m.data <= dia) || L[L.length - 1])?.peso; }
-const kcal = t => { const p = pesoEm(iso(new Date(t.inicio))); return p ? Math.round(MET * p * (t.fim - t.inicio) / 36e5) : null; };
+function idadeEm(dia) { const [a, m, d] = dia.split('-').map(Number), [na, nm, nd] = NASCIMENTO.split('-').map(Number); return a - na - (m < nm || (m === nm && d < nd) ? 1 : 0); }
+// Taxa metabólica basal (Mifflin-St Jeor), kcal/dia
+const tmb = (peso, dia) => Math.round(10 * peso + 6.25 * ALTURA * 100 - 5 * idadeEm(dia) + (SEXO === 'M' ? 5 : -161));
+// MET corrigido: 1 MET = a sua taxa basal (não os 1 kcal/kg/h do padrão), então idade, altura e sexo entram na conta
+const kcal = t => { const dia = iso(new Date(t.inicio)), p = pesoEm(dia); return p ? Math.round(MET * tmb(p, dia) / 24 * (t.fim - t.inicio) / 36e5) : null; };
 function resumoDia(dia) {
   const { ex, va } = mapas(), regs = db.registros.filter(r => r.data === dia), rec = recordesAte(dia);
   const r = { regs, series: 0, volume: 0, recordes: regs.filter(x => rec.has(x)).length, completas: regs.filter(x => completo(x, ex.get(x.variacao))).length };
@@ -723,6 +729,7 @@ telas.corpo = () => {
   $('c-peso').value = u ? virgula(u.peso) : '';
   $('c-cintura').value = u?.cintura ? virgula(u.cintura) : '';
   $('c-hora').value = horaHabitual() || hhmm(Date.now());
+  $('c-perfil').textContent = `${idadeEm(hoje())} anos · ${virgula(ALTURA)} m${u ? ` · basal ~${tmb(u.peso, hoje()).toLocaleString('pt-BR')} kcal/dia` : ''}`;
   avisoHorario(); pintarMedidas();
 };
 function pintarMedidas() {

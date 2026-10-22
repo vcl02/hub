@@ -37,4 +37,5 @@
 - Para cada nova feature ou correção, regras e testes são parte obrigatória da entrega.
 - Ao relatar a entrega, diferencie teste local, validação no celular e validação integrada com o Supabase.
 - Use o mínimo de recursos do Supabase (plano gratuito): nada de Storage, Edge Functions ou Realtime sem pedido explícito. Fotos das máquinas e lembretes ficam só no aparelho.
+- **Botões só com ícone (futuro):** o mantenedor quer migrar os botões de ação para só ícone, como no fin, depois de se acostumar com o app. Até ele pedir, mantenha o texto; quando migrar, todo ícone ganha `title` e `aria-label`.
 - Textos curtos em português. O app é só do mantenedor: nada de textos explicando como usar o app; a tela de login é só usuário e senha.

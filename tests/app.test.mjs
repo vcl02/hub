@@ -316,7 +316,7 @@ test('editar o horário do treino e ver calorias', async () => {
   await pg.click('#v-fim [data-ir="inicio"]');
   await pg.click('[data-editar-treino]');
   await pg.fill('#et-fim', '19:50'); await pg.click('[data-salvar-treino]');
-  assert.match(await pg.textContent('#i-treinos'), /19:00–19:50 · ~263 kcal/);              // 3,5 × 90 kg × 50/60 h
+  assert.match(await pg.textContent('#i-treinos'), /19:00–19:50 · ~231 kcal/);              // 3,5 × basal 1.898 kcal/dia ÷ 24 × 50/60 h
   assert.deepEqual(erros, []); await ctx.close();
 });
 
@@ -557,6 +557,7 @@ test('IMC com 1,78 m', async () => {
   const { ctx, pg } = await abrirApp();
   await pg.click('#i-corpo'); await pg.fill('#c-peso', '90'); await pg.click('#c-form button[type=submit]');
   assert.match(await pg.textContent('#c-historico'), /IMC 28,4/);                           // 90 / 1,78²
+  assert.match(await pg.textContent('#c-perfil'), /\d+ anos · 1,78 m · basal ~1\.\d{3} kcal\/dia/);
   await pg.goBack();
   assert.match(await pg.textContent('#i-corpo'), /IMC 28,4 \(sobrepeso\)/);
   await ctx.close();
