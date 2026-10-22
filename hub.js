@@ -18,12 +18,28 @@ function mostrar(logado, erro = '') {
   if (!logado) $('l-usuario').focus();
 }
 
+// ?volta=fin/?ciclo=… : um app aberto sem sessão mandou pra cá; depois de entrar, volta pra ele.
+// Só aceita a pasta de um dos cards (nunca outro site nem caminho fora dela).
+function destinoDaVolta() {
+  const volta = new URLSearchParams(location.search).get('volta') || '';
+  const pastas = [...document.querySelectorAll('.app')].map(a => a.getAttribute('href'));
+  const daPasta = pastas.some(p => volta === p || volta.startsWith(p + '?') || volta.startsWith(p + '#'));
+  return daPasta && !/\.\.|\/\/|\\/.test(volta) ? volta : null;
+}
+
+// Com o dono logado: volta pro app que pediu o login ou mostra os cards.
+function entrou() {
+  const destino = destinoDaVolta();
+  if (destino) location.replace(destino);
+  else mostrar(true);
+}
+
 // Ao abrir: com sessão salva do dono entra direto (inclusive sem internet); senão, login.
 async function abrir() {
   let usuario = null;
   try { usuario = (await sb.auth.getSession()).data.session?.user || null; } catch (e) {}
   if (usuario && usuario.id !== DONO) { await sairDaConta(); usuario = null; }
-  mostrar(!!usuario);
+  if (usuario) entrou(); else mostrar(false);
 }
 
 // Sem resposta do servidor (sem internet, rede caiu) o supabase-js devolve status 0 em vez de
@@ -53,7 +69,7 @@ $('l-form').addEventListener('submit', async ev => {
   if (error) { mostrar(false, mensagemDeErro(error)); return; }
   if (data.user.id !== DONO) { await sairDaConta(); mostrar(false, 'Esta conta não tem acesso.'); return; }
   $('l-senha').value = '';
-  mostrar(true);
+  entrou();
 });
 
 // Sair: toque duplo (o 1º deixa o botão vermelho por 3 s), como nos apps.

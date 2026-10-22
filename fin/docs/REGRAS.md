@@ -532,6 +532,8 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ## Login
 
+- Dentro do hub (`…/fin/`), o login é o da página inicial: sem sessão, o fin vai direto para `../?volta=fin/…` (com o `?ciclo` do link) e o hub devolve para cá depois de entrar (`irParaLoginDoHub` em `js/bootstrap.js`).
+  A tela de login própria abaixo só aparece com o fin servido fora do hub (ex.: testes).
 - O campo de login aceita **usuário** ou e-mail: `victor` é traduzido para o e-mail da conta (`EMAIL_POR_USUARIO`/`emailDoLogin` em `js/app-state.js`); texto com `@` é usado como e-mail, direto.
   O Supabase continua autenticando por e-mail e senha — nada muda no Auth, na sessão nem no RLS (que usa `auth.uid()`).
   Usuário desconhecido nem chega ao Supabase e recebe a mesma mensagem de senha errada (`Usuário ou senha inválidos.`), sem revelar quais usuários existem.
@@ -540,7 +542,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 ## Acesso
 
 - Só existe a conta do mantenedor: a antiga conta restrita da Isabella saiu (login `isabella`, `modoRestrito()`/`modoSimples()` e a casca somente leitura foram removidos).
-- A garantia de escrita vem do RLS de `fin` (migration 20): somente o mantenedor grava — `INSERT`, `UPDATE` e `DELETE` exigem o `auth.uid()` dele — e o papel anônimo não tem nenhum acesso.
+- A garantia vem do RLS de `fin`, `fin_ciclo` e `fin_meta`: somente o mantenedor lê (migration 39) e grava (migration 20) — `SELECT`, `INSERT`, `UPDATE` e `DELETE` exigem o `auth.uid()` dele — e o papel anônimo não tem nenhum acesso.
   Uma escrita negada volta vazia ou com erro e a tela mostra o toast de falha, sem fingir sucesso.
   O DataGrip usa o papel dono do banco e não passa pelo RLS.
 - A categoria textual `Isabella` (teto e fatura detalhada do cartão dela, ver "Faturas") continua: é só uma categoria em lançamentos, sem relação com conta ou e-mail.
@@ -583,7 +585,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - `migrations/25-tabela-fin-ciclo.sql` cria `public.fin_ciclo`: uma linha por ciclo, com `ancora_id` (PK, FK para o `fin.id` do `Faturamento PJ` que abre o ciclo, `on delete cascade`) e as cinco escolhas por ciclo (`limite_besteira`, `limite_isabella`, `limite_aprovado_nubank`, `limite_aprovado_mp`, `limite_garantia_nubank`; nulas, não negativas).
   Só guarda escolhas: uso de limite, garantia efetiva e gasto do ciclo continuam calculados pelo app.
   Migra com segurança qualquer estado: sem as colunas das migrations 23/24, só cria a tabela; com elas, copia os valores das linhas `Faturamento PJ` e só então remove as cinco colunas de `fin`; se alguma outra linha tiver valor nelas (só por edição manual), aborta a transação inteira sem alterar nada.
-  Acesso igual ao de `fin` (migration 20): RLS ligado, `anon` sem grant, leitura para contas logadas e escrita só pelo uid do mantenedor.
+  Acesso igual ao de `fin` (migration 20): RLS ligado, `anon` sem grant e escrita só pelo uid do mantenedor; desde a migration 39, a leitura também é só dele.
   O app grava por upsert (`on_conflict=ancora_id`) e, se a tabela não existir, carrega normalmente com os padrões e um aviso no diagnóstico.
   As migrations 23 e 24 ficam só como histórico.
 - `migrations/26-ciclo-com-inicio-e-fim.sql` faz de cada linha de `fin_ciclo` o próprio ciclo: adiciona `inicio`/`fim` e um `id` próprio, e remove o vínculo `ancora_id`.
@@ -620,6 +622,8 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Os cinco limites de cada ciclo novo copiam os do último ciclo existente, porque os tetos de Besteira/Isabella não herdam; rodar de novo não cria nada.
   Rodar depois da 33: sem os Faturamento PJ de 2030 em diante, não há de onde tirar os inícios.
 - `migrations/35-antecipacao-sem-frequencia.sql` tira a Frequência das antecipações/pagamentos de fatura e Ajustes sem lote (cinco "Antecipação Fatura (Final)" de 2026 estavam como Mensal) e remove o default `'Mensal'` de `fin.freq`, que dava Frequência a toda linha inserida pelo DataGrip sem preencher a coluna; o app sempre envia `freq`, então nada muda na tela.
+- `migrations/39-leitura-somente-dono.sql` restringe a leitura de `fin`, `fin_ciclo` e `fin_meta` ao mantenedor (antes valia para qualquer conta logada, por causa da conta da Isabella, que saiu): troca as três policies de leitura `*_leitura_autenticada` por `*_leitura_somente_dono`, sem mexer na escrita.
+  Coberta por `node --test tests/leitura-somente-dono.test.js`.
 
 ## Testes
 

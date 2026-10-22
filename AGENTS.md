@@ -23,7 +23,8 @@
 
 - Tudo em tema escuro, com a mesma paleta (fundo `#1B1E21`, superfícies `#24272B`), mesmo com o celular no modo claro.
 - **Login antes de tudo:** a página inicial abre no login (usuário `victor` ou e-mail, e senha) e só mostra os cards depois de entrar. Só a conta `DONO` (a mesma do tr) passa; outra conta sai na hora. Com a sessão salva, entra direto (inclusive sem internet). Sair, no canto superior direito, pede toque duplo e encerra a sessão neste aparelho para todos os apps.
-- Sair existe só no hub: fin e tr não têm botão de sair. Os apps mantêm a tela de login própria só como reserva (abertos direto pela URL sem sessão).
+- Sair existe só no hub: fin e tr não têm botão de sair.
+- App aberto sem sessão (link direto, ícone antigo) vai para o login do hub com `?volta=<pasta>/…` e, depois de entrar, o hub devolve para ele. `?volta` só é aceito se for a pasta de um card (nunca outro site ou `..`). A tela de login própria dos apps só aparece com eles servidos fora do hub (testes).
 - O app é só do mantenedor: na página inicial, só o login e os cards; nada de textos explicando como usar.
 - Cada app volta para a página inicial pelo ícone de grade (link para `../`).
 - Caminhos sempre relativos (`./`, `../`): o site roda em `/hub/`, e os apps em `/hub/fin/` e `/hub/tr/`.

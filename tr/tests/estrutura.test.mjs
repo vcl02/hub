@@ -89,3 +89,11 @@ test('hub: grade na tela inicial volta para ../ e o service worker só apaga os 
   assert.match(ler('sw.js'), /ks\.filter\(k => k\.startsWith\('carga-'\) && k !== CACHE_ESTATICO\)/);
   assert.match(ler('docs/REGRAS.md'), /grade \(volta ao hub, `\.\.\/`\)/);
 });
+
+test('sem sessão dentro do hub, vai pro login do hub; servido fora dele (como nos testes), login próprio', () => {
+  const boot = ler('js/bootstrap.js');
+  assert.match(boot, /if \(!\/\\\/tr\\\/\(index\\\.html\)\?\$\/\.test\(location\.pathname\)\) return false;/);
+  assert.match(boot, /location\.replace\('\.\.\/\?volta=' \+ encodeURIComponent\('tr\/' \+ location\.search \+ location\.hash\)\);/);
+  assert.match(boot, /if \(data\.session\) carregar\(data\.session\.user\); else if \(!irParaLoginDoHub\(\)\) telaLogin\(\);/);
+  assert.match(ler('docs/REGRAS.md'), /sem sessão, o tr vai direto para `\.\.\/\?volta=tr\/`/);
+});

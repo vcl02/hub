@@ -38,7 +38,7 @@ async function abrir(url, { conta, nuvem = novaNuvem() } = {}) {
   // (a do tr, 2.118.0) e o HTML do fin chega sem o atributo integrity, só nesta cópia de teste.
   const supabaseLocal = await readFile(path.join(RAIZ, 'supabase.js'));
   await ctx.route(/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@/, r => r.fulfill({ contentType: 'text/javascript', body: supabaseLocal }));
-  await ctx.route(u => u.href === `${base}fin/` || u.href === `${base}fin/index.html`, async r => {
+  await ctx.route(u => u.href.startsWith(base) && /\/hub\/fin\/(index\.html)?$/.test(u.pathname), async r => {
     const html = await readFile(path.join(RAIZ, 'fin', 'index.html'), 'utf8');
     await r.fulfill({ contentType: 'text/html', body: html.replace(/\s+integrity="[^"]*"/g, '') });
   });
@@ -120,9 +120,33 @@ test('Sair no hub pede toque duplo e encerra a sessão dos apps também', async 
   assert.equal(await pg.isVisible('#v-apps'), true);
   await pg.click('#sair');
   await pg.waitForSelector('#v-login:not([hidden])');
-  await pg.goto(`${base}tr/`);
-  await pg.waitForSelector('#v-bloqueio:not([hidden])');               // sem sessão, o tr pede login
+  await pg.goto(`${base}tr/`);                                         // sem sessão, o tr manda pro login do hub
+  await pg.waitForURL(`${base}?volta=tr%2F`);
+  await pg.waitForSelector('#v-login:not([hidden])');
+  await entrar(pg, 'eu@teste.com', 'senha123');
+  await pg.waitForURL(`${base}tr/`);                                   // e volta pro tr depois de entrar
+  await pg.waitForSelector('#v-inicio:not([hidden])');
   await ctx.close();
+});
+
+test('link do fin sem sessão: login no hub e volta pro mesmo ciclo', async () => {
+  const { ctx, pg } = await abrir(`${base}fin/?ciclo=2026-10`);
+  await pg.waitForURL(`${base}?volta=fin%2F%3Fciclo%3D2026-10`);
+  await pg.waitForSelector('#v-login:not([hidden])');
+  await entrar(pg, 'eu@teste.com', 'senha123');
+  await pg.waitForURL(url => url.href.startsWith(`${base}fin/`));
+  await pg.waitForFunction(() => getComputedStyle(document.getElementById('app')).display === 'block');
+  await ctx.close();
+});
+
+test('?volta só leva para a pasta de um app do hub, nunca para fora', async () => {
+  for (const volta of ['https://exemplo.test/', '//exemplo.test/', 'fin/../../x', 'javascript:alert(1)', 'outro/']) {
+    const { ctx, pg } = await abrir(`${base}?volta=${encodeURIComponent(volta)}`);
+    await entrar(pg, 'eu@teste.com', 'senha123');
+    await pg.waitForSelector('#v-apps:not([hidden])');                 // fica nos cards
+    assert.ok(pg.url().startsWith(base), volta);
+    await ctx.close();
+  }
 });
 
 test('fin e tr carregam todos os próprios arquivos em subpasta (caminhos relativos)', async () => {

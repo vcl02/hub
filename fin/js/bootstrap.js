@@ -28,9 +28,17 @@ async function boot() {
     const { data: { session } } = await sb.auth.getSession();
     if (session) {
         mostraTela(1); load();
-    } else {
+    } else if (!irParaLoginDoHub()) {
         mostraTela(0);
     }
+}
+
+// Dentro do hub (…/fin/), o login é o da página inicial: sem sessão vai pra lá e, depois de
+// entrar, o hub devolve pra cá com o mesmo ?ciclo. Servido fora do hub (testes), usa o login próprio.
+function irParaLoginDoHub() {
+    if (!/\/fin\/(index\.html)?$/.test(window.location.pathname)) return false;
+    window.location.replace('../?volta=' + encodeURIComponent('fin/' + window.location.search + window.location.hash));
+    return true;
 }
 async function entrar() {
     el('lerr').textContent = '';

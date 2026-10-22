@@ -28,10 +28,18 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 addEventListener('online', () => checarAtualizacao(true));
 setInterval(() => { checarAtualizacao(); aplicarAtualizacao(); }, 10 * 60 * 1000);
 
+// Dentro do hub (…/tr/), o login é o da página inicial: sem sessão vai pra lá e, depois de entrar,
+// o hub devolve pra cá. Servido fora do hub (testes), usa o login próprio.
+function irParaLoginDoHub() {
+  if (!/\/tr\/(index\.html)?$/.test(location.pathname)) return false;
+  location.replace('../?volta=' + encodeURIComponent('tr/' + location.search + location.hash));
+  return true;
+}
+
 // ===== Início do app =====
 (async () => {
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
   checarAtualizacao(true);
   const { data } = await sb.auth.getSession();   // sessão salva no aparelho: entra direto, mesmo sem internet
-  if (data.session) carregar(data.session.user); else telaLogin();
+  if (data.session) carregar(data.session.user); else if (!irParaLoginDoHub()) telaLogin();
 })();

@@ -41,6 +41,6 @@ test('mobile.css não esconde mais nada por largura de tela, só o que genuiname
 
 test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /## Acesso/);
-    assert.match(regras, /A garantia de escrita vem do RLS de `fin` \(migration 20\)/);
+    assert.match(regras, /A garantia vem do RLS de `fin`, `fin_ciclo` e `fin_meta`: somente o mantenedor lê \(migration 39\) e grava \(migration 20\)/);
     assert.match(regras, /fica sempre visível, em qualquer largura — sem menu pra abrir\/fechar/);
 });

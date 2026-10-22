@@ -1,4 +1,4 @@
-// Regressão de segurança: só o mantenedor grava em fin; outras contas logadas só leem.
+// Regressão de segurança: só o mantenedor grava em fin (a leitura aberta da migration 20 fechou na 39).
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
