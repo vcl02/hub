@@ -61,9 +61,9 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 
 ## Peso corporal
 
-- Pesagem diária: 1 por dia (a nova substitui a do dia), em qualquer horário. Peso de 30 a 300 kg; cintura opcional, de 40 a 200 cm (no cadastro e na edição). Na tela inicial, a balança fica no canto superior (ao lado da engrenagem), com um ponto azul enquanto não houver pesagem hoje.
+- Pesagem diária: 1 por dia (a nova substitui a do dia), em qualquer horário. Peso de 30 a 300 kg; cintura opcional, sem limite de valor (vazia ou 0 = sem cintura). Na tela inicial, a balança fica no canto superior (ao lado da engrenagem), com um ponto azul enquanto não houver pesagem hoje.
 - O horário habitual é o da pesagem mais recente; mais de 1 h fora dele só recomenda voltar a ele (aviso azul), nunca bloqueia.
-- Na edição dá para mudar data, horário, peso e cintura (vazia = sem cintura; 40 a 200 cm).
+- Na edição dá para mudar data, horário, peso e cintura (vazia = sem cintura, sem limite de valor).
 - Gráficos: evolução do peso e, com 2+ medidas de cintura, evolução da cintura. O card do topo mostra a cintura mais recente e a variação desde a 1ª (menos = verde). Data no futuro ou dia que já tem pesagem é recusado.
 - **IMC:** peso ÷ altura² com `ALTURA` = 1,78 m (`js/config.js`), 1 casa decimal. Faixas da OMS: < 18,5 abaixo do peso, < 25 normal, < 30 sobrepeso, ≥ 30 obesidade. Aparece no card do topo da tela de peso (peso atual em destaque, IMC e variação desde a 1ª pesagem) e em cada pesagem do histórico.
 - **Perfil** (constantes no topo do código, fora do banco): altura 1,78 m, nascimento 14/09/2002, sexo masculino. A tela de peso mostra idade, altura e a taxa basal.

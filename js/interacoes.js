@@ -42,7 +42,6 @@ document.addEventListener('click', ev => {
     const peso = num($('em-peso').value), hora = $('em-hora').value, data = $('em-data').value, cint = num($('em-cint').value);
     if (!(peso >= 30 && peso <= 300)) { toast('Informe o peso em kg', null, true); return; }
     if (!dataOk(data) || data > hoje()) { toast('Data inválida', null, true); return; }
-    if ($('em-cint').value.trim() && !cinturaOk(cint)) { toast('Cintura em cm (40 a 200)', null, true); return; }
     if (data !== d.salvarMedida && db.medidas.some(x => x.data === data)) { toast('Já tem pesagem em ' + dataCurta(data), null, true); return; }   // 1 pesagem por dia
     const desfazer = alterar(() => { const m = db.medidas.find(x => x.data === d.salvarMedida); m.peso = peso; m.hora = hora; m.data = data; if (cint > 0) m.cintura = cint; else delete m.cintura; });
     editMedida = null; telas.corpo(); toast('Pesagem atualizada', desfazer);

@@ -70,13 +70,12 @@ test('cintura: editar, ver no card e evolução em gráfico', async () => {
   assert.deepEqual(erros, []); await ctx.close();
 });
 
-test('cintura de 40 a 200 cm também no cadastro', async () => {
+test('cintura sem trava de valor no cadastro e na edição', async () => {
   const { ctx, pg } = await abrirApp();
   await pg.click('#i-corpo');
   await pg.fill('#c-peso', '90'); await pg.fill('#c-cintura', '12'); await pg.click('#c-form button[type=submit]');
-  assert.match(await pg.textContent('#toast-msg'), /Cintura em cm \(40 a 200\)/);
-  assert.equal(await pg.evaluate(() => db.medidas.length), 0);
-  await pg.fill('#c-cintura', '95'); await pg.click('#c-form button[type=submit]');
-  assert.equal(await pg.evaluate(() => db.medidas[0].cintura), 95);
+  assert.equal(await pg.evaluate(() => db.medidas[0].cintura), 12);
+  await pg.click('[data-editar-medida]'); await pg.fill('#em-cint', '250'); await pg.click('[data-salvar-medida]');
+  assert.equal(await pg.evaluate(() => db.medidas[0].cintura), 250);
   await ctx.close();
 });
