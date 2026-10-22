@@ -131,6 +131,7 @@ h1 {
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, .08);
   border-radius: 22px;
+  background: rgba(36, 39, 43, .72);   /* reserva: navegador sem color-mix() ignora a linha de baixo */
   background:
     radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--cor) 22%, transparent), transparent 60%),
     rgba(36, 39, 43, .72);
@@ -156,6 +157,7 @@ h1 {
   height: 64px;
   margin-bottom: auto;
   border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
   box-shadow: 0 8px 24px color-mix(in srgb, var(--cor) 45%, transparent);
 }
 

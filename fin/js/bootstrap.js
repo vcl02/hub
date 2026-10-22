@@ -42,7 +42,8 @@ async function entrar() {
         : { data: null, error: true };
 
     if (error) {
-        el('lerr').textContent = 'Usuário ou senha inválidos.';
+        // Sem resposta do servidor o supabase-js devolve status 0 (não lança): é a rede, não a senha.
+        el('lerr').textContent = email && !error.status ? 'Sem conexão. Tente de novo.' : 'Usuário ou senha inválidos.';
         return;
     }
 

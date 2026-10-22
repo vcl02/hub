@@ -26,6 +26,14 @@ async function abrir() {
   mostrar(!!usuario);
 }
 
+// Sem resposta do servidor (sem internet, rede caiu) o supabase-js devolve status 0 em vez de
+// lançar exceção: não pode virar "senha inválida".
+function mensagemDeErro(error) {
+  if (/invalid/i.test(error.message || '')) return 'Usuário ou senha inválidos.';
+  if (!error.status || error.name === 'AuthRetryableFetchError') return 'Sem conexão. Tente de novo.';
+  return 'Não foi possível entrar: ' + error.message;
+}
+
 async function sairDaConta() {
   try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {}
 }
@@ -36,13 +44,13 @@ $('l-form').addEventListener('submit', async ev => {
   const email = emailDoLogin($('l-usuario').value);
   $('l-erro').textContent = '';
   $('l-campos').disabled = true; $('l-botao').textContent = 'Entrando…';
-  let resposta = { data: null, error: true };
+  // Usuário desconhecido recebe a mesma mensagem de senha errada: não revela quais existem.
+  let resposta = { data: null, error: { message: 'Invalid login credentials' } };
   try { if (email) resposta = await sb.auth.signInWithPassword({ email, password: $('l-senha').value }); }
-  catch (e) { resposta = { data: null, error: { message: 'rede' } }; }
+  catch (e) { resposta = { data: null, error: { status: 0, message: String(e) } }; }
   $('l-campos').disabled = false; $('l-botao').textContent = 'Entrar';
   const { data, error } = resposta;
-  // Usuário desconhecido recebe a mesma mensagem de senha errada: não revela quais existem.
-  if (error) { mostrar(false, error.message === 'rede' ? 'Sem conexão. Tente de novo.' : 'Usuário ou senha inválidos.'); return; }
+  if (error) { mostrar(false, mensagemDeErro(error)); return; }
   if (data.user.id !== DONO) { await sairDaConta(); mostrar(false, 'Esta conta não tem acesso.'); return; }
   $('l-senha').value = '';
   mostrar(true);

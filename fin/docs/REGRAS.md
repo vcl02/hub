@@ -535,6 +535,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - O campo de login aceita **usuário** ou e-mail: `victor` é traduzido para o e-mail da conta (`EMAIL_POR_USUARIO`/`emailDoLogin` em `js/app-state.js`); texto com `@` é usado como e-mail, direto.
   O Supabase continua autenticando por e-mail e senha — nada muda no Auth, na sessão nem no RLS (que usa `auth.uid()`).
   Usuário desconhecido nem chega ao Supabase e recebe a mesma mensagem de senha errada (`Usuário ou senha inválidos.`), sem revelar quais usuários existem.
+  Sem resposta do servidor (sem internet), a mensagem é `Sem conexão. Tente de novo.`, nunca a de senha errada.
 
 ## Acesso
 

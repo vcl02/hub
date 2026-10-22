@@ -30,10 +30,10 @@ before(async () => {
 after(async () => { await navegador?.close(); servidor?.close(); });
 
 // Tudo fora do servidor local é abortado, menos o Supabase falso (registrado depois, tem prioridade).
-async function abrir(url, { conta } = {}) {
+async function abrir(url, { conta, nuvem = novaNuvem() } = {}) {
   const ctx = await navegador.newContext({ serviceWorkers: 'block' });
   await ctx.route(u => !u.href.startsWith(base), r => r.abort());
-  await fakeSupabase(ctx, novaNuvem(), conta);
+  await fakeSupabase(ctx, nuvem, conta);
   // O fin carrega o supabase-js do CDN com integrity (SRI); sem rede no teste, vai a cópia local
   // (a do tr, 2.118.0) e o HTML do fin chega sem o atributo integrity, só nesta cópia de teste.
   const supabaseLocal = await readFile(path.join(RAIZ, 'supabase.js'));
@@ -65,6 +65,17 @@ test('login antes de tudo: sem sessão só aparece o login; senha errada e usuá
   assert.equal(await pg.textContent('#l-erro'), 'Usuário ou senha inválidos.');
   assert.equal(await pg.isVisible('#v-apps'), false);
   assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test('sem internet no login: avisa que é a conexão, não a senha', async () => {
+  const nuvem = novaNuvem(); nuvem.online = false;
+  const { ctx, pg } = await abrir(base, { nuvem });
+  await entrar(pg, 'eu@teste.com', 'senha123');
+  await pg.waitForFunction(() => document.getElementById('l-erro').textContent);
+  assert.equal(await pg.textContent('#l-erro'), 'Sem conexão. Tente de novo.');
+  assert.equal(await pg.isEnabled('#l-usuario'), true);               // destrava pra tentar de novo
+  assert.equal(await pg.textContent('#l-botao'), 'Entrar');
   await ctx.close();
 });
 
