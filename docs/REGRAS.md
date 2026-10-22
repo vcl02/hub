@@ -14,7 +14,7 @@ Fonte de verdade do comportamento do app. Toda mudança de regra atualiza este a
 - Login por **usuário** (`victor`) ou e-mail, e senha, Enter entra (`emailDoLogin`). Usuário desconhecido nem chega ao Supabase e recebe a mesma mensagem de senha errada (`Usuário ou senha inválidos.`).
 - Mesma conta do fin. Só a conta `DONO` (`js/config.js`) entra: outra conta sai na hora com "Esta conta não tem acesso ao Diário de Carga.". O RLS das tabelas `tr_*` também só libera essa conta (migration 02).
 - Sem "Esqueci a senha" e sem "Trocar senha": a senha é a do Supabase e se troca fora do app.
-- Tela inicial, canto superior direito: engrenagem (Ajustes: editar exercícios, instalar, estado da conta e da nuvem) e o botão de sair, só ícone e vermelho como no fin.
+- Tela inicial, canto superior direito: engrenagem, que vai direto para a edição de exercícios (no fim dela: instalar e o estado da conta e da nuvem), e o botão de sair, só ícone e vermelho como no fin. Não há tela de Ajustes.
 - A sessão fica salva no aparelho: o app entra direto, inclusive sem internet. "Sair" apaga a cópia local se não houver nada pendente; se houver, o 1º toque avisa e o 2º (em até 3 s) sai, mantendo a cópia para enviar no próximo login.
 
 ## Banco e sincronização
@@ -31,7 +31,7 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 
 - O app grava primeiro uma cópia local (`tr.db.<usuário>`) e, 0,8 s depois de cada mudança, envia só as linhas que mudaram em relação à última versão confirmada (`tr.base.<usuário>`): upsert de pais para filhos, delete de filhos para pais.
 - Sem internet, a mudança fica pendente e envia ao reconectar, ao voltar para o app ou a cada 1 min. Ao abrir, envia o pendente e só então baixa a versão da nuvem, que passa a valer.
-- Pendência ou erro de envio aparece em uma linha na tela inicial; em Ajustes aparece o estado ("Tudo salvo na nuvem.").
+- Pendência ou erro de envio aparece em uma linha na tela inicial; no fim da edição de exercícios aparece o estado ("Tudo salvo na nuvem.").
 - Registro de variação que não existe mais é descartado.
 - **Versão antiga** (cofre criptografado `carga.vault.v1`): no 1º login é juntada à conta automaticamente se a chave estava salva; sem a chave, fica no aparelho sem ser aberta (não existe mais senha mestra: a senha é só a do Supabase). No mesmo dia (treino), variação+dia (registro) ou dia (pesagem), vale o do aparelho.
 - Sem backup manual (baixar ou restaurar .json): os dados já ficam no Supabase.

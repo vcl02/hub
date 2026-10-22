@@ -68,7 +68,7 @@ test('junta à conta o banco criptografado da versão antiga', async () => {
 test('sair da conta volta para o login', async () => {
   const { ctx, pg } = await abrirApp();
   await sincronizado(pg);
-  await pg.click('[data-ir="ajustes"]');
+  await pg.click('[data-ir="editar"]');
   assert.match(await pg.textContent('#a-info'), /eu@teste\.com.*Tudo salvo na nuvem/);
   await pg.goBack(); await pg.click('#sair');
   await pg.waitForSelector('#v-bloqueio:not([hidden])');

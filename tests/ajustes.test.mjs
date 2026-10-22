@@ -7,10 +7,10 @@ prepararApp();
 
 test('reordenar exercícios no editor', async () => {
   const { ctx, pg } = await abrirApp();
-  await pg.click('[data-ir="ajustes"]'); await pg.click('[data-ir="editar"]');
+  await pg.click('[data-ir="editar"]');
   await pg.click('fieldset >> nth=1 >> .ed-mover[data-mv="-1"]');
   await pg.click('#ed-form button[type=submit]');
-  await pg.waitForSelector('#v-ajustes:not([hidden])'); await pg.goBack();
+  await pg.waitForSelector('#v-inicio:not([hidden])');
   assert.match(await pg.textContent('.slot >> nth=0'), /Cadeira flexora/);
   await ctx.close();
 });
@@ -64,22 +64,21 @@ test('não recarrega no meio de um formulário', async () => {
   await ctx.close();
 });
 
-test('sem backup manual e sem senha mestra em Ajustes', async () => {
+test('sem backup manual e sem senha mestra', async () => {
   const { ctx, pg } = await abrirApp();
-  await pg.click('[data-ir="ajustes"]');
   assert.equal(await pg.locator('[data-ir="backup"], #v-backup, #m-form').count(), 0);
-  assert.equal(await pg.locator('#v-ajustes input[type=password]').count(), 0);
+  assert.equal(await pg.locator('#v-editar input[type=password]').count(), 0);
   await ctx.close();
 });
 
-test('canto superior direito: engrenagem leva a Ajustes e sair é só ícone; sem trocar senha', async () => {
+test('canto superior direito: engrenagem vai direto para editar exercícios e sair é só ícone; sem trocar senha', async () => {
   const { ctx, pg } = await abrirApp();
-  for (const sel of ['#v-inicio .top [data-ir="ajustes"]', '#v-inicio .top #sair']) {
+  for (const sel of ['#v-inicio .top [data-ir="editar"]', '#v-inicio .top #sair']) {
     assert.ok(await pg.getAttribute(sel, 'title')); assert.ok(await pg.getAttribute(sel, 'aria-label'));
     assert.equal((await pg.textContent(sel)).trim(), '');                                   // só ícone
   }
-  await pg.click('[data-ir="ajustes"]');
-  assert.match(await pg.textContent('#v-ajustes .menu'), /Editar exercícios/);
-  assert.equal(await pg.locator('[data-ir="senha"], #v-senha, #a-sair').count(), 0);
+  await pg.click('[data-ir="editar"]');
+  await pg.waitForSelector('#v-editar:not([hidden])');
+  assert.equal(await pg.locator('[data-ir="senha"], #v-senha, #a-sair, #v-ajustes').count(), 0);
   await ctx.close();
 });

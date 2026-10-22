@@ -1,11 +1,7 @@
 'use strict';
-// Ajustes (engrenagem), edição de exercícios e sair.
+// Engrenagem (vai direto para a edição de exercícios, com instalar e estado da conta no fim) e sair.
 // ===== Ajustes =====
 let eventoInstalar = null;
-telas.ajustes = async () => {
-  $('a-instalar').hidden = !eventoInstalar;
-  $('a-info').textContent = `Conta: ${usuario?.email || '—'}. ${pintarSync()} ${db.registros.length} registro(s) e ${db.medidas.length} pesagem(ns). Versão ${versaoAtual || '—'}.`;
-};
 // Sair (canto superior direito). Com dados sem enviar, o 1º toque só avisa e arma; o 2º, em até 3 s, sai.
 $('sair').addEventListener('click', async ev => {
   const p = temPendente(), btn = ev.currentTarget;
@@ -42,7 +38,11 @@ function editorExercicio(e) {
     </div>`; }).join('')}
   </fieldset>`;
 }
-telas.editar = () => { $('ed-lista').innerHTML = db.exercicios.map(editorExercicio).join(''); };
+telas.editar = () => {
+  $('ed-lista').innerHTML = db.exercicios.map(editorExercicio).join('');
+  $('a-instalar').hidden = !eventoInstalar;
+  $('a-info').textContent = `Conta: ${usuario?.email || '—'}. ${pintarSync()} ${db.registros.length} registro(s) e ${db.medidas.length} pesagem(ns). Versão ${versaoAtual || '—'}.`;
+};
 $('ed-novo').addEventListener('click', () => { $('ed-lista').insertAdjacentHTML('beforeend', editorExercicio({ grupo: '', regiao: 'Superior' })); $('ed-lista').lastElementChild.querySelector('.ed-grupo').focus(); });
 $('ed-lista').addEventListener('click', ev => {
   const b = ev.target.closest('.ed-remover,.ed-mover'); if (!b) return;
