@@ -49,24 +49,43 @@ telas.exercicio = () => {
   $('e-youtube').href = 'https://www.youtube.com/results?search_query=' + encodeURIComponent((v.nome + ' execução correta').replace(/[()]/g, ' ').replace(/\s+/g, ' ').trim());
   $('e-foto-l').textContent = store.get('carga.foto.' + v.id) ? 'Trocar foto' : 'Foto da máquina';
   $('e-foto-rm').hidden = !store.get('carga.foto.' + v.id);
+  const fl = falhas(v.id);   // onde você vem falhando: ✗ nas séries e quantos dos últimos treinos
   $('e-ultima').innerHTML = u
-    ? `<span>Última vez: <b>${kgsTxt(u)} ${esc(unidadeTxt(v))}</b> × ${repsTxt(u)} · <i>${quando(u.data)}</i></span>${completo(u, e) ? '<span class="chip acao">↑ Completou: suba a carga</span>' : ''}`
+    ? `<span>Última vez: <b>${kgsTxt(u)} ${esc(unidadeTxt(v))}</b> × ${repsTxt(u)} · <i>${quando(u.data)}</i></span>${completo(u, e) ? '<span class="chip acao">↑ Completou: suba a carga</span>' : ''}${fl.treinos ? `<span class="chip falha">✗ Falhou em ${fl.treinos} de ${fl.de} · ${fl.series.length === 1 ? 'série' : 'séries'} ${fl.series.join(', ')}</span>` : ''}`
     : '';
   const rs = rascunho[v.id];   // valor digitado e ainda não salvo tem prioridade
   $('e-carga').value = rs ? rs.carga : u ? virgula(u.series[0].kg) : '';
   pintarPeso(e); pintarDescanso(e); pintarSalvo(e); pintarHistorico(e);
 };
-function pintarPeso(e) {   // rótulo, unidade, por lado/total e conversão
-  const v = e.variacoes[e.ativo], kg = num($('e-carga').value);
+function pintarPeso(e) {   // rótulo, unidade, por lado/total e o mesmo peso na outra unidade (editável)
+  const v = e.variacoes[e.ativo], kg = num($('e-carga').value), outra = outraUnidade(v);
   $('e-carga-l').textContent = e.modo === 'reta' ? 'Peso das séries' : e.modo === 'invertida' ? 'Peso da 1ª série (a mais pesada)' : 'Peso da 1ª série';
   $('e-unidade').textContent = unidadeTxt(v);
   $('e-lados').setAttribute('aria-pressed', v.lados === 2); $('e-lados').textContent = v.lados === 2 ? 'por lado ✓' : 'por lado';
   $('e-lados').hidden = v.unidade === 'nível';
+  $('e-conv-ed').hidden = !outra;
+  if (outra) {
+    $('e-conv-u').textContent = outra + (v.lados === 2 ? '/lado' : '');
+    if (document.activeElement !== $('e-conv-in')) $('e-conv-in').value = kg > 0 ? virgula(naOutra(kg, v)) : '';   // não atropela o que está sendo digitado
+  }
   const partes = [];
   if (kg > 0 && v.lados === 2) partes.push(`= <b>${fmt(kg * 2)} ${v.unidade}</b> no total (sem contar a barra/plataforma)`);
-  if (kg > 0 && v.unidade === 'lb') partes.push(`≈ <b>${fmt(Math.round(kg * LB * (v.lados || 1) * 10) / 10)} kg</b>${v.lados === 2 ? ' no total' : ''}`);
+  if (kg > 0 && v.lados === 2 && v.unidade === 'lb') partes.push(`≈ <b>${fmt(Math.round(kg * LB * 2 * 10) / 10)} kg</b> no total`);
   $('e-conv').innerHTML = partes.join(' · '); $('e-conv').hidden = !partes.length;
 }
+// Peso digitado (ou ±1) na outra unidade: vira o peso da variação, convertido
+function pesoDaOutra(valor) {
+  const v = varAtual(); if (!v || !outraUnidade(v) || travadoHoje()) return;
+  $('e-carga').value = valor > 0 ? virgula(daOutra(valor, v)) : '';
+  guardarRascunho();
+}
+$('e-conv-in').addEventListener('input', () => { const x = num($('e-conv-in').value); pesoDaOutra(isFinite(x) ? x : 0); });
+$('e-conv-in').addEventListener('blur', () => { const e = exAtual(); if (e) pintarPeso(e); });
+$('e-conv-ed').addEventListener('click', ev => {
+  const b = ev.target.closest('[data-conv]'); if (!b) return;
+  const x = umAUm(num($('e-conv-in').value), +b.dataset.conv);
+  $('e-conv-in').value = x > 0 ? virgula(x) : ''; pesoDaOutra(x); vibrar(15);
+});
 function pintarTrilha() {   // barra do treino de hoje: cada exercício enche conforme as séries
   $('e-trilha').innerHTML = db.exercicios.map(x => {
     const r = registroHoje(x), k = Math.max(seriesDeTrabalho(x), r ? r.series.length : 0);
@@ -83,7 +102,7 @@ function pintarHistorico(e) {
 // Séries de trabalho já feitas hoje (peso manual ou o calculado pela pirâmide)
 function seriesHoje(e) {
   const P = planoAtual(e).filter(s => !s.aq), f = T.feitas[e.id] || [];
-  return Array.from({ length: seriesDeTrabalho(e) }, (_, i) => ({ kg: f[i]?.kg ?? P[i]?.kg, reps: f[i]?.reps ?? P[i]?.reps }));
+  return Array.from({ length: seriesDeTrabalho(e) }, (_, i) => ({ kg: f[i]?.kg ?? P[i]?.kg, reps: f[i]?.reps ?? P[i]?.reps, ...(f[i]?.falha && { falha: true }) }));
 }
 // Salva sozinho: a cada série marcada, ajuste, peso ou troca de variação. 1 registro por exercício por dia.
 function autoSalvar(e) {
@@ -124,9 +143,17 @@ function guardarRascunho() {
 $('e-carga').addEventListener('input', guardarRascunho);
 function mudarVariacao(campo, valor) { varAtual()[campo] = valor; gravar(); }   // unidade e por lado
 $('e-unidade').addEventListener('click', () => {
-  const v = varAtual(), u = UNIDADES[(UNIDADES.indexOf(v.unidade) + 1) % UNIDADES.length];
+  const v = varAtual(), de = v.unidade, u = de === 'kg' ? 'lb' : 'kg', e = exAtual(), f = fatorUnidade(de, u);   // nível só pelo editor de exercícios
+  // kg ↔ lb: o mesmo peso em outra unidade, então histórico, séries de hoje e o peso digitado são convertidos
+  converterHistorico(db.registros, v.id, de, u);
+  if (f !== 1) {
+    const conv = x => x > 0 ? Math.round(x * f * 10) / 10 : x;
+    for (const s of T.feitas[e.id] || []) if (s?.kg != null) s.kg = conv(s.kg);
+    for (const s of Object.values(T.ajuste[e.id] || {})) if (s?.kg != null) s.kg = conv(s.kg);
+    const k = num($('e-carga').value); if (k > 0) $('e-carga').value = virgula(conv(k));
+  }
   mudarVariacao('unidade', u); if (u === 'nível') mudarVariacao('lados', 1);
-  const e = exAtual(); pintarPeso(e); pintarDescanso(e); toast('Unidade: ' + u);
+  guardarRascunho(); pintarPeso(e); pintarDescanso(e); pintarSalvo(e); pintarHistorico(e); toast('Unidade: ' + u);
 });
 $('e-lados').addEventListener('click', () => { const e = exAtual(); mudarVariacao('lados', varAtual().lados === 2 ? 1 : 2); pintarPeso(e); pintarDescanso(e); pintarSalvo(e); pintarHistorico(e); });
 // nº do aparelho e anotações: salvam 0,5 s depois de parar de digitar e ao sair do campo
@@ -150,11 +177,15 @@ function trocarExercicio(dir) {
   atual = db.exercicios[db.exercicios.findIndex(e => e.id === atual) + dir].id;
   telas.exercicio(); salvarSessao(); marcarAtividade(); tick(); window.scrollTo(0, 0);
 }
-// Depois do último descanso (ou de pular), vai sozinho para o próximo exercício que falta; se não falta nenhum, fim.
-function avancar() {
+// Próximo exercício que falta (depois do atual, dando a volta), ou null
+function proximoQueFalta() {
   const i = db.exercicios.findIndex(x => x.id === atual);
   const falta = x => !registroHoje(x) && !seriesFeitas(x.id);
-  const prox = [...db.exercicios.slice(i + 1), ...db.exercicios.slice(0, i)].find(falta);
+  return [...db.exercicios.slice(i + 1), ...db.exercicios.slice(0, i)].find(falta) || null;
+}
+// Depois da última série (o descanso segue na faixa de baixo) ou do último descanso, vai para o próximo que falta; se não falta nenhum, fim.
+function avancar() {
+  const prox = proximoQueFalta();
   if (!prox) { finalizarTreino(); return; }
   atual = prox.id; telas.exercicio(); salvarSessao(); tick(); window.scrollTo(0, 0);
   toast('Próximo: ' + prox.variacoes[variacaoAtiva(prox)].nome);

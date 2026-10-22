@@ -61,6 +61,11 @@ telas.fim = () => {
     ['Pontos', '+' + r.pontos, `${r.completas} pirâmides completas`]
   ];
   $('f-tiles').innerHTML = tiles.map(([k, v, s]) => `<li><span>${k}</span><b>${v}</b><small>${s}</small></li>`).join('');
+  // Finalizou antes de fazer todos: o que ficou de fora aparece logo abaixo dos números
+  const feitas = new Set(r.regs.map(x => x.variacao));
+  const faltou = db.exercicios.filter(e => !e.variacoes.some(v => feitas.has(v.id))).map(e => e.variacoes[variacaoAtiva(e)].nome);
+  $('f-faltou').hidden = !r.regs.length || !faltou.length;
+  $('f-faltou').innerHTML = `Ficou de fora: <b>${faltou.map(esc).join(', ')}</b>.`;
   const rec = recordesAte(dia);
   $('f-lista').innerHTML = r.regs.map(x => { const v = va.get(x.variacao); return `<li><span class="h-v">${esc(v?.nome || '')}${rec.has(x) ? ' <span class="chip ok">Recorde</span>' : ''}</span><span class="h-d">${kgsTxt(x)} ${esc(v ? unidadeTxt(v) : '')} × ${repsTxt(x)}</span></li>`; }).join('') || '<li class="empty">Nada registrado.</li>';
   pintarLinhaTreino(t);

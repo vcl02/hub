@@ -15,7 +15,10 @@ document.addEventListener('click', ev => {
   else if (d.modo) { const e = exAtual(); e.modo = d.modo; delete T.ajuste[e.id]; gravar(); salvarSessao(); pintarPeso(e); pintarDescanso(e); if (seriesDeTrabalho(e)) autoSalvar(e); telas.exercicio(); }
   else if (d.aj) {
     const e = exAtual(), li = b.closest('[data-linha]'), i = +li.dataset.linha, inp = li.querySelector(`[data-aj-in="${d.aj}"]`);
-    ajustarSerie(e, i, d.aj, (num(inp.value) || 0) + +d.d); vibrar(15);
+    if (d.aj === 'falha') ajustarSerie(e, i, 'falha', b.getAttribute('aria-pressed') !== 'true');
+    else if (d.aj === 'conv') ajustarSerie(e, i, 'conv', umAUm(num(inp.value), +d.d));   // 22,7 → 23 → 24
+    else ajustarSerie(e, i, d.aj, (num(inp.value) || 0) + +d.d);
+    vibrar(15);
   }
   else if (d.linha !== undefined) {
     if (ev.target.closest('.linha-ed')) return;

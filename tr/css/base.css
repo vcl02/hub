@@ -55,7 +55,8 @@ h3.sec{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color
 .chip{font-size:var(--t-xs);font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
 .chip.ok{background:var(--green-soft);color:var(--green)}
 .chip.acao{background:var(--blue-soft);color:var(--blue)}
-.chip:not(.ok):not(.acao){background:var(--line);color:var(--muted)}
+.chip.falha{background:var(--red-soft);color:var(--red)}
+.chip:not(.ok):not(.acao):not(.falha){background:var(--line);color:var(--muted)}
 .slots.travado .slot{opacity:.6}
 .del{border:1px solid var(--line);background:transparent;border-radius:9px;padding:6px 10px;font-size:var(--t-sm);color:var(--muted)}
 .del.armed{border-color:var(--red);background:var(--red);color:var(--on-red);font-weight:600}

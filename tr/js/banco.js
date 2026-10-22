@@ -99,7 +99,7 @@ function alterar(acao) {
 
 function bancoNovo() {
   return {
-    exercicios: PADRAO.map(([grupo, regiao, descanso, nomes]) => ({ grupo, regiao, series: 3, reps: 12, descanso, variacoes: nomes.map(nome => ({ nome })) })),
+    exercicios: PADRAO.map(([grupo, regiao, descanso, nomes]) => ({ grupo, regiao, series: 3, reps: 12, descanso, modo: MODO_PADRAO, variacoes: nomes.map(nome => ({ nome })) })),
     registros: [], treinos: [], medidas: []
   };
 }
@@ -121,7 +121,7 @@ function preparar(d) {           // valida, completa campos e migra formatos ant
     while (vs.length < 3) vs.push({ id: novoId(), nome: '', unidade: 'kg', passo: passoPadrao(vs.length, 'kg'), lados: 1 });
     const grupo = String(e.grupo || vs[0].nome);
     const regiao = REGIOES.includes(e.regiao) ? e.regiao : /perna|coxa|gl[uú]t|panturr|agach|leg/i.test(grupo + ' ' + vs[0].nome) ? 'Pernas' : 'Superior';
-    const ex = { id: e.id || novoId(), grupo, regiao, series: intEntre(e.series, 1, 10, 3), reps: repsDe(e.reps), descanso: intEntre(e.descanso, 10, 600, PADRAO[i]?.[2] || 75), modo: MODOS[e.modo] ? e.modo : 'crescente', ativo: e.ativo || 0, variacoes: vs };
+    const ex = { id: e.id || novoId(), grupo, regiao, series: intEntre(e.series, 1, 10, 3), reps: repsDe(e.reps), descanso: intEntre(e.descanso, 10, 600, PADRAO[i]?.[2] || 75), modo: MODOS[e.modo] ? e.modo : MODO_PADRAO, ativo: e.ativo || 0, variacoes: vs };
     ex.ativo = variacaoAtiva(ex);
     return ex;
   });
@@ -133,7 +133,7 @@ function preparar(d) {           // valida, completa campos e migra formatos ant
       const e = exDe.get(r.variacao), v = varDe.get(r.variacao), reps = Array.isArray(r.reps) ? r.reps : Array(e?.series || 3).fill(r.reps);
       series = reps.map((n, i) => ({ kg: e && v ? alvoKg({ ...e, modo: 'crescente' }, v, +r.carga, i) : +r.carga, reps: n }));
     }
-    return { variacao: r.variacao, data: r.data, series: series.map(s => ({ kg: Math.max(0, num(s.kg) || 0), reps: Math.max(0, parseInt(s.reps, 10) || 0) })) };
+    return { variacao: r.variacao, data: r.data, series: series.map(s => ({ kg: Math.max(0, num(s.kg) || 0), reps: Math.max(0, parseInt(s.reps, 10) || 0), ...(s.falha === true && { falha: true }) })) };
   }).filter(r => varDe.has(r.variacao) && r.series.length && r.series.every(s => s.kg > 0));
   const treinos = (d.treinos || []).filter(t => t && t.inicio > 0 && t.fim >= t.inicio).map(t => ({ inicio: +t.inicio, fim: +t.fim, ...(t.fechado && { fechado: true }) }));
   const medidas = (d.medidas || []).filter(m => m && dataOk(m.data) && num(m.peso) > 0)

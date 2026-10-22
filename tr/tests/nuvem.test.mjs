@@ -12,9 +12,9 @@ test('salva na nuvem e abre em outro aparelho', async () => {
   await a.pg.click('#t-feita'); await a.pg.click('#t-feita');
   await sincronizado(a.pg);
   assert.equal(a.nuvem.tabelas.tr_exercicio.length, 6);
-  assert.deepEqual(a.nuvem.tabelas.tr_registro.map(r => r.series), [[{ kg: 40, reps: 12 }]]);
+  assert.deepEqual(a.nuvem.tabelas.tr_registro.map(r => r.series), [[{ kg: 40, reps: 8 }]]);   // padrão: pirâmide invertida
   const b = await abrirApp({ nuvem: a.nuvem });                                              // outro aparelho, mesma conta
-  assert.match(await b.pg.textContent('.slot >> nth=0'), /40kg.*12/);
+  assert.match(await b.pg.textContent('.slot >> nth=0'), /40kg.*8/);
   assert.deepEqual([...a.erros, ...b.erros], []); await a.ctx.close(); await b.ctx.close();
 });
 

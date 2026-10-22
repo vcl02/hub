@@ -19,6 +19,7 @@
 #toast-msg{flex:1;min-width:0}
 #toast-desfazer{background:none;border:0;color:inherit;font-weight:700;text-decoration:underline;padding:4px 2px;flex:none}
 #mini{position:fixed;left:0;right:0;bottom:0;z-index:15;border:0;width:100%;display:flex;align-items:center;gap:12px;text-align:left;background:var(--blue);color:var(--on-blue);padding-block:12px calc(12px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));font-weight:600}
+#mini.ajuste{animation:pulso 1s ease-in-out infinite}   /* "Se ajuste": a faixa pisca (keyframes em telas.css) */
 #mini-t{font-family:var(--display);font-size:1.8rem;line-height:1;font-variant-numeric:tabular-nums}
 #mini-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--t-sm)}
 

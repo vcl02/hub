@@ -5,13 +5,14 @@ import { prepararApp, abrirApp, sincronizado } from './helpers/app.mjs';
 
 prepararApp();
 
-test('pesagem guarda o horário e avisa quando foge do habitual', async () => {
-  const { ctx, pg, erros } = await abrirApp();
+test('pesagem guarda o horário, livre (vem a hora de agora), e só recomenda o habitual', async () => {
+  const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-22T08:00:00') });
   await pg.click('#i-corpo');
+  assert.equal(await pg.inputValue('#c-hora'), '08:00');                                    // hora de agora, sem trava
   assert.equal(await pg.textContent('#c-aviso'), '');
   await pg.fill('#c-hora', '07:00'); await pg.fill('#c-peso', '90'); await pg.click('#c-form button[type=submit]');
   assert.match(await pg.textContent('#c-historico'), /07:00/);
-  assert.equal(await pg.inputValue('#c-hora'), '07:00');                                    // horário habitual já vem preenchido
+  assert.equal(await pg.inputValue('#c-hora'), '08:00');                                    // de novo a hora de agora, não a habitual
   await pg.fill('#c-hora', '15:30'); await pg.dispatchEvent('#c-hora', 'input');
   assert.match(await pg.textContent('#c-aviso'), /Fora do seu horário de sempre \(07:00\)/);
   assert.equal(await pg.getAttribute('#c-aviso', 'class'), 'aviso');                          // só recomenda, sem cor de erro

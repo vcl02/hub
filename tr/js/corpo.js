@@ -29,7 +29,7 @@ telas.corpo = () => {
   const Ls = medidasOrdenadas(), u = Ls[0];
   $('c-peso').value = u ? virgula(u.peso) : '';
   $('c-cintura').value = u?.cintura ? virgula(u.cintura) : '';
-  $('c-hora').value = horaHabitual() || hhmm(Date.now());
+  $('c-hora').value = hhmm(Date.now());   // horário livre: vem a hora de agora; o habitual só é recomendado (avisoHorario)
   // Card do peso atual: número grande, IMC e variação desde a 1ª pesagem
   const prim = Ls[Ls.length - 1], dif = u ? Math.round((u.peso - prim.peso) * 10) / 10 : 0;
   $('c-resumo').hidden = !u;

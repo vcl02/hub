@@ -34,6 +34,12 @@
 .plano li.cur{background:var(--blue-soft);color:var(--fg);box-shadow:inset 0 0 0 2px var(--blue)}
 .plano li.ok,.plano li.ok b{color:var(--green)}
 .plano li.baixo b{color:var(--red)}
+.plano li.falhou .st,.plano li.falhou b{color:var(--red)}
+/* Aviso "Se ajuste" nos últimos segundos do descanso */
+.t-ajuste{font-family:var(--display);font-weight:700;font-size:var(--t-2xl);color:var(--blue);text-align:center;animation:pulso 1s ease-in-out infinite}
+@keyframes pulso{50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){.t-ajuste{animation:none}}
+.t-links{justify-content:center}
 .t-clock{font-family:var(--display);font-weight:700;font-size:var(--t-3xl);line-height:1;font-variant-numeric:tabular-nums;color:var(--muted);opacity:.5}
 .timer .row{width:100%}
 .t-clock.run{color:var(--blue);opacity:1}

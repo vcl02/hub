@@ -32,7 +32,7 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 |---|---|---|
 | `tr_exercicio` | `id` | ordem, grupo, regiao, series, reps, descanso, modo, ativo |
 | `tr_variacao` | `id` | exercicio_id, ordem (0 principal, 1 substituto, 2 halter), nome, unidade, passo, lados, equip, nota |
-| `tr_registro` | `variacao_id, data` | series `[{ kg, reps }]` |
+| `tr_registro` | `variacao_id, data` | series `[{ kg, reps, falha? }]` (`falha: true` só na série que falhou) |
 | `tr_treino` | `inicio` | fim, fechado |
 | `tr_medida` | `data` | hora, peso, cintura |
 
@@ -47,24 +47,30 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 ## Treino
 
 - **Dias:** `DIAS_FIXOS` (quarta, quinta) e `DIAS_EXTRA` (segunda) em `js/config.js`.
-- **Pirâmide:** `modo` crescente (+10% de peso, −2 reps), reta (mesma carga) ou invertida. Você põe o peso da 1ª série; as outras sobem pelo `passo` do aparelho. Cada série pode ter peso e reps ajustados. Bateu todas as reps-alvo = pirâmide completa ("↑ Subir carga").
-- **Unidades:** `kg`, `lb` (mostra o equivalente em kg) ou `nível`. `lados: 2` = peso por lado (mostra o total).
+- **Pirâmide:** `modo` crescente (+10% de peso, −2 reps), reta (mesma carga) ou invertida. **Padrão de exercício novo: invertida** (`MODO_PADRAO`). Você põe o peso da 1ª série; as outras sobem (ou descem, na invertida) ~10% arredondado ao `passo` do aparelho, no mínimo 1 passo. Cada série pode ter peso e reps ajustados. Bateu todas as reps-alvo, sem falha = pirâmide completa ("↑ Subir carga").
+- **Unidades:** `kg`, `lb` ou `nível` (máquina que marca só a posição/placa, sem peso: não converte e não entra no volume). `lados: 2` = peso por lado (mostra o total).
+  - O botão da unidade alterna **kg ↔ lb**; `nível` se escolhe em Editar exercícios. Os pesos ficam guardados na unidade da variação, então trocar kg ↔ lb (no botão ou no editor) **converte** o histórico da variação, as séries de hoje e o peso digitado (1 casa decimal).
+  - Ao lado do peso aparece o mesmo peso na outra unidade (lb → kg, kg → lb), **editável**: digitar converte para a unidade da variação, e − / + andam de 1 em 1 indo para o inteiro vizinho (22,7 → 23 → 24). O mesmo vale no editor de cada série.
+- **Falha:** numa série já feita, o editor dela tem **Falhei**: marca que não completou a série sem mexer nas reps (fica `falha: true` na série). A série fica com ✗ vermelho, as reps aparecem com ✗ ("8/10✗/12") e a pirâmide não conta como completa. Na tela do exercício: "✗ Falhou em N de M · série X" (últimos 5 registros da variação); na tela inicial: "✗ Falhou na última".
+- **Desfazer série:** "Desfazer última série" (abaixo do cronômetro) desmarca a última série marcada, a qualquer hora; o aviso logo depois de marcar também tem Desfazer. Desfazer depois de já ter ido para o próximo exercício volta para o exercício da série.
 - **Aquecimento:** o 1º exercício de cada `regiao` (Pernas / Superior) no dia ganha 1 série de 50% × 15, com 45 s de descanso.
 - **Série sem peso:** não pode ser marcada (sem peso o registro não é salvo).
 - **Registro:** 1 por exercício por dia, salvo a cada série marcada, ajuste, peso ou troca de variação.
+- **Descanso:** faltando 7 s (`AVISO_AJUSTE`), aparece **"Se ajuste"** piscando acima do cronômetro, a faixa de baixo troca "Descanso" por "Se ajuste" e o celular vibra uma vez, para se ajeitar na máquina. Com +15 s depois do aviso, avisa de novo.
+- **Última série do exercício:** a tela já vai para o próximo exercício que falta, e o descanso que sobra segue na faixa de baixo (a mesma de quando você sai do exercício durante o descanso). Sem próximo (era o último que faltava), fica no descanso e, no fim dele, encerra o treino.
 - **Card de tempo na tela inicial:** só durante o treino ("Treino em andamento" + Finalizar).
 - **Semanas:** ‹ › ao lado da linha da semana trocam a semana mostrada, para trás até a do 1º dia treinado e para frente até a atual. Em semana passada, a linha mostra o período ("13/10 a 19/10") e os fixos feitos nela. Sem lista de treinos nem tela de histórico: o dia feito (✓) abre o resumo.
 - **Tempo de treino:** começa no 1º toque dentro de um exercício. "Finalizar" ou 30 min sem mexer encerram (no horário da última interação).
 - **Um treino por dia:** depois de encerrado, o dia trava até "Reabrir". Abrir o app e não treinar (sem registro e sem finalizar) recomeça a contagem no próximo toque, sem criar 2º treino.
 - **Dia treinado:** tem registro **ou** treino finalizado (`fechado`), mesmo sem séries salvas. Conta para a semana, os pontos e as conquistas; o dia aparece como "✓ Treino feito".
 - **Parabéns:** ao finalizar o treino de hoje, tela cheia verde com duração, exercícios, recordes, pontos e o que foi ganho no dia (nível novo e conquistas desbloqueadas pelos dados do dia). "Ver resumo" fecha e mostra o resumo (sem X).
-- **Resumo:** no fim do treino e ao tocar num dia feito (✓) da semana: duração, calorias, exercícios, volume, pontos, o que foi feito e a linha do horário com Editar (mudar horário ou excluir o treino do dia).
+- **Resumo:** no fim do treino e ao tocar num dia feito (✓) da semana: duração, calorias, exercícios, volume, pontos, o que foi feito e a linha do horário com Editar (mudar horário ou excluir o treino do dia). Finalizou antes de fazer todos: abaixo dos números, "Ficou de fora: …" com os exercícios sem registro no dia.
 - **Lembrete da garrafinha:** tela cheia azul ao abrir o 1º exercício do dia (qualquer dia), até "Já peguei" (não volta mais no dia) ou o dia contar como treinado. O X (canto superior direito) só fecha: ela volta ao começar o treino de novo (reabrir o app) no mesmo dia.
 
 ## Peso corporal
 
 - Pesagem diária: 1 por dia (a nova substitui a do dia), em qualquer horário. Peso de 30 a 300 kg; cintura opcional, sem limite de valor (vazia ou 0 = sem cintura). Na tela inicial, a balança fica no canto superior (ao lado da engrenagem), com um ponto azul enquanto não houver pesagem hoje.
-- O horário habitual é o da pesagem mais recente; mais de 1 h fora dele só recomenda voltar a ele (aviso azul), nunca bloqueia.
+- O horário é livre: o campo vem com a hora de agora. O habitual é o da pesagem mais recente; mais de 1 h fora dele só recomenda voltar a ele (aviso azul), nunca bloqueia.
 - Na edição dá para mudar data, horário, peso e cintura (vazia = sem cintura, sem limite de valor).
 - Gráficos: evolução do peso e, com 2+ medidas de cintura, evolução da cintura. O card do topo mostra a cintura mais recente e a variação desde a 1ª (menos = verde). Data no futuro ou dia que já tem pesagem é recusado.
 - **IMC:** peso ÷ altura² com `ALTURA` = 1,78 m (`js/config.js`), 1 casa decimal. Faixas da OMS: < 18,5 abaixo do peso, < 25 normal, < 30 sobrepeso, ≥ 30 obesidade. Aparece no card do topo da tela de peso (peso atual em destaque, IMC e variação desde a 1ª pesagem) e em cada pesagem do histórico.

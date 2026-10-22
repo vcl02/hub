@@ -112,8 +112,16 @@
       <div class="lbl-row"><label for="e-carga" id="e-carga-l">Peso da 1ª série</label><button type="button" class="tog" id="e-lados" aria-pressed="false">por lado</button></div>
       <div class="stepper">
         <button type="button" data-passo="carga" data-dir="-1" aria-label="Diminuir 1">−</button>
-        <div class="mid"><input id="e-carga" inputmode="decimal" autocomplete="off" placeholder="0"><button type="button" class="unit" id="e-unidade" aria-label="Trocar unidade (kg, lb, nível)">kg</button></div>
+        <div class="mid"><input id="e-carga" inputmode="decimal" autocomplete="off" placeholder="0"><button type="button" class="unit" id="e-unidade" aria-label="Trocar unidade (kg ↔ lb)">kg</button></div>
         <button type="button" data-passo="carga" data-dir="1" aria-label="Aumentar 1">+</button>
+      </div>
+      <!-- O mesmo peso na outra unidade (lb ↔ kg): editável, ± de 1 em 1 -->
+      <div class="conv-ed" id="e-conv-ed" hidden>
+        <span>≈</span>
+        <button type="button" data-conv="-1" aria-label="Menos 1 na outra unidade">−</button>
+        <input id="e-conv-in" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="Peso na outra unidade">
+        <span class="u" id="e-conv-u">kg</span>
+        <button type="button" data-conv="1" aria-label="Mais 1 na outra unidade">+</button>
       </div>
       <p class="conv" id="e-conv" hidden></p>
     </div>
@@ -122,6 +130,7 @@
   <div class="box timer">
     <div class="t-top"><div class="modos" id="t-modos" role="radiogroup" aria-label="Tipo de pirâmide"></div></div>
     <ol class="plano" id="t-plano"></ol>
+    <p class="t-ajuste" id="t-ajuste" role="status" hidden>Se ajuste</p>
     <div class="t-clock" id="t-relogio" role="timer">1:15</div>
     <p class="t-note" id="t-nota"></p>
     <div class="row" id="t-parado"><button type="button" class="btn primary big" id="t-feita">Série feita · descansar</button></div>
@@ -130,7 +139,7 @@
       <button type="button" class="btn" id="t-mais">+15 s</button>
       <button type="button" class="btn" id="t-pular">Pular</button>
     </div>
-    <button type="button" class="link" id="t-zerar" hidden>Zerar séries</button>
+    <div class="row t-links"><button type="button" class="link" id="t-desfazer" hidden>Desfazer última série</button><button type="button" class="link" id="t-zerar" hidden>Zerar séries</button></div>
   </div>
 
   <p class="salvo" id="e-salvo" role="status"></p>
@@ -150,6 +159,7 @@
     <p class="hint" id="f-msg"></p>
   </div>
   <ul class="tiles" id="f-tiles"></ul>
+  <p class="aviso" id="f-faltou" hidden></p>
   <ul class="hist" id="f-treino" hidden></ul>
   <h3 class="sec">O que você fez</h3>
   <ul class="hist" id="f-lista"></ul>

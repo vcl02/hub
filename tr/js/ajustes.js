@@ -52,6 +52,11 @@ $('ed-form').addEventListener('submit', ev => {
     exercicios.push({ ...antigo, id: f.dataset.id, grupo: f.querySelector('.ed-grupo').value, regiao: f.querySelector('.ed-regiao').value, series: f.querySelector('.ed-series').value, reps: f.querySelector('.ed-reps').value, descanso: f.querySelector('.ed-descanso').value, variacoes });
   }
   const novo = preparar({ ...db, exercicios });
+  // kg ↔ lb no editor converte o histórico da variação, como o botão da unidade (nível não converte)
+  for (const e of novo.exercicios) for (const v of e.variacoes) {
+    const antiga = db.exercicios.flatMap(x => x.variacoes).find(x => x.id === v.id);
+    if (antiga && antiga.unidade !== v.unidade) converterHistorico(novo.registros, v.id, antiga.unidade, v.unidade);
+  }
   const ids = new Set(novo.exercicios.flatMap(e => e.variacoes.map(v => v.id)));
   novo.registros = novo.registros.filter(r => ids.has(r.variacao));   // remove histórico de exercício removido
   db = novo; gravar(); toast('Exercícios salvos'); voltar();

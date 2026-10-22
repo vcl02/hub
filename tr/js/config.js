@@ -6,13 +6,13 @@
     db = {
       exercicios: [{ id, grupo, regiao, series, reps, descanso, modo, ativo,
                      variacoes: [{ id, nome, unidade, passo, lados, equip?, nota? }] }],
-      registros:  [{ variacao, data, series: [{ kg, reps }] }],   // 1 por exercício por dia; kg na unidade da variação
+      registros:  [{ variacao, data, series: [{ kg, reps, falha? }] }],   // 1 por exercício por dia; kg na unidade da variação; falha = não completou a série
       treinos:    [{ inicio, fim, fechado? }],                     // horários (ms); fim = última interação ou "Finalizar"
       medidas:    [{ data, hora, peso, cintura? }]                 // peso corporal (kg), horário e cintura (cm)
     }
   reps = reps da série mais leve (topo da faixa). modo = crescente | reta | invertida.
   variacoes[0] = principal, [1] = substituto (máquina), [2] = halter. "ativo" = variação em uso.
-  unidade = kg | lb | nível. passo = quanto a pirâmide sobe (anilha/placa). lados = 2 quando o peso é por lado.
+  unidade = kg | lb | nível (máquina que marca só a posição/placa, sem peso). passo = quanto a pirâmide sobe (anilha/placa). lados = 2 quando o peso é por lado.
   Pontos, nível, conquistas e calorias são calculados a partir desses dados (nada extra é guardado).
   Fotos das máquinas ficam fora do banco: localStorage "carga.foto.<variação>".
 */
@@ -35,6 +35,8 @@ const TIPOS = ['Principal', 'Substituto', 'Halter'];
 const REGIOES = ['Pernas', 'Superior'];
 const UNIDADES = ['kg', 'lb', 'nível'];
 const LB = 0.45359237;
+const MODO_PADRAO = 'invertida';   // pirâmide de exercício novo
+const AVISO_AJUSTE = 7000;         // ms antes do fim do descanso: aviso "Se ajuste" para se ajeitar na máquina
 const MET = 3.5;             // musculação, vários exercícios, 8–15 reps (Compendium of Physical Activities, código 02054)
 const MODOS = { crescente: 'Crescente', reta: 'Mesma carga', invertida: 'Invertida' };
 const PADRAO = [             // grupo, região, descanso (s), [principal, substituto, halter]
