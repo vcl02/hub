@@ -1,5 +1,5 @@
-// Fumaça no navegador: serve a raiz do hub e abre a página inicial, o fin e o tr pelas próprias URLs.
-// Usa o Playwright instalado em tr/ (npm ci dentro de tr/); nada sai pra rede (Supabase e CDN abortados).
+// No navegador: serve a raiz do hub em /hub/, faz login na página inicial e abre o fin e o tr com a mesma sessão.
+// Usa o Playwright e o Supabase falso do tr (tr/tests/helpers); nada sai pra rede.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -7,6 +7,7 @@ import { createRequire } from 'node:module';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { fakeSupabase, novaNuvem } from '../tr/tests/helpers/app.mjs';
 
 const RAIZ = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const { chromium } = createRequire(path.join(RAIZ, 'tr', 'package.json'))('playwright');
@@ -28,29 +29,88 @@ before(async () => {
 });
 after(async () => { await navegador?.close(); servidor?.close(); });
 
-async function abrir(url) {
+// Tudo fora do servidor local é abortado, menos o Supabase falso (registrado depois, tem prioridade).
+async function abrir(url, { conta } = {}) {
   const ctx = await navegador.newContext({ serviceWorkers: 'block' });
-  await ctx.route(url => !url.href.startsWith(base), r => r.abort());
+  await ctx.route(u => !u.href.startsWith(base), r => r.abort());
+  await fakeSupabase(ctx, novaNuvem(), conta);
+  // O fin carrega o supabase-js do CDN com integrity (SRI); sem rede no teste, vai a cópia local
+  // (a do tr, 2.118.0) e o HTML do fin chega sem o atributo integrity, só nesta cópia de teste.
+  const supabaseLocal = await readFile(path.join(RAIZ, 'supabase.js'));
+  await ctx.route(/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@/, r => r.fulfill({ contentType: 'text/javascript', body: supabaseLocal }));
+  await ctx.route(u => u.href === `${base}fin/` || u.href === `${base}fin/index.html`, async r => {
+    const html = await readFile(path.join(RAIZ, 'fin', 'index.html'), 'utf8');
+    await r.fulfill({ contentType: 'text/html', body: html.replace(/\s+integrity="[^"]*"/g, '') });
+  });
   const pg = await ctx.newPage();
-  const faltando = [];
+  const faltando = [], erros = [];
   pg.on('response', r => { if (r.url().startsWith(base) && r.status() >= 400) faltando.push(`${r.status()} ${r.url()}`); });
+  pg.on('pageerror', e => erros.push(e.message));
   await pg.goto(url);
-  return { ctx, pg, faltando };
+  return { ctx, pg, faltando, erros };
 }
+const entrar = async (pg, usuario, senha) => {
+  await pg.fill('#l-usuario', usuario); await pg.fill('#l-senha', senha); await pg.press('#l-senha', 'Enter');
+};
 
-test('página inicial mostra os apps e cada card abre o app dentro de /hub/', async () => {
-  const { ctx, pg, faltando } = await abrir(base);
-  assert.deepEqual(await pg.$$eval('.app-nome', s => s.map(x => x.textContent)), ['fin', 'Diário de Carga']);
+test('login antes de tudo: sem sessão só aparece o login; senha errada e usuário desconhecido dão a mesma mensagem', async () => {
+  const { ctx, pg, erros } = await abrir(base);
+  await pg.waitForSelector('#v-login:not([hidden])');
+  assert.equal(await pg.isVisible('#v-apps'), false);
   assert.equal(await pg.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(27, 30, 33)');
-  await pg.click('a[href="fin/"]');
-  await pg.waitForURL(`${base}fin/`);
-  // O atalho do fin (#voltarHub) fica no cabeçalho, que só aparece depois do login.
-  assert.equal(await pg.getAttribute('#voltarHub', 'href'), '../');
-  await pg.goBack();
-  await pg.waitForURL(base);
+  await entrar(pg, 'eu@teste.com', 'errada');
+  await pg.waitForFunction(() => document.getElementById('l-erro').textContent);
+  assert.equal(await pg.textContent('#l-erro'), 'Usuário ou senha inválidos.');
+  await entrar(pg, 'fulano', 'senha123');   // nem chega ao Supabase
+  assert.equal(await pg.textContent('#l-erro'), 'Usuário ou senha inválidos.');
+  assert.equal(await pg.isVisible('#v-apps'), false);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test('outra conta entra no Supabase mas não passa do login', async () => {
+  const { ctx, pg } = await abrir(base, { conta: 'outra-conta' });
+  await entrar(pg, 'eu@teste.com', 'senha123');
+  await pg.waitForFunction(() => document.getElementById('l-erro').textContent);
+  assert.equal(await pg.textContent('#l-erro'), 'Esta conta não tem acesso.');
+  assert.equal(await pg.isVisible('#v-apps'), false);
+  await ctx.close();
+});
+
+test('entrou no hub: os apps abrem direto com a mesma sessão, sem login próprio', async () => {
+  const { ctx, pg, faltando, erros } = await abrir(base);
+  await entrar(pg, 'eu@teste.com', 'senha123');
+  await pg.waitForSelector('#v-apps:not([hidden])');
+  assert.deepEqual(await pg.$$eval('.app-nome', s => s.map(x => x.textContent)), ['fin', 'Diário de Carga']);
+  await pg.reload();                                                   // sessão salva: entra direto
+  await pg.waitForSelector('#v-apps:not([hidden])');
+  assert.equal(await pg.isVisible('#v-login'), false);
   await pg.click('a[href="tr/"]');
   await pg.waitForURL(`${base}tr/`);
+  await pg.waitForSelector('#v-inicio:not([hidden])');                 // tela inicial do tr, não o login dele
+  assert.equal(await pg.isVisible('#v-bloqueio'), false);
+  await pg.goBack();
+  await pg.click('a[href="fin/"]');
+  await pg.waitForURL(`${base}fin/`);
+  await pg.waitForFunction(() => getComputedStyle(document.getElementById('app')).display === 'block');
+  assert.equal(await pg.evaluate(() => getComputedStyle(document.getElementById('login')).display), 'none');
+  assert.equal(await pg.getAttribute('#voltarHub', 'href'), '../');
   assert.deepEqual(faltando, []);
+  assert.deepEqual(erros.filter(e => !/tabela\?|404|Falh|carreg/i.test(e)), []);   // o falso não tem as tabelas do fin
+  await ctx.close();
+});
+
+test('Sair no hub pede toque duplo e encerra a sessão dos apps também', async () => {
+  const { ctx, pg } = await abrir(base);
+  await entrar(pg, 'eu@teste.com', 'senha123');
+  await pg.waitForSelector('#v-apps:not([hidden])');
+  await pg.click('#sair');
+  assert.match(await pg.getAttribute('#sair', 'class'), /armado/);    // 1º toque: só arma
+  assert.equal(await pg.isVisible('#v-apps'), true);
+  await pg.click('#sair');
+  await pg.waitForSelector('#v-login:not([hidden])');
+  await pg.goto(`${base}tr/`);
+  await pg.waitForSelector('#v-bloqueio:not([hidden])');               // sem sessão, o tr pede login
   await ctx.close();
 });
 

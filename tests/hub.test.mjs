@@ -37,7 +37,7 @@ test('PWA do hub: manifest válido, ícones existem, service worker registrado',
   assert.equal(manifest.start_url, './');
   assert.equal(manifest.scope, './');
   for (const icone of manifest.icons) assert.ok(existe(icone.src), icone.src);
-  assert.match(html, /navigator\.serviceWorker\.register\('sw\.js', \{ updateViaCache: 'none' \}\)/);
+  assert.match(ler('hub.js'), /navigator\.serviceWorker\.register\('sw\.js', \{ updateViaCache: 'none' \}\)/);
 });
 
 test('service workers dividem a origem sem apagar o cache um do outro', () => {
@@ -57,4 +57,18 @@ test('workflows só na raiz (nas pastas dos apps o GitHub não roda)', () => {
   assert.match(validacao, /run: node scripts\/check\.mjs/);
   assert.match(ler('.github/workflows/avisar-pages-publicado.yml'), /Idempotency-Key': `hub-pages-\$\{commit\}`/);
   assert.ok(existe('.nojekyll'));
+});
+
+test('login do hub antes dos apps: mesma conta e mesmo supabase-js do tr', () => {
+  assert.ok(html.indexOf('id="v-login"') < html.indexOf('id="v-apps"'));
+  assert.match(html, /<main class="entrar" id="v-login" hidden>/);
+  assert.match(html, /<main class="hub" id="v-apps" hidden>/);   // nada aparece antes de hub.js decidir
+  const hub = ler('hub.js');
+  assert.match(hub, /^'use strict';\n\/\/ /);
+  const dono = codigo => codigo.match(/const DONO = '([0-9a-f-]+)'/)[1];
+  assert.equal(dono(hub), dono(ler('tr/js/config.js')));
+  assert.match(hub, /const SUPABASE_KEY = 'sb_publishable_/);
+  assert.doesNotMatch(hub, /service_role|sb_secret_/);
+  assert.ok(readFileSync(path.join(RAIZ, 'supabase.js')).equals(readFileSync(path.join(RAIZ, 'tr/supabase.js'))), 'supabase.js igual ao do tr');
+  assert.match(html, /<script src="supabase\.js"><\/script>\n<script src="hub\.js"><\/script>/);
 });

@@ -17,11 +17,32 @@
 <body>
 <!-- Brilhos do fundo, nas cores dos apps (só decoração). -->
 <div class="brilho" aria-hidden="true"><i></i><i></i></div>
-<main class="hub">
-  <header class="topo">
-    <!-- Preenchido pelo script do fim da página ("quinta-feira, 22 de outubro"). -->
-    <p class="data" id="data"></p>
+
+<!-- Login (Supabase Auth), antes de tudo: a sessão fica salva e vale para todos os apps.
+     hub.js mostra esta tela ou a dos apps; até decidir, as duas ficam escondidas. -->
+<main class="entrar" id="v-login" hidden>
+  <form class="cartao-login" id="l-form" novalidate>
     <h1>hub</h1>
+    <fieldset id="l-campos">
+      <input id="l-usuario" type="text" placeholder="Usuário" aria-label="Usuário" autocomplete="username" autocapitalize="none" spellcheck="false">
+      <input id="l-senha" type="password" placeholder="Senha" aria-label="Senha" autocomplete="current-password">
+      <button type="submit" id="l-botao">Entrar</button>
+    </fieldset>
+    <p class="erro" id="l-erro" role="alert"></p>
+  </form>
+</main>
+
+<main class="hub" id="v-apps" hidden>
+  <header class="topo">
+    <div>
+      <!-- Preenchido por hub.js ("quinta-feira, 22 de outubro"). -->
+      <p class="data" id="data"></p>
+      <h1>hub</h1>
+    </div>
+    <!-- Sair: encerra a sessão neste aparelho (vale para todos os apps); toque duplo. -->
+    <button type="button" class="sair" id="sair" title="Sair" aria-label="Sair">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v9"/><path d="M6.4 6.4a8 8 0 1 0 11.2 0"/></svg>
+    </button>
   </header>
   <!-- Um card por app, cada um na sua pasta, com a cor dele em --cor. App novo: pasta nova +
        um card aqui (o teste tests/hub.test.mjs confere que a pasta tem index.html). -->
@@ -40,10 +61,7 @@
     </a>
   </nav>
 </main>
-<script>
-// Página inicial do hub: data do dia no topo e o cache offline dela (sw.js); os apps têm o próprio.
-document.getElementById('data').textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
-</script>
+<script src="supabase.js"></script>
+<script src="hub.js"></script>
 </body>
 </html>

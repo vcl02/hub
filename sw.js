@@ -2,7 +2,7 @@
 // fin/ e tr/ têm o próprio service worker (escopo mais específico) e não passam por aqui: nem
 // antes de eles se registrarem, pra este worker nunca guardar nem servir arquivo de outro app.
 const CACHE_ESTATICO = 'hub-estatico';
-const ARQUIVOS_ESTATICOS = ['./', './index.html', './hub.css', './manifest.webmanifest', './icons/hub-192.png', './icons/hub-512.png'];
+const ARQUIVOS_ESTATICOS = ['./', './index.html', './hub.css', './hub.js', './supabase.js', './manifest.webmanifest', './icons/hub-192.png', './icons/hub-512.png'];
 const ENDERECOS = new Set(ARQUIVOS_ESTATICOS.map(arquivo => new URL(arquivo, self.location).href));
 
 self.addEventListener('install', evento => {

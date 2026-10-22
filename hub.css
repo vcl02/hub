@@ -7,6 +7,8 @@
   --muted: #AAB1B8;
   --blue: #6E9BFF;
   --purple: #A78BFA;
+  --red: #F06A61;
+  --red-soft: #402624;
   --display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
   --body: 'Barlow', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color-scheme: dark;
@@ -14,6 +16,10 @@
 
 * {
   box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
 }
 
 html,
@@ -66,7 +72,33 @@ body {
 }
 
 .topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 28px;
+}
+
+/* Sair: vermelho como nos apps; armado (1º toque) fica preenchido. */
+.sair {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  margin-top: 4px;
+  padding: 0;
+  border: 1px solid var(--red);
+  border-radius: 12px;
+  background: var(--red-soft);
+  color: var(--red);
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease;
+}
+
+.sair.armado {
+  background: var(--red);
+  color: var(--bg);
 }
 
 .data {
@@ -189,8 +221,103 @@ h1 {
 
 @media (prefers-reduced-motion: reduce) {
   .app,
-  .app-seta {
+  .app-seta,
+  .cartao-login {
     animation: none;
     transition: none;
   }
+}
+
+/* ---------- Login ---------- */
+.entrar {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 24px max(20px, env(safe-area-inset-right, 0px)) 24px max(20px, env(safe-area-inset-left, 0px));
+}
+
+.cartao-login {
+  width: 100%;
+  max-width: 360px;
+  padding: 32px 24px 24px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 24px;
+  background: rgba(36, 39, 43, .72);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .05);
+  animation: entrar .45s ease both;
+}
+
+.cartao-login h1 {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.cartao-login fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.cartao-login input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(27, 30, 33, .7);
+  color: var(--fg);
+  font: inherit;
+  font-size: 1rem;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.cartao-login input::placeholder {
+  color: var(--muted);
+}
+
+.cartao-login input:focus {
+  outline: none;
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--purple) 25%, transparent);
+}
+
+.cartao-login button {
+  margin-top: 4px;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(100deg, var(--purple), var(--blue));
+  color: #11141A;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter .2s ease, transform .1s ease;
+}
+
+.cartao-login button:hover {
+  filter: brightness(1.08);
+}
+
+.cartao-login button:active {
+  transform: scale(.98);
+}
+
+.cartao-login fieldset:disabled {
+  opacity: .7;
+}
+
+.erro {
+  min-height: 1.3em;
+  margin: 14px 0 0;
+  color: var(--red);
+  font-size: .9rem;
+  text-align: center;
 }

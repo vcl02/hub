@@ -10,10 +10,11 @@
 
 | Caminho | O que é |
 |---|---|
-| `index.html` · `hub.css` | Página inicial: um card por app |
+| `index.html` · `hub.css` · `hub.js` | Página inicial: login e um card por app |
+| `supabase.js` | `@supabase/supabase-js` (UMD), cópia byte a byte de `tr/supabase.js` (o teste confere); atualize os dois juntos |
 | `sw.js` · `manifest.webmanifest` · `icons/` | Instalação e cache offline da página inicial |
 | `fin/` · `tr/` | Os apps, cada um com `index.html`, service worker e manifest próprios |
-| `tests/` | Estrutura do hub (`hub.test.mjs`) e navegação real no Chromium (`navegacao.test.mjs`) |
+| `tests/` | Estrutura do hub (`hub.test.mjs`) e, no Chromium com o Supabase falso do tr, login no hub e os apps abrindo com a mesma sessão (`navegacao.test.mjs`) |
 | `scripts/check.mjs` | Validação completa: raiz, `fin/` e `tr/` |
 | `.github/workflows/` | Validação em todo push e e-mail de publicação do Pages (só funcionam na raiz) |
 | `.claude/settings.json` · `.claude/hooks/session-start.sh` | Sessões do Claude Code na nuvem: instalam o Playwright do tr ao começar, pra validação completa rodar sempre |
@@ -21,7 +22,9 @@
 ## Regras do hub
 
 - Tudo em tema escuro, com a mesma paleta (fundo `#1B1E21`, superfícies `#24272B`), mesmo com o celular no modo claro.
-- O app é só do mantenedor: na página inicial, só os cards; nada de textos explicando como usar.
+- **Login antes de tudo:** a página inicial abre no login (usuário `victor` ou e-mail, e senha) e só mostra os cards depois de entrar. Só a conta `DONO` (a mesma do tr) passa; outra conta sai na hora. Com a sessão salva, entra direto (inclusive sem internet). Sair, no canto superior direito, pede toque duplo e encerra a sessão neste aparelho para todos os apps.
+- Os apps continuam com o login próprio só como reserva (abertos direto pela URL sem sessão).
+- O app é só do mantenedor: na página inicial, só o login e os cards; nada de textos explicando como usar.
 - Cada app volta para a página inicial pelo ícone de grade (link para `../`).
 - Caminhos sempre relativos (`./`, `../`): o site roda em `/hub/`, e os apps em `/hub/fin/` e `/hub/tr/`.
 - Mesma origem para todos: `localStorage`, caches e a sessão do Supabase são compartilhados.
