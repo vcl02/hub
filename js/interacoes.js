@@ -28,14 +28,14 @@ document.addEventListener('click', ev => {
     const t = db.treinos.find(x => x.inicio === +d.excluirTreino), dia = iso(new Date(t.inicio));
     const desfazer = alterar(() => { db.treinos = db.treinos.filter(x => x !== t); db.registros = db.registros.filter(r => r.data !== dia); });
     if (dia === hoje()) { T.series = {}; T.feitas = {}; T.ajuste = {}; T.aquecimento = {}; pararDescanso(); }
-    editTreino = null; mostrar(pilha[pilha.length - 1]); toast('Treino excluído', desfazer);
+    editTreino = null; ir('inicio'); toast('Treino excluído', desfazer);
   }
   else if (d.editarTreino) abrirEdicaoTreino(+d.editarTreino);
   else if (d.salvarTreino) {
     const t = db.treinos.find(x => x.inicio === +d.salvarTreino), ini = $('et-ini').value, fim = $('et-fim').value;
     if (!t || !ini || !fim || minutos(fim) <= minutos(ini)) { toast('O fim precisa ser depois do início', null, true); return; }
     const desfazer = alterar(() => { const base = t.inicio; t.inicio = comHora(base, ini); t.fim = comHora(base, fim); t.fechado = true; });
-    editTreino = null; pintarTempo(); toast('Horário do treino salvo', desfazer);
+    editTreino = null; pintarLinhaTreino(t); toast('Horário do treino salvo', desfazer);
   }
   else if (d.editarMedida) { editMedida = d.editarMedida; pintarMedidas(); }
   else if (d.salvarMedida) {
@@ -46,7 +46,7 @@ document.addEventListener('click', ev => {
     const desfazer = alterar(() => { const m = db.medidas.find(x => x.data === d.salvarMedida); m.peso = peso; m.hora = hora; m.data = data; });
     editMedida = null; telas.corpo(); toast('Pesagem atualizada', desfazer);
   }
-  else if ('cancelar' in d) { editTreino = null; editMedida = null; pintarTempo(); if (!$('v-corpo').hidden) pintarMedidas(); }
+  else if ('cancelar' in d) { editTreino = null; editMedida = null; if (!$('v-fim').hidden) pintarLinhaTreino(resumoDia(diaVisto || hoje()).treino); if (!$('v-corpo').hidden) pintarMedidas(); }
   else if (d.apagar) {
     if (!confirmar(b, 'Confirmar')) return;
     const e = exAtual(), vid = e.variacoes[e.ativo].id;

@@ -69,8 +69,8 @@ test('tempo de treino fecha após 30 min sem mexer', async () => {
   await pg.clock.fastForward('25:00'); await pg.click('#t-feita');                           // última interação 19:25
   await pg.goBack(); await pg.clock.fastForward('45:00');
   await pg.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
-  assert.match(await pg.textContent('#i-treinos'), /19:00–19:25.*25 min/);
   assert.equal(await pg.isVisible('#i-treino'), false);                                      // card só durante o treino
+  assert.deepEqual(await pg.evaluate(() => [hhmm(db.treinos[0].inicio), hhmm(db.treinos[0].fim)]), ['19:00', '19:25']);
   await ctx.close();
 });
 
@@ -150,10 +150,10 @@ test('editar o horário do treino e ver calorias', async () => {
   await pg.clock.fastForward('10:00'); await pg.click('#t-feita');
   await pg.click('#e-finalizar');
   await pg.waitForSelector('#v-fim:not([hidden])');
-  await pg.click('#parabens-ok'); await pg.click('#v-fim [data-ir="inicio"]');
-  await pg.click('[data-editar-treino]');
+  await pg.click('#parabens-ok');
+  await pg.click('[data-editar-treino]');                                                      // editar no resumo
   await pg.fill('#et-fim', '19:50'); await pg.click('[data-salvar-treino]');
-  assert.match(await pg.textContent('#i-treinos'), /19:00–19:50 · ~231 kcal/);              // 3,5 × basal 1.898 kcal/dia ÷ 24 × 50/60 h
+  assert.match(await pg.textContent('#f-treino'), /19:00–19:50 · ~231 kcal/);              // 3,5 × basal 1.898 kcal/dia ÷ 24 × 50/60 h
   assert.deepEqual(erros, []); await ctx.close();
 });
 
@@ -199,11 +199,12 @@ test('excluir um treino ao editar', async () => {
   const { ctx, pg } = await abrirApp();
   await pg.tap('.slot >> nth=0'); await pg.fill('#e-carga', '40'); await pg.dispatchEvent('#e-carga', 'input');
   await pg.click('#t-feita'); await pg.click('#t-feita');
-  await pg.click('#e-finalizar'); await pg.click('#parabens-ok'); await pg.click('#v-fim [data-ir="inicio"]');
+  await pg.click('#e-finalizar'); await pg.click('#parabens-ok');
   await pg.click('[data-editar-treino]');
   await pg.click('[data-excluir-treino]'); await pg.click('[data-excluir-treino]');            // confirma
   assert.equal(await pg.evaluate(() => db.treinos.length + db.registros.length), 0);
-  assert.equal(await pg.isVisible('#i-hist-box'), false);
+  await pg.waitForSelector('#v-inicio:not([hidden])');
+  assert.equal(await pg.locator('#i-semana [data-dia]').count(), 0);
   await pg.click('#toast-desfazer');
   assert.equal(await pg.evaluate(() => db.treinos.length), 1);
   await ctx.close();
@@ -226,7 +227,7 @@ test('treino finalizado sem séries salvas conta como feito e não é apagado ao
   await pg.tap('.slot >> nth=0');
   assert.equal(await pg.isVisible('#e-travado'), true);
   await pg.goBack();
-  assert.match(await pg.textContent('#i-treinos'), /17:43–18:37/);                           // não recomeçou a contagem
+  assert.deepEqual(await pg.evaluate(() => [hhmm(db.treinos[0].inicio), hhmm(db.treinos[0].fim)]), ['17:43', '18:37']);   // não recomeçou a contagem
   assert.equal(await pg.evaluate(() => db.treinos.length), 1);
   assert.deepEqual(erros, []); await ctx.close();
 });
@@ -258,18 +259,13 @@ test('ver o resumo de um treino antigo', async () => {
     db.treinos.push({ inicio: new Date('2026-10-21T17:43').getTime(), fim: new Date('2026-10-21T18:37').getTime(), fechado: true });
     gravar(); mostrar('inicio');
   });
-  await pg.click('#i-treinos li[data-dia="2026-10-21"]');
+  await pg.click('#i-semana [data-dia="2026-10-21"]');
   await pg.waitForSelector('#v-fim:not([hidden])');
   assert.match(await pg.textContent('#f-titulo'), /Resumo do treino/);
   assert.match(await pg.textContent('#f-data'), /21 de outubro/);
   assert.match(await pg.textContent('#f-lista'), /Leg press 45°.*40\/45 kg.*12\/10/);
   assert.match(await pg.textContent('#f-tiles'), /54 min/);
-  await pg.goBack();
-  await pg.click('[data-ir="treinos"]');
-  assert.match(await pg.textContent('#t-dias'), /Qua 21\/10.*1 exercício.*54 min/);
-  await pg.goBack();
-  await pg.click('#i-semana [data-dia="2026-10-21"]');                                       // dia feito na semana também abre
-  await pg.waitForSelector('#v-fim:not([hidden])');
+  assert.equal(await pg.locator('#i-treinos, #v-treinos').count(), 0);                        // sem lista nem tela de histórico
   assert.deepEqual(erros, []); await ctx.close();
 });
 
@@ -288,8 +284,26 @@ test('parabéns em tela cheia ao finalizar, com as conquistas ganhas no treino',
   assert.equal(await pg.isVisible('#parabens'), false);
   assert.equal(await pg.isVisible('#v-fim'), true);
   await pg.click('#v-fim [data-ir="inicio"]');
-  await pg.click('#i-treinos li[data-dia]');                                                   // resumo de dia antigo: sem tela cheia
+  await pg.click('#i-semana [data-dia]');                                                      // resumo pela semana: sem tela cheia
   await pg.waitForSelector('#v-fim:not([hidden])');
   assert.equal(await pg.isVisible('#parabens'), false);
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
+test('voltar as semanas até a do 1º treino', async () => {
+  const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-22T19:00:00') });   // quinta
+  await pg.evaluate(() => { db.treinos.push({ inicio: new Date('2026-10-08T18:00').getTime(), fim: new Date('2026-10-08T19:00').getTime(), fechado: true }); gravar(); mostrar('inicio'); });
+  assert.equal(await pg.isDisabled('#i-sem-prox'), true);                                     // já está na semana atual
+  await pg.click('#i-sem-ant');
+  assert.match(await pg.textContent('#i-msg'), /12\/10 a 18\/10/);
+  await pg.click('#i-sem-ant');
+  assert.match(await pg.textContent('#i-msg'), /05\/10 a 11\/10/);
+  assert.equal(await pg.isDisabled('#i-sem-ant'), true);                                      // semana do 1º treino: para
+  assert.match(await pg.textContent('#i-cont-semana'), /1\/2 fixos/);
+  await pg.click('#i-semana [data-dia="2026-10-08"]');
+  await pg.waitForSelector('#v-fim:not([hidden])');
+  assert.match(await pg.textContent('#f-treino'), /18:00–19:00/);
+  await pg.goBack(); await pg.click('#i-sem-prox'); await pg.click('#i-sem-prox');
+  assert.match(await pg.textContent('#i-msg'), /Hoje é dia de treino fixo/);
   assert.deepEqual(erros, []); await ctx.close();
 });

@@ -22,9 +22,11 @@ telas.inicio = () => {
   $('i-data').textContent = `${NOME_DIA[agora.getDay()]}, ${dataCurta(hoje())}`;
   semana(); pintarTempo(); pintarJogo(estatisticas()); pintarCorpoInicio();
 };
+// Semana mostrada: 0 = atual; ‹ volta até a semana do 1º dia treinado, › avança até a atual
+let semanasAtras = 0;
 function semana() {
-  const agora = new Date(), h = hoje(), dias = diasTreinados();
-  const seg = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() - ((agora.getDay() + 6) % 7));
+  const agora = new Date(), h = hoje(), dias = diasTreinados(), primeiro = [...dias].sort()[0];
+  const seg = deIso(somaDias(semanaDe(h), -7 * semanasAtras));
   let fixos = 0, extra = false, html = '';
   for (let i = 0; i < 7; i++) {
     const d = new Date(seg.getFullYear(), seg.getMonth(), seg.getDate() + i), wd = d.getDay(), k = iso(d), feito = dias.has(k);
@@ -33,11 +35,16 @@ function semana() {
     html += `<li class="day ${tipo}${k === h ? ' today' : ''}${feito ? ' done' : ''}"${feito ? ` data-dia="${k}"` : ''}><span class="dn">${NOME_DIA[wd]}</span><span class="dd">${d.getDate()}</span><span class="dm">${feito ? '✓' : tipo === 'fix' ? 'fixo' : tipo === 'sug' ? 'extra' : ''}</span></li>`;
   }
   $('i-semana').innerHTML = html;
+  $('i-sem-ant').disabled = !primeiro || iso(seg) <= semanaDe(primeiro);
+  $('i-sem-prox').disabled = semanasAtras === 0;
   const wd = agora.getDay(), treino = d => DIAS_FIXOS.includes(d) || DIAS_EXTRA.includes(d);
   let msg;
-  if (DIAS_FIXOS.includes(wd)) msg = 'Hoje é dia de treino fixo.';
+  if (semanasAtras) msg = `${dataCurta(iso(seg))} a ${dataCurta(somaDias(iso(seg), 6))}`;
+  else if (DIAS_FIXOS.includes(wd)) msg = 'Hoje é dia de treino fixo.';
   else if (DIAS_EXTRA.includes(wd)) msg = 'Hoje é o treino extra sugerido (opcional).';
   else { let n = 1; while (!treino((wd + n) % 7)) n++; const p = (wd + n) % 7; msg = `Descanso. Próximo: ${n === 1 ? 'amanhã (' + DIA_LONGO[p] + ')' : DIA_LONGO[p]}${DIAS_EXTRA.includes(p) ? ', extra' : ''}.`; }
   $('i-msg').textContent = msg;
-  $('i-cont-semana').textContent = `Semana: ${fixos}/${DIAS_FIXOS.length} fixos${extra ? ' + extra' : ''}`;
+  $('i-cont-semana').textContent = `${fixos}/${DIAS_FIXOS.length} fixos${extra ? ' + extra' : ''}`;
 }
+$('i-sem-ant').addEventListener('click', () => { semanasAtras++; semana(); });
+$('i-sem-prox').addEventListener('click', () => { semanasAtras = Math.max(0, semanasAtras - 1); semana(); });

@@ -50,12 +50,13 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 - **Aquecimento:** o 1º exercício de cada `regiao` (Pernas / Superior) no dia ganha 1 série de 50% × 15, com 45 s de descanso.
 - **Série sem peso:** não pode ser marcada (sem peso o registro não é salvo).
 - **Registro:** 1 por exercício por dia, salvo a cada série marcada, ajuste, peso ou troca de variação.
-- **Card de tempo na tela inicial:** só durante o treino ("Treino em andamento" + Finalizar). Treino encerrado aparece só em "Últimos treinos".
+- **Card de tempo na tela inicial:** só durante o treino ("Treino em andamento" + Finalizar).
+- **Semanas:** ‹ › ao lado da linha da semana trocam a semana mostrada, para trás até a do 1º dia treinado e para frente até a atual. Em semana passada, a linha mostra o período ("13/10 a 19/10") e os fixos feitos nela. Sem lista de treinos nem tela de histórico: o dia feito (✓) abre o resumo.
 - **Tempo de treino:** começa no 1º toque dentro de um exercício. "Finalizar" ou 30 min sem mexer encerram (no horário da última interação).
 - **Um treino por dia:** depois de encerrado, o dia trava até "Reabrir". Abrir o app e não treinar (sem registro e sem finalizar) recomeça a contagem no próximo toque, sem criar 2º treino.
 - **Dia treinado:** tem registro **ou** treino finalizado (`fechado`), mesmo sem séries salvas. Conta para a semana, os pontos e as conquistas; o dia aparece como "✓ Treino feito".
 - **Parabéns:** ao finalizar o treino de hoje, tela cheia verde com duração, exercícios, recordes, pontos e o que foi ganho no dia (nível novo e conquistas desbloqueadas pelos dados do dia). "Ver resumo" fecha e mostra o resumo (sem X).
-- **Resumo:** no fim do treino e ao tocar num dia feito (semana, "Últimos treinos" ou "Ver todos os treinos"): duração, calorias, exercícios, volume, pontos e o que foi feito.
+- **Resumo:** no fim do treino e ao tocar num dia feito (✓) da semana: duração, calorias, exercícios, volume, pontos, o que foi feito e a linha do horário com Editar (mudar horário ou excluir o treino do dia).
 - **Lembrete da garrafinha:** tela cheia azul ao abrir o 1º exercício do dia (qualquer dia), até "Já peguei" (não volta mais no dia) ou o dia contar como treinado. O X (canto superior direito) só fecha: ela volta ao começar o treino de novo (reabrir o app) no mesmo dia.
 
 ## Peso corporal

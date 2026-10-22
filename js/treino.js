@@ -30,13 +30,6 @@ function pintarTempo() {
   // Só durante o treino: o último treino já aparece em "Últimos treinos", no fim da tela inicial
   box.hidden = !ativo;
   box.innerHTML = ativo ? `<span>Treino em andamento desde ${hhmm(t.inicio)}</span><b>${duracao(Date.now() - t.inicio)}</b><button type="button" class="btn sm" data-finalizar>Finalizar</button>` : '';
-  if (editTreino) return;   // não redesenha a lista enquanto um horário está sendo editado
-  const fechados = (ativo ? db.treinos.slice(0, -1) : db.treinos).slice(-5).reverse();
-  $('i-hist-box').hidden = !fechados.length;
-  $('i-treinos').innerHTML = fechados.map(x => {
-    const d = new Date(x.inicio), c = kcal(x);
-    return x.inicio === editTreino ? '' : `<li data-dia="${iso(d)}"><i class="h-d">${NOME_DIA[d.getDay()]} ${dataCurta(iso(d))}</i><span class="h-d">${hhmm(x.inicio)}–${hhmm(x.fim)}${c ? ` · ~${c} kcal` : ''}</span><span class="ed-acoes"><span class="h-v">${duracao(x.fim - x.inicio)}</span><button type="button" class="del" data-editar-treino="${x.inicio}">Editar</button></span></li>`;
-  }).join('');
 }
 function abrirEdicaoTreino(inicio) {
   const t = db.treinos.find(x => x.inicio === inicio); if (!t) return;
@@ -70,8 +63,14 @@ telas.fim = () => {
   $('f-tiles').innerHTML = tiles.map(([k, v, s]) => `<li><span>${k}</span><b>${v}</b><small>${s}</small></li>`).join('');
   const rec = recordesAte(dia);
   $('f-lista').innerHTML = r.regs.map(x => { const v = va.get(x.variacao); return `<li><span class="h-v">${esc(v?.nome || '')}${rec.has(x) ? ' <span class="chip ok">Recorde</span>' : ''}</span><span class="h-d">${kgsTxt(x)} ${esc(v ? unidadeTxt(v) : '')} × ${repsTxt(x)}</span></li>`; }).join('') || '<li class="empty">Nada registrado.</li>';
+  pintarLinhaTreino(t);
   if (!antigo) parabens(dia, r, t);
 };
+// Linha do horário no resumo, com Editar (horário ou excluir o treino do dia)
+function pintarLinhaTreino(t) {
+  $('f-treino').hidden = !t;
+  if (t) $('f-treino').innerHTML = `<li><i class="h-d">${dataCurta(iso(new Date(t.inicio)))}</i><span class="h-d">${hhmm(t.inicio)}–${hhmm(t.fim)}${kcal(t) ? ` · ~${kcal(t)} kcal` : ''}</span><span class="ed-acoes"><span class="h-v">${duracao(t.fim - t.inicio)}</span><button type="button" class="del" data-editar-treino="${t.inicio}">Editar</button></span></li>`;
+}
 // Tela cheia de parabéns ao finalizar o treino de hoje, com as conquistas e o nível ganhos no dia; "Ver resumo" fecha
 function parabens(dia, r, t) {
   const g = ganhosDoDia(dia);
@@ -82,10 +81,3 @@ function parabens(dia, r, t) {
   vibrar([60, 80, 60, 80, 200]);
 }
 $('parabens-ok').addEventListener('click', () => { $('parabens').hidden = true; });
-telas.treinos = () => {
-  const dias = [...diasTreinados()].sort().reverse();
-  $('t-dias').innerHTML = dias.map(dia => {
-    const r = resumoDia(dia), d = deIso(dia);
-    return `<li data-dia="${dia}"><i class="h-d">${NOME_DIA[d.getDay()]} ${dataCurta(dia)}</i><span class="h-d">${r.regs.length} ${r.regs.length === 1 ? 'exercício' : 'exercícios'}${r.recordes ? ` · ${r.recordes} ${r.recordes === 1 ? 'recorde' : 'recordes'}` : ''}</span><span class="h-v">${r.treino ? duracao(r.treino.fim - r.treino.inicio) : ''} ›</span></li>`;
-  }).join('') || '<li class="empty">Nenhum treino ainda.</li>';
-};

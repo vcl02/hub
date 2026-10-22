@@ -1,5 +1,9 @@
 /* Tela inicial: semana, jogo, peso corporal, lista de exercícios. */
 /* ---------- Início ---------- */
+.week-msg{align-items:center;flex-wrap:nowrap}
+.week-msg #i-msg{flex:1;min-width:0}
+.sem-nav{width:30px;height:30px;color:var(--blue)}
+.sem-nav:disabled{opacity:.3}
 .week{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
 .day{display:flex;flex-direction:column;align-items:center;gap:1px;padding:7px 0 6px;border-radius:10px;border:1px solid transparent;color:var(--muted);font-variant-numeric:tabular-nums}
 .day .dn{font-size:.7rem;text-transform:uppercase;letter-spacing:.05em}

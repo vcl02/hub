@@ -50,7 +50,8 @@
     </div>
   </header>
   <ul id="i-semana" class="week" aria-label="Dias de treino desta semana"></ul>
-  <p class="week-msg"><span id="i-msg"></span><b id="i-cont-semana"></b></p>
+  <!-- ‹ › trocam a semana mostrada: para trás até a do 1º treino, para frente até a atual -->
+  <p class="week-msg"><button type="button" class="bt-ic sem-nav" id="i-sem-ant" title="Semana anterior" aria-label="Semana anterior"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><span id="i-msg"></span><b id="i-cont-semana"></b><button type="button" class="bt-ic sem-nav" id="i-sem-prox" title="Próxima semana" aria-label="Próxima semana"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button></p>
   <button type="button" class="game" data-ir="conquistas">
     <span class="g-top"><b id="g-nivel">Nível 1</b><span id="g-pts">0 pts</span></span>
     <span class="track"><span id="g-barra"></span></span>
@@ -63,7 +64,6 @@
     <div class="track"><span id="i-barra"></span></div>
   </div>
   <ul id="i-lista" class="slots"></ul>
-  <div id="i-hist-box" class="view" hidden><h3 class="sec">Últimos treinos</h3><ul id="i-treinos" class="hist"></ul><button type="button" class="link" data-ir="treinos">Ver todos os treinos ›</button></div>
 </section>
 
 <!-- Exercício: variação, pirâmide, descanso e histórico (arraste para trocar) -->
@@ -147,16 +147,10 @@
     <p class="hint" id="f-msg"></p>
   </div>
   <ul class="tiles" id="f-tiles"></ul>
+  <ul class="hist" id="f-treino" hidden></ul>
   <h3 class="sec">O que você fez</h3>
   <ul class="hist" id="f-lista"></ul>
   <button type="button" class="btn primary big wide" data-ir="inicio">Voltar ao início</button>
-</section>
-
-<!-- Todos os treinos (toque num dia para ver o resumo) -->
-<section id="v-treinos" class="view" hidden>
-  <div class="bar"><button class="back" type="button" data-voltar title="Voltar" aria-label="Voltar"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button></div>
-  <h2>Treinos</h2>
-  <ul class="hist dias" id="t-dias"></ul>
 </section>
 
 <!-- Peso corporal -->
