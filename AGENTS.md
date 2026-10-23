@@ -27,7 +27,7 @@
 - App aberto sem sessão (link direto, ícone antigo) vai para o login do hub com `?volta=<pasta>/…` e, depois de entrar, o hub devolve para ele. `?volta` só é aceito se for a pasta de um card (nunca outro site ou `..`). A tela de login própria dos apps só aparece com eles servidos fora do hub (testes).
 - O app é só do mantenedor: na página inicial, só o login e os cards; nada de textos explicando como usar.
 - Cada app volta para a página inicial pelo ícone do hub (a marca em traço: nó central ligado a quatro pontas; link para `../`).
-- A marca do hub é `icons/hub.svg` (favicon, login e ícone do card do grupo Hub; o título da tela dos cards é só o texto); `hub-32.png` (favicon de reserva), `hub-180.png` (iPhone) e `hub-192/512.png` (manifest, fundo inteiro para o sistema recortar) saem dela.
+- A marca do hub é `icons/hub.svg` (favicon e login; nenhum card usa a marca; o título da tela dos cards é só o texto); `hub-32.png` (favicon de reserva), `hub-180.png` (iPhone) e `hub-192/512.png` (manifest, fundo inteiro para o sistema recortar) saem dela.
 - Caminhos sempre relativos (`./`, `../`): o site roda em `/hub/`, e os apps em `/hub/fin/` e `/hub/tr/`.
 - Mesma origem para todos: `localStorage`, caches e a sessão do Supabase são compartilhados.
   - Chaves de `localStorage` e nomes de cache sempre com prefixo do app (`fin-`, `carga-`/`tr.`, `hub-`). Nenhum service worker apaga cache de outro prefixo.
@@ -37,7 +37,7 @@
 ## Atalho externo
 
 - Card com `class="app externo"` (ex.: Agenda → Google Agenda): link para fora, em outra aba, nunca aceito como `?volta`. No Android, `hub.js` troca o link por um `intent://` que abre o app (`com.google.android.calendar`), com a web como reserva (`browser_fallback_url`).
-- Hub → grupo "Hub" do WhatsApp pelo link de convite, com a marca do hub como ícone (público no repositório: quem tiver o link entra; se vazar, redefina o link no WhatsApp e troque aqui).
+- Água → app Drink Water Reminder (`com.remind.drink.water.hourly`): no Android, `intent:` pelo pacote (sem o app, o Chrome vai à Play Store); fora dele, a página da Play Store. Ícone `icons/agua.svg` (gota desenhada, não o ícone oficial).
 - Anotações → conversa do WhatsApp comigo mesmo (ícone `icons/whatsapp.svg`) (`wa.me/<número>`, número público no repositório).
 
 ## Novo app

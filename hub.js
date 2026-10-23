@@ -87,11 +87,13 @@ $('sair').addEventListener('click', async () => {
   mostrar(false);
 });
 
-// Google Agenda: no Android, um link intent abre o app (pacote com.google.android.calendar); se ele não abrir,
+// Atalhos externos. Google Agenda: no Android, um link intent abre o app (pacote com.google.android.calendar); se ele não abrir,
 // o Chrome segue para a versão web (browser_fallback_url). Fora do Android fica o link web.
 if (/Android/i.test(navigator.userAgent)) {
   const web = $('agenda').href;
   $('agenda').href = `intent://calendar.google.com/calendar/r#Intent;scheme=https;package=com.google.android.calendar;S.browser_fallback_url=${encodeURIComponent(web)};end`;
+  // Drink Water Reminder: abre o app pelo pacote; sem ele instalado, o Chrome leva à Play Store.
+  $('agua').href = 'intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.remind.drink.water.hourly;end';
 }
 
 abrir();

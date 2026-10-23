@@ -73,12 +73,12 @@ test('login do hub antes dos apps: mesma conta e mesmo supabase-js do tr', () =>
   assert.match(html, /<script src="supabase\.js"><\/script>\n<script src="hub\.js"><\/script>/);
 });
 
-test('marca do hub em todo lugar: favicon, celular, login, card do grupo Hub e o botão de volta nos apps', () => {
+test('marca do hub em todo lugar: favicon, celular, login e o botão de volta nos apps', () => {
   assert.match(html, /<link rel="icon" href="icons\/hub\.svg" type="image\/svg\+xml">/);
   assert.match(html, /<link rel="icon" href="icons\/hub-32\.png" sizes="32x32" type="image\/png">/);
   assert.match(html, /<link rel="apple-touch-icon" href="icons\/hub-180\.png">/);
   assert.equal([...html.matchAll(/<h1><img class="marca" src="icons\/hub\.svg" alt=""/g)].length, 1);   // só no login; nos cards o título é só o texto
-  assert.match(html, /id="whatsapp"[^>]*>\s*<img class="app-icone" src="icons\/hub\.svg"/);   // a marca vira o ícone do grupo Hub
+  assert.equal([...html.matchAll(/class="app-icone" src="icons\/hub\.svg"/g)].length, 0);   // nenhum card usa a marca
   assert.match(html, /href="https:\/\/wa\.me\/\d+"[\s\S]*?src="icons\/whatsapp\.svg"[\s\S]*?<span class="app-nome">Anotações<\/span>/);
   for (const arquivo of ['icons/hub.svg', 'icons/hub-32.png', 'icons/hub-180.png', 'icons/hub-192.png', 'icons/hub-512.png']) assert.ok(existe(arquivo), arquivo);
   const png = arquivo => { const b = readFileSync(path.join(RAIZ, arquivo)); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };
@@ -96,4 +96,10 @@ test('atalho externo do Google Agenda: abre em outra aba; no Android, o app (int
   assert.match(hub, /intent:\/\/calendar\.google\.com\/calendar\/r#Intent;scheme=https;package=com\.google\.android\.calendar;S\.browser_fallback_url=\$\{encodeURIComponent\(web\)\};end/);
   assert.match(hub, /querySelectorAll\('\.app:not\(\.externo\)'\)/);   // ?volta nunca vai para o atalho externo
   assert.match(ler('sw.js'), /'\.\/icons\/agenda\.svg'/);
+  // Drink Water Reminder: Play Store fora do Android; no Android, o app pelo pacote.
+  assert.match(html, /<a class="app externo" id="agua" href="https:\/\/play\.google\.com\/store\/apps\/details\?id=com\.remind\.drink\.water\.hourly" target="_blank" rel="noopener"/);
+  assert.match(hub, /intent:#Intent;action=android\.intent\.action\.MAIN;category=android\.intent\.category\.LAUNCHER;package=com\.remind\.drink\.water\.hourly;end/);
+  assert.ok(existe('icons/agua.svg'));
+  assert.match(ler('sw.js'), /'\.\/icons\/agua\.svg'/);
+  assert.doesNotMatch(html, /chat\.whatsapp\.com/);   // o card do grupo Hub saiu
 });

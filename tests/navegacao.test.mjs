@@ -92,7 +92,7 @@ test('entrou no hub: os apps abrem direto com a mesma sessão, sem login própri
   const { ctx, pg, faltando, erros } = await abrir(base);
   await entrar(pg, 'eu@teste.com', 'senha123');
   await pg.waitForSelector('#v-apps:not([hidden])');
-  assert.deepEqual(await pg.$$eval('.app-nome', s => s.map(x => x.textContent)), ['Fin', 'Treino', 'Agenda', 'Hub', 'Anotações']);
+  assert.deepEqual(await pg.$$eval('.app-nome', s => s.map(x => x.textContent)), ['Fin', 'Treino', 'Agenda', 'Água', 'Anotações']);
   await pg.reload();                                                   // sessão salva: entra direto
   await pg.waitForSelector('#v-apps:not([hidden])');
   assert.equal(await pg.isVisible('#v-login'), false);
