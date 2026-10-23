@@ -94,8 +94,17 @@ if (/Android/i.test(navigator.userAgent)) {
   $('agenda').href = `intent://calendar.google.com/calendar/r#Intent;scheme=https;package=com.google.android.calendar;S.browser_fallback_url=${encodeURIComponent(web)};end`;
 }
 
-// Ao voltar pro hub (de um app, de outra aba ou do histórico), nenhum card fica selecionado.
-const soltarCard = () => { if (document.activeElement?.classList.contains('app')) document.activeElement.blur(); };
+// Toque num card: dá a crescidinha (.tocado) e ela some sozinha; ao voltar pro hub (de um app,
+// de outra aba ou do histórico), nenhum card fica selecionado.
+let toque = null;
+const soltarCard = () => {
+  clearTimeout(toque);
+  document.querySelectorAll('.app.tocado').forEach(a => a.classList.remove('tocado'));
+  if (document.activeElement?.classList.contains('app')) document.activeElement.blur();
+};
+document.querySelectorAll('.app').forEach(a => a.addEventListener('click', () => {
+  soltarCard(); a.classList.add('tocado'); toque = setTimeout(soltarCard, 600);
+}));
 addEventListener('pageshow', soltarCard);
 addEventListener('pagehide', soltarCard);
 document.addEventListener('visibilitychange', soltarCard);

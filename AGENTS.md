@@ -25,7 +25,7 @@
 - **Login antes de tudo:** a página inicial abre no login (usuário `victor` ou e-mail, e senha) e só mostra os cards depois de entrar. Só a conta `DONO` (a mesma do tr) passa; outra conta sai na hora. Com a sessão salva, entra direto (inclusive sem internet). Sair, no canto superior direito, pede toque duplo e encerra a sessão neste aparelho para todos os apps.
 - Sair existe só no hub: fin e tr não têm botão de sair.
 - App aberto sem sessão (link direto, ícone antigo) vai para o login do hub com `?volta=<pasta>/…` e, depois de entrar, o hub devolve para ele. `?volta` só é aceito se for a pasta de um card (nunca outro site ou `..`). A tela de login própria dos apps só aparece com eles servidos fora do hub (testes).
-- Card não fica selecionado: destaque só com mouse (`@media (hover: hover)`) ou teclado, e `hub.js` solta o foco ao voltar para a página.
+- Card não fica selecionado: destaque com mouse (`@media (hover: hover)`), teclado ou toque (`.tocado`, some sozinho em 0,6 s); `hub.js` limpa tudo ao voltar para a página.
 - O app é só do mantenedor: na página inicial, só o login e os cards; nada de textos explicando como usar.
 - Cada app volta para a página inicial pelo ícone do hub (a marca em traço: nó central ligado a quatro pontas; link para `../`).
 - A marca do hub é `icons/hub.svg` (favicon e login; nenhum card usa a marca; o título da tela dos cards é só o texto); `hub-32.png` (favicon de reserva), `hub-180.png` (iPhone) e `hub-192/512.png` (manifest, fundo inteiro para o sistema recortar) saem dela.

@@ -99,9 +99,11 @@ test('atalho externo do Google Agenda: abre em outra aba; no Android, o app (int
   assert.doesNotMatch(html, /chat\.whatsapp\.com|play\.google\.com/);   // cards Hub (grupo) e Água saíram
 });
 
-test('card não fica selecionado ao voltar de um app: hover só com mouse e foco solto ao voltar', () => {
+test('card não fica selecionado ao voltar de um app: hover só com mouse, toque com efeito que some e foco solto ao voltar', () => {
   assert.match(ler('hub.css'), /@media \(hover: hover\) \{\s*\.app:hover \{/);
   assert.doesNotMatch(ler('hub.css').replace(/@media \(hover: hover\) \{[\s\S]*?\n\}/, ''), /\.app:hover/);
   const hub = ler('hub.js');
   for (const ev of ['pageshow', 'pagehide', 'visibilitychange']) assert.match(hub, new RegExp(`'${ev}', soltarCard`));
+  assert.match(ler('hub.css'), /\.app\.tocado \{/);                                  // o toque ainda dá a crescidinha
+  assert.match(hub, /classList\.add\('tocado'\); toque = setTimeout\(soltarCard, 600\)/);   // e ela some sozinha
 });
