@@ -3,7 +3,22 @@
 // ===== Peso corporal =====
 // IMC = peso / altura² · faixas da OMS (adultos)
 const imc = peso => Math.round(peso / ALTURA ** 2 * 10) / 10;
-const faixaImc = i => i < 18.5 ? 'abaixo do peso' : i < 25 ? 'normal' : i < 30 ? 'sobrepeso' : 'obesidade';
+// Faixas da OMS para adultos, com os graus de magreza e de obesidade: [limite de cima (exclusivo), nome]
+const FAIXAS_IMC = [[16, 'magreza grau III'], [17, 'magreza grau II'], [18.5, 'magreza grau I'], [25, 'normal'], [30, 'sobrepeso'],
+  [35, 'obesidade grau I'], [40, 'obesidade grau II'], [Infinity, 'obesidade grau III']];
+const faixaImc = i => FAIXAS_IMC.find(([lim]) => i < lim)[1];
+// Quanto falta para a faixa seguinte rumo ao normal (acima do normal, kg a perder · abaixo, kg a ganhar · normal, nada).
+// Anda de 0,1 em 0,1 kg com o mesmo IMC arredondado da tela, para o número sempre bater com a faixa mostrada.
+function rumoAoNormal(peso) {
+  const atual = faixaImc(imc(peso)), k = FAIXAS_IMC.findIndex(f => f[1] === atual), normal = 3;
+  if (k === normal) return '';
+  const passo = k > normal ? -1 : 1;
+  for (let d = 1; d <= 3000; d++) {
+    const p = Math.round((peso + passo * d / 10) * 10) / 10, f = faixaImc(imc(p));
+    if (f !== atual) return `${passo < 0 ? '−' : '+'}${fmt(d / 10)} kg até ${f}`;
+  }
+  return '';
+}
 const medidasOrdenadas = () => [...db.medidas].sort((a, b) => b.data.localeCompare(a.data));
 const horaHabitual = () => medidasOrdenadas().find(m => m.hora)?.hora || '';
 let editMedida = null;
@@ -33,7 +48,7 @@ telas.corpo = () => {
   // Card do peso atual: número grande, IMC e variação desde a 1ª pesagem
   const prim = Ls[Ls.length - 1], dif = u ? Math.round((u.peso - prim.peso) * 10) / 10 : 0;
   $('c-resumo').hidden = !u;
-  if (u) $('c-resumo').innerHTML = `<b>${fmt(u.peso)}<small>kg</small></b><span class="pc-lado"><span><i>${quando(u.data)}</i></span><span>IMC <b>${fmt(imc(u.peso))}</b> · ${faixaImc(imc(u.peso))}</span>${Ls.length > 1 ? `<span class="${dif < 0 ? 'bom' : dif > 0 ? 'ruim' : ''}">${dif > 0 ? '+' : ''}${fmt(dif)} kg desde ${dataCurta(prim.data)}</span>` : ''}${cintTxt(Ls)}</span>`;
+  if (u) $('c-resumo').innerHTML = `<b>${fmt(u.peso)}<small>kg</small></b><span class="pc-lado"><span><i>${quando(u.data)}</i></span><span>IMC <b>${fmt(imc(u.peso))}</b></span><span class="faixa">${faixaImc(imc(u.peso))}</span>${rumoAoNormal(u.peso) ? `<span class="falta">${rumoAoNormal(u.peso)}</span>` : ''}${Ls.length > 1 ? `<span class="${dif < 0 ? 'bom' : dif > 0 ? 'ruim' : ''}">${dif > 0 ? '+' : ''}${fmt(dif)} kg desde ${dataCurta(prim.data)}</span>` : ''}${cintTxt(Ls)}</span>`;
   $('c-perfil').textContent = `${idadeEm(hoje())} anos · ${virgula(ALTURA)} m${u ? ` · basal ~${tmb(u.peso, hoje()).toLocaleString('pt-BR')} kcal/dia` : ''}`;
   avisoHorario(); pintarMedidas();
 };

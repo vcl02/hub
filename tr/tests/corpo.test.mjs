@@ -53,7 +53,15 @@ test('IMC com 1,78 m', async () => {
   await pg.click('#i-corpo'); await pg.fill('#c-peso', '90'); await pg.click('#c-form button[type=submit]');
   assert.match(await pg.textContent('#c-historico'), /IMC 28,4/);                           // 90 / 1,78²
   assert.match(await pg.textContent('#c-perfil'), /\d+ anos · 1,78 m · basal ~1\.\d{3} kcal\/dia/);
-  assert.match(await pg.textContent('#c-resumo'), /90kg.*IMC 28,4 · sobrepeso/);
+  assert.match(await pg.textContent('#c-resumo'), /90kg.*IMC 28,4sobrepeso/);
+  assert.match(await pg.textContent('#c-resumo'), /−11 kg até normal/);                      // 79,0 kg = IMC 24,9 (79,1 ainda dá 25,0)
+  const faixa = await pg.evaluate(() => [15.9, 16, 17, 18.4, 18.5, 24.9, 25, 29.9, 30, 34.9, 35, 39.9, 40].map(faixaImc));
+  assert.deepEqual(faixa, ['magreza grau III', 'magreza grau II', 'magreza grau I', 'magreza grau I', 'normal', 'normal', 'sobrepeso', 'sobrepeso',
+    'obesidade grau I', 'obesidade grau I', 'obesidade grau II', 'obesidade grau II', 'obesidade grau III']);
+  const faltas = await pg.evaluate(() => [102.3, 75, 50].map(rumoAoNormal));
+  assert.deepEqual(faltas, ['−7,5 kg até sobrepeso', '', '+0,6 kg até magreza grau II']);
+  // o número bate com a faixa mostrada: com o que falta, a faixa já é a seguinte; com 0,1 kg a menos, ainda não
+  assert.deepEqual(await pg.evaluate(() => [faixaImc(imc(94.8)), faixaImc(imc(94.9))]), ['sobrepeso', 'obesidade grau I']);   // 102,3 − 7,5 e − 7,4
   await ctx.close();
 });
 

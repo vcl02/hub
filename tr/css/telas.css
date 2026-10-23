@@ -77,10 +77,14 @@
 .bom{color:var(--green);font-weight:600} .ruim{color:var(--red);font-weight:600}
 /* Peso corporal: card do peso atual no topo da tela */
 .peso-card{display:flex;align-items:center;gap:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
-.peso-card>b{font-family:var(--display);font-size:var(--t-3xl);font-weight:700;line-height:.9;white-space:nowrap}
+.peso-card>b{font-family:var(--display);font-size:clamp(2.6rem,15vw,var(--t-3xl));font-weight:700;line-height:.9;white-space:nowrap}   /* encolhe em tela estreita: o lado direito cabe inteiro */
 .peso-card>b small{font-size:var(--t-lg);margin-left:4px;color:var(--muted);font-family:var(--body);font-weight:500}
 .pc-lado{display:flex;flex-direction:column;gap:2px;font-size:var(--t-sm);min-width:0}
 .pc-lado i{color:var(--muted)}
+.pc-lado>span{white-space:nowrap}   /* cada informação inteira na sua linha */
+@media (max-width:340px){.pc-lado>span{white-space:normal}}   /* tela muito estreita: quebra em vez de cortar */
+.pc-lado .faixa{font-weight:600}
+.pc-lado .falta{color:var(--muted);font-size:var(--t-xs)}
 .aviso{font-size:var(--t-sm);padding:10px 12px;border-radius:10px;background:var(--blue-soft);color:var(--fg)}
 .aviso b{color:var(--blue)}
 .aviso.erro{background:var(--red-soft)} .aviso.erro b{color:var(--red)}
