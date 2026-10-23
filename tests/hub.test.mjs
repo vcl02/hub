@@ -103,7 +103,8 @@ test('card não fica selecionado ao voltar de um app: hover só com mouse, toque
   assert.match(ler('hub.css'), /@media \(hover: hover\) \{\s*\.app:hover \{/);
   assert.doesNotMatch(ler('hub.css').replace(/@media \(hover: hover\) \{[\s\S]*?\n\}/, ''), /\.app:hover/);
   const hub = ler('hub.js');
-  for (const ev of ['pageshow', 'pagehide', 'visibilitychange']) assert.match(hub, new RegExp(`'${ev}', soltarCard`));
+  for (const ev of ['pageshow', 'visibilitychange']) assert.match(hub, new RegExp(`'${ev}', voltou`));
+  assert.match(hub, /'pagehide', soltarCard/);
   assert.match(ler('hub.css'), /\.app\.tocado \{/);                                  // o toque ainda dá a crescidinha
-  assert.match(hub, /classList\.add\('tocado'\); toque = setTimeout\(soltarCard, 600\)/);   // e ela some sozinha
+  assert.match(hub, /classList\.add\('tocado'\); toque = setTimeout\(soltarCard, ms\)/);   // e ela some sozinha
 });

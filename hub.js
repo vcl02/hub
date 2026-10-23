@@ -94,20 +94,29 @@ if (/Android/i.test(navigator.userAgent)) {
   $('agenda').href = `intent://calendar.google.com/calendar/r#Intent;scheme=https;package=com.google.android.calendar;S.browser_fallback_url=${encodeURIComponent(web)};end`;
 }
 
-// Toque num card: dá a crescidinha (.tocado) e ela some sozinha; ao voltar pro hub (de um app,
-// de outra aba ou do histórico), nenhum card fica selecionado.
-let toque = null;
+// Toque num card: a crescidinha (.tocado) aparece já no toque e, nos apps do hub, a troca de página
+// espera um instante pra ela ser vista. Ao voltar pro hub, o card tocado cresce de novo e volta ao
+// normal sozinho: nada fica selecionado.
+let toque = null, ultimo = null;
 const soltarCard = () => {
   clearTimeout(toque);
   document.querySelectorAll('.app.tocado').forEach(a => a.classList.remove('tocado'));
   if (document.activeElement?.classList.contains('app')) document.activeElement.blur();
 };
-document.querySelectorAll('.app').forEach(a => a.addEventListener('click', () => {
-  soltarCard(); a.classList.add('tocado'); toque = setTimeout(soltarCard, 600);
-}));
-addEventListener('pageshow', soltarCard);
+const destacar = (a, ms) => { soltarCard(); a.classList.add('tocado'); toque = setTimeout(soltarCard, ms); };
+document.querySelectorAll('.app').forEach(a => {
+  a.addEventListener('pointerdown', () => { ultimo = a; destacar(a, 900); });
+  a.addEventListener('click', ev => {
+    ultimo = a; destacar(a, 900);
+    if (a.classList.contains('externo') || ev.ctrlKey || ev.metaKey || ev.shiftKey) return;
+    ev.preventDefault();
+    setTimeout(() => { location.href = a.href; }, 180);
+  });
+});
+const voltou = () => { if (document.visibilityState === 'visible' && ultimo) destacar(ultimo, 700); else soltarCard(); };
+addEventListener('pageshow', voltou);
 addEventListener('pagehide', soltarCard);
-document.addEventListener('visibilitychange', soltarCard);
+document.addEventListener('visibilitychange', voltou);
 
 abrir();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});

@@ -217,7 +217,7 @@ h1 span {
   transform: translate(2px, -2px);
 }
 
-.app:active {
+.app:active:not(.tocado) {
   transform: scale(.98);
 }
 
