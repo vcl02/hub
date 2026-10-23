@@ -40,7 +40,7 @@ jobs:
                 from: process.env.RESEND_FROM,
                 to: [process.env.RESEND_TO],
                 subject: `hub publicado — ${commitCurto}`,
-                html: `<p><strong>hub</strong> (página inicial, fin e Diário de Carga) foi publicado no GitHub Pages.</p><p>Commit: <a href="${linkCommit}"><code>${commitCurto}</code></a></p>`,
+                html: `<p><strong>hub</strong> (página inicial, fin e Treino) foi publicado no GitHub Pages.</p><p>Commit: <a href="${linkCommit}"><code>${commitCurto}</code></a></p>`,
               }),
             });
             if (!resposta.ok) throw new Error(`Resend: ${resposta.status} ${await resposta.text()}`);

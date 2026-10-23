@@ -1,6 +1,6 @@
 'use strict';
 /*
-  Diário de Carga — login e dados no Supabase (projeto fin, tabelas tr_*), com cópia local para funcionar sem internet.
+  Treino — login e dados no Supabase (projeto fin, tabelas tr_*), com cópia local para funcionar sem internet.
 
   Banco em memória (cada lista vira uma tabela; ver js/banco.js):
     db = {

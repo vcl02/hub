@@ -5,7 +5,7 @@ Página inicial que reúne os apps pessoais, todos em tema escuro e publicados j
 | Pasta | App |
 |---|---|
 | `fin/` | Finanças (ver `fin/AGENTS.md`) |
-| `tr/` | Diário de Carga (ver `tr/README.md`) |
+| `tr/` | Treino (ver `tr/README.md`) |
 
 ## Validação
 

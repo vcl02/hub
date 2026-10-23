@@ -1,4 +1,4 @@
-# Regras do Diário de Carga
+# Regras do Treino
 
 Fonte de verdade do comportamento do app. Toda mudança de regra atualiza este arquivo e os testes na mesma alteração.
 
@@ -18,9 +18,10 @@ Fonte de verdade do comportamento do app. Toda mudança de regra atualiza este a
 ## Login e conta
 
 - Login por **usuário** (`victor`) ou e-mail, e senha, Enter entra. Campos na cor das superfícies (`#24272B`) com borda e o nome do campo dentro ("Usuário", "Senha"). Enquanto entra (login e 1ª carga), os campos travam e aparece "Entrando…"; a senha só é limpa depois de entrar (erro mantém) (`emailDoLogin`). Usuário desconhecido nem chega ao Supabase e recebe a mesma mensagem de senha errada (`Usuário ou senha inválidos.`).
-- Mesma conta do fin. Só a conta `DONO` (`js/config.js`) entra: outra conta sai na hora com "Esta conta não tem acesso ao Diário de Carga.". O RLS das tabelas `tr_*` também só libera essa conta (migration 02).
+- Mesma conta do fin. Só a conta `DONO` (`js/config.js`) entra: outra conta sai na hora com "Esta conta não tem acesso ao Treino.". O RLS das tabelas `tr_*` também só libera essa conta (migration 02).
 - Sem "Esqueci a senha" e sem "Trocar senha": a senha é a do Supabase e se troca fora do app.
 - Tela inicial, canto superior direito: marca do hub (volta ao hub, `../`), balança (peso corporal), engrenagem, que vai direto para a edição de exercícios (no fim dela: instalar e o estado da conta e da nuvem). Não há tela de Ajustes nem botão de sair: o login e o Sair ficam só na página inicial do hub.
+- Nome do app: "Treino" (título, manifest e card do hub). Ícone (`icon-192.png`/`icon-512.png`, também no card do hub): halter branco em fundo azul, fundo inteiro para o sistema recortar.
 - A sessão fica salva no aparelho e é a mesma do hub: o app entra direto, inclusive sem internet. Sair só pelo hub; a cópia local continua no aparelho, e o que estiver pendente envia no próximo login.
 - Dentro do hub (`…/tr/`), o login é o da página inicial: sem sessão, o tr vai direto para `../?volta=tr/` e o hub devolve para cá depois de entrar (`irParaLoginDoHub` em `js/bootstrap.js`). A tela de login própria só aparece com o tr servido fora do hub (ex.: testes).
 

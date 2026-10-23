@@ -1,4 +1,4 @@
-# Guia de manutenção do Diário de Carga (`tr`)
+# Guia de manutenção do Treino (`tr`)
 
 ## Propósito e fontes de verdade
 
@@ -8,7 +8,7 @@
 
 ## Arquitetura
 
-- O Diário de Carga mora em `tr/` do repositório `vcl02/hub`, publicado junto com a página inicial do hub e os outros apps (guia geral em `../AGENTS.md`). Dentro de `tr/`, `tr/index.html` é o único documento: cada tela é uma `<section class="view">`. Não crie outras páginas HTML nesta pasta nem introduza framework sem decisão explícita.
+- O Treino mora em `tr/` do repositório `vcl02/hub`, publicado junto com a página inicial do hub e os outros apps (guia geral em `../AGENTS.md`). Dentro de `tr/`, `tr/index.html` é o único documento: cada tela é uma `<section class="view">`. Não crie outras páginas HTML nesta pasta nem introduza framework sem decisão explícita.
 - Os estilos são carregados nesta ordem (cascata): `css/base.css`, `inicio.css`, `telas.css`, `flutuantes.css`, `exercicio.css`, `resumo.css`.
 - Os scripts clássicos são carregados nesta ordem, depois de `supabase.js`: `config`, `util`, `piramide`, `banco`, `login`, `pontos`, `inicio`, `exercicio`, `corpo`, `treino`, `series`, `interacoes`, `ajustes`, `bootstrap`. Eles compartilham o escopo global: código que roda ao carregar (não dentro de função) só pode usar o que veio de um arquivo anterior. Preserve a responsabilidade de cada módulo, descrita na 1ª linha dele.
 - Arquivo novo em `css/` ou `js/` entra no `index.html` e no `ARQUIVOS_ESTATICOS` do `sw.js`; o teste `tests/estrutura.test.mjs` confere.

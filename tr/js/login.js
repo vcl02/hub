@@ -14,7 +14,7 @@ async function entrou() {
 }
 // Abre na hora com a cópia local; depois envia o que estava pendente e traz a versão da nuvem.
 async function carregar(u) {
-  if (u.id !== DONO) { try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {} telaLogin('Esta conta não tem acesso ao Diário de Carga.'); return; }
+  if (u.id !== DONO) { try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {} telaLogin('Esta conta não tem acesso ao Treino.'); return; }
   usuario = u;
   let local = null;
   try { local = JSON.parse(store.get(K_LOCAL(u.id))); base = JSON.parse(store.get(K_BASE(u.id))); } catch (e) { local = null; }

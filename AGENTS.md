@@ -3,7 +3,7 @@
 ## O que é
 
 - Um repositório só (`vcl02/hub`), publicado inteiro no GitHub Pages: a página inicial na raiz e cada app numa pasta.
-- `fin/` (finanças) e `tr/` (Diário de Carga) vieram dos repositórios `vcl02/fin` e `vcl02/tr` com o histórico completo (`git subtree`). Os repositórios antigos foram excluídos em 22/10/2026: o código e o histórico vivem só aqui, e os endereços antigos (`/fin/`, `/tr/`) não existem mais.
+- `fin/` (finanças) e `tr/` (Treino) vieram dos repositórios `vcl02/fin` e `vcl02/tr` com o histórico completo (`git subtree`). Os repositórios antigos foram excluídos em 22/10/2026: o código e o histórico vivem só aqui, e os endereços antigos (`/fin/`, `/tr/`) não existem mais.
 - Cada app tem o próprio guia (`fin/AGENTS.md`, `tr/AGENTS.md`), regras (`docs/REGRAS.md`) e testes. Este arquivo cobre só o que é do hub. Em caso de conflito, uma solicitação explícita do mantenedor vence os guias.
 
 ## Estrutura
