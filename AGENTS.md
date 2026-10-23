@@ -37,6 +37,7 @@
 ## Atalho externo
 
 - Card com `class="app externo"` (ex.: Agenda → Google Agenda): link para fora, em outra aba, nunca aceito como `?volta`. No Android, `hub.js` troca o link por um `intent://` que abre o app (`com.google.android.calendar`), com a web como reserva (`browser_fallback_url`).
+- WhatsApp → grupo "Hub" pelo link de convite (público no repositório: quem tiver o link entra; se vazar, redefina o link no WhatsApp e troque aqui).
 
 ## Novo app
 
