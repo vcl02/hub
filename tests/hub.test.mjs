@@ -96,10 +96,5 @@ test('atalho externo do Google Agenda: abre em outra aba; no Android, o app (int
   assert.match(hub, /intent:\/\/calendar\.google\.com\/calendar\/r#Intent;scheme=https;package=com\.google\.android\.calendar;S\.browser_fallback_url=\$\{encodeURIComponent\(web\)\};end/);
   assert.match(hub, /querySelectorAll\('\.app:not\(\.externo\)'\)/);   // ?volta nunca vai para o atalho externo
   assert.match(ler('sw.js'), /'\.\/icons\/agenda\.svg'/);
-  // Drink Water Reminder: Play Store fora do Android; no Android, o app pelo pacote.
-  assert.match(html, /<a class="app externo" id="agua" href="https:\/\/play\.google\.com\/store\/apps\/details\?id=com\.remind\.drink\.water\.hourly" target="_blank" rel="noopener"/);
-  assert.match(hub, /intent:#Intent;action=android\.intent\.action\.MAIN;category=android\.intent\.category\.LAUNCHER;package=com\.remind\.drink\.water\.hourly;end/);
-  assert.ok(existe('icons/agua.svg'));
-  assert.match(ler('sw.js'), /'\.\/icons\/agua\.svg'/);
-  assert.doesNotMatch(html, /chat\.whatsapp\.com/);   // o card do grupo Hub saiu
+  assert.doesNotMatch(html, /chat\.whatsapp\.com|play\.google\.com/);   // cards Hub (grupo) e Água saíram
 });
