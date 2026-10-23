@@ -181,11 +181,6 @@ h1 span {
   line-height: 1.2;
 }
 
-.app-tipo {
-  color: var(--muted);
-  font-size: .9rem;
-}
-
 .app-seta {
   position: absolute;
   top: 18px;
