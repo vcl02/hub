@@ -189,14 +189,27 @@ h1 span {
   transition: transform .2s ease, color .2s ease;
 }
 
-.app:hover,
+/* Destaque só com mouse (hover de verdade) ou teclado: no celular, o toque deixava o card
+   "selecionado" (maior e com borda) ao voltar de um app. */
+@media (hover: hover) {
+  .app:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--cor) 55%, transparent);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, .45), 0 0 0 1px color-mix(in srgb, var(--cor) 25%, transparent);
+  }
+
+  .app:hover .app-seta {
+    color: var(--cor);
+    transform: translate(2px, -2px);
+  }
+}
+
 .app:focus-visible {
   transform: translateY(-3px);
   border-color: color-mix(in srgb, var(--cor) 55%, transparent);
   box-shadow: 0 16px 40px rgba(0, 0, 0, .45), 0 0 0 1px color-mix(in srgb, var(--cor) 25%, transparent);
 }
 
-.app:hover .app-seta,
 .app:focus-visible .app-seta {
   color: var(--cor);
   transform: translate(2px, -2px);

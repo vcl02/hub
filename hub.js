@@ -94,5 +94,11 @@ if (/Android/i.test(navigator.userAgent)) {
   $('agenda').href = `intent://calendar.google.com/calendar/r#Intent;scheme=https;package=com.google.android.calendar;S.browser_fallback_url=${encodeURIComponent(web)};end`;
 }
 
+// Ao voltar pro hub (de um app, de outra aba ou do histórico), nenhum card fica selecionado.
+const soltarCard = () => { if (document.activeElement?.classList.contains('app')) document.activeElement.blur(); };
+addEventListener('pageshow', soltarCard);
+addEventListener('pagehide', soltarCard);
+document.addEventListener('visibilitychange', soltarCard);
+
 abrir();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
