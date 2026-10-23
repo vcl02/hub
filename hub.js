@@ -22,7 +22,7 @@ function mostrar(logado, erro = '') {
 // Só aceita a pasta de um dos cards (nunca outro site nem caminho fora dela).
 function destinoDaVolta() {
   const volta = new URLSearchParams(location.search).get('volta') || '';
-  const pastas = [...document.querySelectorAll('.app')].map(a => a.getAttribute('href'));
+  const pastas = [...document.querySelectorAll('.app:not(.externo)')].map(a => a.getAttribute('href'));
   const daPasta = pastas.some(p => volta === p || volta.startsWith(p + '?') || volta.startsWith(p + '#'));
   return daPasta && !/\.\.|\/\/|\\/.test(volta) ? volta : null;
 }
@@ -86,6 +86,13 @@ $('sair').addEventListener('click', async () => {
   $('l-usuario').value = ''; $('l-senha').value = '';
   mostrar(false);
 });
+
+// Google Agenda: no Android, um link intent abre o app (pacote com.google.android.calendar); se ele não abrir,
+// o Chrome segue para a versão web (browser_fallback_url). Fora do Android fica o link web.
+if (/Android/i.test(navigator.userAgent)) {
+  const web = $('agenda').href;
+  $('agenda').href = `intent://calendar.google.com/calendar/r#Intent;scheme=https;package=com.google.android.calendar;S.browser_fallback_url=${encodeURIComponent(web)};end`;
+}
 
 abrir();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});

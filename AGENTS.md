@@ -34,6 +34,10 @@
   - A sessão do Supabase (mesmo projeto, mesma chave) vale para todos os apps: entrar em um entra em todos, e Sair em qualquer um sai de todos.
 - O service worker da raiz só atende os arquivos da própria página inicial; cada app tem o seu, com escopo na própria pasta.
 
+## Atalho externo
+
+- Card com `class="app externo"` (ex.: Agenda → Google Agenda): link para fora, em outra aba, nunca aceito como `?volta`. No Android, `hub.js` troca o link por um `intent://` que abre o app (`com.google.android.calendar`), com a web como reserva (`browser_fallback_url`).
+
 ## Novo app
 
 1. Crie a pasta (`nome/`) com `index.html`, caminhos relativos e o ícone do hub para `../`.

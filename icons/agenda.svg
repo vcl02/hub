@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Card "Agenda" do hub (abre o Google Agenda): calendário simples, sem o logo do Google. -->
+  <defs>
+    <linearGradient id="f" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3B6FE0"/>
+      <stop offset="1" stop-color="#2A4FA8"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#f)"/>
+  <rect x="14" y="17" width="36" height="33" rx="6" fill="#FFFFFF"/>
+  <path d="M14 23a6 6 0 0 1 6-6h24a6 6 0 0 1 6 6v4H14z" fill="#A8C1FF"/>
+  <rect x="22" y="12" width="4" height="10" rx="2" fill="#FFFFFF"/>
+  <rect x="38" y="12" width="4" height="10" rx="2" fill="#FFFFFF"/>
+  <text x="32" y="45" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#2A4FA8">31</text>
+</svg>

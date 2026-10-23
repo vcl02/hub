@@ -12,7 +12,7 @@ const html = ler('index.html');
 const cards = [...html.matchAll(/<a class="app" href="([^"]+)" style="--cor:#[0-9A-F]{6}">\s*<img class="app-icone" src="([^"]+)"/g)].map(m => ({ href: m[1], icone: m[2] }));
 
 test('um card por app; cada um aponta para uma pasta com index.html e um ícone que existe', () => {
-  assert.deepEqual(cards.map(c => c.href), ['fin/', 'tr/']);
+  assert.deepEqual(cards.map(c => c.href), ['fin/', 'tr/']);   // os do hub; atalhos externos (class externo) à parte
   for (const { href, icone } of cards) {
     assert.ok(existe(`${href}index.html`), href);
     assert.ok(existe(icone), icone);
@@ -85,4 +85,13 @@ test('marca do hub em todo lugar: favicon, celular, título, login e o botão de
   const marca = codigo => codigo.match(/<circle cx="12" cy="12" r="3" ?\/><path d="M9\.9 9\.9 6\.6 6\.6[^"]*" ?\/>(<circle cx="(5|19)" cy="(5|19)" r="2" ?\/>){4}/);
   assert.ok(marca(ler('fin/index.html').slice(ler('fin/index.html').indexOf('id=voltarHub'))), 'fin');
   assert.ok(marca(ler('tr/index.html').slice(ler('tr/index.html').indexOf('id="i-hub"'))), 'tr');
+});
+
+test('atalho externo do Google Agenda: abre em outra aba; no Android, o app (intent) com a web de reserva', () => {
+  assert.match(html, /<a class="app externo" id="agenda" href="https:\/\/calendar\.google\.com\/calendar\/r" target="_blank" rel="noopener"/);
+  assert.ok(existe('icons/agenda.svg'));
+  const hub = ler('hub.js');
+  assert.match(hub, /intent:\/\/calendar\.google\.com\/calendar\/r#Intent;scheme=https;package=com\.google\.android\.calendar;S\.browser_fallback_url=\$\{encodeURIComponent\(web\)\};end/);
+  assert.match(hub, /querySelectorAll\('\.app:not\(\.externo\)'\)/);   // ?volta nunca vai para o atalho externo
+  assert.match(ler('sw.js'), /'\.\/icons\/agenda\.svg'/);
 });
