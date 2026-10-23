@@ -4,8 +4,8 @@
 // IMC = peso / altura² · faixas da OMS (adultos)
 const imc = peso => Math.round(peso / ALTURA ** 2 * 10) / 10;
 // Faixas da OMS para adultos, com os graus de magreza e de obesidade: [limite de cima (exclusivo), nome]
-const FAIXAS_IMC = [[16, 'magreza grau III'], [17, 'magreza grau II'], [18.5, 'magreza grau I'], [25, 'normal'], [30, 'sobrepeso'],
-  [35, 'obesidade grau I'], [40, 'obesidade grau II'], [Infinity, 'obesidade grau III']];
+const FAIXAS_IMC = [[16, 'Magreza III'], [17, 'Magreza II'], [18.5, 'Magreza I'], [25, 'Normal'], [30, 'Sobrepeso'],
+  [35, 'Obesidade I'], [40, 'Obesidade II'], [Infinity, 'Obesidade III']];
 const faixaImc = i => FAIXAS_IMC.find(([lim]) => i < lim)[1];
 // Quanto falta para a faixa seguinte rumo ao normal (acima do normal, kg a perder · abaixo, kg a ganhar · normal, nada).
 // Anda de 0,1 em 0,1 kg com o mesmo IMC arredondado da tela, para o número sempre bater com a faixa mostrada.
@@ -26,7 +26,7 @@ let editMedida = null;
 function cintTxt(Ls) {
   const C = Ls.filter(m => m.cintura); if (!C.length) return '';
   const u = C[0], p = C[C.length - 1], d = Math.round((u.cintura - p.cintura) * 10) / 10;
-  return `<span>Barriga <b>${fmt(u.cintura)} cm</b>${C.length > 1 ? ` · <span class="${d < 0 ? 'bom' : d > 0 ? 'ruim' : ''}">${d > 0 ? '+' : ''}${fmt(d)} cm</span>` : ''}</span>`;
+  return `<span>Barriga <b>${fmt(u.cintura)} cm</b>${C.length > 1 && d ? ` · <span class="${d < 0 ? 'bom' : 'ruim'}">${d > 0 ? '+' : ''}${fmt(d)} cm</span>` : ''}</span>`;   // sem variação, nada
 }
 // Botão da balança na tela inicial: ponto azul enquanto não houver pesagem hoje (pesagem diária)
 function pintarCorpoInicio() {
@@ -48,7 +48,7 @@ telas.corpo = () => {
   // Card do peso atual: número grande, IMC e variação desde a 1ª pesagem
   const prim = Ls[Ls.length - 1], dif = u ? Math.round((u.peso - prim.peso) * 10) / 10 : 0;
   $('c-resumo').hidden = !u;
-  if (u) $('c-resumo').innerHTML = `<b>${fmt(u.peso)}<small>kg</small></b><span class="pc-lado"><span><i>${quando(u.data)}</i></span><span>IMC <b>${fmt(imc(u.peso))}</b></span><span class="faixa">${faixaImc(imc(u.peso))}</span>${rumoAoNormal(u.peso) ? `<span class="falta">${rumoAoNormal(u.peso)}</span>` : ''}${Ls.length > 1 ? `<span class="${dif < 0 ? 'bom' : dif > 0 ? 'ruim' : ''}">${dif > 0 ? '+' : ''}${fmt(dif)} kg desde ${dataCurta(prim.data)}</span>` : ''}${cintTxt(Ls)}</span>`;
+  if (u) $('c-resumo').innerHTML = `<b>${fmt(u.peso)}<small>kg</small></b><span class="pc-lado">${u.data !== hoje() ? `<span><i>${quando(u.data)}</i></span>` : ''}<span>IMC <b>${fmt(imc(u.peso))}</b> · <b>${faixaImc(imc(u.peso))}</b></span>${rumoAoNormal(u.peso) ? `<span class="falta">${rumoAoNormal(u.peso)}</span>` : ''}${Ls.length > 1 && dif ? `<span class="${dif < 0 ? 'bom' : 'ruim'}">${dif > 0 ? '+' : ''}${fmt(dif)} kg desde ${dataCurta(prim.data)}</span>` : ''}${cintTxt(Ls)}</span>`;
   $('c-perfil').textContent = `${idadeEm(hoje())} anos · ${virgula(ALTURA)} m${u ? ` · basal ~${tmb(u.peso, hoje()).toLocaleString('pt-BR')} kcal/dia` : ''}`;
   avisoHorario(); pintarMedidas();
 };

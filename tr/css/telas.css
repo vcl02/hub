@@ -83,7 +83,6 @@
 .pc-lado i{color:var(--muted)}
 .pc-lado>span{white-space:nowrap}   /* cada informação inteira na sua linha */
 @media (max-width:340px){.pc-lado>span{white-space:normal}}   /* tela muito estreita: quebra em vez de cortar */
-.pc-lado .faixa{font-weight:600}
 .pc-lado .falta{color:var(--muted);font-size:var(--t-xs)}
 .aviso{font-size:var(--t-sm);padding:10px 12px;border-radius:10px;background:var(--blue-soft);color:var(--fg)}
 .aviso b{color:var(--blue)}
