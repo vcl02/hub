@@ -79,7 +79,7 @@ test('marca do hub em todo lugar: favicon, celular, login e o botão de volta no
   assert.match(html, /<link rel="apple-touch-icon" href="icons\/hub-180\.png">/);
   assert.equal([...html.matchAll(/<h1><img class="marca" src="icons\/hub\.svg" alt=""/g)].length, 1);   // só no login; nos cards o título é só o texto
   assert.equal([...html.matchAll(/class="app-icone" src="icons\/hub\.svg"/g)].length, 0);   // nenhum card usa a marca
-  assert.match(html, /href="https:\/\/wa\.me\/\d+"[\s\S]*?src="icons\/whatsapp\.svg"[\s\S]*?<span class="app-nome">Anotações<\/span>/);
+  assert.match(html, /href="https:\/\/wa\.me\/\d+"[\s\S]*?src="icons\/anotacoes\.svg"[\s\S]*?<span class="app-nome">Anotações<\/span>/);
   for (const arquivo of ['icons/hub.svg', 'icons/hub-32.png', 'icons/hub-180.png', 'icons/hub-192.png', 'icons/hub-512.png']) assert.ok(existe(arquivo), arquivo);
   const png = arquivo => { const b = readFileSync(path.join(RAIZ, arquivo)); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };
   for (const [arquivo, lado] of [['icons/hub-32.png', 32], ['icons/hub-180.png', 180], ['icons/hub-192.png', 192], ['icons/hub-512.png', 512]]) assert.deepEqual(png(arquivo), [lado, lado], arquivo);
