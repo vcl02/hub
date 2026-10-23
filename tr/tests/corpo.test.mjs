@@ -64,7 +64,7 @@ test('só tema escuro (o do hub), mesmo com o celular no modo claro', async () =
   await ctx.close();
 });
 
-test('cintura: editar, ver no card e evolução em gráfico', async () => {
+test('barriga (linha do umbigo): editar, ver no card e evolução em gráfico', async () => {
   const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-22T08:00:00') });
   await pg.evaluate(() => { db.medidas.push({ data: '2026-10-15', hora: '08:00', peso: 99, cintura: 104 }); gravar(); });
   await pg.click('#i-corpo');
@@ -72,17 +72,19 @@ test('cintura: editar, ver no card e evolução em gráfico', async () => {
   await pg.fill('#c-peso', '98'); await pg.fill('#c-cintura', '102'); await pg.click('#c-form button[type=submit]');
   assert.equal(await pg.isVisible('#c-cint-box'), true);
   assert.equal(await pg.locator('#c-grafico-cint svg').count(), 1);
-  assert.match(await pg.textContent('#c-resumo'), /Cintura 102 cm · -2 cm/);
+  assert.match(await pg.textContent('#c-resumo'), /Barriga 102 cm · -2 cm/);
+  assert.equal(await pg.textContent('label[for="c-cintura"]'), 'Barriga');
+  assert.equal(await pg.getAttribute('label[for="c-cintura"]', 'title'), 'Na linha do umbigo');
   await pg.click('[data-editar-medida="2026-10-22"]');
   await pg.fill('#em-cint', '101,5'); await pg.click('[data-salvar-medida]');
-  assert.match(await pg.textContent('#c-historico'), /kg · 101,5 cm · IMC/);                // peso e cintura juntos, IMC logo depois
+  assert.match(await pg.textContent('#c-historico'), /kg · 101,5 cm · IMC/);                // peso e barriga juntos, IMC logo depois
   await pg.click('[data-editar-medida="2026-10-22"]');
-  await pg.fill('#em-cint', ''); await pg.click('[data-salvar-medida]');                     // apagar a cintura
+  await pg.fill('#em-cint', ''); await pg.click('[data-salvar-medida]');                     // apagar a barriga
   assert.equal(await pg.evaluate(() => db.medidas.find(m => m.data === '2026-10-22').cintura), undefined);
   assert.deepEqual(erros, []); await ctx.close();
 });
 
-test('cintura sem trava de valor no cadastro e na edição', async () => {
+test('barriga sem trava de valor no cadastro e na edição', async () => {
   const { ctx, pg } = await abrirApp();
   await pg.click('#i-corpo');
   await pg.fill('#c-peso', '90'); await pg.fill('#c-cintura', '12'); await pg.click('#c-form button[type=submit]');

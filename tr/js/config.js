@@ -8,7 +8,7 @@
                      variacoes: [{ id, nome, unidade, passo, lados, equip?, nota? }] }],
       registros:  [{ variacao, data, series: [{ kg, reps, falha? }] }],   // 1 por exercício por dia; kg na unidade da variação; falha = não completou a série
       treinos:    [{ inicio, fim, fechado? }],                     // horários (ms); fim = última interação ou "Finalizar"
-      medidas:    [{ data, hora, peso, cintura? }]                 // peso corporal (kg), horário e cintura (cm)
+      medidas:    [{ data, hora, peso, cintura? }]                 // peso corporal (kg), horário e barriga (cm, linha do umbigo; o campo segue "cintura")
     }
   reps = reps da série mais leve (topo da faixa). modo = crescente | reta | invertida.
   variacoes[0] = principal, [1] = substituto (máquina), [2] = halter. "ativo" = variação em uso.

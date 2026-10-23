@@ -7,11 +7,11 @@ const faixaImc = i => i < 18.5 ? 'abaixo do peso' : i < 25 ? 'normal' : i < 30 ?
 const medidasOrdenadas = () => [...db.medidas].sort((a, b) => b.data.localeCompare(a.data));
 const horaHabitual = () => medidasOrdenadas().find(m => m.hora)?.hora || '';
 let editMedida = null;
-// Cintura mais recente e a variação desde a 1ª medida de cintura (menos cintura = verde)
+// Barriga (linha do umbigo, guardada no campo cintura) mais recente e a variação desde a 1ª medida (menos = verde)
 function cintTxt(Ls) {
   const C = Ls.filter(m => m.cintura); if (!C.length) return '';
   const u = C[0], p = C[C.length - 1], d = Math.round((u.cintura - p.cintura) * 10) / 10;
-  return `<span>Cintura <b>${fmt(u.cintura)} cm</b>${C.length > 1 ? ` · <span class="${d < 0 ? 'bom' : d > 0 ? 'ruim' : ''}">${d > 0 ? '+' : ''}${fmt(d)} cm</span>` : ''}</span>`;
+  return `<span>Barriga <b>${fmt(u.cintura)} cm</b>${C.length > 1 ? ` · <span class="${d < 0 ? 'bom' : d > 0 ? 'ruim' : ''}">${d > 0 ? '+' : ''}${fmt(d)} cm</span>` : ''}</span>`;
 }
 // Botão da balança na tela inicial: ponto azul enquanto não houver pesagem hoje (pesagem diária)
 function pintarCorpoInicio() {
@@ -40,13 +40,13 @@ telas.corpo = () => {
 function pintarMedidas() {
   const Ls = medidasOrdenadas();
   $('c-historico').innerHTML = Ls.length ? Ls.map(m => m.data === editMedida
-    ? `<li class="editando"><span class="ed-inline"><input type="date" id="em-data" value="${m.data}" max="${hoje()}" aria-label="Data"><input type="time" id="em-hora" value="${m.hora}" aria-label="Horário"><input id="em-peso" inputmode="decimal" value="${virgula(m.peso)}" placeholder="kg" title="Peso (kg)" aria-label="Peso em kg"><input id="em-cint" inputmode="decimal" value="${m.cintura ? virgula(m.cintura) : ''}" placeholder="cm" title="Cintura (cm)" aria-label="Cintura em cm"></span><span class="ed-acoes">${btIcone('x', 'Cancelar', 'data-cancelar')}${btIcone('ok', 'Salvar', `data-salvar-medida="${m.data}"`, 'ok')}</span></li>`
+    ? `<li class="editando"><span class="ed-inline"><input type="date" id="em-data" value="${m.data}" max="${hoje()}" aria-label="Data"><input type="time" id="em-hora" value="${m.hora}" aria-label="Horário"><input id="em-peso" inputmode="decimal" value="${virgula(m.peso)}" placeholder="kg" title="Peso (kg)" aria-label="Peso em kg"><input id="em-cint" inputmode="decimal" value="${m.cintura ? virgula(m.cintura) : ''}" placeholder="cm" title="Barriga (cm, linha do umbigo)" aria-label="Barriga em cm"></span><span class="ed-acoes">${btIcone('x', 'Cancelar', 'data-cancelar')}${btIcone('ok', 'Salvar', `data-salvar-medida="${m.data}"`, 'ok')}</span></li>`
     : `<li class="pesagem"><i class="h-d">${dataCurta(m.data)}${m.hora ? '<br>' + m.hora : ''}</i><span class="h-v">${fmt(m.peso)} kg${m.cintura ? ` · ${fmt(m.cintura)} cm` : ''}<small class="h-sub"> · IMC ${fmt(imc(m.peso))}</small></span><span class="ed-acoes">${btIcone('lapis', 'Editar pesagem', `data-editar-medida="${m.data}"`)}${btIcone('lixo', 'Apagar pesagem', `data-apagar-medida="${m.data}"`, 'perigo')}</span></li>`).join('')
     : '<li class="empty">Nenhuma pesagem ainda.</li>';
   grafico($('c-grafico'), Ls.slice(0, 16).reverse().map(m => ({ data: m.data, valor: m.peso })), 'kg', 'Evolução do peso corporal');
   const cint = Ls.filter(m => m.cintura).slice(0, 16).reverse().map(m => ({ data: m.data, valor: m.cintura }));
   $('c-cint-box').hidden = cint.length < 2;
-  if (cint.length > 1) grafico($('c-grafico-cint'), cint, 'cm', 'Evolução da cintura');
+  if (cint.length > 1) grafico($('c-grafico-cint'), cint, 'cm', 'Evolução da barriga');
 }
 $('c-form').addEventListener('submit', ev => {
   ev.preventDefault();

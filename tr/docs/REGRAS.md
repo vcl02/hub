@@ -34,7 +34,7 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 | `tr_variacao` | `id` | exercicio_id, ordem (0 principal, 1 substituto, 2 halter), nome, unidade, passo, lados, equip, nota |
 | `tr_registro` | `variacao_id, data` | series `[{ kg, reps, falha? }]` (`falha: true` só na série que falhou) |
 | `tr_treino` | `inicio` | fim, fechado |
-| `tr_medida` | `data` | hora, peso, cintura |
+| `tr_medida` | `data` | hora, peso, cintura (a barriga, na linha do umbigo: o nome da coluna ficou) |
 
 - O app grava primeiro uma cópia local (`tr.db.<usuário>`) e, 0,8 s depois de cada mudança, envia só as linhas que mudaram em relação à última versão confirmada (`tr.base.<usuário>`): upsert de pais para filhos, delete de filhos para pais.
 - Sem internet, a mudança fica pendente e envia ao reconectar, ao voltar para o app ou a cada 1 min. Ao abrir, envia o pendente e só então baixa a versão da nuvem, que passa a valer.
@@ -70,11 +70,11 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 
 ## Peso corporal
 
-- Pesagem diária: 1 por dia (a nova substitui a do dia), em qualquer horário. Peso de 30 a 300 kg; cintura opcional, sem limite de valor (vazia ou 0 = sem cintura). Na tela inicial, a balança fica no canto superior (ao lado da engrenagem), com um ponto azul enquanto não houver pesagem hoje.
+- Pesagem diária: 1 por dia (a nova substitui a do dia), em qualquer horário. Peso de 30 a 300 kg; **barriga** opcional, medida **na linha do umbigo** (em cm; guardada no campo `cintura`), sem limite de valor (vazia ou 0 = sem barriga). Na tela inicial, a balança fica no canto superior (ao lado da engrenagem), com um ponto azul enquanto não houver pesagem hoje.
 - O horário é livre: o campo vem com a hora de agora. O habitual é o da pesagem mais recente; mais de 1 h fora dele só recomenda voltar a ele (aviso azul), nunca bloqueia.
-- Na edição dá para mudar data, horário, peso e cintura (vazia = sem cintura, sem limite de valor).
-- Gráficos: evolução do peso (com 2+ pesagens) e, com 2+ medidas de cintura, evolução da cintura. Com menos de 2 pontos, o gráfico e o título dele somem (vale também para a evolução da carga dos exercícios). O card do topo mostra a cintura mais recente e a variação desde a 1ª (menos = verde). Data no futuro ou dia que já tem pesagem é recusado.
-- **IMC:** peso ÷ altura² com `ALTURA` = 1,78 m (`js/config.js`), 1 casa decimal. Faixas da OMS: < 18,5 abaixo do peso, < 25 normal, < 30 sobrepeso, ≥ 30 obesidade. Aparece no card do topo da tela de peso (peso atual em destaque, IMC e variação desde a 1ª pesagem) e em cada pesagem do histórico, numa linha só: peso e cintura juntos e o IMC logo depois ("102,3 kg · 40 cm · IMC 32,3"), com a hora embaixo da data.
+- Na edição dá para mudar data, horário, peso e barriga (vazia = sem barriga, sem limite de valor).
+- Gráficos: evolução do peso (com 2+ pesagens) e, com 2+ medidas de barriga, evolução da barriga. Com menos de 2 pontos, o gráfico e o título dele somem (vale também para a evolução da carga dos exercícios). O card do topo mostra a barriga mais recente e a variação desde a 1ª (menos = verde). Data no futuro ou dia que já tem pesagem é recusado.
+- **IMC:** peso ÷ altura² com `ALTURA` = 1,78 m (`js/config.js`), 1 casa decimal. Faixas da OMS: < 18,5 abaixo do peso, < 25 normal, < 30 sobrepeso, ≥ 30 obesidade. Aparece no card do topo da tela de peso (peso atual em destaque, IMC e variação desde a 1ª pesagem) e em cada pesagem do histórico, numa linha só: peso e barriga juntos e o IMC logo depois ("102,3 kg · 101,5 cm · IMC 32,3"), com a hora embaixo da data.
 - **Perfil** (constantes no topo do código, fora do banco): altura 1,78 m, nascimento 14/09/2002, sexo masculino. A tela de peso mostra idade, altura e a taxa basal.
 - **Taxa basal (TMB):** Mifflin-St Jeor = 10 × peso + 6,25 × altura (cm) − 5 × idade + 5 (homem), em kcal/dia, com a idade no dia.
 - **Calorias:** estimativa com MET corrigido = 3,5 MET (Compendium of Physical Activities, 02054) × TMB ÷ 24 × horas de treino, com o peso da pesagem mais recente até o dia. O padrão assume 1 MET = 1 kcal/kg/h para todo mundo; usar a sua basal ajusta a conta para idade, altura e sexo.

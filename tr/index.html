@@ -189,19 +189,19 @@
       </div>
     </div>
     <div class="field">
-      <label for="c-cintura">Cintura</label>
+      <label for="c-cintura" title="Na linha do umbigo">Barriga</label>
       <div class="stepper">
-        <button type="button" data-passo="cintura" data-dir="-1" aria-label="Diminuir cintura">−</button>
+        <button type="button" data-passo="cintura" data-dir="-1" aria-label="Diminuir barriga">−</button>
         <div class="mid"><input id="c-cintura" inputmode="decimal" autocomplete="off" placeholder="—"><span class="unit">cm</span></div>
-        <button type="button" data-passo="cintura" data-dir="1" aria-label="Aumentar cintura">+</button>
+        <button type="button" data-passo="cintura" data-dir="1" aria-label="Aumentar barriga">+</button>
       </div>
     </div>
     <button class="btn primary big" type="submit">Salvar pesagem de hoje</button>
   </form>
   <h3 class="sec">Evolução do peso</h3>
   <div id="c-grafico" class="chart"></div>
-  <!-- Cintura: só aparece com 2+ medidas de cintura -->
-  <div id="c-cint-box" class="view" hidden><h3 class="sec">Evolução da cintura</h3><div id="c-grafico-cint" class="chart"></div></div>
+  <!-- Barriga (linha do umbigo; campo cintura no banco): só aparece com 2+ medidas -->
+  <div id="c-cint-box" class="view" hidden><h3 class="sec">Evolução da barriga</h3><div id="c-grafico-cint" class="chart"></div></div>
   <h3 class="sec">Histórico</h3>
   <ul id="c-historico" class="hist"></ul>
 </section>

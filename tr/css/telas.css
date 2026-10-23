@@ -68,9 +68,9 @@
 .carregando{display:flex;align-items:center;gap:8px;color:var(--blue);font-weight:600;font-size:var(--t-sm)}
 .spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--blue-soft);border-top-color:var(--blue);animation:girar .8s linear infinite}
 @keyframes girar{to{transform:rotate(360deg)}}
-/* Histórico de pesagens: IMC e cintura numa 2ª linha pequena */
+/* Histórico de pesagens: IMC pequeno ao lado */
 .hist .h-v .h-sub{margin-left:0;font-size:var(--t-sm)}
-/* Pesagem: peso · cintura · IMC numa linha só (a hora fica embaixo da data) */
+/* Pesagem: peso · barriga · IMC numa linha só (a hora fica embaixo da data) */
 .hist li.pesagem{gap:10px}
 .hist li.pesagem .h-d{line-height:1.2}
 .hist li.pesagem .h-v{white-space:nowrap}
