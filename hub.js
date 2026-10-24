@@ -4,7 +4,7 @@
 // entrou aqui, os apps abrem direto.
 const SUPABASE_URL = 'https://yzmyncxoskvqzdczaill.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Fq984qUdQO8mGq4PSYmUiQ_ySaLrmEQ';   // publicável; o RLS protege os dados
-const DONO = '2f9bc201-9966-4f37-9963-2f4b9ddab849';   // única conta com acesso (a mesma do tr)
+const DONO = '32f70255-30a0-4e2b-ad76-31d7a1bf54f7';   // única conta com acesso (a mesma do tr)
 const EMAIL_POR_USUARIO = { victor: 'victor.cabrera0209@gmail.com' };   // login aceita o usuário ou o e-mail, como nos apps
 const emailDoLogin = texto => { const t = String(texto || '').trim(); return t.includes('@') ? t : EMAIL_POR_USUARIO[t.toLowerCase()] || null; };
 

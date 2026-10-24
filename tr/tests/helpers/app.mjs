@@ -34,7 +34,7 @@ export function prepararApp() {
 export const CHAVES = { tr_exercicio: ['id'], tr_variacao: ['id'], tr_registro: ['variacao_id', 'data'], tr_treino: ['inicio'], tr_medida: ['data'] };
 export const novaNuvem = () => ({ online: true, tabelas: Object.fromEntries(Object.keys(CHAVES).map(t => [t, []])) });
 const b64u = o => Buffer.from(JSON.stringify(o)).toString('base64url');
-export async function fakeSupabase(ctx, nuvem, id = '2f9bc201-9966-4f37-9963-2f4b9ddab849') {
+export async function fakeSupabase(ctx, nuvem, id = '32f70255-30a0-4e2b-ad76-31d7a1bf54f7') {
   const user = { id, aud: 'authenticated', role: 'authenticated', email: 'eu@teste.com', app_metadata: {}, user_metadata: {} };
   await ctx.route(/supabase\.co\//, async route => {
     const req = route.request(), u = new URL(req.url()), json = (corpo, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(corpo) });

@@ -120,3 +120,18 @@ test('login trava os campos e mostra "Entrando…" sem apagar a senha antes de e
   assert.equal(await pg.inputValue('#l-senha'), '');
   await ctx.close();
 });
+
+test('conta recriada: adota a cópia do aparelho da conta antiga e reenvia tudo à nuvem vazia', async () => {
+  const a = await abrirApp();
+  await a.pg.tap('.slot >> nth=0'); await a.pg.fill('#e-carga', '55'); await a.pg.dispatchEvent('#e-carga', 'input');
+  await a.pg.click('#t-feita'); await a.pg.click('#t-feita');
+  await sincronizado(a.pg);
+  const copia = await a.pg.evaluate(() => store.get(K_LOCAL(usuario.id)));
+  await a.ctx.close();
+  const b = await abrirApp({ antes: `localStorage.setItem('tr.db.' + DONO_ANTIGO, ${JSON.stringify(copia)})` });   // nuvem nova, vazia
+  await sincronizado(b.pg);
+  assert.deepEqual(b.nuvem.tabelas.tr_registro.map(r => r.series), [[{ kg: 55, reps: 8 }]]);
+  assert.equal(b.nuvem.tabelas.tr_exercicio.length, 6);
+  assert.ok(await b.pg.evaluate(() => store.get(K_LOCAL(DONO_ANTIGO))));                     // a antiga fica como reserva
+  assert.deepEqual(b.erros, []); await b.ctx.close();
+});

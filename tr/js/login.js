@@ -16,6 +16,9 @@ async function entrou() {
 async function carregar(u) {
   if (u.id !== DONO) { try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {} telaLogin('Esta conta não tem acesso ao Treino.'); return; }
   usuario = u;
+  // Conta recriada: a nuvem da antiga foi apagada junto com ela. Adota a cópia do aparelho feita com a
+  // conta antiga (sem a base, tudo fica pendente e é reenviado). A chave antiga fica como reserva.
+  if (!store.get(K_LOCAL(u.id)) && store.get(K_LOCAL(DONO_ANTIGO))) store.set(K_LOCAL(u.id), store.get(K_LOCAL(DONO_ANTIGO)));
   let local = null;
   try { local = JSON.parse(store.get(K_LOCAL(u.id))); base = JSON.parse(store.get(K_BASE(u.id))); } catch (e) { local = null; }
   if (local) { db = local; await entrou(); }
