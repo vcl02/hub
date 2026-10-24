@@ -778,6 +778,24 @@ calcInput.addEventListener('keyup', calcRenderiza);
 
 el('abreNovo').onclick = () => abreModalNovo();
 el('fechaNovo').onclick = () => modalNovo.close();
+// Depois de salvar um lançamento real no cadastro, ao fechar o modal roda o Consolidar tudo em
+// silêncio (recarrega do banco e materializa/consolida, como o botão Recarregar, mas sem voltar
+// ao ciclo atual nem limpar filtros). Espera a tela ficar livre (outro modal, carga ou
+// Aporte/Resgate gravando) e só avisa se gravou algo.
+let consolidarAoFecharCadastro = false;
+function consolidarDepoisDoCadastro() {
+    if (Estado.simulando) return;
+    if (document.querySelector('dialog[open]') || el('recarregar').disabled || Estado.gravandoAjuste) {
+        setTimeout(consolidarDepoisDoCadastro, 300);
+        return;
+    }
+    consolidarTudo(el('recarregar'), () => {}, { silencioso: true });
+}
+modalNovo.addEventListener('close', () => {
+    if (!consolidarAoFecharCadastro) return;
+    consolidarAoFecharCadastro = false;
+    consolidarDepoisDoCadastro();
+});
 el('salvaNovo').onclick = () => submeteNovoLancamento();
 modalNovo.addEventListener('click', e => { if (e.target == modalNovo) modalNovo.close(); });
 
@@ -1257,6 +1275,7 @@ async function submeteNovoLancamento() {
         popularCategoriasNoForm();   // recalcula popularidade com o lancamento recem-criado
         popularNomesNoForm();        // a próxima digitação já oferece o novo nome e categoria
         if (Estado._compraDaMeta) await avancarCompraDaMeta();
+        if (!Estado.simulando) consolidarAoFecharCadastro = true;
         desenhar();
         el('fNome').focus();
     } catch (err) {
