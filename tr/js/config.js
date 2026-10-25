@@ -15,8 +15,9 @@
   unidade = kg | lb | nível (máquina que marca só a posição/placa, sem peso). passo = quanto a pirâmide sobe (anilha/placa). lados = 2 quando o peso é por lado.
   Pontos, nível, conquistas e calorias são calculados a partir desses dados (nada extra é guardado).
   Fotos das máquinas ficam fora do banco: localStorage "carga.foto.<variação>".
+  Altura, nascimento e sexo (IMC, idade, taxa basal) vêm do perfil do hub: ../perfil.js (PERFIL, idadeEm, tmb).
 */
-// Este módulo: Configuração do app: Supabase, conta, perfil, dias de treino, exercícios padrão e guia de execução.
+// Este módulo: Configuração do app: Supabase, conta, dias de treino, exercícios padrão e guia de execução.
 
 // ===== Supabase (chave publicável: pode ficar no código; quem protege os dados é o RLS por usuário) =====
 const SUPABASE_URL = 'https://yzmyncxoskvqzdczaill.supabase.co';
@@ -29,9 +30,6 @@ const emailDoLogin = texto => { const t = String(texto || '').trim(); return t.i
 // ===== Configuração =====
 const DIAS_FIXOS = [3, 4];   // quarta, quinta (Date.getDay)
 const DIAS_EXTRA = [1];      // segunda (sugerido)
-// Perfil (só no código): IMC, taxa metabólica basal e calorias
-const ALTURA = 1.78;         // metros
-const NASCIMENTO = '2002-09-14', SEXO = 'M';
 const TIPOS = ['Principal', 'Substituto', 'Halter'];
 const REGIOES = ['Pernas', 'Superior'];
 const UNIDADES = ['kg', 'lb', 'nível'];

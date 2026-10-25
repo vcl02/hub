@@ -2,7 +2,7 @@
 // Peso corporal: pesagens, horário habitual, IMC e taxa basal.
 // ===== Peso corporal =====
 // IMC = peso / altura² · faixas da OMS (adultos)
-const imc = peso => Math.round(peso / ALTURA ** 2 * 10) / 10;
+const imc = peso => Math.round(peso / PERFIL.altura ** 2 * 10) / 10;
 // Faixas da OMS para adultos, com os graus de magreza e de obesidade: [limite de cima (exclusivo), nome]
 const FAIXAS_IMC = [[16, 'Magreza III'], [17, 'Magreza II'], [18.5, 'Magreza I'], [25, 'Normal'], [30, 'Sobrepeso'],
   [35, 'Obesidade I'], [40, 'Obesidade II'], [Infinity, 'Obesidade III']];
@@ -49,7 +49,7 @@ telas.corpo = () => {
   const prim = Ls[Ls.length - 1], dif = u ? Math.round((u.peso - prim.peso) * 10) / 10 : 0;
   $('c-resumo').hidden = !u;
   if (u) $('c-resumo').innerHTML = `<b>${fmt(u.peso)}<small>kg</small></b><span class="pc-lado">${u.data !== hoje() ? `<span><i>${quando(u.data)}</i></span>` : ''}<span>IMC <b>${fmt(imc(u.peso))}</b> · <b>${faixaImc(imc(u.peso))}</b></span>${rumoAoNormal(u.peso) ? `<span class="falta">${rumoAoNormal(u.peso)}</span>` : ''}${Ls.length > 1 && dif ? `<span class="${dif < 0 ? 'bom' : 'ruim'}">${dif > 0 ? '+' : ''}${fmt(dif)} kg desde ${dataCurta(prim.data)}</span>` : ''}${cintTxt(Ls)}</span>`;
-  $('c-perfil').textContent = `${idadeEm(hoje())} anos · ${virgula(ALTURA)} m${u ? ` · basal ~${tmb(u.peso, hoje()).toLocaleString('pt-BR')} kcal/dia` : ''}`;
+  $('c-perfil').textContent = `${idadeEm(hoje())} anos · ${virgula(PERFIL.altura)} m${u ? ` · basal ~${tmb(u.peso, hoje()).toLocaleString('pt-BR')} kcal/dia` : ''}`;
   avisoHorario(); pintarMedidas();
 };
 function pintarMedidas() {

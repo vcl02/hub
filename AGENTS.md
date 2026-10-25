@@ -11,6 +11,7 @@
 | Caminho | O que é |
 |---|---|
 | `index.html` · `hub.css` · `hub.js` | Página inicial: login e um card por app (só ícone e nome, sem subtítulo) |
+| `perfil.js` | Perfil do mantenedor (altura, nascimento, sexo) e `idadeEm`/`tmb`, para todos os apps; o tr carrega com `../perfil.js` |
 | `supabase.js` | `@supabase/supabase-js` (UMD), cópia byte a byte de `tr/supabase.js` (o teste confere); atualize os dois juntos |
 | `sw.js` · `manifest.webmanifest` · `icons/` | Instalação e cache offline da página inicial |
 | `fin/` · `tr/` | Os apps, cada um com `index.html`, service worker e manifest próprios |
@@ -34,6 +35,7 @@
   - Chaves de `localStorage` e nomes de cache sempre com prefixo do app (`fin-`, `carga-`/`tr.`, `hub-`). Nenhum service worker apaga cache de outro prefixo.
   - A sessão do Supabase (mesmo projeto, mesma chave) vale para todos os apps: entrar em um entra em todos, e Sair em qualquer um sai de todos.
 - O service worker da raiz só atende os arquivos da própria página inicial; cada app tem o seu, com escopo na própria pasta.
+- **Perfil num lugar só:** dados pessoais (altura, nascimento, sexo) e o que sai deles (idade, taxa basal) ficam em `perfil.js`, só no código e fora do banco. App que usa carrega `<script src="../perfil.js">` antes dos próprios scripts e põe `../perfil.js` no próprio service worker (offline); nenhum app repete esses valores.
 
 ## Atalho externo
 
@@ -45,6 +47,7 @@
 1. Crie a pasta (`nome/`) com `index.html`, caminhos relativos e o ícone do hub para `../`.
 2. Acrescente o card em `index.html` (o teste `tests/hub.test.mjs` confere a lista e que a pasta tem `index.html`) e a pasta ao `scripts/check.mjs` se ela tiver validação própria.
 3. Use a paleta escura e prefixe chaves de `localStorage` e caches.
+4. Precisa de altura, idade, sexo ou taxa basal? Use `perfil.js` (ver Regras do hub).
 
 ## Como concluir uma mudança
 

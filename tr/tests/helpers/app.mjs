@@ -15,7 +15,9 @@ let servidor;
 export function prepararApp() {
   before(async () => {
     servidor = http.createServer((req, res) => {
-      let p = path.join(RAIZ, decodeURIComponent(req.url.split('?')[0]));
+      // Fora do hub o tr fica na raiz do servidor: ../perfil.js (perfil do hub) chega como /perfil.js.
+      const u = decodeURIComponent(req.url.split('?')[0]);
+      let p = u === '/perfil.js' ? path.join(RAIZ, '..', 'perfil.js') : path.join(RAIZ, u);
       if (p.endsWith(path.sep)) p += 'index.html';
       fs.readFile(p, (e, d) => {
         if (e) { res.writeHead(404); res.end(); return; }

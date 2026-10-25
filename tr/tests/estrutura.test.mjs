@@ -42,6 +42,8 @@ test('index.html carrega todos os css/ e js/, e o service worker guarda os mesmo
   assert.deepEqual([...jsDoHtml].sort(), listar('js', '.js').sort());
   assert.equal(jsDoHtml[0], 'js/config.js'); assert.equal(jsDoHtml.at(-1), 'js/bootstrap.js');
   assert.ok(html.indexOf('src="supabase.js"') < html.indexOf('src="js/'), 'supabase.js antes dos módulos');
+  assert.ok(html.indexOf('src="../perfil.js"') > 0 && html.indexOf('src="../perfil.js"') < html.indexOf('src="js/'), '../perfil.js (perfil do hub) antes dos módulos');
+  assert.match(ler('sw.js'), /'\.\.\/perfil\.js'/, 'sw.js guarda ../perfil.js');
   const sw = ler('sw.js'), guardados = [...sw.matchAll(/'\.\/([^']*)'/g)].map(m => m[1]);
   for (const f of [...cssDoHtml, ...jsDoHtml, 'index.html', 'supabase.js', 'manifest.webmanifest']) assert.ok(guardados.includes(f), `sw.js não guarda ${f}`);
   for (const f of guardados.filter(Boolean)) assert.ok(existsSync(path.join(RAIZ, f)), `sw.js guarda ${f}, que não existe`);

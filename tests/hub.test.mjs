@@ -108,3 +108,17 @@ test('card não fica selecionado ao voltar de um app: hover só com mouse, toque
   assert.match(ler('hub.css'), /\.app\.tocado \{/);                                  // o toque ainda dá a crescidinha
   assert.match(hub, /classList\.add\('tocado'\); toque = setTimeout\(soltarCard, ms\)/);   // e ela some sozinha
 });
+
+test('perfil do hub (perfil.js): dados pessoais num lugar só, carregados pelo tr', () => {
+  const perfil = ler('perfil.js');
+  assert.match(perfil, /^'use strict';\n\/\/ /);
+  const ctx = {};
+  new Function('ctx', perfil.replace(/^'use strict';/, '') + '\nctx.PERFIL = PERFIL; ctx.idadeEm = idadeEm; ctx.tmb = tmb;')(ctx);
+  assert.deepEqual({ ...ctx.PERFIL }, { altura: 1.78, nascimento: '2002-09-14', sexo: 'M' });
+  assert.ok(Object.isFrozen(ctx.PERFIL));
+  assert.equal(ctx.idadeEm('2026-09-13'), 23);   // véspera do aniversário
+  assert.equal(ctx.idadeEm('2026-09-14'), 24);
+  assert.equal(ctx.tmb(100, '2026-09-14'), 1998);   // 10×100 + 6,25×178 − 5×24 + 5
+  assert.match(ler('tr/index.html'), /<script src="\.\.\/perfil\.js"><\/script>/);
+  assert.doesNotMatch(ler('tr/js/config.js'), /const (ALTURA|NASCIMENTO|SEXO)\b/, 'perfil não se repete no tr');
+});

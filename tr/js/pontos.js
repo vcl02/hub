@@ -104,9 +104,6 @@ telas.conquistas = () => {
 };
 // Calorias: MET × peso corporal (kg) × horas. Usa a pesagem mais recente até o dia do treino.
 function pesoEm(dia) { const L = [...db.medidas].sort((a, b) => b.data.localeCompare(a.data)); return (L.find(m => m.data <= dia) || L[L.length - 1])?.peso; }
-function idadeEm(dia) { const [a, m, d] = dia.split('-').map(Number), [na, nm, nd] = NASCIMENTO.split('-').map(Number); return a - na - (m < nm || (m === nm && d < nd) ? 1 : 0); }
-// Taxa metabólica basal (Mifflin-St Jeor), kcal/dia
-const tmb = (peso, dia) => Math.round(10 * peso + 6.25 * ALTURA * 100 - 5 * idadeEm(dia) + (SEXO === 'M' ? 5 : -161));
 // MET corrigido: 1 MET = a sua taxa basal (não os 1 kcal/kg/h do padrão), então idade, altura e sexo entram na conta
 const kcal = t => { const dia = iso(new Date(t.inicio)), p = pesoEm(dia); return p ? Math.round(MET * tmb(p, dia) / 24 * (t.fim - t.inicio) / 36e5) : null; };
 function resumoDia(dia) {
