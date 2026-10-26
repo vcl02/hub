@@ -61,6 +61,6 @@
 
 - Os apps usam o mesmo projeto Supabase (`fin`, tabelas `tr_*`, `al_*`, `corpo_*` e `agua_*`), pelo cliente do navegador e com a chave publicável. Nunca coloque chave de serviço nem segredo no repositório, que é público.
 - Edge Functions (código versionado, publicado por deploy pelo mantenedor): `fin/supabase/functions/captura-nubank` e `al/supabase/functions/al-estimar` (IA do al; a chave da Anthropic fica só no secret `ANTHROPIC_API_KEY`).
-- O al só lê `tr_treino` e `corpo_medida` (treinos e peso para o gasto do dia); o tr só lê `corpo_medida`. `tr_medida` (onde o tr gravava as pesagens) ficou sem uso; a migration `corpo/00` copiou tudo para `corpo_medida`.
+- O al só lê `tr_treino` e `corpo_medida` (treinos e peso para o gasto do dia); o tr só lê `corpo_medida`. `tr_medida` (onde o tr gravava as pesagens) foi copiada para `corpo_medida` pela migration `corpo/00` e depois apagada pelo mantenedor (por isso a `corpo/00` não roda de novo).
 - Conta `DONO` recriada em 24/10/2026 (id novo em `hub.js` e `tr/js/config.js`; policies trocadas pelas migrations `fin/40` e `tr/04`). Apagar a conta apaga as linhas `tr_*` (on delete cascade): para trocar senha, use a troca de senha, nunca recrie a conta.
 - Qualquer operação remota que mude estado no Supabase (dados, esquema, RLS, Auth) exige confirmação explícita do mantenedor, com alvo e efeito informados. Consultas só de leitura podem apoiar diagnóstico (`.mcp.json` já é somente leitura).

@@ -44,6 +44,16 @@ test('lembretes: em casa de hora em hora das 10 às 16; o atrasado da vez vira "
   await ctx.close();
 });
 
+test('lembretes: depois das 17h não chama mais para beber (mesmo com o das 16:00 atrasado)', async () => {
+  const { ctx, pg } = await abrirApp({ relogio: new Date('2026-10-19T16:40:00-03:00') });
+  assert.equal(await texto(pg, '#l-agora'), 'Hora de beber água (16:00)');
+  await pg.clock.fastForward('00:30:00');                                   // 17:10
+  await pg.evaluate(() => desenhar());
+  assert.equal(await pg.isVisible('#l-agora'), false);
+  assert.match(await pg.getAttribute('#l-horas li:last-child', 'class'), /atrasado/);   // a etiqueta continua mostrando que passou
+  await ctx.close();
+});
+
 test('lembretes: presencial (qua e qui) e fim de semana de 2 em 2 horas; antes das 10 nada atrasado', async () => {
   for (const [quando, dia] of [['2026-10-21T08:00:00-03:00', 'quarta'], ['2026-10-24T08:00:00-03:00', 'sábado']]) {
     const { ctx, pg } = await abrirApp({ relogio: new Date(quando) });

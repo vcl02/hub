@@ -17,10 +17,12 @@ function lembretes(dia, agora = agoraHHMM()) {
     return { hora, estado: feito ? 'feito' : chegou ? 'atrasado' : 'depois' };
   });
 }
-// Lembrete da vez: o mais recente que já chegou e não foi cumprido (só hoje)
+// Lembrete da vez: o mais recente que já chegou e não foi cumprido (só hoje, e só até 1 h depois do último horário:
+// à noite não chama para beber)
 function lembreteAgora(dia) {
   if (dia !== hoje()) return null;
   const L = lembretes(dia), m = minutos(agoraHHMM());
+  if (m >= (LEMBRETE_FIM + 1) * 60) return null;
   const atual = [...L].reverse().find(x => minutos(x.hora) <= m);
   return atual && atual.estado === 'atrasado' ? atual : null;
 }

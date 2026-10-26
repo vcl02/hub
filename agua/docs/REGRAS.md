@@ -18,7 +18,7 @@
 - Das **10 às 16**, nunca antes nem depois (para não precisar levantar de noite para o banheiro).
 - **Em casa** (dia útil fora dos presenciais: seg, ter e sex): de hora em hora (10, 11, …, 16).
 - **Presencial** (qua e qui, `ROTINA.presencial` em `../corpo/perfil.js`) e **fim de semana**: de 2 em 2 horas (10, 12, 14, 16).
-- Cada horário vale até o próximo; é cumprido quando há água bebida nesse intervalo (ou até 30 min antes dele): etiqueta com ✓. Passou sem beber: vermelha. O mais recente que já chegou e não foi cumprido aparece em destaque: "Hora de beber água (11:00)". Some ao beber.
+- Cada horário vale até o próximo; é cumprido quando há água bebida nesse intervalo (ou até 30 min antes dele): etiqueta com ✓. Passou sem beber: vermelha. O mais recente que já chegou e não foi cumprido aparece em destaque: "Hora de beber água (11:00)". Some ao beber, e a partir das 17h não aparece mais (à noite não chama para beber).
 - Com o app aberto, a tela se atualiza a cada minuto.
 
 ## Bexiga
