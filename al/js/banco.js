@@ -104,6 +104,7 @@ function preparar(d) {
   const registros = (d?.registros || []).filter(r => r && r.id && /^\d{4}-\d{2}-\d{2}$/.test(r.data) && txt(r.nome, 60))
     .map(r => ({ id: String(r.id), data: r.data, hora: /^\d{2}:\d{2}$/.test(r.hora) ? r.hora : '', ...(r.item && { item: String(r.item) }),
       nome: txt(r.nome, 60), porcao: txt(r.porcao, 60), qtd: num(r.qtd) > 0 ? Math.min(num(r.qtd), 20) : 1, ...valores(r) }));
-  const dias = (d?.dias || []).filter(x => x && /^\d{4}-\d{2}-\d{2}$/.test(x.data)).map(x => ({ data: x.data, andou: x.andou === true }));
+  // Só os dias com caminhada: linha com andou false (das 1ªs versões, que desmarcavam sem apagar) é o mesmo que nenhuma
+  const dias = (d?.dias || []).filter(x => x && /^\d{4}-\d{2}-\d{2}$/.test(x.data) && x.andou === true).map(x => ({ data: x.data, andou: true }));
   return { itens, registros, dias };
 }

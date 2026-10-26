@@ -92,8 +92,9 @@ $('d-prox').addEventListener('click', () => { if (diaVisto < hoje()) { diaVisto 
 $('semana').addEventListener('click', ev => { const b = ev.target.closest('[data-dia]'); if (b) { diaVisto = b.dataset.dia; previa = null; desenhar(); } });
 
 $('andei').addEventListener('click', () => mudar(() => {
-  const d = db.dias.find(x => x.data === diaVisto);
-  if (d) d.andou = !d.andou; else db.dias.push({ data: diaVisto, andou: true });
+  // Desmarcar apaga o dia: sem caminhada não fica linha (nem conta como dia com registro)
+  if (db.dias.some(x => x.data === diaVisto)) db.dias = db.dias.filter(x => x.data !== diaVisto);
+  else db.dias.push({ data: diaVisto, andou: true });
 }));
 
 $('f-texto').addEventListener('input', pintarSugestoes);

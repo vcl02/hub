@@ -11,7 +11,7 @@
 - **Basal:** Mifflin-St Jeor com o perfil do hub (`../perfil.js`) e a idade no dia.
 - **Rotina:** basal × 1,2 (fator de atividade sedentário).
 - **Treino:** treinos do dia no Treino. Soma só o que passa da basal: calorias do treino (`kcalTreino`, 3,5 MET × basal/hora × horas, a mesma conta do Treino) − basal/hora × horas = (3,5 − 1) × basal ÷ 24 × horas.
-- **Caminhada:** toque "Andei hoje" (ou "Andei neste dia") por dia, gravado em `al_dia`. Soma 40 min de caminhada moderada: (3,5 − 1) × basal ÷ 24 × 40/60. O botão mostra o efeito no saldo ("Andei hoje · −139 kcal no saldo"): o gasto sobe e o saldo desce esse tanto.
+- **Caminhada:** toque "Andei hoje" (ou "Andei neste dia") por dia, gravado em `al_dia`; desmarcar apaga a linha do dia (linha antiga com `andou` falso vale como nenhuma). Soma 40 min de caminhada moderada: (3,5 − 1) × basal ÷ 24 × 40/60. O botão mostra o efeito no saldo ("Andei hoje · −139 kcal no saldo"): o gasto sobe e o saldo desce esse tanto.
 - **Gasto** = rotina + treino + caminhada (se marcada). Valores arredondados para kcal inteiras em cada parte.
 
 ## Saldo

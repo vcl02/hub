@@ -25,6 +25,10 @@ test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei hoje" soma a 
   assert.match(await texto(pg, '#s-gasto'), /Caminhada \+139/);
   await sincronizado(pg);
   assert.deepEqual(nuvem.tabelas.al_dia.map(x => [x.data, x.andou]), [[DIA, true]]);
+  await pg.click('#andei');                                      // desmarcar apaga a linha do dia
+  assert.equal(await texto(pg, '#s-valor'), '−2.606');
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.al_dia, []);
   assert.deepEqual(erros, []);
   await ctx.close();
 });
@@ -109,7 +113,9 @@ test('lista do dia: porções mudam o total e apagar pede toque duplo', async ()
 });
 
 test('app novo começa hoje: sem dia anterior para ver e só hoje nos últimos 7 dias', async () => {
-  const { ctx, pg } = await abrirApp({ nuvem: comTreino(novaNuvem()) });
+  const nuvem = comTreino(novaNuvem());
+  nuvem.tabelas.al_dia.push({ user_id: 'x', data: '2026-09-12', andou: false });   // "Andei" desmarcado numa versão antiga: não conta
+  const { ctx, pg } = await abrirApp({ nuvem });
   assert.equal(await pg.isDisabled('#d-ant'), true);
   assert.equal(await pg.isDisabled('#d-prox'), true);
   assert.equal(await pg.locator('#semana li').count(), 1);
