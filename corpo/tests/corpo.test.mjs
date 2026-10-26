@@ -99,19 +99,17 @@ test('histórico: editar data, horário, peso e barriga (1 por dia), apagar com 
   await ctx.close();
 });
 
-test('evacuação: +1 grava com o horário de agora, conta, tira com toque duplo e mostra a última', async () => {
+test('evacuação: +1 grava com o horário de agora, conta, tira com toque duplo e avisa com 3 dias sem', async () => {
   const nuvem = novaNuvem();
   nuvem.tabelas.corpo_dia.push({ user_id: DONO, data: '2026-10-19', evacuou: null, evacuacoes: [''], sono: null });   // o sim da migration 01, já convertido pela 02
   const { ctx, pg, erros } = await abrirApp({ nuvem });                 // 22/10, 08:00
   assert.equal(await texto(pg, '#ev-total'), '0');
-  assert.equal(await texto(pg, '#ev-ultima'), 'Última: há 3 dias (19/10)');
-  assert.match(await pg.getAttribute('#ev-ultima', 'class'), /alerta/);
+  assert.equal(await texto(pg, '#ev-ultima'), '3 dias sem evacuar (última em 19/10)');   // só aparece com 3 dias ou mais
   await pg.click('#ev-mais');
   await pg.clock.fastForward('06:30:00'); await pg.click('#ev-mais');   // 14:30
   assert.equal(await texto(pg, '#ev-total'), '2');
   assert.deepEqual(await pg.$$eval('#ev-horas button', B => B.map(b => b.textContent)), ['08:00 ×', '14:30 ×']);
-  assert.equal(await texto(pg, '#ev-ultima'), 'Última: hoje 14:30');
-  assert.doesNotMatch(await pg.getAttribute('#ev-ultima', 'class'), /alerta/);
+  assert.equal(await pg.isVisible('#ev-ultima'), false);                  // evacuou hoje: sem linha
   await pg.click('[data-tirar-ev="0"]');
   assert.equal(await texto(pg, '#ev-total'), '2');                       // 1º toque só arma
   await pg.click('[data-tirar-ev="0"]');

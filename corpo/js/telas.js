@@ -61,11 +61,10 @@ function pintarEvacuacao() {
   $('ev-total').textContent = ev.length;
   $('ev-horas').innerHTML = ev.map((h, i) => `<li><button type="button" data-tirar-ev="${i}" title="Tirar (toque duplo)" aria-label="Tirar evacuação ${h || 'sem horário'}">${h || 'sem horário'} ×</button></li>`).join('');
   const ultima = [...db.dias].reverse().find(d => d.evacuacoes.length && d.data <= hoje());
-  $('ev-ultima').hidden = !ultima;
-  if (!ultima) return;
-  const n = Math.round((deIso(hoje()) - deIso(ultima.data)) / 864e5), h = ultima.evacuacoes[ultima.evacuacoes.length - 1];
-  $('ev-ultima').textContent = n === 0 ? `Última: hoje${h ? ' ' + h : ''}` : n === 1 ? `Última: ontem${h ? ' ' + h : ''}` : `Última: há ${n} dias (${dataCurta(ultima.data)})`;
-  $('ev-ultima').classList.toggle('alerta', n >= SEM_EVACUAR_ALERTA);
+  // Só avisa quando faz 3 dias ou mais desde a última evacuação (prisão de ventre é comum em dieta: fibra e água)
+  const n = ultima ? Math.round((deIso(hoje()) - deIso(ultima.data)) / 864e5) : 0;
+  $('ev-ultima').hidden = !ultima || n < SEM_EVACUAR_ALERTA;
+  if (!$('ev-ultima').hidden) $('ev-ultima').textContent = `${n} dias sem evacuar (última em ${dataCurta(ultima.data)})`;
 }
 // Muda o registro do dia do formulário; dia que fica sem evacuação nem sono sai (preparar)
 function mudarDia(acao) {

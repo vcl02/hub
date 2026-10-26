@@ -69,8 +69,7 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 .ev-horas:empty{display:none}
 .ev-horas button{border:1px solid var(--line);border-radius:999px;background:transparent;padding:4px 10px;font-size:.875rem;color:var(--fg)}
 .ev-horas button.armado{border-color:var(--red);background:var(--red);color:var(--bg)}
-.evac-ultima{font-size:.875rem;color:var(--muted)}
-.evac-ultima.alerta{color:var(--red);font-weight:600}
+.evac-ultima{font-size:.875rem;color:var(--red);font-weight:600}   /* só aparece como aviso: 3+ dias sem evacuar */
 
 /* ---------- Gráficos ---------- */
 .chart{padding:10px}

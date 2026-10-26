@@ -22,7 +22,7 @@
 - Cartão logo abaixo do formulário, para o mesmo dia escolhido nele, gravado em `corpo_dia` (1 linha por dia; dia sem sono nem evacuação não fica guardado).
 - **Sono:** horas (de 0 a 24, vírgula aceita), salvas ao sair do campo; vazio tira.
 - **Evacuação:** quantas no dia e um **+1**, que grava com o horário de agora (o do celular, fuso de São Paulo). Cada horário aparece como etiqueta; tocar duas vezes tira. O "sim" antigo (migration 01) aparece como "sem horário".
-- Embaixo, a última evacuação: "Última: hoje 14:30", "ontem 21:15" ou "há 3 dias (19/10)". Com 3 dias ou mais, em vermelho (prisão de ventre é comum em dieta: fibra e água).
+- Sem linha da última evacuação. Só com 3 dias ou mais desde a última aparece, em vermelho, "3 dias sem evacuar (última em 19/10)" (prisão de ventre é comum em dieta: fibra e água).
 - Sem a tabela `corpo_dia` ou sem as colunas da migration 02 no banco, o cartão some e o resto do Corpo funciona normal.
 
 ## Peso atual
