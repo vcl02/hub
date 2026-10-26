@@ -71,16 +71,16 @@ export async function fakeSupabase(ctx, nuvem, id = DONO) {
   });
 }
 
-// Peso de 100 kg e 1 h de treino no dia 14/09/2026 (aniversário: 24 anos, basal 1998 kcal).
-export const DIA = '2026-09-14';
+// Peso de 100 kg e 1 h de treino na quinta 17/09/2026 (24 anos desde 14/09: basal 1998 kcal). Quinta não é dia de caminhada.
+export const DIA = '2026-09-17';
 export const comTreino = nuvem => {
   nuvem.tabelas.corpo_medida.push({ user_id: DONO, data: '2026-09-10', hora: '', peso: '100', cintura: null });
-  nuvem.tabelas.tr_treino.push({ user_id: DONO, inicio: '2026-09-14T13:00:00+00:00', fim: '2026-09-14T14:00:00+00:00', fechado: true });
+  nuvem.tabelas.tr_treino.push({ user_id: DONO, inicio: '2026-09-17T13:00:00+00:00', fim: '2026-09-17T14:00:00+00:00', fechado: true });
   return nuvem;
 };
 
 // Fontes do Google são bloqueadas para o teste não depender de internet. Relógio fixo no meio da tarde do DIA.
-export async function abrirApp({ nuvem = novaNuvem(), conta, relogio = new Date('2026-09-14T15:30:00-03:00') } = {}) {
+export async function abrirApp({ nuvem = novaNuvem(), conta, relogio = new Date('2026-09-17T15:30:00-03:00') } = {}) {
   const ctx = await app.navegador.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, timezoneId: 'America/Sao_Paulo', serviceWorkers: 'block' });
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   await fakeSupabase(ctx, nuvem, conta);

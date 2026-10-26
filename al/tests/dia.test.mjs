@@ -113,6 +113,41 @@ test('hoje passou da meta: mostra quanto passou (vermelho), e os macros que pass
   await ctx.close();
 });
 
+test('segunda e terça (rotina): "Andei" já vem marcado; desmarcar grava "não andei" e não conta como 1º dia do app', async () => {
+  const nuvem = comTreino(novaNuvem());
+  const { ctx, pg } = await abrirApp({ nuvem, relogio: new Date('2026-09-14T09:00:00-03:00') });   // segunda
+  assert.equal(await pg.getAttribute('#andei', 'aria-pressed'), 'true');
+  assert.equal(await texto(pg, '#c-kcal'), '−66 kcal');                  // padrão 20 min
+  assert.match(await texto(pg, '#s-gasto'), /\+ caminhada 66/);
+  assert.equal(nuvem.tabelas.al_dia.length, 0);                          // marcado pela rotina, sem linha
+  await pg.fill('#c-km', '2,5'); await pg.locator('#c-km').blur();       // os campos criam a linha do dia
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.al_dia.map(x => [x.data, x.andou, x.km]), [['2026-09-14', true, 2.5]]);
+  await pg.click('#andei');                                               // hoje não fui
+  assert.equal(await pg.getAttribute('#andei', 'aria-pressed'), 'false');
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.al_dia.map(x => [x.data, x.andou]), [['2026-09-14', false]]);
+  await pg.reload(); await pg.waitForSelector('#v-dia:not([hidden])');
+  assert.equal(await pg.getAttribute('#andei', 'aria-pressed'), 'false');   // continua desmarcado
+  await pg.click('#andei');
+  assert.equal(await pg.getAttribute('#andei', 'aria-pressed'), 'true');
+  await ctx.close();
+});
+
+test('dia de treino (quarta e quinta) ainda sem treino: avisa quanto a meta sobe depois de treinar', async () => {
+  const nuvem = novaNuvem();
+  nuvem.tabelas.corpo_medida.push({ user_id: 'x', data: '2026-09-10', hora: '', peso: '100', cintura: null });
+  nuvem.tabelas.tr_treino.push({ user_id: 'x', inicio: '2026-09-10T13:00:00+00:00', fim: '2026-09-10T13:45:00+00:00', fechado: true });
+  const { ctx, pg } = await abrirApp({ nuvem, relogio: new Date('2026-09-16T08:00:00-03:00') });   // quarta, antes de treinar
+  // duração média dos treinos: 45 min · 3,5 × 1998 ÷ 24 × 0,75 = 219, menos a basal dessas horas (62) = 157
+  assert.equal(await texto(pg, '#s-previsto'), 'Treino previsto hoje: +157 kcal depois de treinar (~45 min)');
+  assert.equal(await texto(pg, '#s-valor'), '1.898');                    // a meta ainda não conta o treino
+  await ctx.close();
+  const b = await abrirApp({ nuvem: comTreino(novaNuvem()) });         // quinta já com treino registrado: sem aviso
+  assert.equal(await b.pg.isVisible('#s-previsto'), false);
+  await b.ctx.close();
+});
+
 test('IA fora do ar: avisa e abre a prévia para digitar à mão, com o nome já preenchido', async () => {
   const nuvem = novaNuvem();
   nuvem.ia = () => ({ status: 503, corpo: { erro: 'IA não configurada' } });
@@ -162,12 +197,12 @@ test('app novo começa hoje: sem dia anterior para ver e só hoje nos últimos 7
 
 test('dias anteriores: ‹ e os últimos 7 dias mostram o dia, com saldo e média dos dias com comida', async () => {
   const nuvem = comTreino(novaNuvem());
-  nuvem.tabelas.al_registro.push({ user_id: 'x', id: 'r1', data: '2026-09-13', hora: '20:00', item_id: null, nome: 'Pizza', porcao: '4 fatias', qtd: '1', kcal: '1100', prot: '44', carb: '120', gord: '48' });
+  nuvem.tabelas.al_registro.push({ user_id: 'x', id: 'r1', data: '2026-09-16', hora: '20:00', item_id: null, nome: 'Pizza', porcao: '4 fatias', qtd: '1', kcal: '1100', prot: '44', carb: '120', gord: '48' });
   const { ctx, pg } = await abrirApp({ nuvem });
   assert.equal(await pg.isDisabled('#d-prox'), true);
-  // 13/09: 23 anos, basal 2003 × 1,2 = 2404, sem treino · 1100 − 2404 = −1304
-  assert.match(await texto(pg, '#semana li:nth-child(2)'), /^Ontem 1\.100 kcal −1\.304$/);
-  assert.equal(await texto(pg, '#semana .sem-media'), 'Média de 1 dia fechado: −1.304 kcal/dia');   // hoje ainda não fechou: fora da média
+  // 16/09 (quarta, dia de treino sem treino registrado): basal 1998 × 1,2 = 2398 · 1100 − 2398 = −1298 · dia passado: sem aviso de treino previsto
+  assert.match(await texto(pg, '#semana li:nth-child(2)'), /^Ontem 1\.100 kcal −1\.298$/);
+  assert.equal(await texto(pg, '#semana .sem-media'), 'Média de 1 dia fechado: −1.298 kcal/dia');   // hoje ainda não fechou: fora da média
   assert.match(await texto(pg, '#semana li:nth-child(1)'), /^Hoje —$/);
   assert.equal(await pg.locator('#semana li').count(), 2);   // começou ontem: nada antes
   await pg.click('#d-ant');
@@ -175,11 +210,11 @@ test('dias anteriores: ‹ e os últimos 7 dias mostram o dia, com saldo e médi
   assert.equal(await pg.isDisabled('#d-prox'), false);
   assert.equal(await pg.isDisabled('#d-ant'), true);          // 1º dia do app
   assert.match(await texto(pg, '#lista li'), /^20:00 Pizza/);
-  assert.equal(await texto(pg, '#s-valor'), '1.304');                  // dia fechado: saldo final, sem sinal (o rótulo diz)
+  assert.equal(await texto(pg, '#s-valor'), '1.298');                  // dia fechado: saldo final, sem sinal (o rótulo diz)
   assert.equal(await texto(pg, '#s-rotulo'), 'kcal de déficit');
-  assert.deepEqual(await linhasDe(pg, '#s-conta'), ['Comi 1.100 kcal', 'Gastei 2.404 kcal', 'Meta 1.904 kcal']);
+  assert.deepEqual(await linhasDe(pg, '#s-conta'), ['Comi 1.100 kcal', 'Gastei 2.398 kcal', 'Meta 1.898 kcal']);
   assert.equal(await texto(pg, '#andei'), 'Andei');
-  await pg.click('#semana [data-dia="2026-09-14"]');
+  await pg.click('#semana [data-dia="2026-09-17"]');
   assert.equal(await texto(pg, '#d-nome'), 'Hoje');
   await ctx.close();
 });

@@ -15,7 +15,7 @@ function linhas(d) {   // db → { tabela: { chave: linha } }
   const por = (t, l) => { L[t][TABELAS[t].map(k => l[k]).join('|')] = l; };
   d.itens.forEach(i => por('al_item', { id: i.id, nome: i.nome, porcao: i.porcao, ...macros(i), usos: i.usos }));
   d.registros.forEach(r => por('al_registro', { id: r.id, data: r.data, hora: r.hora, item_id: r.item || null, nome: r.nome, porcao: r.porcao, qtd: r.qtd, ...macros(r) }));
-  d.dias.forEach(x => por('al_dia', { data: x.data, andou: true, minutos: x.minutos ?? null, km: x.km ?? null }));
+  d.dias.forEach(x => por('al_dia', { data: x.data, andou: x.andou, minutos: x.minutos ?? null, km: x.km ?? null }));
   return L;
 }
 function deLinhas(R) {   // linhas do servidor → db (numeric chega como texto ou número)
@@ -102,10 +102,11 @@ function preparar(d) {
   const registros = (d?.registros || []).filter(r => r && r.id && /^\d{4}-\d{2}-\d{2}$/.test(r.data) && txt(r.nome, 60))
     .map(r => ({ id: String(r.id), data: r.data, hora: /^\d{2}:\d{2}$/.test(r.hora) ? r.hora : '', ...(r.item && { item: String(r.item) }),
       nome: txt(r.nome, 60), porcao: txt(r.porcao, 60), qtd: num(r.qtd) > 0 ? Math.min(num(r.qtd), 20) : 1, ...valores(r) }));
-  // Só os dias com caminhada: linha com andou false (das 1ªs versões, que desmarcavam sem apagar) é o mesmo que nenhuma
-  const dias = (d?.dias || []).filter(x => x && /^\d{4}-\d{2}-\d{2}$/.test(x.data) && x.andou === true).map(x => {
+  // andou true = caminhou. andou false só vale em dia de caminhada da rotina (seg e ter: "não andei" desmarcado); nos outros
+  // dias (das 1ªs versões, que desmarcavam sem apagar) é o mesmo que nenhuma linha.
+  const dias = (d?.dias || []).filter(x => x && /^\d{4}-\d{2}-\d{2}$/.test(x.data) && (x.andou === true || (x.andou === false && caminhadaAuto(x.data)))).map(x => {
     const minutos = num(x.minutos), km = num(x.km);
-    return { data: x.data, andou: true, ...(minutos > 0 && minutos <= 600 && { minutos }), ...(km > 0 && km <= 60 && { km }) };
+    return { data: x.data, andou: x.andou, ...(minutos > 0 && minutos <= 600 && { minutos }), ...(km > 0 && km <= 60 && { km }) };
   });
   return { itens, registros, dias };
 }

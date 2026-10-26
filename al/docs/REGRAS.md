@@ -11,11 +11,12 @@
 - **Basal:** Mifflin-St Jeor com o perfil do Corpo (`../corpo/perfil.js`) e a idade no dia.
 - **Rotina:** basal × 1,2 (fator de atividade sedentário).
 - **Treino:** treinos do dia no Treino. Soma só o que passa da basal: calorias do treino (`kcalTreino`, 3,5 MET × basal/hora × horas, a mesma conta do Treino) − basal/hora × horas = (3,5 − 1) × basal ÷ 24 × horas.
-- **Caminhada:** botão "Andei" por dia, gravado em `al_dia`; desmarcar apaga a linha do dia (linha antiga com `andou` falso vale como nenhuma). Marcado, aparecem dois campos para o **total do dia** (rua aos poucos ou esteira, tanto faz): minutos e/ou km. Vazios = padrão de 20 min.
+- **Caminhada:** botão "Andei" por dia, gravado em `al_dia`. **Segunda e terça** (caminhada até o serviço, `ROTINA.caminhada` em `../corpo/perfil.js`) já vêm marcadas, sem linha; desmarcar grava "não andei" (`andou` falso) naquele dia. Nos outros dias, desmarcar apaga a linha (linha antiga com `andou` falso vale como nenhuma). Só dias com caminhada marcada contam como 1º dia do app. Marcado, aparecem dois campos para o **total do dia** (rua aos poucos ou esteira, tanto faz): minutos e/ou km. Vazios = padrão de 20 min.
   - Conta (equação de caminhada do ACSM, terreno plano): MET = (0,1 × velocidade em m/min + 3,5) ÷ 3,5; soma (MET − 1) × basal ÷ 24 × horas.
   - Com minutos e km, a velocidade é a real (limitada a 2–7 km/h); só minutos ou só km, 5 km/h (só km: tempo = km ÷ 5). Ex.: 20 min sem km = 66 kcal; 3 km = 119 kcal (com basal 1.998).
   - Ao lado dos campos, o efeito no saldo ("−66 kcal"). Esteira dentro do horário de um treino do Treino já conta no treino: lance só a caminhada fora dele.
-- **Gasto** = rotina + treino + caminhada (se marcada). Valores arredondados para kcal inteiras em cada parte.
+- **Gasto** = rotina + treino + caminhada (se marcada).
+- **Treino previsto:** hoje é dia de treino fixo (quarta e quinta, `ROTINA.treino`) e ainda não há treino registrado no Treino: linha em amarelo "Treino previsto hoje: +157 kcal depois de treinar (~45 min)", com a duração média dos últimos 8 treinos (sem nenhum, 1 h). É só aviso: a meta sobe de verdade quando o treino é registrado. Valores arredondados para kcal inteiras em cada parte.
 
 ## Meta, saldo e macros
 

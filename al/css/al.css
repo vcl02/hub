@@ -54,6 +54,7 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 .saldo-conta span{display:flex;justify-content:space-between;max-width:14em}
 .saldo-conta b{font-variant-numeric:tabular-nums}
 .saldo-gasto{display:flex;flex-direction:column;gap:2px;color:var(--muted);font-size:.8rem}
+.previsto{font-size:.875rem;color:var(--yellow);font-weight:500}
 .andei{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:4px}
 .andei-campos{display:flex;align-items:center;gap:8px}
 .andei-campos label{display:flex;align-items:baseline;gap:4px}

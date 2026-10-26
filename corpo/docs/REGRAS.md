@@ -7,7 +7,7 @@
 
 ## Perfil (só em código, `perfil.js`)
 
-- Altura 1,78 m, nascimento 14/09/2002, sexo masculino. Idade no dia (`idadeEm`), taxa basal Mifflin-St Jeor (`tmb`) e calorias do treino (`kcalTreino`, 3,5 MET × basal/hora × horas) saem daqui para todos os apps.
+- Altura 1,78 m, nascimento 14/09/2002, sexo masculino. Rotina da semana (`ROTINA`): treino fixo quarta e quinta, extra sugerido segunda, caminhada até o serviço segunda e terça (o Treino e o Alimentação usam). Idade no dia (`idadeEm`), taxa basal Mifflin-St Jeor (`tmb`) e calorias do treino (`kcalTreino`, 3,5 MET × basal/hora × horas) saem daqui para todos os apps.
 - Linha do perfil embaixo do card: "24 anos · 1,78 m · basal ~1.898 kcal/dia" (basal com o peso mais recente).
 
 ## Medida do dia

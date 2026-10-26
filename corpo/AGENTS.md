@@ -3,7 +3,7 @@
 ## Propósito e fontes de verdade
 
 - App estático (HTML/CSS/JavaScript clássico, sem build) com os dados sobre mim: pesagem e barriga dia a dia (tabela `corpo_medida`), IMC e evolução, e o perfil fixo (altura, nascimento, sexo, só em código).
-- **Módulo compartilhado:** `perfil.js` é o que os outros apps usam (`<script src="../corpo/perfil.js">`): `PERFIL`, `idadeEm`, `tmb`, `kcalTreino` e a leitura das medidas (`lerMedidas`, `medidasGuardadas`, `pesoNoDia`). Mudou a forma? Ajuste os apps que usam (tr, al) na mesma alteração.
+- **Módulo compartilhado:** `perfil.js` é o que os outros apps usam (`<script src="../corpo/perfil.js">`): `PERFIL`, `ROTINA` (dias de treino e de caminhada), `idadeEm`, `tmb`, `kcalTreino` e a leitura das medidas (`lerMedidas`, `medidasGuardadas`, `pesoNoDia`). Mudou a forma? Ajuste os apps que usam (tr, al) na mesma alteração.
 - `docs/REGRAS.md` é a fonte de verdade das regras e do comportamento visível; `README.md` tem a implantação. Guia geral do hub em `../AGENTS.md`.
 
 ## Arquitetura

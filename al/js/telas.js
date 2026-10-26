@@ -2,7 +2,7 @@
 // Tela do dia: saldo, macros, campo "o que comi" (sugestões, IA e prévia), lista do dia e os últimos 7 dias.
 let diaVisto = hoje(), previa = null;
 // 1º dia do app: o mais antigo com comida ou "Andei" registrado (sem nada, hoje). Antes dele não há o que ver.
-const inicio = () => [hoje(), ...db.registros.map(r => r.data), ...db.dias.map(x => x.data)].reduce((a, b) => b < a ? b : a);
+const inicio = () => [hoje(), ...db.registros.map(r => r.data), ...db.dias.filter(x => x.andou).map(x => x.data)].reduce((a, b) => b < a ? b : a);
 
 function desenhar() {
   if (diaVisto > hoje()) diaVisto = hoje();
@@ -30,6 +30,9 @@ function pintarSaldo() {
   // Gasto = basal + o dia a dia (a parte do fator 1,2) + treino + caminhada; meta = gasto − déficit planejado (a 2ª linha)
   const partes = [`basal ${inteiro(g?.basal)}`, `dia a dia ${inteiro(g ? g.rotina - g.basal : 0)}`, ...(g?.treino ? [`treino ${inteiro(g.treino)}`] : []), ...(g?.caminhada ? [`caminhada ${inteiro(g.caminhada.kcal)}`] : [])];
   $('s-gasto').innerHTML = g ? `<span>Gasto ${inteiro(g.total)} = ${partes.map(p => p.replace(/ (?=\d)/, '\u00a0')).join(' + ')}</span><span>${inteiro(DEFICIT_META)} kcal de déficit</span>` : '';
+  // Hoje é dia de treino e ainda não treinou: quanto a mais dá para comer depois do treino
+  $('s-previsto').hidden = !(aberto && g?.previsto);
+  if (aberto && g?.previsto) $('s-previsto').textContent = `Treino previsto hoje: +${inteiro(g.previsto.kcal)} kcal depois de treinar (~${g.previsto.minutos} min)`;
   $('andei').hidden = !g;
   $('andei').setAttribute('aria-pressed', String(!!g?.caminhada));
   $('andei-campos').hidden = !g?.caminhada;
@@ -113,16 +116,19 @@ $('semana').addEventListener('click', ev => { const b = ev.target.closest('[data
 
 // Tempo e distância: o total do dia; vazio ou fora da faixa (até 600 min, 60 km) = não informado
 const campoCaminhada = (id, chave, max) => $(id).addEventListener('change', () => mudar(() => {
-  const d = db.dias.find(x => x.data === diaVisto), v = num($(id).value);
-  if (!d) return;
+  let d = db.dias.find(x => x.data === diaVisto);
+  const v = num($(id).value);
+  if (!d) { d = { data: diaVisto, andou: true }; db.dias.push(d); }   // seg e ter marcados pela rotina: a linha nasce aqui
   if (v > 0 && v <= max) d[chave] = v; else delete d[chave];
 }));
 campoCaminhada('c-min', 'minutos', 600);
 campoCaminhada('c-km', 'km', 60);
 $('andei').addEventListener('click', () => mudar(() => {
   // Desmarcar apaga o dia: sem caminhada não fica linha (nem conta como dia com registro)
-  if (db.dias.some(x => x.data === diaVisto)) db.dias = db.dias.filter(x => x.data !== diaVisto);
-  else db.dias.push({ data: diaVisto, andou: true });
+  const d = db.dias.find(x => x.data === diaVisto);
+  if (!andouNoDia(diaVisto)) { if (d) d.andou = true; else db.dias.push({ data: diaVisto, andou: true }); }
+  else if (caminhadaAuto(diaVisto)) { if (d) d.andou = false; else db.dias.push({ data: diaVisto, andou: false }); }   // seg e ter: "não andei" fica gravado
+  else db.dias = db.dias.filter(x => x.data !== diaVisto);
 }));
 
 $('f-texto').addEventListener('input', pintarSugestoes);

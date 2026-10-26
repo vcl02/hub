@@ -28,8 +28,8 @@ const EMAIL_POR_USUARIO = { victor: 'victor.cabrera0209@gmail.com' };   // login
 const emailDoLogin = texto => { const t = String(texto || '').trim(); return t.includes('@') ? t : EMAIL_POR_USUARIO[t.toLowerCase()] || null; };
 
 // ===== Configuração =====
-const DIAS_FIXOS = [3, 4];   // quarta, quinta (Date.getDay)
-const DIAS_EXTRA = [1];      // segunda (sugerido)
+const DIAS_FIXOS = ROTINA.treino;        // quarta, quinta (Date.getDay) · rotina em ../corpo/perfil.js
+const DIAS_EXTRA = ROTINA.treinoExtra;   // segunda (sugerido)
 const TIPOS = ['Principal', 'Substituto', 'Halter'];
 const REGIOES = ['Pernas', 'Superior'];
 const UNIDADES = ['kg', 'lb', 'nível'];
