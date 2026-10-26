@@ -29,8 +29,10 @@ self.addEventListener('fetch', evento => {
 // Notificação de verdade (Web Push sem conteúdo): a função agua-lembrete manda quando é hora e falta água.
 // badge = ícone pequeno da barra do Android, que só usa a transparência: gota branca em fundo transparente (icons/agua-badge.svg).
 self.addEventListener('push', evento => {
+  // Imagens com endereço completo (a partir do escopo da Água), sem depender de como o Android resolve caminho relativo
+  const url = caminho => new URL(caminho, self.registration.scope).href;
   evento.waitUntil(self.registration.showNotification('Hora de beber água', {
-    body: 'Toque para registrar.', icon: './icons/agua-192.png', badge: './icons/agua-badge.png', tag: 'agua-lembrete', renotify: true
+    body: 'Toque para registrar.', icon: url('icons/agua-192.png'), badge: url('icons/agua-badge.png'), tag: 'agua-lembrete', renotify: true
   }));
 });
 // Tocar na notificação abre a Água (ou volta para ela, se já estiver aberta)
