@@ -60,12 +60,15 @@ const FONTES = {
     const inicio = Date.parse(t.inicio), fim = Date.parse(t.fim), c = t.cardio;
     return { inicio, fim: fim >= inicio ? fim : inicio, ...(c && c.ms > 0 && c.vel > 0 && { cardio: { ms: +c.ms, vel: +c.vel, incl: Math.max(0, +c.incl || 0) } }) };
   }).filter(t => !isNaN(t.inicio)),
-  // Comida: kcal da porção × quantidade; hora vazia = lançada depois do dia (no al, registro de outro dia fica sem hora)
-  comidas: async () => (await todas('al_registro')).filter(r => r && dataOk(r.data)).reduce((o, r) => {
-    (o[r.data] = o[r.data] || []).push({ hora: horaOk(r.hora), kcal: (+r.kcal || 0) * (+r.qtd || 0) }); return o;
+  // Comida: kcal da porção × quantidade; hora vazia = lançada depois do dia (no al, registro de outro dia fica sem hora).
+  // Mesma limpeza do preparar do al (js/banco.js), pro saldo daqui ser o mesmo de lá: sem nome sai, qtd inválida = 1 (até 20),
+  // kcal de 0 a 5.000; trecho com até 600 min e 60 km, até 30 por dia.
+  comidas: async () => (await todas('al_registro')).filter(r => r && dataOk(r.data) && String(r.nome ?? '').trim()).reduce((o, r) => {
+    const qtd = +r.qtd > 0 ? Math.min(+r.qtd, 20) : 1, kcal = +r.kcal >= 0 ? Math.min(+r.kcal, 5000) : 0;
+    (o[r.data] = o[r.data] || []).push({ hora: horaOk(r.hora), kcal: kcal * qtd }); return o;
   }, {}),
-  trechos: async () => porDia(await todas('al_dia'), x => Array.isArray(x.caminhadas) ? x.caminhadas.map(t => ({ hora: horaOk(t.hora),
-    ...(+t.minutos > 0 && { minutos: +t.minutos }), ...(+t.km > 0 && { km: +t.km }) })) : null),
+  trechos: async () => porDia(await todas('al_dia'), x => Array.isArray(x.caminhadas) ? x.caminhadas.map(t => ({ hora: horaOk(t?.hora),
+    ...(+t?.minutos > 0 && +t.minutos <= 600 && { minutos: +t.minutos }), ...(+t?.km > 0 && +t.km <= 60 && { km: +t.km }) })).slice(0, 30) : null),
   medidas: () => lerMedidas(sb, conta),
   sonos: async () => porDia(await todas('corpo_dia'), x => x.sono == null || isNaN(+x.sono) ? null : { sono: +x.sono, ...(x.sono_em && { sonoEm: x.sono_em }) }),
   aguas: async () => porDia(await todas('agua_dia'), x => Array.isArray(x.aguas) ? x.aguas.reduce((s, a) => s + (+a.ml || 0), 0) : null)

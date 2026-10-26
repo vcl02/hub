@@ -22,7 +22,7 @@ Fonte de verdade do comportamento do app. Toda mudança de regra atualiza este a
 - Conta recriada (24/10/2026, `DONO_ANTIGO` em `js/config.js`): a nuvem da conta antiga foi apagada com ela. Ao entrar com a nova, se o aparelho não tem cópia dela mas tem a da antiga, o app adota essa cópia e reenvia tudo; a cópia antiga fica guardada.
 - Sem "Esqueci a senha" e sem "Trocar senha": a senha é a do Supabase e se troca fora do app.
 - Tela inicial, canto superior direito: marca do hub (volta ao hub, `../`) e engrenagem, que vai direto para a edição de exercícios (no fim dela: instalar e o estado da conta e da nuvem). Não há tela de Ajustes nem botão de sair: o login e o Sair ficam só na página inicial do hub.
-- Nome do app: "Treino" (título, manifest e card do hub). Ícone (`icon-192.png`/`icon-512.png`, também no card do hub): halter branco em fundo azul, fundo inteiro para o sistema recortar.
+- Nome do app: "Treino" (título e manifest; o hábito na página inicial do hub também se chama Treino). Ícone (`icon-192.png`/`icon-512.png`, também no hábito do hub): halter branco em fundo azul, fundo inteiro para o sistema recortar.
 - A sessão fica salva no aparelho e é a mesma do hub: o app entra direto, inclusive sem internet. Sair só pelo hub; a cópia local continua no aparelho, e o que estiver pendente envia no próximo login.
 - Dentro do hub (`…/tr/`), o login é o da página inicial: sem sessão, o tr vai direto para `../?volta=tr/` e o hub devolve para cá depois de entrar (`irParaLoginDoHub` em `js/bootstrap.js`). A tela de login própria só aparece com o tr servido fora do hub (ex.: testes).
 

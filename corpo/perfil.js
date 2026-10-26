@@ -22,7 +22,7 @@ const kcalEsteira = (peso, dia, ms, vel, incl) => Math.round(metEsteira(vel, inc
 
 // Pesagens e medidas (corpo_medida): { data, hora, peso?, cintura?, pesoEm? } em kg e cm (cintura = barriga na linha do umbigo).
 // pesoEm (coluna peso_em) = quando o peso foi lançado no app, pelo relógio do celular: o hábito do peso (página inicial do hub)
-// só conta pesagem lançada no próprio dia. Os outros apps só leem: lerMedidas busca na nuvem e guarda a cópia no aparelho
+// só conta pesagem lançada no próprio dia (a partir de 27/10/2026). Os outros apps só leem: lerMedidas busca na nuvem e guarda a cópia no aparelho
 // (corpo.medidas.<conta>), que medidasGuardadas devolve na hora, inclusive sem internet. Em ordem de data, da mais antiga para a mais recente.
 const K_MEDIDAS = id => 'corpo.medidas.' + id;
 const medidaLimpa = m => {
