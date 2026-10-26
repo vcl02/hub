@@ -204,9 +204,32 @@ test('a cópia para os outros apps (corpo.medidas.<conta>) acompanha cada mudan�
   await salvar(pg, { data: '2026-10-20', peso: '91' });
   await salvar(pg, { data: '2026-10-22', cintura: '100' });
   const L = await pg.evaluate(id => medidasGuardadas(id), DONO);
-  assert.deepEqual(L, [{ data: '2026-10-20', hora: '08:00', peso: 91 }, { data: '2026-10-22', hora: '08:00', cintura: 100 }]);
+  assert.match(L[0].pesoEm, /^2026-10-22T11:00/);                                             // quando o peso foi lançado
+  assert.deepEqual(L, [{ data: '2026-10-20', hora: '08:00', peso: 91, pesoEm: L[0].pesoEm }, { data: '2026-10-22', hora: '08:00', cintura: 100 }]);
   assert.deepEqual(await pg.evaluate(L => [pesoNoDia(L, '2026-10-19'), pesoNoDia(L, '2026-10-22'), pesoNoDia([], '2026-10-22')], L), [91, 91, null]);
   await ctx.close();
+});
+
+test('quando o peso e o sono foram lançados (peso_em, sono_em): o primeiro lançamento fica e vai para a nuvem', async () => {
+  const { ctx, pg, nuvem, erros } = await abrirApp();
+  await salvar(pg, { cintura: '100' });                                                       // só barriga: nada de peso_em
+  await salvar(pg, { peso: '90' });                                                            // 08:00 de 22/10 (11:00 UTC)
+  await pg.clock.fastForward('02:00:00');
+  await salvar(pg, { peso: '89,8' });                                                          // corrigir mantém o 1º lançamento
+  await salvar(pg, { data: '2026-10-20', peso: '91' });                                        // dia passado lançado agora
+  await pg.fill('#c-data', '2026-10-22'); await pg.dispatchEvent('#c-data', 'change');
+  await pg.fill('#d-sono', '7,5'); await pg.dispatchEvent('#d-sono', 'change');
+  await pg.fill('#d-sono', '8'); await pg.dispatchEvent('#d-sono', 'change');                // corrigir o sono também mantém
+  await sincronizado(pg);
+  const minuto = t => t?.slice(0, 16);   // o relógio do teste anda: compara até o minuto
+  const M = Object.fromEntries(nuvem.tabelas.corpo_medida.map(m => [m.data, minuto(m.peso_em)]));
+  assert.deepEqual(M, { '2026-10-20': '2026-10-22T13:00', '2026-10-22': '2026-10-22T11:00' });
+  assert.deepEqual(nuvem.tabelas.corpo_dia.map(x => [x.data, x.sono, minuto(x.sono_em)]), [['2026-10-22', 8, '2026-10-22T13:00']]);
+  await pg.fill('#d-sono', ''); await pg.dispatchEvent('#d-sono', 'change');                 // tirar o sono tira o lançamento
+  assert.equal(await pg.evaluate(() => db.dias.length), 0);
+  await pg.reload(); await pg.waitForSelector('#v-corpo:not([hidden])');                       // volta da nuvem com os lançamentos
+  assert.deepEqual(await pg.evaluate(() => db.medidas.map(m => m.pesoEm?.slice(0, 16))), ['2026-10-22T13:00', '2026-10-22T11:00']);
+  assert.deepEqual(erros, []); await ctx.close();
 });
 
 test('sem internet: abre com a cópia do aparelho e envia ao reconectar', async () => {

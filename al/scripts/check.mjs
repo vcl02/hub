@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const extensoes = new Set(['.js', '.mjs', '.ts', '.css', '.html', '.sql', '.md', '.json', '.webmanifest', '.svg']);
-const arquivos = ['AGENTS.md', 'README.md', 'index.html', 'sw.js', 'manifest.webmanifest'];
+const arquivos = ['AGENTS.md', 'README.md', 'index.html', 'sw.js', 'gasto.js', 'manifest.webmanifest'];
 const coletar = pasta => readdirSync(pasta, { withFileTypes: true }).forEach(e => {
   const caminho = join(pasta, e.name);
   if (e.isDirectory()) coletar(caminho);
@@ -24,7 +24,7 @@ if (erros.length) { console.error(erros.join('\n')); process.exit(1); }
 
 const testes = readdirSync('tests').filter(n => n.endsWith('.test.mjs')).map(n => `tests/${n}`);
 const comandos = [
-  ...['sw.js', ...readdirSync('js').map(n => `js/${n}`)].map(arquivo => [process.execPath, ['--check', arquivo]]),
+  ...['sw.js', 'gasto.js', ...readdirSync('js').map(n => `js/${n}`)].map(arquivo => [process.execPath, ['--check', arquivo]]),
   [process.execPath, ['--test', ...testes]],
   ['git', ['diff', '--check', '--', '.']],
   ['git', ['diff', '--cached', '--check', '--', '.']],

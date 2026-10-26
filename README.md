@@ -1,6 +1,6 @@
 # hub
 
-Página inicial que reúne os apps pessoais, todos em tema escuro e publicados juntos no GitHub Pages.
+Página inicial com os hábitos do dia (ofensivas, dias perfeitos e proteções) que levam aos apps pessoais, todos em tema escuro e publicados juntos no GitHub Pages.
 
 | Pasta | App |
 |---|---|

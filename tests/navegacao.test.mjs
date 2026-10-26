@@ -1,4 +1,5 @@
-// No navegador: serve a raiz do hub em /hub/, faz login na página inicial e abre o fin e o tr com a mesma sessão.
+// No navegador: serve a raiz do hub em /hub/, faz login na página inicial, mostra os hábitos com os dados dos apps e abre
+// o fin e o tr com a mesma sessão.
 // Usa o Playwright e o Supabase falso do tr (tr/tests/helpers); nada sai pra rede.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -92,7 +93,7 @@ test('entrou no hub: os apps abrem direto com a mesma sessão, sem login própri
   const { ctx, pg, faltando, erros } = await abrir(base);
   await entrar(pg, 'eu@teste.com', 'senha123');
   await pg.waitForSelector('#v-apps:not([hidden])');
-  assert.deepEqual(await pg.$$eval('.app-nome', s => s.map(x => x.textContent)), ['Fin', 'Treino', 'Alimentação', 'Corpo', 'Água', 'Agenda', 'Anotações']);
+  assert.deepEqual(await pg.$$eval('.app-nome', s => s.map(x => x.textContent)), ['Treino', 'Déficit', 'Peso', 'Sono', 'Água', 'Fin', 'Agenda', 'Anotações']);
   await pg.reload();                                                   // sessão salva: entra direto
   await pg.waitForSelector('#v-apps:not([hidden])');
   assert.equal(await pg.isVisible('#v-login'), false);
@@ -108,6 +109,40 @@ test('entrou no hub: os apps abrem direto com a mesma sessão, sem login própri
   assert.equal(await pg.getAttribute('#voltarHub', 'href'), '../');
   assert.deepEqual(faltando, []);
   assert.deepEqual(erros.filter(e => !/tabela\?|404|Falh|carreg/i.test(e)), []);   // o falso não tem as tabelas do fin
+  await ctx.close();
+});
+
+test('hábitos com os dados dos apps: valor de hoje, ofensivas, dias perfeitos e proteções; sem internet, abre com a cópia', async () => {
+  const nuvem = novaNuvem(), T = nuvem.tabelas;
+  const em = (d, h) => new Date(`${d}T${h}:00-03:00`).toISOString();
+  // Semana perfeita de treino (qua 21 e qui 22/10): 1 proteção, que segura a água que faltou em 24/10
+  for (const d of ['2026-10-21', '2026-10-22']) T.tr_treino.push({ inicio: em(d, '18:00'), fim: em(d, '19:00') });
+  for (const d of ['2026-10-23', '2026-10-25', '2026-10-26']) T.agua_dia.push({ data: d, aguas: [{ hora: '10:00', ml: d === '2026-10-26' ? 400 : 1000 }], xixis: [] });
+  T.corpo_medida.push({ data: '2026-10-26', hora: '07:00', peso: 100.4, cintura: null, peso_em: em('2026-10-26', '07:01') });
+  T.corpo_dia.push({ data: '2026-10-25', evacuacoes: [], sono: 7 }, { data: '2026-10-26', evacuacoes: [], sono: 7.5 });
+  T.al_registro.push({ id: 'a', data: '2026-10-26', hora: '12:00', nome: 'Almoço', porcao: '1 prato', qtd: 1, kcal: 700, prot: 0, carb: 0, gord: 0 });
+  const { ctx, pg, erros } = await abrir(base, { nuvem });
+  // Antes da hora real: o token do Supabase falso vence 1 h depois do relógio de verdade
+  await pg.clock.install({ time: new Date('2026-10-26T12:00:00-03:00') });
+  await pg.reload();
+  await entrar(pg, 'eu@teste.com', 'senha123');
+  await pg.waitForSelector('#v-apps:not([hidden])');
+  const linha = id => pg.$eval(`[data-habito="${id}"]`, el => [el.querySelector('.hab-valor').textContent, el.querySelector('.hab-ofensiva b').textContent]);
+  await pg.waitForFunction(() => document.querySelector('[data-habito="peso"] .hab-valor').textContent === '100,4 kg');
+  assert.deepEqual(await linha('peso'), ['100,4 kg', '1']);
+  assert.deepEqual(await linha('sono'), ['7,5 h', '2']);
+  assert.deepEqual(await linha('agua'), ['400 / 1.000 ml', '2']);                  // 25 e 23/10, com 24/10 protegido
+  assert.deepEqual(await linha('treino'), ['Próximo: qua', '2']);
+  assert.match((await linha('deficit'))[0], /kcal restantes$/);
+  assert.equal(await pg.textContent('#h-protecoes b'), '0');                      // ganhou 1 e gastou em 24/10
+  assert.equal(await pg.$$eval('[data-habito="agua"] .hab-dias i', L => L.map(i => i.className).join(' ')), 'antes antes antes feito protegido feito pendente hoje');
+  assert.equal(await pg.$eval('[data-habito="peso"] .hab-ofensiva', el => el.classList.contains('acesa')), true);   // feito hoje: chama acesa
+  assert.equal(await pg.$$eval('#h-semana li', L => L.length), 7);
+  nuvem.online = false;                                                            // sem internet: a cópia do aparelho
+  await pg.reload();
+  await pg.waitForSelector('#v-apps:not([hidden])');
+  assert.deepEqual(await linha('agua'), ['400 / 1.000 ml', '2']);
+  assert.deepEqual(erros, []);
   await ctx.close();
 });
 
@@ -183,7 +218,7 @@ test('?volta só leva para a pasta de um app do hub, nunca para fora', async () 
   for (const volta of ['https://exemplo.test/', '//exemplo.test/', 'fin/../../x', 'javascript:alert(1)', 'outro/']) {
     const { ctx, pg } = await abrir(`${base}?volta=${encodeURIComponent(volta)}`);
     await entrar(pg, 'eu@teste.com', 'senha123');
-    await pg.waitForSelector('#v-apps:not([hidden])');                 // fica nos cards
+    await pg.waitForSelector('#v-apps:not([hidden])');                 // fica nos hábitos
     assert.ok(pg.url().startsWith(base), volta);
     await ctx.close();
   }

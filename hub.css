@@ -1,4 +1,4 @@
-/* Página inicial do hub: paleta escura do fin e do tr, brilhos nas cores dos apps e cards de vidro. */
+/* Página inicial do hub: paleta escura do fin e do tr, brilhos nas cores dos apps, hábitos em vidro e atalhos fixos embaixo. */
 :root {
   --bg: #1B1E21;
   --surface: #24272B;
@@ -9,6 +9,8 @@
   --purple: #A78BFA;
   --red: #F06A61;
   --red-soft: #402624;
+  --fogo: #FF8A3D;    /* ofensivas e dias perfeitos */
+  --gelo: #8FD3FF;    /* proteções */
   --display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
   --body: 'Barlow', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color-scheme: dark;
@@ -68,7 +70,7 @@ body {
   z-index: 1;
   max-width: 640px;
   margin: 0 auto;
-  padding: max(40px, calc(env(safe-area-inset-top, 0px) + 24px)) max(20px, env(safe-area-inset-right, 0px)) 48px max(20px, env(safe-area-inset-left, 0px));
+  padding: max(28px, calc(env(safe-area-inset-top, 0px) + 18px)) max(16px, env(safe-area-inset-right, 0px)) calc(96px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
 }
 
 .topo {
@@ -76,7 +78,11 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 28px;
+  margin-bottom: 18px;
+}
+
+.topo h1 {
+  font-size: 2.6rem;
 }
 
 /* Sair: vermelho como nos apps; armado (1º toque) fica preenchido. */
@@ -126,107 +132,347 @@ h1 span {
   box-shadow: 0 8px 28px rgba(167, 139, 250, .35);
 }
 
-/* ---------- Cards dos apps ---------- */
-.apps {
+/* ---------- Data e dias perfeitos ---------- */
+.hoje {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: .95rem;
+  font-weight: 500;
+}
+
+.hoje::first-letter {
+  text-transform: uppercase;
+}
+
+.perfeito,
+.habito {
+  border: 1px solid rgba(255, 255, 255, .08);
+  background: rgba(36, 39, 43, .72);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+
+.perfeito {
+  margin-bottom: 14px;
+  padding: 18px 18px 16px;
+  border-radius: 22px;
+  background: rgba(36, 39, 43, .72);   /* reserva: navegador sem color-mix() ignora a linha de baixo */
+  background:
+    radial-gradient(120% 100% at 0% 0%, color-mix(in srgb, var(--fogo) 16%, transparent), transparent 60%),
+    rgba(36, 39, 43, .72);
+  animation: entrar .45s ease both;
+}
+
+.perfeito-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.perfeito-num {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--muted);
+}
+
+.perfeito-num b {
+  color: var(--fg);
+  font-family: var(--display);
+  font-size: 2.6rem;
+  line-height: 1;
+}
+
+.perfeito-num span {
+  max-width: 5.5em;
+  font-size: .9rem;
+  line-height: 1.15;
+}
+
+.chama {
+  flex: none;
+  color: var(--line);
+  transition: color .3s ease, filter .3s ease;
+}
+
+.acesa .chama {
+  color: var(--fogo);
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--fogo) 60%, transparent));
+}
+
+/* Proteções guardadas (1 a cada semana de treino perfeita, no máximo 2) */
+.protecoes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 6px 12px;
+  border: 1px solid color-mix(in srgb, var(--gelo) 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gelo) 12%, transparent);
+  color: var(--gelo);
+  font-weight: 600;
+}
+
+.protecoes.apagada {
+  border-color: var(--line);
+  background: none;
+  color: var(--muted);
+}
+
+/* Últimos 7 dias: bolinha cheia = dia perfeito; hoje com contorno */
+.perfeito-semana {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.perfeito-semana li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: .75rem;
+  font-weight: 600;
+}
+
+.perfeito-semana i {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .06);
+}
+
+.perfeito-semana .sim i {
+  background: linear-gradient(140deg, #FFC46B, var(--fogo));
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--fogo) 45%, transparent);
+}
+
+.perfeito-semana .hoje {
+  color: var(--fg);
+}
+
+.perfeito-semana .hoje i {
+  outline: 2px solid rgba(255, 255, 255, .35);
+  outline-offset: 2px;
+}
+
+/* ---------- Hábitos: uma linha por hábito, na cor do app ---------- */
+.habitos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .app {
   --cor: var(--blue);
   position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-height: 176px;
-  padding: 20px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, .08);
-  border-radius: 22px;
-  background: rgba(36, 39, 43, .72);   /* reserva: navegador sem color-mix() ignora a linha de baixo */
-  background:
-    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--cor) 22%, transparent), transparent 60%),
-    rgba(36, 39, 43, .72);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .05);
   color: var(--fg);
   text-decoration: none;
   transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+.habito {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  column-gap: 14px;
+  row-gap: 12px;
+  padding: 14px 16px;
+  border-radius: 20px;
   animation: entrar .45s ease both;
 }
 
-.app:nth-child(2) {
-  animation-delay: .07s;
+.habito:nth-child(2) {
+  animation-delay: .05s;
 }
 
-.app:nth-child(3) {
-  animation-delay: .14s;
+.habito:nth-child(3) {
+  animation-delay: .1s;
 }
 
-.app:nth-child(4) {
-  animation-delay: .21s;
+.habito:nth-child(4) {
+  animation-delay: .15s;
 }
 
-.app:nth-child(5) {
-  animation-delay: .28s;
+.habito:nth-child(5) {
+  animation-delay: .2s;
 }
 
-.app:nth-child(6) {
-  animation-delay: .35s;
+.habito .app-icone {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--cor) 35%, transparent);
 }
 
-.app-icone {
-  width: 64px;
-  height: 64px;
-  margin-bottom: auto;
-  border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--cor) 45%, transparent);
+.hab-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .app-nome {
-  margin-top: 18px;
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 600;
   line-height: 1.2;
 }
 
-.app-seta {
-  position: absolute;
-  top: 18px;
-  right: 18px;
+.hab-valor {
+  overflow: hidden;
   color: var(--muted);
-  transition: transform .2s ease, color .2s ease;
+  font-size: .9rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.hab-valor.acima {
+  color: var(--red);
+}
+
+.habito.feito .hab-valor {
+  color: color-mix(in srgb, var(--cor) 80%, var(--fg));
+}
+
+.hab-barra {
+  height: 4px;
+  margin-top: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .08);
+}
+
+.hab-barra i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--cor);
+  transition: width .4s ease;
+}
+
+.hab-valor.acima + .hab-barra i {
+  background: var(--red);
+}
+
+/* Ofensiva: número com a chama; acesa quando o hábito de hoje já foi feito */
+.hab-ofensiva {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--display);
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.hab-ofensiva.apagada {
+  color: var(--muted);
+}
+
+/* Últimos 7 dias do hábito, de 6 dias atrás até hoje */
+.hab-dias {
+  display: grid;
+  grid-column: 2 / -1;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+
+.hab-dias i {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .04);
+}
+
+.hab-dias .feito {
+  background: var(--cor);
+}
+
+.hab-dias .falhou {
+  background: color-mix(in srgb, var(--red) 75%, transparent);
+}
+
+.hab-dias .protegido {
+  background: var(--gelo);
+}
+
+.hab-dias .folga {
+  background: rgba(255, 255, 255, .1);
+  transform: scaleY(.5);
+}
+
+.hab-dias .pendente {
+  background: none;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cor) 70%, transparent);
+}
+
+/* ---------- Atalhos fixos embaixo (Fin, Agenda, Anotações) ---------- */
+.doca {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 10px max(16px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  border-top: 1px solid rgba(255, 255, 255, .06);
+  background: rgba(27, 30, 33, .82);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+
+.atalho {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 16px;
+  background: rgba(36, 39, 43, .9);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--cor) 16%, transparent), transparent 70%), rgba(36, 39, 43, .9);
+}
+
+.atalho .app-icone {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+
+.atalho .app-nome {
+  overflow: hidden;
+  font-size: .9rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 /* Destaque com mouse (hover de verdade), teclado ou toque (.tocado, posto por hub.js e tirado
-   sozinho): no celular, o hover preso deixava o card "selecionado" ao voltar de um app. */
+   sozinho): no celular, o hover preso deixava o hábito "selecionado" ao voltar de um app. */
 @media (hover: hover) {
   .app:hover {
-    transform: translateY(-3px);
+    transform: translateY(-2px);
     border-color: color-mix(in srgb, var(--cor) 55%, transparent);
     box-shadow: 0 16px 40px rgba(0, 0, 0, .45), 0 0 0 1px color-mix(in srgb, var(--cor) 25%, transparent);
-  }
-
-  .app:hover .app-seta {
-    color: var(--cor);
-    transform: translate(2px, -2px);
   }
 }
 
 .app:focus-visible,
 .app.tocado {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   border-color: color-mix(in srgb, var(--cor) 55%, transparent);
   box-shadow: 0 16px 40px rgba(0, 0, 0, .45), 0 0 0 1px color-mix(in srgb, var(--cor) 25%, transparent);
-}
-
-.app:focus-visible .app-seta,
-.app.tocado .app-seta {
-  color: var(--cor);
-  transform: translate(2px, -2px);
 }
 
 .app:active:not(.tocado) {
@@ -246,7 +492,7 @@ h1 span {
 
 @media (prefers-reduced-motion: reduce) {
   .app,
-  .app-seta,
+  .perfeito,
   .cartao-login {
     animation: none;
     transition: none;

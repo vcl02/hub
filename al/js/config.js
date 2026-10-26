@@ -22,14 +22,10 @@ const emailDoLogin = texto => { const t = String(texto || '').trim(); return t.i
 const FUNCAO_IA = 'al-estimar';
 
 // ===== Gasto do dia =====
-// Basal × fator de atividade (sedentário: rotina sem exercício) + o que o treino e a caminhada somam acima da basal.
-const FATOR_ATIVIDADE = 1.2;
-const CAMINHADA_MIN_PADRAO = 20;   // trecho sem tempo nem distância
-const VELOCIDADE_PADRAO = 5;       // km/h, quando só o tempo ou só a distância é informado
+// Fator de atividade, caminhada padrão e déficit planejado (DEFICIT_META) ficam em gasto.js (na pasta do al), que o hub também usa.
 const TRECHOS_MAX = 30;    // trechos de caminhada por dia
 const QTDS = [0.5, 1, 1.5, 2, 3];   // porções rápidas (× a porção salva)
 
 // ===== Metas do dia (perder gordura mantendo músculo) =====
-const DEFICIT_META = 500;   // kcal/dia abaixo do gasto: ~0,5 kg de gordura por semana
 const PROT_G_KG = 1.6;      // proteína em g por kg de peso
 const GORD_PCT = 0.25;      // gordura: 25% das kcal da meta; carboidrato fica com o resto
