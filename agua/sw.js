@@ -4,7 +4,7 @@
 const CACHE_ESTATICO = 'agua-estatico';
 const ARQUIVOS_ESTATICOS = [
   './js/config.js', './js/util.js', './js/banco.js', './js/conta.js', './js/notificacoes.js', './js/telas.js', './js/bootstrap.js',
-  './css/agua.css', './', './index.html', '../supabase.js', '../corpo/perfil.js', './manifest.webmanifest', './icons/agua-192.png', './icons/agua-512.png'];
+  './css/agua.css', './', './index.html', '../supabase.js', '../corpo/perfil.js', './manifest.webmanifest', './icons/agua-192.png', './icons/agua-512.png', './icons/agua-badge.png'];
 
 self.addEventListener('install', evento => {
   evento.waitUntil(caches.open(CACHE_ESTATICO).then(cache => Promise.all(
@@ -27,9 +27,10 @@ self.addEventListener('fetch', evento => {
 });
 
 // Notificação de verdade (Web Push sem conteúdo): a função agua-lembrete manda quando é hora e falta água.
+// badge = ícone pequeno da barra do Android, que só usa a transparência: gota branca em fundo transparente (icons/agua-badge.svg).
 self.addEventListener('push', evento => {
   evento.waitUntil(self.registration.showNotification('Hora de beber água', {
-    body: 'Toque para registrar.', icon: './icons/agua-192.png', badge: './icons/agua-192.png', tag: 'agua-lembrete', renotify: true
+    body: 'Toque para registrar.', icon: './icons/agua-192.png', badge: './icons/agua-badge.png', tag: 'agua-lembrete', renotify: true
   }));
 });
 // Tocar na notificação abre a Água (ou volta para ela, se já estiver aberta)

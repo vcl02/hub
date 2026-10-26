@@ -23,7 +23,7 @@
 
 ## Notificações
 
-- Notificação de verdade (chega com o app fechado) nos mesmos horários dos lembretes, só se ainda não bebeu água de 30 min antes do horário até a hora do envio (no minuto 1 de cada hora). Texto: "Hora de beber água · Toque para registrar."; tocar abre a Água (ou volta para ela).
+- Notificação de verdade (chega com o app fechado) nos mesmos horários dos lembretes, só se ainda não bebeu água de 30 min antes do horário até a hora do envio (no minuto 1 de cada hora). Texto: "Hora de beber água · Toque para registrar."; tocar abre a Água (ou volta para ela). Ícone grande: o do app; ícone pequeno da barra do Android: a gota branca (`icons/agua-badge.png`, fundo transparente).
 - Embaixo dos lembretes: **Ativar notificações** (pede a permissão e inscreve este aparelho). Ligadas: "Notificações ligadas". Permissão negada: "Notificações bloqueadas nas configurações do celular". Navegador sem notificação (iPhone fora da tela de início): a linha não aparece.
 - Cada aparelho ativado recebe; aparelho que o navegador desinscreveu sai sozinho da lista.
 

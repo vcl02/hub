@@ -79,6 +79,10 @@ test('service worker: push mostra "Hora de beber água"; tocar foca a Água aber
   assert.equal(mostradas.length, 1);
   assert.equal(mostradas[0].titulo, 'Hora de beber água');
   assert.equal(mostradas[0].tag, 'agua-lembrete');
+  assert.equal(mostradas[0].badge, './icons/agua-badge.png');
+  // o Android pinta de branco tudo que não é transparente no badge: precisa de canal de transparência
+  const png = readFileSync(path.join(RAIZ, 'icons/agua-badge.png'));
+  assert.equal(png.readUInt32BE(16), 96); assert.equal(png[25], 6);       // 96 px, RGBA
   const notificacao = { close: () => {} };
   await disparar('notificationclick', { notification: notificacao });
   assert.deepEqual(abertas, ['./']);
