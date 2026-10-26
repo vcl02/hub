@@ -4,7 +4,7 @@ Déficit calórico do dia: o que comi (kcal, proteína, carboidrato e gordura) c
 
 ## Implantação (uma vez, feita pelo mantenedor)
 
-1. **Tabelas:** rodar `migrations/00-tabelas-al.sql` no DataGrip (projeto do fin). Cria `al_item`, `al_registro`, `al_dia` e `al_uso`, com RLS só do Victor.
+1. **Tabelas:** rodar `migrations/00-tabelas-al.sql` no DataGrip (projeto do fin). Cria `al_item`, `al_registro`, `al_dia` e `al_uso`, com RLS só do Victor. Depois, na ordem, as outras de `migrations/` (`01` tempo e distância, `02` caminhada em trechos).
 2. **Chave da IA:** criar uma chave em console.anthropic.com (cobrança da API, separada da assinatura do Claude). Não colar em chat, arquivo nem print.
 3. **Secret:** no painel do Supabase, Edge Functions → Secrets, criar `ANTHROPIC_API_KEY` com a chave. Pela CLI: `supabase secrets set ANTHROPIC_API_KEY=<chave> --project-ref yzmyncxoskvqzdczaill` (cuidado: fica no histórico do terminal).
 4. **Função:** dentro de `al/`, `supabase functions deploy al-estimar --project-ref yzmyncxoskvqzdczaill --no-verify-jwt`. O `--no-verify-jwt` deixa o pedido de CORS do navegador (sem sessão) chegar à função; a própria função confere a sessão no Auth e recusa quem não for o Victor.

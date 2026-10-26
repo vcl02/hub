@@ -1,8 +1,8 @@
 'use strict';
 // Tela do dia: saldo, macros, campo "o que comi" (sugestões, IA e prévia), lista do dia e os últimos 7 dias.
 let diaVisto = hoje(), previa = null;
-// 1º dia do app: o mais antigo com comida ou "Andei" registrado (sem nada, hoje). Antes dele não há o que ver.
-const inicio = () => [hoje(), ...db.registros.map(r => r.data), ...db.dias.filter(x => x.andou).map(x => x.data)].reduce((a, b) => b < a ? b : a);
+// 1º dia do app: o mais antigo com comida ou caminhada registrada (sem nada, hoje). Antes dele não há o que ver.
+const inicio = () => [hoje(), ...db.registros.map(r => r.data), ...db.dias.map(x => x.data)].reduce((a, b) => b < a ? b : a);
 
 function desenhar() {
   if (diaVisto > hoje()) diaVisto = hoje();
@@ -44,16 +44,14 @@ function pintarSaldo() {
   }
   $('s-previsto').hidden = !(aberto && g?.previsto) || urgente;
   if (aberto && g?.previsto) $('s-previsto').textContent = `Você ganha ${inteiro(g.previsto.kcal)} kcal a mais para comer se treinar${g.previsto.extra ? ' (treino opcional)' : ''}`;
+  // Andei: os trechos do dia ("12:10 · 20 min ×") e o total no saldo
+  const cam = g?.caminhada, valor = v => String(v).replace('.', ',');
   $('andei').hidden = !g;
-  $('andei').setAttribute('aria-pressed', String(!!g?.caminhada));
-  $('andei-campos').hidden = !g?.caminhada;
-  if (g?.caminhada) {
-    const c = g.caminhada, valor = v => v ? String(v).replace('.', ',') : '';
-    if (document.activeElement !== $('c-min')) $('c-min').value = valor(c.minutos);
-    if (document.activeElement !== $('c-km')) $('c-km').value = valor(c.km);
-    $('c-min').placeholder = c.km ? '—' : String(CAMINHADA_MIN_PADRAO);   // o 20 só vale sem km
-    $('c-kcal').textContent = `−${inteiro(c.kcal)} kcal`;
-  }
+  $('c-kcal').textContent = cam ? `−${inteiro(cam.kcal)} kcal` : '';
+  $('c-lista').innerHTML = (cam?.trechos || []).map((t, i) => {
+    const quanto = [t.minutos && `${valor(t.minutos)} min`, t.km && `${valor(t.km)} km`].filter(Boolean).join(' · ') || `${CAMINHADA_MIN_PADRAO} min`;
+    return `<li><button type="button" data-tirar-trecho="${i}" aria-label="Tirar trecho">${t.hora ? `${t.hora} · ` : ''}${quanto} ×</button></li>`;
+  }).join('');
 }
 
 // Macros do dia contra a meta: gramas comidas / meta, quanto falta ou quanto passou, e a barra de cada um
@@ -125,22 +123,31 @@ $('d-ant').addEventListener('click', () => { if (diaVisto > inicio()) { diaVisto
 $('d-prox').addEventListener('click', () => { if (diaVisto < hoje()) { diaVisto = somaDias(diaVisto, 1); previa = null; desenhar(); } });
 $('semana').addEventListener('click', ev => { const b = ev.target.closest('[data-dia]'); if (b) { diaVisto = b.dataset.dia; previa = null; desenhar(); } });
 
-// Tempo e distância: o total do dia; vazio ou fora da faixa (até 600 min, 60 km) = não informado
-const campoCaminhada = (id, chave, max) => $(id).addEventListener('change', () => mudar(() => {
+// Andei +: cada caminhada do dia é um trecho (horário de agora; em dia passado, sem horário) com tempo e/ou distância
+// opcionais (vazios = 20 min). Toque duplo no trecho tira; sem trecho, o dia sai (nem conta como dia com registro).
+function marcarCaminhada() {
+  const campo = id => { const t = $(id).value.trim(); return t ? num(t) : null; };
+  const minutos = campo('c-min'), km = campo('c-km');
+  if ((minutos != null && !(minutos > 0 && minutos <= 600)) || (km != null && !(km > 0 && km <= 60))) { toast('Até 600 min e 60 km por trecho', true); return; }
   let d = db.dias.find(x => x.data === diaVisto);
-  const v = num($(id).value);
-  if (!d) { d = { data: diaVisto, andou: true }; db.dias.push(d); }   // qua e qui marcados pela rotina: a linha nasce aqui
-  if (v > 0 && v <= max) d[chave] = v; else delete d[chave];
-}));
-campoCaminhada('c-min', 'minutos', 600);
-campoCaminhada('c-km', 'km', 60);
-$('andei').addEventListener('click', () => mudar(() => {
-  // Desmarcar apaga o dia: sem caminhada não fica linha (nem conta como dia com registro)
-  const d = db.dias.find(x => x.data === diaVisto);
-  if (!andouNoDia(diaVisto)) { if (d) d.andou = true; else db.dias.push({ data: diaVisto, andou: true }); }
-  else if (caminhadaAuto(diaVisto)) { if (d) d.andou = false; else db.dias.push({ data: diaVisto, andou: false }); }   // qua e qui: "não andei" fica gravado
-  else db.dias = db.dias.filter(x => x.data !== diaVisto);
-}));
+  if (d && d.caminhadas.length >= TRECHOS_MAX) { toast(`No máximo ${TRECHOS_MAX} trechos por dia`, true); return; }
+  mudar(() => {
+    if (!d) { d = { data: diaVisto, caminhadas: [] }; db.dias.push(d); }
+    d.caminhadas.push({ hora: diaVisto === hoje() ? agoraHHMM() : '', ...(minutos && { minutos }), ...(km && { km }) });
+    d.caminhadas.sort((a, b) => a.hora.localeCompare(b.hora));
+  });
+  $('c-min').value = ''; $('c-km').value = '';
+}
+$('c-mais').addEventListener('click', marcarCaminhada);
+for (const id of ['c-min', 'c-km']) $(id).addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); marcarCaminhada(); } });
+$('c-lista').addEventListener('click', ev => {
+  const b = ev.target.closest('[data-tirar-trecho]'), d = db.dias.find(x => x.data === diaVisto);
+  if (!b || !d || !confirmar(b)) return;
+  mudar(() => {
+    d.caminhadas.splice(+b.dataset.tirarTrecho, 1);
+    if (!d.caminhadas.length) db.dias = db.dias.filter(x => x !== d);
+  });
+});
 
 $('f-texto').addEventListener('input', pintarSugestoes);
 $('f-sugestoes').addEventListener('click', ev => {

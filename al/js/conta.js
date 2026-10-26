@@ -1,20 +1,22 @@
 'use strict';
 // Conta do dia: o que comi (kcal e macros), o gasto (basal × fator de atividade + treino + caminhada) e o saldo.
 // Peso: a pesagem mais recente até o dia (do app Corpo, pesoNoDia); sem pesagem nenhuma, não há gasto nem saldo.
-// Caminhada do dia (rua ou esteira, plano): equação de caminhada do ACSM, VO2 = 0,1 × velocidade (m/min) + 3,5 ml/kg/min,
-// e MET = VO2 ÷ 3,5. Com tempo e distância a velocidade é a real (limitada a 2–7 km/h, faixa de caminhada); com um só, 5 km/h.
-// Sem nenhum, 20 min. O gasto líquido da caminhada depende quase só da distância: com km informado, o tempo pouco muda.
-// Dia de caminhada da rotina (qua e qui, ROTINA em ../corpo/perfil.js): sem linha no dia, "Andei" já vem marcado.
-const caminhadaAuto = dia => ROTINA.caminhada.includes(deIso(dia).getDay());
-const andouNoDia = dia => { const d = db.dias.find(x => x.data === dia); return d ? d.andou : caminhadaAuto(dia); };
-function caminhadaDoDia(dia, porHora) {
-  if (!andouNoDia(dia)) return null;
-  const d = db.dias.find(x => x.data === dia) || {};
-  const km = d.km || null;
-  const min = d.minutos || (km ? km / VELOCIDADE_PADRAO * 60 : CAMINHADA_MIN_PADRAO);
+// Caminhada do dia: a soma dos trechos marcados ("Andei +": ida, volta, mercado…), sem nenhum automático. Cada trecho (rua ou
+// esteira, plano) pela equação de caminhada do ACSM, VO2 = 0,1 × velocidade (m/min) + 3,5 ml/kg/min, e MET = VO2 ÷ 3,5. Com
+// tempo e distância a velocidade é a real (limitada a 2–7 km/h, faixa de caminhada); com um só, 5 km/h. Sem nenhum, 20 min.
+// O gasto líquido da caminhada depende quase só da distância: com km informado, o tempo pouco muda.
+const trechosDoDia = dia => db.dias.find(x => x.data === dia)?.caminhadas || [];
+function kcalTrecho(t, porHora) {
+  const km = t.km || null, min = t.minutos || (km ? km / VELOCIDADE_PADRAO * 60 : CAMINHADA_MIN_PADRAO);
   const kmh = km ? Math.min(Math.max(km / (min / 60), 2), 7) : VELOCIDADE_PADRAO;
   const met = (0.1 * kmh * 1000 / 60 + 3.5) / 3.5;
-  return { minutos: d.minutos || null, km, kcal: Math.round((met - 1) * porHora * min / 60) };
+  return Math.round((met - 1) * porHora * min / 60);
+}
+function caminhadaDoDia(dia, porHora) {
+  const T = trechosDoDia(dia);
+  if (!T.length) return null;
+  const trechos = T.map(t => ({ ...t, kcal: kcalTrecho(t, porHora) }));
+  return { trechos, kcal: trechos.reduce((s, t) => s + t.kcal, 0) };
 }
 // Treino e caminhada contam só o que passa da basal ((MET − 1) × basal/hora): a basal do dia já está no fator de atividade.
 function gastoDoDia(dia) {

@@ -9,9 +9,10 @@ const OVO = { nome: 'Ovo mexido', porcao: '2 unidades (~100 g)', kcal: 180, prot
 const PAO = { nome: 'Pão francês', porcao: '1 unidade (~50 g)', kcal: 150, prot: 4.7, carb: 29.3, gord: 1.5 };
 const iaCom = (...itens) => () => ({ status: 200, corpo: { itens } });
 const linhasDe = (pg, sel) => pg.$$eval(`${sel} > span`, L => L.map(x => x.textContent.replace(/\s+/g, ' ').trim()));
+const trechos = pg => pg.$$eval('#c-lista button', B => B.map(b => b.textContent));
 const descrever = async (pg, frase) => { await pg.fill('#f-texto', frase); await pg.press('#f-texto', 'Enter'); };
 
-test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei" soma a caminhada (padrão, minutos e/ou km) e vai para a nuvem', async () => {
+test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei +" soma cada trecho de caminhada e vai para a nuvem', async () => {
   const { ctx, pg, nuvem, erros } = await abrirApp({ nuvem: comTreino(novaNuvem()) });
   // basal 1998 × 1,2 = 2398 · treino 1 h: (3,5 − 1) × 1998 ÷ 24 = 208 · gasto 2606 − 500 de déficit = meta 2106 · nada comido
   assert.equal(await texto(pg, '#s-valor'), '2.106');
@@ -19,31 +20,41 @@ test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei" soma a camin
   assert.match(await pg.getAttribute('#saldo', 'class'), /deficit/);
   assert.deepEqual(await linhasDe(pg, '#s-conta'), ['Meta 500 kcal déficit 2.106 kcal', 'Comi 0 kcal']);   // uma por linha, déficit pequeno na da meta
   assert.equal(await pg.locator('#s-gasto').count(), 0);                 // sem a conta do gasto
-  assert.equal(await texto(pg, '#andei'), 'Andei');
-  assert.equal(await pg.isVisible('#andei-campos'), false);
-  await pg.click('#andei');
-  assert.equal(await pg.getAttribute('#andei', 'aria-pressed'), 'true');
+  assert.equal(await pg.isVisible('#andei'), true);
+  assert.equal(await texto(pg, '#c-kcal'), '');                          // sem trecho, sem caminhada
+  await pg.click('#c-mais');                                             // fui: sem tempo nem distância = 20 min
   // Padrão 20 min a 5 km/h: MET (0,1 × 83,3 + 3,5) ÷ 3,5 = 3,38 · (3,38 − 1) × 1998 ÷ 24 × 20/60 = 66
+  assert.deepEqual(await trechos(pg), ['15:30 · 20 min ×']);
   assert.equal(await texto(pg, '#c-kcal'), '−66 kcal');
-  assert.equal(await texto(pg, '#s-valor'), '2.172');               // a caminhada sobe o gasto e a meta junto
-  await pg.fill('#c-min', '40'); await pg.press('#c-min', 'Enter'); await pg.locator('#c-min').blur();
-  assert.equal(await texto(pg, '#c-kcal'), '−132 kcal');            // 40 min a 5 km/h
-  await pg.fill('#c-km', '3'); await pg.locator('#c-km').blur();
-  assert.equal(await texto(pg, '#c-kcal'), '−119 kcal');            // 3 km em 40 min = 4,5 km/h: MET 3,14
-  assert.equal(await texto(pg, '#s-valor'), '2.225');
-  await pg.fill('#c-min', ''); await pg.locator('#c-min').blur();
-  assert.equal(await texto(pg, '#c-kcal'), '−119 kcal');            // só km: 3 km a 5 km/h = 36 min, mesmo gasto líquido
-  await pg.fill('#c-min', '40'); await pg.locator('#c-min').blur();
+  assert.equal(await texto(pg, '#s-valor'), '2.172');                    // a caminhada sobe o gasto e a meta junto
+  await pg.clock.fastForward('01:00:00');
+  await pg.fill('#c-min', '40'); await pg.press('#c-min', 'Enter');      // voltei: 40 min a 5 km/h = 132
+  assert.equal(await texto(pg, '#c-kcal'), '−198 kcal');
+  assert.equal(await pg.inputValue('#c-min'), '');                       // campos limpos para o próximo trecho
+  await pg.clock.fastForward('02:00:00');
+  await pg.fill('#c-min', '40'); await pg.fill('#c-km', '3,0'); await pg.click('#c-mais');   // mercado: 3 km em 40 min = 4,5 km/h, MET 3,14 = 119
+  assert.deepEqual(await trechos(pg), ['15:30 · 20 min ×', '16:30 · 40 min ×', '18:30 · 40 min · 3 km ×']);
+  assert.equal(await texto(pg, '#c-kcal'), '−317 kcal');
+  assert.equal(await texto(pg, '#s-valor'), '2.423');
+  await pg.fill('#c-km', '80'); await pg.click('#c-mais');
+  assert.equal(await texto(pg, '#toast'), 'Até 600 min e 60 km por trecho');
+  assert.equal((await trechos(pg)).length, 3);
+  await pg.fill('#c-km', '');
   await sincronizado(pg);
-  assert.deepEqual(nuvem.tabelas.al_dia.map(x => [x.data, x.andou, x.minutos, x.km]), [[DIA, true, 40, 3]]);
-  await pg.reload();                                              // volta da nuvem com os mesmos campos
+  assert.deepEqual(nuvem.tabelas.al_dia.map(x => [x.data, x.caminhadas]), [[DIA, [{ hora: '15:30' }, { hora: '16:30', minutos: 40 }, { hora: '18:30', minutos: 40, km: 3 }]]]);
+  await pg.reload();                                                     // volta da nuvem igual
   await pg.waitForSelector('#v-dia:not([hidden])');
-  assert.equal(await pg.inputValue('#c-min'), '40'); assert.equal(await pg.inputValue('#c-km'), '3');
-  await pg.click('#andei');                                      // desmarcar apaga a linha do dia
+  assert.deepEqual(await trechos(pg), ['15:30 · 20 min ×', '16:30 · 40 min ×', '18:30 · 40 min · 3 km ×']);
+  await pg.click('[data-tirar-trecho="1"]');                             // toque duplo tira: o 1º só arma
+  assert.equal((await trechos(pg)).length, 3);
+  await pg.click('[data-tirar-trecho="1"]');
+  assert.equal(await texto(pg, '#c-kcal'), '−185 kcal');
+  await pg.click('[data-tirar-trecho="0"]'); await pg.click('[data-tirar-trecho="0"]');
+  await pg.click('[data-tirar-trecho="0"]'); await pg.click('[data-tirar-trecho="0"]');
+  assert.deepEqual(await trechos(pg), []);
   assert.equal(await texto(pg, '#s-valor'), '2.106');
-  assert.equal(await pg.isVisible('#andei-campos'), false);
   await sincronizado(pg);
-  assert.deepEqual(nuvem.tabelas.al_dia, []);
+  assert.deepEqual(nuvem.tabelas.al_dia, []);                            // sem trecho, o dia sai
   assert.deepEqual(erros, []);
   await ctx.close();
 });
@@ -112,24 +123,19 @@ test('hoje passou da meta: mostra quanto passou (vermelho), e os macros que pass
   await ctx.close();
 });
 
-test('quarta e quinta (rotina): "Andei" já vem marcado; desmarcar grava "não andei" e não conta como 1º dia do app', async () => {
+test('quarta e quinta sem caminhada automática; dia no formato antigo (total do dia) vira 1 trecho sem horário', async () => {
   const nuvem = comTreino(novaNuvem());
   const { ctx, pg } = await abrirApp({ nuvem, relogio: new Date('2026-09-16T09:00:00-03:00') });   // quarta
-  assert.equal(await pg.getAttribute('#andei', 'aria-pressed'), 'true');
-  assert.equal(await texto(pg, '#c-kcal'), '−66 kcal');                  // padrão 20 min
-  assert.equal(nuvem.tabelas.al_dia.length, 0);                          // marcado pela rotina, sem linha
-  await pg.fill('#c-km', '2,5'); await pg.locator('#c-km').blur();       // os campos criam a linha do dia
-  await sincronizado(pg);
-  assert.deepEqual(nuvem.tabelas.al_dia.map(x => [x.data, x.andou, x.km]), [['2026-09-16', true, 2.5]]);
-  await pg.click('#andei');                                               // hoje não fui
-  assert.equal(await pg.getAttribute('#andei', 'aria-pressed'), 'false');
-  await sincronizado(pg);
-  assert.deepEqual(nuvem.tabelas.al_dia.map(x => [x.data, x.andou]), [['2026-09-16', false]]);
-  await pg.reload(); await pg.waitForSelector('#v-dia:not([hidden])');
-  assert.equal(await pg.getAttribute('#andei', 'aria-pressed'), 'false');   // continua desmarcado
-  await pg.click('#andei');
-  assert.equal(await pg.getAttribute('#andei', 'aria-pressed'), 'true');
+  assert.deepEqual(await trechos(pg), []);
+  assert.equal(await texto(pg, '#c-kcal'), '');
   await ctx.close();
+  const antiga = comTreino(novaNuvem());
+  antiga.tabelas.al_dia.push({ user_id: 'x', data: '2026-09-17', andou: true, minutos: '40', km: null });
+  const b = await abrirApp({ nuvem: antiga });
+  await b.pg.click('#d-ant');
+  assert.deepEqual(await trechos(b.pg), ['40 min ×']);
+  assert.equal(await texto(b.pg, '#c-kcal'), '−132 kcal');
+  await b.ctx.close();
 });
 
 test('dia de treino (quarta e quinta, e a segunda opcional) ainda sem treino: avisa quanto a meta sobe depois de treinar', async () => {
@@ -139,7 +145,7 @@ test('dia de treino (quarta e quinta, e a segunda opcional) ainda sem treino: av
   const { ctx, pg } = await abrirApp({ nuvem, relogio: new Date('2026-09-16T08:00:00-03:00') });   // quarta, antes de treinar
   // duração média dos treinos: 45 min · 3,5 × 1998 ÷ 24 × 0,75 = 219, menos a basal dessas horas (62) = 157
   assert.equal(await texto(pg, '#s-previsto'), 'Você ganha 157 kcal a mais para comer se treinar');
-  assert.equal(await texto(pg, '#s-valor'), '1.964');                    // a meta ainda não conta o treino (só a caminhada da quarta)
+  assert.equal(await texto(pg, '#s-valor'), '1.898');                    // a meta ainda não conta o treino (2398 − 500)
   await ctx.close();
   const seg = await abrirApp({ nuvem, relogio: new Date('2026-09-14T08:00:00-03:00') });   // segunda: treino extra, opcional
   assert.equal(await texto(seg.pg, '#s-previsto'), 'Você ganha 157 kcal a mais para comer se treinar (treino opcional)');
@@ -227,7 +233,7 @@ test('lista do dia: porções mudam o total e apagar pede toque duplo', async ()
 
 test('app novo começa hoje: sem dia anterior para ver e só hoje nos últimos 7 dias', async () => {
   const nuvem = comTreino(novaNuvem());
-  nuvem.tabelas.al_dia.push({ user_id: 'x', data: '2026-09-12', andou: false });   // "Andei" desmarcado numa versão antiga: não conta
+  nuvem.tabelas.al_dia.push({ user_id: 'x', data: '2026-09-12', andou: false });   // "não andei" de uma versão antiga: não conta
   const { ctx, pg } = await abrirApp({ nuvem });
   assert.equal(await pg.isDisabled('#d-ant'), true);
   assert.equal(await pg.isDisabled('#d-prox'), true);
@@ -241,9 +247,9 @@ test('dias anteriores: ‹ e os últimos 7 dias mostram o dia, com saldo e médi
   nuvem.tabelas.al_registro.push({ user_id: 'x', id: 'r1', data: '2026-09-17', hora: '20:00', item_id: null, nome: 'Pizza', porcao: '4 fatias', qtd: '1', kcal: '1100', prot: '44', carb: '120', gord: '48' });
   const { ctx, pg } = await abrirApp({ nuvem });
   assert.equal(await pg.isDisabled('#d-prox'), true);
-  // 17/09 (quinta: caminhada da rotina, 20 min = 66; dia de treino sem treino registrado): 2398 + 66 = 2464 · 1100 − 2464 = −1364
-  assert.match(await texto(pg, '#semana li:nth-child(2)'), /^Ontem 1\.100 kcal −1\.364$/);
-  assert.equal(await texto(pg, '#semana .sem-media'), 'Média de 1 dia fechado: −1.364 kcal/dia');   // hoje ainda não fechou: fora da média
+  // 17/09 (quinta, dia de treino sem treino registrado, sem caminhada): 2398 · 1100 − 2398 = −1298
+  assert.match(await texto(pg, '#semana li:nth-child(2)'), /^Ontem 1\.100 kcal −1\.298$/);
+  assert.equal(await texto(pg, '#semana .sem-media'), 'Média de 1 dia fechado: −1.298 kcal/dia');   // hoje ainda não fechou: fora da média
   assert.match(await texto(pg, '#semana li:nth-child(1)'), /^Hoje —$/);
   assert.equal(await pg.locator('#semana li').count(), 2);   // começou ontem: nada antes
   await pg.click('#d-ant');
@@ -251,10 +257,12 @@ test('dias anteriores: ‹ e os últimos 7 dias mostram o dia, com saldo e médi
   assert.equal(await pg.isDisabled('#d-prox'), false);
   assert.equal(await pg.isDisabled('#d-ant'), true);          // 1º dia do app
   assert.match(await texto(pg, '#lista li'), /^20:00 Pizza/);
-  assert.equal(await texto(pg, '#s-valor'), '1.364');                  // dia fechado: saldo final, sem sinal (o rótulo diz)
+  assert.equal(await texto(pg, '#s-valor'), '1.298');                  // dia fechado: saldo final, sem sinal (o rótulo diz)
   assert.equal(await texto(pg, '#s-rotulo'), 'kcal de déficit');
+  assert.deepEqual(await linhasDe(pg, '#s-conta'), ['Comi 1.100 kcal', 'Gastei 2.398 kcal', 'Meta 500 kcal déficit 1.898 kcal']);
+  await pg.click('#c-mais');                                           // caminhada lançada depois, no dia passado: sem horário
+  assert.deepEqual(await trechos(pg), ['20 min ×']);
   assert.deepEqual(await linhasDe(pg, '#s-conta'), ['Comi 1.100 kcal', 'Gastei 2.464 kcal', 'Meta 500 kcal déficit 1.964 kcal']);
-  assert.equal(await texto(pg, '#andei'), 'Andei');
   await pg.click('#semana [data-dia="2026-09-18"]');
   assert.equal(await texto(pg, '#d-nome'), 'Hoje');
   await ctx.close();

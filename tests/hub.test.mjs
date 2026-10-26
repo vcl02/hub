@@ -127,7 +127,7 @@ test('dados sobre mim num lugar só: corpo/perfil.js, carregado pelo tr, pelo al
   assert.match(perfil, /^'use strict';\n\/\/ /);
   const ctx = {};
   new Function('ctx', perfil.replace(/^'use strict';/, '') + '\nObject.assign(ctx, { PERFIL, ROTINA, idadeEm, tmb, kcalTreino, pesoNoDia, ordenarMedidas });')(ctx);
-  assert.deepEqual(JSON.parse(JSON.stringify(ctx.ROTINA)), { treino: [3, 4], treinoExtra: [1], caminhada: [3, 4], presencial: [3, 4] });   // qua e qui · seg · qua e qui · qua e qui
+  assert.deepEqual(JSON.parse(JSON.stringify(ctx.ROTINA)), { treino: [3, 4], treinoExtra: [1], presencial: [3, 4] });   // qua e qui · seg · qua e qui
   assert.match(ler('tr/js/config.js'), /const DIAS_FIXOS = ROTINA\.treino;/);
   assert.deepEqual({ ...ctx.PERFIL }, { altura: 1.78, nascimento: '2002-09-14', sexo: 'M' });
   assert.ok(Object.isFrozen(ctx.PERFIL));
