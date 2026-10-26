@@ -37,13 +37,13 @@ function pintarSaldo() {
     const p = g.previsto, passou = -resto, depois = passou - p.kcal, superavit = c.kcal - g.total, comTreino = c.kcal - g.total - p.kcal;
     $('s-alerta-txt').innerHTML = [
       `Passou <b>${inteiro(passou)} kcal</b> da meta.`,
-      depois <= 0 ? `Treinando (~${p.minutos} min, +${inteiro(p.kcal)} kcal) você <b>volta para a meta</b>.`
-        : `Treinando (~${p.minutos} min, +${inteiro(p.kcal)} kcal) o excesso cai para <b>${inteiro(depois)} kcal</b>.`,
+      depois <= 0 ? `Se treinar, você ganha ${inteiro(p.kcal)} kcal e <b>volta para a meta</b>.`
+        : `Se treinar, você ganha ${inteiro(p.kcal)} kcal e o excesso cai para <b>${inteiro(depois)} kcal</b>.`,
       superavit > 0 ? `Sem treino o dia fecha em <b>superávit de ${inteiro(superavit)} kcal</b>${comTreino <= 0 ? '; treinando, ainda fecha em déficit' : ''}.` : ''
     ].filter(Boolean).map(t => `<span>${t}</span>`).join('');
   }
   $('s-previsto').hidden = !(aberto && g?.previsto) || urgente;
-  if (aberto && g?.previsto) $('s-previsto').textContent = `${g.previsto.extra ? 'Treino extra hoje (opcional)' : 'Treino previsto hoje'}: +${inteiro(g.previsto.kcal)} kcal depois de treinar (~${g.previsto.minutos} min)`;
+  if (aberto && g?.previsto) $('s-previsto').textContent = `Você ganha ${inteiro(g.previsto.kcal)} kcal a mais para comer se treinar${g.previsto.extra ? ' (treino opcional)' : ''}`;
   $('andei').hidden = !g;
   $('andei').setAttribute('aria-pressed', String(!!g?.caminhada));
   $('andei-campos').hidden = !g?.caminhada;

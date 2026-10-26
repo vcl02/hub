@@ -138,11 +138,11 @@ test('dia de treino (quarta e quinta, e a segunda opcional) ainda sem treino: av
   nuvem.tabelas.tr_treino.push({ user_id: 'x', inicio: '2026-09-10T13:00:00+00:00', fim: '2026-09-10T13:45:00+00:00', fechado: true });
   const { ctx, pg } = await abrirApp({ nuvem, relogio: new Date('2026-09-16T08:00:00-03:00') });   // quarta, antes de treinar
   // duração média dos treinos: 45 min · 3,5 × 1998 ÷ 24 × 0,75 = 219, menos a basal dessas horas (62) = 157
-  assert.equal(await texto(pg, '#s-previsto'), 'Treino previsto hoje: +157 kcal depois de treinar (~45 min)');
+  assert.equal(await texto(pg, '#s-previsto'), 'Você ganha 157 kcal a mais para comer se treinar');
   assert.equal(await texto(pg, '#s-valor'), '1.964');                    // a meta ainda não conta o treino (só a caminhada da quarta)
   await ctx.close();
   const seg = await abrirApp({ nuvem, relogio: new Date('2026-09-14T08:00:00-03:00') });   // segunda: treino extra, opcional
-  assert.equal(await texto(seg.pg, '#s-previsto'), 'Treino extra hoje (opcional): +157 kcal depois de treinar (~45 min)');
+  assert.equal(await texto(seg.pg, '#s-previsto'), 'Você ganha 157 kcal a mais para comer se treinar (treino opcional)');
   await seg.ctx.close();
   const sex = await abrirApp({ nuvem, relogio: new Date('2026-09-18T08:00:00-03:00') });   // sexta: fora da rotina, sem aviso
   assert.equal(await sex.pg.isVisible('#s-previsto'), false);
@@ -165,11 +165,11 @@ test('segunda (treino opcional) passando da meta sem ter treinado: alerta urgent
   assert.equal(await pg.isVisible('#s-alerta'), true);
   assert.equal(await pg.isVisible('#s-previsto'), false);
   assert.equal(await texto(pg, '#s-alerta .alerta-titulo'), 'Treino obrigatório hoje');
-  assert.deepEqual(await linhasDe(pg, '#s-alerta-txt'), ['Passou 102 kcal da meta.', 'Treinando (~60 min, +208 kcal) você volta para a meta.']);
+  assert.deepEqual(await linhasDe(pg, '#s-alerta-txt'), ['Passou 102 kcal da meta.', 'Se treinar, você ganha 208 kcal e volta para a meta.']);
   assert.equal(await pg.getAttribute('#s-alerta-bt', 'href'), '../tr/');
   // mais 600: passou 702, o treino só reduz (494); sem treino fecha em superávit (2600 − 2398 = 202), com treino ainda déficit
   kcal = 600; await descrever(pg, 'sobremesa'); await pg.click('#p-adicionar');
-  assert.deepEqual(await linhasDe(pg, '#s-alerta-txt'), ['Passou 702 kcal da meta.', 'Treinando (~60 min, +208 kcal) o excesso cai para 494 kcal.',
+  assert.deepEqual(await linhasDe(pg, '#s-alerta-txt'), ['Passou 702 kcal da meta.', 'Se treinar, você ganha 208 kcal e o excesso cai para 494 kcal.',
     'Sem treino o dia fecha em superávit de 202 kcal; treinando, ainda fecha em déficit.']);
   await ctx.close();
 });
