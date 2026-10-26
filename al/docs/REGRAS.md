@@ -36,8 +36,8 @@
 
 ## Dias
 
-- ‹ › trocam o dia mostrado; › para em hoje. Tudo (saldo, macros, lista, "Andei") é do dia mostrado, e o que for adicionado entra nele.
-- **Últimos 7 dias** (até hoje): dia, kcal comidas e saldo de cada um (verde déficit, vermelho superávit; sem comida, sem saldo). Tocar abre o dia. Média do saldo dos dias com comida registrada.
+- O app começa no 1º dia com algo registrado (comida ou "Andei"); sem nada, hoje. ‹ › trocam o dia mostrado: ‹ para no 1º dia, › para em hoje. Tudo (saldo, macros, lista, "Andei") é do dia mostrado, e o que for adicionado entra nele.
+- **Últimos 7 dias** (até hoje, sem dias antes do 1º dia do app): dia, kcal comidas e saldo de cada um (verde déficit, vermelho superávit; sem comida, sem saldo). Tocar abre o dia. Média do saldo dos dias com comida registrada.
 - Com o app aberto na virada do dia, ao voltar para ele "Hoje" passa a ser o dia novo.
 
 ## Limites da IA

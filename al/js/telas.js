@@ -1,10 +1,14 @@
 'use strict';
 // Tela do dia: saldo, macros, campo "o que comi" (sugestões, IA e prévia), lista do dia e os últimos 7 dias.
 let diaVisto = hoje(), previa = null;
+// 1º dia do app: o mais antigo com comida ou "Andei" registrado (sem nada, hoje). Antes dele não há o que ver.
+const inicio = () => [hoje(), ...db.registros.map(r => r.data), ...db.dias.map(x => x.data)].reduce((a, b) => b < a ? b : a);
 
 function desenhar() {
   if (diaVisto > hoje()) diaVisto = hoje();
+  if (diaVisto < inicio()) diaVisto = inicio();
   $('d-nome').textContent = nomeDoDia(diaVisto);
+  $('d-ant').disabled = diaVisto <= inicio();
   $('d-prox').disabled = diaVisto >= hoje();
   $('f-texto').placeholder = diaVisto === hoje() ? 'O que você comeu?' : 'O que você comeu neste dia?';
   pintarSaldo(); pintarMacros(); pintarSugestoes(); pintarPrevia(); pintarLista(); pintarSemana();
@@ -69,9 +73,9 @@ function pintarLista() {
   </li>`).join('');
 }
 
-// Últimos 7 dias até hoje: comido e saldo de cada um (o dia mostrado em destaque), e a média dos dias com comida registrada
+// Últimos 7 dias até hoje (desde o 1º dia do app): comido e saldo de cada um (o dia mostrado em destaque), e a média dos dias com comida
 function pintarSemana() {
-  const dias = Array.from({ length: 7 }, (_, i) => somaDias(hoje(), -i));
+  const dias = Array.from({ length: 7 }, (_, i) => somaDias(hoje(), -i)).filter(d => d >= inicio());
   const S = dias.map(d => ({ d, ...saldoDoDia(d) }));
   const comDados = S.filter(s => s.comido.kcal > 0 && s.saldo != null);
   const media = comDados.length ? Math.round(comDados.reduce((t, s) => t + s.saldo, 0) / comDados.length) : null;
@@ -83,7 +87,7 @@ function pintarSemana() {
 // ===== Interações =====
 function mudar(acao) { acao(); gravar(); desenhar(); }
 
-$('d-ant').addEventListener('click', () => { diaVisto = somaDias(diaVisto, -1); previa = null; desenhar(); });
+$('d-ant').addEventListener('click', () => { if (diaVisto > inicio()) { diaVisto = somaDias(diaVisto, -1); previa = null; desenhar(); } });
 $('d-prox').addEventListener('click', () => { if (diaVisto < hoje()) { diaVisto = somaDias(diaVisto, 1); previa = null; desenhar(); } });
 $('semana').addEventListener('click', ev => { const b = ev.target.closest('[data-dia]'); if (b) { diaVisto = b.dataset.dia; previa = null; desenhar(); } });
 

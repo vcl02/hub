@@ -108,6 +108,15 @@ test('lista do dia: porções mudam o total e apagar pede toque duplo', async ()
   await ctx.close();
 });
 
+test('app novo começa hoje: sem dia anterior para ver e só hoje nos últimos 7 dias', async () => {
+  const { ctx, pg } = await abrirApp({ nuvem: comTreino(novaNuvem()) });
+  assert.equal(await pg.isDisabled('#d-ant'), true);
+  assert.equal(await pg.isDisabled('#d-prox'), true);
+  assert.equal(await pg.locator('#semana li').count(), 1);
+  assert.match(await texto(pg, '#semana li'), /^Hoje/);
+  await ctx.close();
+});
+
 test('dias anteriores: ‹ e os últimos 7 dias mostram o dia, com saldo e média dos dias com comida', async () => {
   const nuvem = comTreino(novaNuvem());
   nuvem.tabelas.al_registro.push({ user_id: 'x', id: 'r1', data: '2026-09-13', hora: '20:00', item_id: null, nome: 'Pizza', porcao: '4 fatias', qtd: '1', kcal: '1100', prot: '44', carb: '120', gord: '48' });
@@ -116,9 +125,11 @@ test('dias anteriores: ‹ e os últimos 7 dias mostram o dia, com saldo e médi
   // 13/09: 23 anos, basal 2003 × 1,2 = 2404, sem treino · 1100 − 2404 = −1304
   assert.match(await texto(pg, '#semana li:nth-child(2)'), /^Ontem 1\.100 kcal −1\.304$/);
   assert.equal(await texto(pg, '#semana .sem-media'), 'Média de 1 dia: −1.304 kcal/dia');
+  assert.equal(await pg.locator('#semana li').count(), 2);   // começou ontem: nada antes
   await pg.click('#d-ant');
   assert.equal(await texto(pg, '#d-nome'), 'Ontem');
   assert.equal(await pg.isDisabled('#d-prox'), false);
+  assert.equal(await pg.isDisabled('#d-ant'), true);          // 1º dia do app
   assert.match(await texto(pg, '#lista li'), /^20:00 Pizza/);
   assert.equal(await texto(pg, '#andei'), 'Andei neste dia · +139 kcal');
   await pg.click('#semana [data-dia="2026-09-14"]');
