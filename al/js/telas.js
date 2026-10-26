@@ -16,20 +16,18 @@ function desenhar() {
 
 // Hoje: quanto ainda cabe até a meta ("kcal restantes") ou quanto passou dela; o gasto só fecha no fim do dia.
 // Dias passados: o saldo final (comido − gasto), de déficit ou de superávit.
-// Embaixo, uma informação por linha: meta, comido (e gasto nos dias passados), e de onde sai o gasto e a meta.
+// Embaixo, uma informação por linha: meta (com o déficit planejado, pequeno), comido e, nos dias passados, o gasto.
 function pintarSaldo() {
   const { gasto: g, comido: c, saldo } = saldoDoDia(diaVisto), meta = metaDoDia(diaVisto), aberto = diaVisto === hoje();
   const resto = meta ? meta.kcal - c.kcal : null;
   const bom = aberto ? resto != null && resto >= 0 : saldo != null && saldo <= 0;
   const linha = (rotulo, v) => `<span>${rotulo} <b>${inteiro(v)} kcal</b></span>`;
+  const linhaMeta = () => linha(`Meta <small>${inteiro(DEFICIT_META)} kcal déficit</small>`, meta.kcal);   // meta = gasto − déficit planejado
   $('saldo').className = 'cartao saldo' + (!g ? '' : bom ? ' deficit' : ' superavit');
   $('s-valor').textContent = !g ? '—' : inteiro(Math.abs(aberto ? resto : saldo));
   $('s-rotulo').textContent = !g ? 'kcal' : aberto ? (resto >= 0 ? 'kcal restantes' : 'kcal acima da meta') : saldo <= 0 ? 'kcal de déficit' : 'kcal de superávit';
   $('s-conta').innerHTML = !g ? `${linha('Comi', c.kcal)}<span>Sem pesagem no Corpo para calcular o gasto</span>`
-    : aberto ? linha('Meta', meta.kcal) + linha('Comi', c.kcal) : linha('Comi', c.kcal) + linha('Gastei', g.total) + linha('Meta', meta.kcal);
-  // Gasto = basal + o dia a dia (a parte do fator 1,2) + treino + caminhada; meta = gasto − déficit planejado (a 2ª linha)
-  const partes = [`basal ${inteiro(g?.basal)}`, `dia a dia ${inteiro(g ? g.rotina - g.basal : 0)}`, ...(g?.treino ? [`treino ${inteiro(g.treino)}`] : []), ...(g?.caminhada ? [`caminhada ${inteiro(g.caminhada.kcal)}`] : [])];
-  $('s-gasto').innerHTML = g ? `<span>Gasto ${inteiro(g.total)} = ${partes.map(p => p.replace(/ (?=\d)/, '\u00a0')).join(' + ')}</span><span>${inteiro(DEFICIT_META)} kcal de déficit</span>` : '';
+    : aberto ? linhaMeta() + linha('Comi', c.kcal) : linha('Comi', c.kcal) + linha('Gastei', g.total) + linhaMeta();
   // Hoje é dia de treino e ainda não treinou: quanto a mais dá para comer depois do treino
   $('s-previsto').hidden = !(aberto && g?.previsto);
   if (aberto && g?.previsto) $('s-previsto').textContent = `Treino previsto hoje: +${inteiro(g.previsto.kcal)} kcal depois de treinar (~${g.previsto.minutos} min)`;

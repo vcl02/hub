@@ -17,8 +17,8 @@ test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei" soma a camin
   assert.equal(await texto(pg, '#s-valor'), '2.106');
   assert.equal(await texto(pg, '#s-rotulo'), 'kcal restantes');        // hoje: quanto ainda cabe, não o déficit do dia inteiro
   assert.match(await pg.getAttribute('#saldo', 'class'), /deficit/);
-  assert.deepEqual(await linhasDe(pg, '#s-conta'), ['Meta 2.106 kcal', 'Comi 0 kcal']);   // uma por linha
-  assert.deepEqual(await linhasDe(pg, '#s-gasto'), ['Gasto 2.606 = basal 1.998 + dia a dia 400 + treino 208', '500 kcal de déficit']);
+  assert.deepEqual(await linhasDe(pg, '#s-conta'), ['Meta 500 kcal déficit 2.106 kcal', 'Comi 0 kcal']);   // uma por linha, déficit pequeno na da meta
+  assert.equal(await pg.locator('#s-gasto').count(), 0);                 // sem a conta do gasto
   assert.equal(await texto(pg, '#andei'), 'Andei');
   assert.equal(await pg.isVisible('#andei-campos'), false);
   await pg.click('#andei');
@@ -26,7 +26,6 @@ test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei" soma a camin
   // Padrão 20 min a 5 km/h: MET (0,1 × 83,3 + 3,5) ÷ 3,5 = 3,38 · (3,38 − 1) × 1998 ÷ 24 × 20/60 = 66
   assert.equal(await texto(pg, '#c-kcal'), '−66 kcal');
   assert.equal(await texto(pg, '#s-valor'), '2.172');               // a caminhada sobe o gasto e a meta junto
-  assert.match(await texto(pg, '#s-gasto'), /\+ caminhada 66/);
   await pg.fill('#c-min', '40'); await pg.press('#c-min', 'Enter'); await pg.locator('#c-min').blur();
   assert.equal(await texto(pg, '#c-kcal'), '−132 kcal');            // 40 min a 5 km/h
   await pg.fill('#c-km', '3'); await pg.locator('#c-km').blur();
@@ -118,7 +117,6 @@ test('segunda e terça (rotina): "Andei" já vem marcado; desmarcar grava "não 
   const { ctx, pg } = await abrirApp({ nuvem, relogio: new Date('2026-09-14T09:00:00-03:00') });   // segunda
   assert.equal(await pg.getAttribute('#andei', 'aria-pressed'), 'true');
   assert.equal(await texto(pg, '#c-kcal'), '−66 kcal');                  // padrão 20 min
-  assert.match(await texto(pg, '#s-gasto'), /\+ caminhada 66/);
   assert.equal(nuvem.tabelas.al_dia.length, 0);                          // marcado pela rotina, sem linha
   await pg.fill('#c-km', '2,5'); await pg.locator('#c-km').blur();       // os campos criam a linha do dia
   await sincronizado(pg);
@@ -212,7 +210,7 @@ test('dias anteriores: ‹ e os últimos 7 dias mostram o dia, com saldo e médi
   assert.match(await texto(pg, '#lista li'), /^20:00 Pizza/);
   assert.equal(await texto(pg, '#s-valor'), '1.298');                  // dia fechado: saldo final, sem sinal (o rótulo diz)
   assert.equal(await texto(pg, '#s-rotulo'), 'kcal de déficit');
-  assert.deepEqual(await linhasDe(pg, '#s-conta'), ['Comi 1.100 kcal', 'Gastei 2.398 kcal', 'Meta 1.898 kcal']);
+  assert.deepEqual(await linhasDe(pg, '#s-conta'), ['Comi 1.100 kcal', 'Gastei 2.398 kcal', 'Meta 500 kcal déficit 1.898 kcal']);
   assert.equal(await texto(pg, '#andei'), 'Andei');
   await pg.click('#semana [data-dia="2026-09-17"]');
   assert.equal(await texto(pg, '#d-nome'), 'Hoje');

@@ -51,9 +51,9 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 .saldo.superavit{border-color:var(--red);background:linear-gradient(160deg,var(--red-soft),var(--surface) 70%)}
 .saldo.superavit .saldo-num b{color:var(--red)}
 .saldo-conta{display:flex;flex-direction:column;gap:2px}
-.saldo-conta span{display:flex;justify-content:space-between;max-width:14em}
+.saldo-conta span{display:flex;justify-content:space-between;align-items:baseline;gap:8px;max-width:18em}
+.saldo-conta small{margin-right:auto;color:var(--muted);font-size:.75rem}
 .saldo-conta b{font-variant-numeric:tabular-nums}
-.saldo-gasto{display:flex;flex-direction:column;gap:2px;color:var(--muted);font-size:.8rem}
 .previsto{font-size:.875rem;color:var(--yellow);font-weight:500}
 .andei{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:4px}
 .andei-campos{display:flex;align-items:center;gap:8px}
