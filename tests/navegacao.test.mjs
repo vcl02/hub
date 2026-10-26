@@ -133,7 +133,9 @@ test('hábitos com os dados dos apps: valor de hoje, ofensivas, dias perfeitos e
   assert.deepEqual(await linha('sono'), ['7,5 h', '2']);
   assert.deepEqual(await linha('agua'), ['400 / 1.000 ml', '2']);                  // 25 e 23/10, com 24/10 protegido
   assert.deepEqual(await linha('treino'), ['Próximo: qua', '2']);
+  assert.deepEqual(await linha('deficit'), [(await linha('deficit'))[0], '1']);   // 700 kcal cabem na meta: hoje já conta
   assert.match((await linha('deficit'))[0], /kcal restantes$/);
+  assert.equal(await pg.$eval('[data-habito="treino"] .hab-ofensiva', el => el.classList.contains('acesa')), true);   // segunda (folga) com qua e qui feitos
   assert.equal(await pg.textContent('#h-protecoes b'), '0');                      // ganhou 1 e gastou em 24/10
   assert.equal(await pg.$$eval('[data-habito="agua"] .hab-dias i', L => L.map(i => i.className).join(' ')), 'antes antes antes feito protegido feito pendente hoje');
   assert.equal(await pg.$eval('[data-habito="peso"] .hab-ofensiva', el => el.classList.contains('acesa')), true);   // feito hoje: chama acesa

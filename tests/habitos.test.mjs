@@ -59,7 +59,7 @@ test('peso e sono: só contam lançados no próprio dia (a partir de 27/10); ant
   assert.equal(H.LANCADO_NO_DIA_DESDE, '2026-10-27');
 });
 
-test('déficit: comido ≤ meta (gasto − 500); dia sem registro, com comida lançada depois ou acima da meta falha; hoje fica pendente', () => {
+test('déficit: comido ≤ meta (gasto − 500); dia sem registro, com comida lançada depois ou acima da meta falha; hoje é feito enquanto couber', () => {
   const D = vazio();
   D.medidas = [{ data: '2026-10-01', hora: '', peso: 100 }];
   const meta = dia => H.metaKcal(H.gastoNoDia(D.medidas, D.treinos, [], dia));
@@ -71,7 +71,10 @@ test('déficit: comido ≤ meta (gasto − 500); dia sem registro, com comida la
     [HOJE]: [{ hora: '12:00', kcal: 500 }]
   };
   const dia = d => H.estadoNoDia('deficit', d, D, HOJE);
-  assert.deepEqual(['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04', HOJE].map(dia), ['feito', 'falhou', 'falhou', 'falhou', 'pendente']);
+  assert.deepEqual(['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04', HOJE].map(dia), ['feito', 'falhou', 'falhou', 'falhou', 'feito']);
+  D.comidas[HOJE].push({ hora: '20:00', kcal: meta(HOJE) });          // hoje passou da meta: pendente (o dia ainda não fechou)
+  assert.equal(dia(HOJE), 'pendente');
+  assert.equal(dia('2026-11-06'), 'falhou');                           // dia que ainda não chegou, sem nada: nunca é feito
   // Caminhada lançada depois do dia não sobe a meta do hábito; a lançada no dia sobe
   D.comidas['2026-11-04'] = [{ hora: '12:00', kcal: meta('2026-11-04') + 50 }];
   D.trechos['2026-11-04'] = [{ hora: '', km: 5 }];
@@ -117,7 +120,7 @@ test('proteções: +1 a cada semana de treino perfeita (no máximo 2); a falta g
   assert.deepEqual([R2.habitos.agua.dias['2026-10-26'], R2.habitos.agua.dias['2026-10-27'], R2.habitos.agua.ofensiva], ['protegido', 'falhou', 4]);
 });
 
-test('dia perfeito: todos os hábitos feitos (treino pode ser folga), sem proteção; hoje só conta quando fecha', () => {
+test('dia perfeito: todos os hábitos feitos (treino pode ser folga), sem proteção; hoje conta quando tudo já está feito', () => {
   const D = vazio();
   D.medidas = [{ data: '2026-10-01', hora: '', peso: 100 }];
   const dias = ['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04', HOJE];
@@ -130,8 +133,11 @@ test('dia perfeito: todos os hábitos feitos (treino pode ser folga), sem prote�
   D.medidas.shift();
   D.treinos = ['2026-11-04', HOJE].map(treino);
   let R = H.calcularHabitos(D, HOJE);
-  assert.deepEqual(dias.map(d => R.perfeito[d]), [true, true, true, true, false]);   // hoje: o déficit ainda está aberto
-  assert.equal(R.perfeitos, 4);
+  assert.deepEqual(dias.map(d => R.perfeito[d]), [true, true, true, true, true]);
+  assert.equal(R.perfeitos, 5);
+  D.aguas[HOJE] = 300;                                                // hoje ainda falta água: não quebra, só não soma
+  R = H.calcularHabitos(D, HOJE);
+  assert.deepEqual([R.perfeito[HOJE], R.perfeitos], [false, 4]);
   delete D.aguas['2026-11-02'];
   R = H.calcularHabitos(D, HOJE);
   assert.equal(R.perfeitos, 2);                                       // 3 e 4/11

@@ -39,10 +39,9 @@ function estadoNoDia(id, dia, D, hoje) {
     if (!ROTINA.treino.includes(semanaDoDia(dia))) return 'folga';
     return D.treinos.some(t => diaDoInstante(t.inicio) === dia) ? 'feito' : aindaDa;
   }
-  if (id === 'deficit') {   // o dia só fecha à meia-noite: hoje fica pendente, e ontem é o último avaliado
-    if (dia >= hoje) return 'pendente';
+  if (id === 'deficit') {   // hoje: feito enquanto o comido couber na meta (pendente se passou ou nada lançado); fecha à meia-noite
     const c = contaDoDia(D, dia);
-    return c.comidas.length && !c.tarde && c.meta != null && c.comido <= c.meta ? 'feito' : 'falhou';
+    return c.comidas.length && !c.tarde && c.meta != null && c.comido <= c.meta ? 'feito' : aindaDa;
   }
   if (id === 'peso') {
     const m = D.medidas.find(x => x.data === dia && x.peso);
@@ -95,7 +94,7 @@ function calcularHabitos(D, hoje) {
     }
     return n;
   };
-  // Dia perfeito: todos os hábitos feitos (ou de folga), sem proteção. Hoje só conta quando fecha (o déficit fecha à meia-noite).
+  // Dia perfeito: todos os hábitos feitos (ou de folga), sem proteção. Hoje conta quando tudo já está feito.
   const perfeito = d => HABITOS.every(h => E[h.id][d] === 'feito' || E[h.id][d] === 'folga');
   let perfeitos = 0;
   for (let i = dias.length - 1; i >= 0; i--) {

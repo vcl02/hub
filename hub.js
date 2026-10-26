@@ -115,7 +115,8 @@ function desenhar() {
     if (r.progresso != null) barra.firstElementChild.style.width = Math.round(Math.min(1, Math.max(0, r.progresso)) * 100) + '%';
     const of = el.querySelector('.hab-ofensiva');
     of.querySelector('b').textContent = h.ofensiva;
-    of.classList.toggle('acesa', h.hoje === 'feito');                  // feito hoje: a chama acende
+    // Chama acesa: feito hoje, ou dia de folga com a ofensiva em dia (treino na sexta depois de qua e qui feitos)
+    of.classList.toggle('acesa', h.hoje === 'feito' || (h.hoje === 'folga' && h.ofensiva > 0));
     of.classList.toggle('apagada', !h.ofensiva);
     of.setAttribute('aria-label', `Ofensiva: ${h.ofensiva}`);
     el.classList.toggle('feito', h.hoje === 'feito');
