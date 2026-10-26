@@ -3,8 +3,8 @@
 // treino e a leitura das pesagens e medidas. Altura, nascimento e sexo ficam só no código, fora do banco; pesagens e medidas
 // ficam na tabela corpo_medida, que só o app Corpo grava. Os apps carregam com <script src="../corpo/perfil.js">.
 const PERFIL = Object.freeze({ altura: 1.78, nascimento: '2002-09-14', sexo: 'M' });   // altura em metros; sexo M | F
-// Rotina da semana (Date.getDay: 0 = domingo): treino fixo, treino extra sugerido e caminhada até o serviço
-const ROTINA = Object.freeze({ treino: Object.freeze([3, 4]), treinoExtra: Object.freeze([1]), caminhada: Object.freeze([1, 2]) });   // qua e qui · seg · seg e ter
+// Rotina da semana (Date.getDay: 0 = domingo): treino fixo, treino extra sugerido (opcional) e caminhada do dia já marcada
+const ROTINA = Object.freeze({ treino: Object.freeze([3, 4]), treinoExtra: Object.freeze([1]), caminhada: Object.freeze([3, 4]) });   // qua e qui · seg · qua e qui
 // Idade completa no dia (AAAA-MM-DD)
 function idadeEm(dia) { const [a, m, d] = dia.split('-').map(Number), [na, nm, nd] = PERFIL.nascimento.split('-').map(Number); return a - na - (m < nm || (m === nm && d < nd) ? 1 : 0); }
 // Taxa metabólica basal (Mifflin-St Jeor), kcal/dia

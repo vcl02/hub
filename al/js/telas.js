@@ -30,7 +30,7 @@ function pintarSaldo() {
     : aberto ? linhaMeta() + linha('Comi', c.kcal) : linha('Comi', c.kcal) + linha('Gastei', g.total) + linhaMeta();
   // Hoje é dia de treino e ainda não treinou: quanto a mais dá para comer depois do treino
   $('s-previsto').hidden = !(aberto && g?.previsto);
-  if (aberto && g?.previsto) $('s-previsto').textContent = `Treino previsto hoje: +${inteiro(g.previsto.kcal)} kcal depois de treinar (~${g.previsto.minutos} min)`;
+  if (aberto && g?.previsto) $('s-previsto').textContent = `${g.previsto.extra ? 'Treino extra hoje (opcional)' : 'Treino previsto hoje'}: +${inteiro(g.previsto.kcal)} kcal depois de treinar (~${g.previsto.minutos} min)`;
   $('andei').hidden = !g;
   $('andei').setAttribute('aria-pressed', String(!!g?.caminhada));
   $('andei-campos').hidden = !g?.caminhada;
@@ -116,7 +116,7 @@ $('semana').addEventListener('click', ev => { const b = ev.target.closest('[data
 const campoCaminhada = (id, chave, max) => $(id).addEventListener('change', () => mudar(() => {
   let d = db.dias.find(x => x.data === diaVisto);
   const v = num($(id).value);
-  if (!d) { d = { data: diaVisto, andou: true }; db.dias.push(d); }   // seg e ter marcados pela rotina: a linha nasce aqui
+  if (!d) { d = { data: diaVisto, andou: true }; db.dias.push(d); }   // qua e qui marcados pela rotina: a linha nasce aqui
   if (v > 0 && v <= max) d[chave] = v; else delete d[chave];
 }));
 campoCaminhada('c-min', 'minutos', 600);
@@ -125,7 +125,7 @@ $('andei').addEventListener('click', () => mudar(() => {
   // Desmarcar apaga o dia: sem caminhada não fica linha (nem conta como dia com registro)
   const d = db.dias.find(x => x.data === diaVisto);
   if (!andouNoDia(diaVisto)) { if (d) d.andou = true; else db.dias.push({ data: diaVisto, andou: true }); }
-  else if (caminhadaAuto(diaVisto)) { if (d) d.andou = false; else db.dias.push({ data: diaVisto, andou: false }); }   // seg e ter: "não andei" fica gravado
+  else if (caminhadaAuto(diaVisto)) { if (d) d.andou = false; else db.dias.push({ data: diaVisto, andou: false }); }   // qua e qui: "não andei" fica gravado
   else db.dias = db.dias.filter(x => x.data !== diaVisto);
 }));
 

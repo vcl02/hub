@@ -5,7 +5,7 @@
     db = {
       itens:     [{ id, nome, porcao, kcal, prot, carb, gord, usos }],       // comidas salvas: o cache da IA e o que foi digitado
       registros: [{ id, data, hora, item?, nome, porcao, qtd, kcal, prot, carb, gord }],   // valores de 1 porção; total = valor × qtd
-      dias:      [{ data, andou, minutos?, km? }]                           // caminhada ("Andei"): total do dia em min e/ou km; seg e ter já
+      dias:      [{ data, andou, minutos?, km? }]                           // caminhada ("Andei"): total do dia em min e/ou km; qua e qui já
                                                                             // vêm marcados (ROTINA), andou false = desmarcado
     }
   Só leitura: horários dos treinos (tr_treino) e pesagens do app Corpo (corpo_medida, por ../corpo/perfil.js), guardados no

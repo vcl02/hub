@@ -4,7 +4,7 @@
 // Caminhada do dia (rua ou esteira, plano): equação de caminhada do ACSM, VO2 = 0,1 × velocidade (m/min) + 3,5 ml/kg/min,
 // e MET = VO2 ÷ 3,5. Com tempo e distância a velocidade é a real (limitada a 2–7 km/h, faixa de caminhada); com um só, 5 km/h.
 // Sem nenhum, 20 min. O gasto líquido da caminhada depende quase só da distância: com km informado, o tempo pouco muda.
-// Dia de caminhada da rotina (seg e ter, ROTINA em ../corpo/perfil.js): sem linha no dia, "Andei" já vem marcado.
+// Dia de caminhada da rotina (qua e qui, ROTINA em ../corpo/perfil.js): sem linha no dia, "Andei" já vem marcado.
 const caminhadaAuto = dia => ROTINA.caminhada.includes(deIso(dia).getDay());
 const andouNoDia = dia => { const d = db.dias.find(x => x.data === dia); return d ? d.andou : caminhadaAuto(dia); };
 function caminhadaDoDia(dia, porHora) {
@@ -25,13 +25,14 @@ function gastoDoDia(dia) {
   const treino = msTreino ? kcalTreino(peso, dia, msTreino) - Math.round(porHora * msTreino / 36e5) : 0;
   const caminhada = caminhadaDoDia(dia, porHora);
   const rotina = Math.round(basal * FATOR_ATIVIDADE);
-  // Treino previsto: dia de treino fixo (ROTINA) ainda sem treino registrado no Treino. Quanto a meta sobe depois de treinar,
-  // com a duração média dos últimos treinos (sem nenhum, 1 h).
+  // Treino previsto: dia de treino fixo ou extra (opcional) da ROTINA ainda sem treino registrado no Treino. Quanto a meta
+  // sobe depois de treinar, com a duração média dos últimos treinos (sem nenhum, 1 h).
   let previsto = null;
-  if (!msTreino && ROTINA.treino.includes(deIso(dia).getDay())) {
+  const wd = deIso(dia).getDay();
+  if (!msTreino && (ROTINA.treino.includes(wd) || ROTINA.treinoExtra.includes(wd))) {
     const T = [...tr.treinos].sort((a, b) => b.inicio - a.inicio).slice(0, 8).map(t => t.fim - t.inicio).filter(ms => ms > 0);
     const ms = T.length ? Math.round(T.reduce((s, x) => s + x, 0) / T.length / 3e5) * 3e5 : 36e5;   // média, em passos de 5 min
-    previsto = { minutos: Math.round(ms / 6e4), kcal: kcalTreino(peso, dia, ms) - Math.round(porHora * ms / 36e5) };
+    previsto = { extra: !ROTINA.treino.includes(wd), minutos: Math.round(ms / 6e4), kcal: kcalTreino(peso, dia, ms) - Math.round(porHora * ms / 36e5) };
   }
   return { peso, basal, rotina, treino, caminhada, previsto, total: rotina + treino + (caminhada?.kcal || 0) };
 }
