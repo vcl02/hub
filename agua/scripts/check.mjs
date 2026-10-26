@@ -10,7 +10,7 @@ const coletar = pasta => readdirSync(pasta, { withFileTypes: true }).forEach(e =
   if (e.isDirectory()) coletar(caminho);
   else if (extensoes.has(caminho.slice(caminho.lastIndexOf('.')))) arquivos.push(caminho);
 });
-['css', 'docs', 'icons', 'js', 'migrations', 'scripts', 'tests'].forEach(coletar);
+['css', 'docs', 'icons', 'js', 'migrations', 'scripts', 'supabase', 'tests'].forEach(coletar);
 const erros = [];
 for (const arquivo of arquivos) {
   const texto = readFileSync(arquivo, 'utf8');

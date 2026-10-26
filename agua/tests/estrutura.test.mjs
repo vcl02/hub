@@ -11,11 +11,12 @@ const listar = (pasta, ext) => readdirSync(path.join(RAIZ, pasta)).filter(n => n
 const html = ler('index.html');
 const jsDoHtml = [...html.matchAll(/<script src="(js\/[^"]+)"><\/script>/g)].map(m => m[1]);
 const DONO = ler('js/config.js').match(/const DONO = '([0-9a-f-]{36})'/)[1];
+const FUNCAO = 'supabase/functions/agua-lembrete/index.ts';
 
 test('todo arquivo de código começa com um comentário de responsabilidade', () => {
   for (const f of listar('js', '.js')) assert.match(ler(f), /^'use strict';\n(\/\/ |\/\*)/, f);
   for (const f of listar('css', '.css')) assert.match(ler(f), /^\/\* /, f);
-  for (const f of ['sw.js', ...listar('scripts', '.mjs'), ...listar('tests', '.mjs'), ...listar('tests/helpers', '.mjs')]) assert.match(ler(f), /^\/\/ /, f);
+  for (const f of ['sw.js', FUNCAO, ...listar('scripts', '.mjs'), ...listar('tests', '.mjs'), ...listar('tests/helpers', '.mjs')]) assert.match(ler(f), /^\/\/ /, f);
   for (const f of listar('migrations', '.sql')) assert.match(ler(f), /^-- /, f);
 });
 
@@ -33,7 +34,7 @@ test('index.html: tags de bloco fecham na ordem certa e o css tem chaves balance
 
 test('ordem de carga: supabase do hub e módulo do Corpo antes dos módulos; o service worker guarda tudo', () => {
   assert.deepEqual([...jsDoHtml].sort(), listar('js', '.js').sort());
-  assert.deepEqual(jsDoHtml, ['js/config.js', 'js/util.js', 'js/banco.js', 'js/conta.js', 'js/telas.js', 'js/bootstrap.js']);
+  assert.deepEqual(jsDoHtml, ['js/config.js', 'js/util.js', 'js/banco.js', 'js/conta.js', 'js/notificacoes.js', 'js/telas.js', 'js/bootstrap.js']);
   assert.match(html, /<script src="\.\.\/supabase\.js"><\/script>\n<script src="\.\.\/corpo\/perfil\.js"><\/script>\n<script src="js\/config\.js">/);
   const sw = ler('sw.js'), guardados = [...sw.matchAll(/'(\.\.?\/[^']*)'/g)].map(m => m[1]);
   for (const f of ['./index.html', './css/agua.css', './manifest.webmanifest', '../supabase.js', '../corpo/perfil.js', ...jsDoHtml.map(f => './' + f)]) assert.ok(guardados.includes(f), `sw.js não guarda ${f}`);
@@ -66,7 +67,30 @@ test('migration no formato do DataGrip e RLS só do Victor', () => {
   assert.match(tudo, new RegExp(`create policy agua_dia_somente_victor on public\\.agua_dia as restrictive[^;]*'${DONO}'`));
 });
 
+test('migration das notificações: inscrições só do Victor, chaves sem policy e agendamento de hora em hora', () => {
+  const sql = ler('migrations/01-notificacoes.sql');
+  assert.match(sql, /alter table public\.push_inscricao enable row level security/);
+  assert.match(sql, /revoke all on public\.push_inscricao from anon/);
+  assert.match(sql, new RegExp(`create policy push_inscricao_somente_victor on public\\.push_inscricao as restrictive[^;]*'${DONO}'`));
+  assert.match(sql, /alter table public\.push_chave enable row level security/);
+  assert.match(sql, /revoke all on public\.push_chave from anon, authenticated/);
+  assert.doesNotMatch(sql, /create policy \w+ on public\.push_chave/);   // só a chave de serviço lê
+  const agendado = sql.match(/select cron\.schedule\('agua-lembrete', '1 \* \* \* \*', \$cron\$([^$]+)\$cron\$\)/)[1];
+  assert.ok(!agendado.includes(';'), 'ponto e vírgula dentro do comando agendado quebra no DataGrip');
+  assert.match(agendado, /functions\/v1\/agua-lembrete'/);
+  assert.match(agendado, /'x-agua-token', coalesce\(\(select token from public\.push_chave where id = 1\)/);
+});
+
+test('app e função falam a mesma língua: mesmo dono, mesma chave publicável, mesmo nome e horários', () => {
+  const funcao = ler(FUNCAO), config = ler('js/config.js');
+  assert.equal(funcao.match(/const DONO = "([0-9a-f-]+)"/)[1], DONO);
+  assert.equal(funcao.match(/const SUPABASE_KEY = "([^"]+)"/)[1], config.match(/const SUPABASE_KEY = '([^']+)'/)[1]);
+  assert.match(ler('js/notificacoes.js'), /const FUNCAO_PUSH = 'agua-lembrete'/);
+  assert.match(funcao, new RegExp(`const INICIO = ${config.match(/LEMBRETE_INICIO = (\d+)/)[1]}, FIM = ${config.match(/LEMBRETE_FIM = (\d+)/)[1]};`));
+});
+
 test('nenhum segredo', () => {
   for (const f of ['index.html', 'sw.js', 'AGENTS.md', 'README.md', ...listar('js', '.js'), ...listar('docs', '.md'), ...listar('migrations', '.sql')]) assert.doesNotMatch(ler(f), /service_role|sb_secret_/, f);
+  assert.doesNotMatch(ler(FUNCAO), /service_role|sb_secret_|BEGIN PRIVATE/);
   assert.match(ler('js/config.js'), /const SUPABASE_KEY = 'sb_publishable_/);
 });

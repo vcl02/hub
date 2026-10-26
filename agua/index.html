@@ -47,6 +47,12 @@
   <div class="cartao lembretes">
     <p class="lembrete-agora" id="l-agora" hidden></p>
     <ul class="horas" id="l-horas" aria-label="Lembretes de hoje"></ul>
+    <!-- Notificação de verdade (Web Push) nos mesmos horários, mesmo com o app fechado -->
+    <div class="notif" id="n-linha" hidden>
+      <button type="button" class="chip-bt" id="n-ativar">Ativar notificações</button>
+      <span id="n-ligadas" hidden>Notificações ligadas <button type="button" class="link" id="n-testar">Testar</button></span>
+      <span id="n-negado" hidden>Notificações bloqueadas nas configurações do celular</span>
+    </div>
   </div>
 
   <!-- Beber: digite os ml (vira botão para as próximas vezes) ou toque num botão -->
@@ -79,6 +85,7 @@
 <script src="js/util.js"></script>
 <script src="js/banco.js"></script>
 <script src="js/conta.js"></script>
+<script src="js/notificacoes.js"></script>
 <script src="js/telas.js"></script>
 <script src="js/bootstrap.js"></script>
 </body>

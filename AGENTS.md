@@ -4,7 +4,7 @@
 
 - Um repositório só (`vcl02/hub`), publicado inteiro no GitHub Pages: a página inicial na raiz e cada app numa pasta.
 - `fin/` (finanças) e `tr/` (Treino) vieram dos repositórios `vcl02/fin` e `vcl02/tr` com o histórico completo (`git subtree`). Os repositórios antigos foram excluídos em 22/10/2026: o código e o histórico vivem só aqui, e os endereços antigos (`/fin/`, `/tr/`) não existem mais.
-- `al/` (Alimentação: déficit calórico do dia, com IA) e `corpo/` (pesagem, barriga e os dados sobre mim; saiu do Treino) nasceram aqui em 26/10/2026, e `agua/` (água e xixi, com lembretes no app) logo depois.
+- `al/` (Alimentação: déficit calórico do dia, com IA) e `corpo/` (pesagem, barriga e os dados sobre mim; saiu do Treino) nasceram aqui em 26/10/2026, e `agua/` (água e xixi, com lembretes no app e notificações) logo depois.
 - Cada app tem o próprio guia (`fin/AGENTS.md`, `tr/AGENTS.md`, `al/AGENTS.md`, `corpo/AGENTS.md`, `agua/AGENTS.md`), regras (`docs/REGRAS.md`) e testes. Este arquivo cobre só o que é do hub. Em caso de conflito, uma solicitação explícita do mantenedor vence os guias.
 
 ## Estrutura
@@ -59,8 +59,8 @@
 
 ## Dados e segurança
 
-- Os apps usam o mesmo projeto Supabase (`fin`, tabelas `tr_*`, `al_*`, `corpo_*` e `agua_*`), pelo cliente do navegador e com a chave publicável. Nunca coloque chave de serviço nem segredo no repositório, que é público.
-- Edge Functions (código versionado, publicado por deploy pelo mantenedor): `fin/supabase/functions/captura-nubank` e `al/supabase/functions/al-estimar` (IA do al; a chave da Anthropic fica só no secret `ANTHROPIC_API_KEY`).
+- Os apps usam o mesmo projeto Supabase (`fin`, tabelas `tr_*`, `al_*`, `corpo_*`, `agua_*` e `push_*`), pelo cliente do navegador e com a chave publicável. Nunca coloque chave de serviço nem segredo no repositório, que é público.
+- Edge Functions (código versionado, publicado por deploy pelo mantenedor): `fin/supabase/functions/captura-nubank` `al/supabase/functions/al-estimar` (IA do al; a chave da Anthropic fica só no secret `ANTHROPIC_API_KEY`) e `agua/supabase/functions/agua-lembrete` (notificações da Água, chamada de hora em hora pelo pg_cron; chaves VAPID só na tabela `push_chave`).
 - O al só lê `tr_treino` e `corpo_medida` (treinos e peso para o gasto do dia); o tr só lê `corpo_medida`. `tr_medida` (onde o tr gravava as pesagens) foi copiada para `corpo_medida` pela migration `corpo/00` e depois apagada pelo mantenedor (por isso a `corpo/00` não roda de novo).
 - Conta `DONO` recriada em 24/10/2026 (id novo em `hub.js` e `tr/js/config.js`; policies trocadas pelas migrations `fin/40` e `tr/04`). Apagar a conta apaga as linhas `tr_*` (on delete cascade): para trocar senha, use a troca de senha, nunca recrie a conta.
 - Qualquer operação remota que mude estado no Supabase (dados, esquema, RLS, Auth) exige confirmação explícita do mantenedor, com alvo e efeito informados. Consultas só de leitura podem apoiar diagnóstico (`.mcp.json` já é somente leitura).

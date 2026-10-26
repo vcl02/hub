@@ -5,7 +5,7 @@ function telaLogin(erro = '') {
   $('v-agua').hidden = true; $('v-login').hidden = false;
   $('l-erro').textContent = erro; $('l-senha').value = '';
 }
-function abrirAgua() { $('v-login').hidden = true; $('v-agua').hidden = false; desenhar(); }
+function abrirAgua() { $('v-login').hidden = true; $('v-agua').hidden = false; desenhar(); pintarNotificacoes(); }
 
 // Abre na hora com a cópia local; depois envia o que estava pendente e traz a nuvem.
 async function carregar(u) {

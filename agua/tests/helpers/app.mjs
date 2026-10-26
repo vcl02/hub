@@ -34,8 +34,9 @@ export function prepararApp() {
 }
 
 // Supabase falso (auth + PostgREST em memória): nada sai para a rede.
-export const CHAVES = { agua_dia: ['data'] };
-export const novaNuvem = () => ({ online: true, tabelas: { agua_dia: [] } });
+export const CHAVES = { agua_dia: ['data'], push_inscricao: ['user_id', 'endpoint'] };
+export const PUBLICA = 'BAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0-P0A';   // 65 bytes: 4, 1, 2…64
+export const novaNuvem = () => ({ online: true, tabelas: { agua_dia: [], push_inscricao: [] }, funcao: [] });
 const b64u = o => Buffer.from(JSON.stringify(o)).toString('base64url');
 export async function fakeSupabase(ctx, nuvem, id = DONO) {
   const user = { id, aud: 'authenticated', role: 'authenticated', email: 'eu@teste.com', app_metadata: {}, user_metadata: {} };
@@ -50,6 +51,13 @@ export async function fakeSupabase(ctx, nuvem, id = DONO) {
     }
     if (u.pathname === '/auth/v1/user') return json(user);
     if (u.pathname === '/auth/v1/logout') return route.fulfill({ status: 204 });
+    // Função agua-lembrete: chave pública e o teste (responde quantos aparelhos estão inscritos)
+    if (u.pathname === '/functions/v1/agua-lembrete') {
+      nuvem.funcao.push({ metodo: req.method(), busca: u.search, corpo: req.postDataJSON?.() ?? null, auth: req.headers().authorization });
+      if (req.method() === 'GET') return json({ publica: PUBLICA });
+      const n = nuvem.tabelas.push_inscricao.length;
+      return json({ enviado: true, inscricoes: n, enviados: n });
+    }
     const t = u.pathname.replace('/rest/v1/', ''), linhas = nuvem.tabelas[t];
     if (!linhas) return json({ message: 'tabela?' }, 404);
     const filtros = [...u.searchParams].filter(([, v]) => v.startsWith('eq.')).map(([k, v]) => [k, v.slice(3)]);
@@ -65,10 +73,12 @@ export async function fakeSupabase(ctx, nuvem, id = DONO) {
 }
 
 // Fontes do Google são bloqueadas para o teste não depender de internet. Relógio fixo: segunda 19/10/2026 (em casa), 9h.
-export async function abrirApp({ nuvem = novaNuvem(), conta, relogio = new Date('2026-10-19T09:00:00-03:00') } = {}) {
+// iniciar: [função, argumento] que roda na página antes do app (ex.: push simulado)
+export async function abrirApp({ nuvem = novaNuvem(), conta, relogio = new Date('2026-10-19T09:00:00-03:00'), iniciar } = {}) {
   const ctx = await app.navegador.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, timezoneId: 'America/Sao_Paulo', serviceWorkers: 'block' });
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   await fakeSupabase(ctx, nuvem, conta);
+  if (iniciar) await ctx.addInitScript(...iniciar);
   const pg = await ctx.newPage(), erros = [];
   pg.on('pageerror', e => erros.push(e.message));
   await pg.clock.install({ time: relogio });

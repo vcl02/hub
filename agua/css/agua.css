@@ -52,6 +52,11 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 .horas li.atrasado{border-color:var(--red);color:var(--red)}
 .horas li.vez{background:var(--red);color:var(--bg);font-weight:700}
 
+.notif{font-size:.875rem;color:var(--muted)}
+.notif .chip-bt{width:100%}
+.notif #n-ligadas{color:var(--cyan);font-weight:600}
+.link{background:none;border:0;padding:0 0 0 8px;color:var(--fg);text-decoration:underline;font-weight:500}
+
 /* ---------- Beber ---------- */
 .beber{display:flex;gap:8px}
 .beber input{flex:1;min-width:0;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font-family:var(--display);font-weight:700;font-size:1.3rem}

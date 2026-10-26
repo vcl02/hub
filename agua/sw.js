@@ -3,7 +3,7 @@
 // Só apaga caches "agua-" antigos: os outros apps dividem a mesma origem e os mesmos caches.
 const CACHE_ESTATICO = 'agua-estatico';
 const ARQUIVOS_ESTATICOS = [
-  './js/config.js', './js/util.js', './js/banco.js', './js/conta.js', './js/telas.js', './js/bootstrap.js',
+  './js/config.js', './js/util.js', './js/banco.js', './js/conta.js', './js/notificacoes.js', './js/telas.js', './js/bootstrap.js',
   './css/agua.css', './', './index.html', '../supabase.js', '../corpo/perfil.js', './manifest.webmanifest', './icons/agua-192.png', './icons/agua-512.png'];
 
 self.addEventListener('install', evento => {
@@ -24,4 +24,19 @@ self.addEventListener('fetch', evento => {
     if (resposta.ok) await (await caches.open(CACHE_ESTATICO)).put(evento.request, resposta.clone());
     return resposta;
   }).catch(() => caches.match(evento.request, { ignoreSearch: true }).then(r => r || caches.match('./index.html'))));
+});
+
+// Notificação de verdade (Web Push sem conteúdo): a função agua-lembrete manda quando é hora e falta água.
+self.addEventListener('push', evento => {
+  evento.waitUntil(self.registration.showNotification('Hora de beber água', {
+    body: 'Toque para registrar.', icon: './icons/agua-192.png', badge: './icons/agua-192.png', tag: 'agua-lembrete', renotify: true
+  }));
+});
+// Tocar na notificação abre a Água (ou volta para ela, se já estiver aberta)
+self.addEventListener('notificationclick', evento => {
+  evento.notification.close();
+  evento.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(L => {
+    const aberta = L.find(c => new URL(c.url).pathname.startsWith(new URL('./', self.location).pathname));
+    return aberta ? aberta.focus() : self.clients.openWindow('./');
+  }));
 });
