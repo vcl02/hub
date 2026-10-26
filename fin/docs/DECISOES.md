@@ -89,6 +89,8 @@ O celular lê as notificações do Nubank no Tasker (`tasker/*.xml`) e envia cad
 
 - O token vive em dois lugares só: o secret `FIN_TOKEN` da função (painel do Supabase) e a variável global `%FINTOKEN` do Tasker. Nunca no código, nos XMLs, no histórico do git ou em print: este repositório é público e publicado no GitHub Pages. `tests/tasker-sem-segredo.test.js` e `tests/captura-nubank.test.js` barram token ou hash de token nesses arquivos.
 - Sem o secret (ou com menos de 32 caracteres) a função recusa tudo (503); token errado dá 401. A comparação é feita pelos hashes, em tempo constante.
+- A confirmação final (`Nubank B`) mostra o nome digitado no diálogo Nome (`%nome R$ %valor`); deixado em branco, vale o estabelecimento da notificação, mesma regra da Edge Function.
+  `Nubank_B.tsk.xml` e `Nubank_Click.prf.xml` levam a mesma tarefa: mudar uma é mudar as duas.
 - **Trocar o token:** gerar um novo (ex.: no DataGrip, `select replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '')`, que mostra o valor só no resultado), gravá-lo no secret `FIN_TOKEN` e em `%FINTOKEN`. A troca do secret vale na hora, sem deploy, e o token antigo para de funcionar.
 
 ## Metas (migration 36)
