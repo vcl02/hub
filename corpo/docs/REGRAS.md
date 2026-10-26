@@ -17,6 +17,11 @@
 - Peso de 30 a 300 kg; barriga maior que zero (sem trava baixa). Vazio = não medido.
 - **Horário de sempre:** o da pesagem mais recente com horário. Mais de 1 h longe dele: aviso (só recomenda, salva igual).
 
+## Evacuou
+
+- Cartão logo abaixo do formulário, para o mesmo dia escolhido nele: "Evacuou hoje" (ou "neste dia") com Sim e Não. Salva no toque, em `corpo_dia` (1 linha por dia); tocar no que já está marcado desmarca (sem resposta = sem linha).
+- Embaixo, a última vez com Sim: "Última: hoje", "ontem" ou "há 3 dias (19/10)". Com 3 dias ou mais, em vermelho (prisão de ventre é comum em dieta: fibra e água). Sem nenhum Sim, a linha não aparece.
+
 ## Peso atual
 
 - Card do topo: peso mais recente em destaque; a data só aparece se não for de hoje ("ontem", "há 3 dias"…); IMC e faixa ("IMC 28,4 · Sobrepeso"); quanto falta para a faixa seguinte rumo ao normal; variação desde a 1ª pesagem (verde se caiu); barriga mais recente e a variação desde a 1ª medida de barriga. Variação zero não aparece.

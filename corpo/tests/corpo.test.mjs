@@ -99,6 +99,47 @@ test('histórico: editar data, horário, peso e barriga (1 por dia), apagar com 
   await ctx.close();
 });
 
+test('evacuou: Sim ou Não no dia escolhido, salva no toque, tocar de novo desmarca; mostra a última e avisa com 3 dias sem', async () => {
+  const nuvem = novaNuvem();
+  nuvem.tabelas.corpo_dia.push({ user_id: DONO, data: '2026-10-19', evacuou: true }, { user_id: DONO, data: '2026-10-20', evacuou: false });
+  const { ctx, pg, erros } = await abrirApp({ nuvem });                 // 22/10
+  assert.equal(await texto(pg, '#ev-rotulo'), 'Evacuou hoje');
+  assert.equal(await pg.getAttribute('#ev-sim', 'aria-pressed'), 'false');
+  assert.equal(await pg.getAttribute('#ev-nao', 'aria-pressed'), 'false');
+  assert.equal(await texto(pg, '#ev-ultima'), 'Última: há 3 dias (19/10)');
+  assert.match(await pg.getAttribute('#ev-ultima', 'class'), /alerta/);
+  await pg.click('#ev-sim');
+  assert.equal(await pg.getAttribute('#ev-sim', 'aria-pressed'), 'true');
+  assert.equal(await texto(pg, '#ev-ultima'), 'Última: hoje');
+  assert.doesNotMatch(await pg.getAttribute('#ev-ultima', 'class'), /alerta/);
+  await pg.fill('#c-data', '2026-10-20'); await pg.dispatchEvent('#c-data', 'change');   // outro dia: o que foi marcado nele
+  assert.equal(await texto(pg, '#ev-rotulo'), 'Evacuou neste dia');
+  assert.equal(await pg.getAttribute('#ev-nao', 'aria-pressed'), 'true');
+  await pg.click('#ev-nao');                                              // tocar de novo desmarca
+  assert.equal(await pg.getAttribute('#ev-nao', 'aria-pressed'), 'false');
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.corpo_dia.map(x => [x.data, x.evacuou]).sort(), [['2026-10-19', true], ['2026-10-22', true]]);
+  assert.equal(nuvem.tabelas.corpo_medida.length, 0);                     // evacuou não mexe nas pesagens
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
+test('cópia do aparelho da versão anterior (base só com pesagens) continua sincronizando', async () => {
+  const nuvem = novaNuvem();
+  nuvem.tabelas.corpo_medida.push({ user_id: DONO, data: '2026-10-20', hora: '07:00', peso: 91, cintura: null });
+  const { ctx, pg } = await abrirApp({ nuvem });
+  await pg.evaluate(id => {   // como ficava gravado antes do corpo_dia
+    localStorage.setItem('corpo.base.' + id, JSON.stringify({ '2026-10-20': { data: '2026-10-20', hora: '07:00', peso: 91, cintura: null } }));
+    localStorage.setItem('corpo.db.' + id, JSON.stringify({ medidas: [{ data: '2026-10-20', hora: '07:00', peso: 91 }] }));
+  }, DONO);
+  await pg.reload(); await pg.waitForSelector('#v-corpo:not([hidden])');
+  assert.match(await texto(pg, '#c-historico'), /91 kg/);
+  await pg.click('#ev-sim');
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.corpo_dia.map(x => [x.data, x.evacuou]), [['2026-10-22', true]]);
+  assert.equal(nuvem.tabelas.corpo_medida.length, 1);                     // nada apagado nem duplicado
+  await ctx.close();
+});
+
 test('a cópia para os outros apps (corpo.medidas.<conta>) acompanha cada mudança, e pesoNoDia lê dela', async () => {
   const { ctx, pg } = await abrirApp();
   await salvar(pg, { data: '2026-10-20', peso: '91' });

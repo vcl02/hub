@@ -34,8 +34,8 @@ export function prepararApp() {
 }
 
 // Supabase falso (auth + PostgREST em memória): nada sai para a rede.
-export const CHAVES = { corpo_medida: ['data'] };
-export const novaNuvem = () => ({ online: true, tabelas: { corpo_medida: [] } });
+export const CHAVES = { corpo_medida: ['data'], corpo_dia: ['data'] };
+export const novaNuvem = () => ({ online: true, tabelas: { corpo_medida: [], corpo_dia: [] } });
 const b64u = o => Buffer.from(JSON.stringify(o)).toString('base64url');
 export async function fakeSupabase(ctx, nuvem, id = DONO) {
   const user = { id, aud: 'authenticated', role: 'authenticated', email: 'eu@teste.com', app_metadata: {}, user_metadata: {} };

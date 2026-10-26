@@ -15,7 +15,7 @@
 
 ## Dados e segurança
 
-- **Só o Corpo grava `corpo_medida`.** Treino e Alimentação só leem, por `perfil.js`. A cópia que eles leem sem internet (`corpo.medidas.<conta>`) é atualizada pelo Corpo a cada mudança e por `lerMedidas`.
+- **Só o Corpo grava `corpo_medida` e `corpo_dia`** (evacuou sim ou não, migration 01). Treino e Alimentação só leem, por `perfil.js`. A cópia que eles leem sem internet (`corpo.medidas.<conta>`) é atualizada pelo Corpo a cada mudança e por `lerMedidas`.
 - `tr_medida` (onde o Treino gravava) ficou como estava; a migration 00 copiou tudo para `corpo_medida`. Apagar `tr_medida` é decisão do mantenedor.
 - Só a conta `DONO`; RLS de `corpo_medida` com `somente_dono` + restritiva `somente_victor`; `anon` sem acesso. Chave do Supabase no código é a publicável; nunca segredo no repositório.
 - Mudança de esquema: migration nova e numerada em `migrations/`, formato do DataGrip. Operações remotas que mudam estado exigem confirmação explícita do mantenedor.

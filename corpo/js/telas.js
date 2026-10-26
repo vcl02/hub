@@ -1,5 +1,5 @@
 'use strict';
-// Tela do corpo: peso atual (IMC, faixa, quanto falta, variação, barriga), perfil, nova medida, gráficos e histórico.
+// Tela do corpo: peso atual (IMC, faixa, quanto falta, variação, barriga), perfil, nova medida, evacuou, gráficos e histórico.
 // IMC = peso / altura² · faixas da OMS para adultos, com os graus de magreza e de obesidade: [limite de cima (exclusivo), nome]
 const imc = peso => Math.round(peso / PERFIL.altura ** 2 * 10) / 10;
 const FAIXAS_IMC = [[16, 'Magreza III'], [17, 'Magreza II'], [18.5, 'Magreza I'], [25, 'Normal'], [30, 'Sobrepeso'],
@@ -44,11 +44,27 @@ function desenhar() {
   $('c-peso').placeholder = u ? virgula(u.peso) : '—';
   $('c-cintura').placeholder = C.length ? virgula(C[0].cintura) : '—';
   avisoHorario();
+  pintarEvacuacao();
   grafico($('c-grafico'), P.slice(0, 16).reverse().map(x => ({ data: x.data, valor: x.peso })), 'kg', 'Evolução do peso');
   grafico($('c-grafico-cint'), C.slice(0, 16).reverse().map(x => ({ data: x.data, valor: x.cintura })), 'cm', 'Evolução da barriga');
   pintarHistorico();
 }
 
+// Evacuou no dia do formulário (Sim / Não / sem resposta) e há quanto tempo foi a última "Sim".
+// 3 dias ou mais sem evacuar desde a última: em vermelho (prisão de ventre é comum em dieta: fibra e água).
+const SEM_EVACUAR_ALERTA = 3;
+function pintarEvacuacao() {
+  const dia = $('c-data').value, x = db.dias.find(d => d.data === dia);
+  $('ev-rotulo').textContent = dia === hoje() ? 'Evacuou hoje' : 'Evacuou neste dia';
+  $('ev-sim').setAttribute('aria-pressed', String(x?.evacuou === true));
+  $('ev-nao').setAttribute('aria-pressed', String(x?.evacuou === false));
+  const ultima = [...db.dias].reverse().find(d => d.evacuou && d.data <= hoje());
+  $('ev-ultima').hidden = !ultima;
+  if (!ultima) return;
+  const n = Math.round((deIso(hoje()) - deIso(ultima.data)) / 864e5);
+  $('ev-ultima').textContent = n === 0 ? 'Última: hoje' : n === 1 ? 'Última: ontem' : `Última: há ${n} dias (${dataCurta(ultima.data)})`;
+  $('ev-ultima').classList.toggle('alerta', n >= SEM_EVACUAR_ALERTA);
+}
 function avisoHorario() {   // só recomenda o horário de sempre: qualquer horário é aceito
   const hab = horaHabitual(), h = $('c-hora').value, longe = hab && h && Math.abs(minutos(h) - minutos(hab)) > 60;
   $('c-aviso').hidden = !longe;
@@ -76,6 +92,15 @@ function lerValores(peso, cintura) {
 function mudar(acao) { acao(); gravar(); desenhar(); }
 
 $('c-hora').addEventListener('input', avisoHorario);
+// Sim / Não salvam na hora; tocar no que já está marcado desmarca (volta a sem resposta)
+document.querySelectorAll('[data-evac]').forEach(b => b.addEventListener('click', () => mudar(() => {
+  const dia = $('c-data').value, v = b.dataset.evac === 'sim', x = db.dias.find(d => d.data === dia);
+  if (!dataOk(dia) || dia > hoje()) return;
+  if (x && x.evacuou === v) db.dias = db.dias.filter(d => d.data !== dia);
+  else if (x) x.evacuou = v;
+  else db.dias.push({ data: dia, evacuou: v });
+  db = preparar(db);
+})));
 $('c-data').addEventListener('change', () => { $('c-peso').value = ''; $('c-cintura').value = ''; desenhar(); });
 document.querySelectorAll('[data-passo]').forEach(b => b.addEventListener('click', () => {   // − / +: peso de 0,1 em 0,1 kg, barriga de 0,5 cm
   const inp = $(b.dataset.passo === 'peso' ? 'c-peso' : 'c-cintura'), d = b.dataset.passo === 'peso' ? .1 : .5;

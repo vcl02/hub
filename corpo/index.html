@@ -65,6 +65,16 @@
     <button class="btn primario" type="submit">Salvar</button>
   </form>
 
+  <!-- Evacuou no dia escolhido acima: Sim ou Não (salva no toque; tocar de novo desmarca) e quando foi a última -->
+  <div class="cartao evac">
+    <div class="evac-linha">
+      <span id="ev-rotulo">Evacuou hoje</span>
+      <button type="button" class="chip-bt" id="ev-sim" data-evac="sim" aria-pressed="false">Sim</button>
+      <button type="button" class="chip-bt" id="ev-nao" data-evac="nao" aria-pressed="false">Não</button>
+    </div>
+    <p class="evac-ultima" id="ev-ultima" hidden></p>
+  </div>
+
   <h3 class="sec">Evolução do peso</h3>
   <div id="c-grafico" class="cartao chart"></div>
   <h3 class="sec">Evolução da barriga</h3>

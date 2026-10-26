@@ -12,24 +12,20 @@ function abrirCorpo() {
   desenhar();
 }
 
-// Abre na hora com a cópia local; depois envia o que estava pendente e traz a nuvem.
+// Abre na hora com a cópia local; depois envia o que estava pendente e traz a nuvem (pesagens e dias).
 async function carregar(u) {
   if (u.id !== DONO) { try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {} telaLogin('Esta conta não tem acesso.'); return; }
   usuario = u;
   let local = null;
-  try { local = JSON.parse(store.get(K_LOCAL(u.id))); base = JSON.parse(store.get(K_BASE(u.id))); } catch (e) { local = null; }
+  try { local = JSON.parse(store.get(K_LOCAL(u.id))); base = baseCompat(JSON.parse(store.get(K_BASE(u.id)))); } catch (e) { local = null; }
   if (local) { db = preparar(local); abrirCorpo(); }
   if (local && temPendente()) await enviar();
   try {
-    const R = [];
-    for (let i = 0; ; i += 1000) {
-      const { data, error } = await sb.from('corpo_medida').select('data,hora,peso,cintura').range(i, i + 999); if (error) throw error;
-      R.push(...data); if (data.length < 1000) break;
-    }
+    const [M, D] = await Promise.all([todas('corpo_medida', 'data,hora,peso,cintura'), todas('corpo_dia', 'data,evacuou')]);
     if (usuario !== u) return;
     // Pendente que não subiu (sem internet) continua valendo: a nuvem só entra quando não há nada a enviar.
     if (!local || !temPendente()) {
-      db = preparar({ medidas: R }); base = linhas(db);
+      db = preparar({ medidas: M, dias: D }); base = linhas(db);
       store.set(K_BASE(u.id), JSON.stringify(base)); store.set(K_LOCAL(u.id), JSON.stringify(db)); guardarMedidas(u.id, db.medidas);
     }
   } catch (e) {

@@ -36,7 +36,7 @@
   - Chaves de `localStorage` e nomes de cache sempre com prefixo do app (`fin-`, `carga-`/`tr.`, `al-`/`al.`, `corpo-`/`corpo.`, `hub-`). Nenhum service worker apaga cache de outro prefixo.
   - A sessão do Supabase (mesmo projeto, mesma chave) vale para todos os apps: entrar em um entra em todos, e Sair em qualquer um sai de todos.
 - O service worker da raiz só atende os arquivos da própria página inicial; cada app tem o seu, com escopo na própria pasta.
-- **Dados sobre mim num lugar só (app Corpo):** perfil (altura, nascimento, sexo, só no código) e o que sai dele (idade, taxa basal, calorias do treino) ficam em `corpo/perfil.js`; pesagem e barriga ficam na tabela `corpo_medida`, que só o Corpo grava. App que usa carrega `<script src="../corpo/perfil.js">` antes dos próprios scripts e põe `../corpo/perfil.js` no próprio service worker (offline); lê as pesagens com `lerMedidas`/`medidasGuardadas`/`pesoNoDia`; nenhum app repete esses valores nem grava pesagens.
+- **Dados sobre mim num lugar só (app Corpo):** perfil (altura, nascimento, sexo, só no código) e o que sai dele (idade, taxa basal, calorias do treino) ficam em `corpo/perfil.js`; pesagem e barriga ficam na tabela `corpo_medida` e o registro do dia (evacuou) em `corpo_dia`, que só o Corpo grava. App que usa carrega `<script src="../corpo/perfil.js">` antes dos próprios scripts e põe `../corpo/perfil.js` no próprio service worker (offline); lê as pesagens com `lerMedidas`/`medidasGuardadas`/`pesoNoDia`; nenhum app repete esses valores nem grava pesagens.
 
 ## Atalho externo
 
