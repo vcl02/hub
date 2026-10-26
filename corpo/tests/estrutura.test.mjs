@@ -66,6 +66,11 @@ test('migration no formato do DataGrip, RLS só do Victor e cópia do que estava
   assert.match(tudo, new RegExp(`create policy corpo_medida_somente_victor on public\\.corpo_medida as restrictive[^;]*'${DONO}'`));
   assert.match(tudo, /insert into public\.corpo_medida \(user_id, data, hora, peso, cintura\)\n\s+select user_id, data, hora, peso, cintura from public\.tr_medida\n\s+on conflict \(user_id, data\) do nothing;/);
   assert.doesNotMatch(tudo, /drop table|delete from|truncate/i, 'não apaga tr_medida');
+  // corpo_dia (evacuou): mesma proteção
+  assert.match(tudo, /create table if not exists public\.corpo_dia/);
+  assert.match(tudo, /alter table public\.corpo_dia enable row level security/);
+  assert.match(tudo, /revoke all on public\.corpo_dia from anon/);
+  assert.match(tudo, new RegExp(`create policy corpo_dia_somente_victor on public\\.corpo_dia as restrictive[^;]*'${DONO}'`));
 });
 
 test('nenhum segredo; só este app grava corpo_medida (perfil.js só lê)', () => {
