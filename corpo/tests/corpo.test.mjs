@@ -55,12 +55,12 @@ test('IMC com 1,78 m, faixa, quanto falta, perfil e variação desde a 1ª pesag
   await salvar(pg, { peso: '90', cintura: '102' });
   assert.match(await texto(pg, '#c-historico'), /90 kg · 102 cm · IMC 28,4/);                 // 90 / 1,78²
   const resumo = await texto(pg, '#c-resumo');
-  assert.match(resumo, /^90kg IMC 28,4 · Sobrepeso −11 kg até Normal −2 kg desde 15\/10 Barriga 102 cm · −2 cm$/);
+  assert.match(resumo, /^90kg IMC 28,4 · Sobrepeso 11 kg até Normal −2 kg desde 15\/10 Barriga 102 cm · −2 cm$/);
   assert.equal(await texto(pg, '#c-perfil'), '24 anos · 1,78 m · basal ~1.898 kcal/dia');
   const faixa = await pg.evaluate(() => [15.9, 16, 17, 18.4, 18.5, 24.9, 25, 29.9, 30, 34.9, 35, 39.9, 40].map(faixaImc));
   assert.deepEqual(faixa, ['Magreza III', 'Magreza II', 'Magreza I', 'Magreza I', 'Normal', 'Normal', 'Sobrepeso', 'Sobrepeso',
     'Obesidade I', 'Obesidade I', 'Obesidade II', 'Obesidade II', 'Obesidade III']);
-  assert.deepEqual(await pg.evaluate(() => [102.3, 75, 50].map(rumoAoNormal)), ['−7,5 kg até Sobrepeso', '', '+0,6 kg até Magreza II']);
+  assert.deepEqual(await pg.evaluate(() => [102.3, 75, 50].map(rumoAoNormal)), ['7,5 kg até Sobrepeso', '', '0,6 kg até Magreza II']);
   assert.deepEqual(await pg.evaluate(() => [faixaImc(imc(94.8)), faixaImc(imc(94.9))]), ['Sobrepeso', 'Obesidade I']);
   await ctx.close();
 });

@@ -13,7 +13,7 @@ function rumoAoNormal(peso) {
   const passo = k > normal ? -1 : 1;
   for (let d = 1; d <= 3000; d++) {
     const p = Math.round((peso + passo * d / 10) * 10) / 10, f = faixaImc(imc(p));
-    if (f !== atual) return `${passo < 0 ? '−' : '+'}${fmt(d / 10)} kg até ${f}`;
+    if (f !== atual) return `${fmt(d / 10)} kg até ${f}`;   // sem sinal: a faixa seguinte já diz se é perder ou ganhar
   }
   return '';
 }

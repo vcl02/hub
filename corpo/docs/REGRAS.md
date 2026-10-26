@@ -21,7 +21,7 @@
 
 - Card do topo: peso mais recente em destaque; a data só aparece se não for de hoje ("ontem", "há 3 dias"…); IMC e faixa ("IMC 28,4 · Sobrepeso"); quanto falta para a faixa seguinte rumo ao normal; variação desde a 1ª pesagem (verde se caiu); barriga mais recente e a variação desde a 1ª medida de barriga. Variação zero não aparece.
 - **IMC:** peso ÷ altura², 1 casa. Faixas da OMS com graus: < 16 Magreza III, < 17 Magreza II, < 18,5 Magreza I, < 25 Normal, < 30 Sobrepeso, < 35 Obesidade I, < 40 Obesidade II, ≥ 40 Obesidade III.
-- **Quanto falta:** em passos de 0,1 kg com o mesmo IMC arredondado da tela ("−7,5 kg até Sobrepeso"; abaixo do normal, "+X kg até…"; no normal, nada).
+- **Quanto falta:** em passos de 0,1 kg com o mesmo IMC arredondado da tela ("7,5 kg até Sobrepeso"; abaixo do normal, "0,6 kg até Magreza II"; no normal, nada), sem sinal: a faixa seguinte já diz se é perder ou ganhar.
 
 ## Evolução e histórico
 
