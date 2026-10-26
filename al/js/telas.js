@@ -20,11 +20,16 @@ function pintarSaldo() {
   $('s-valor').textContent = saldo == null ? '—' : (saldo > 0 ? '+' : saldo < 0 ? '−' : '') + inteiro(Math.abs(saldo));
   $('s-rotulo').textContent = saldo == null ? '' : saldo <= 0 ? 'déficit' : 'superávit';
   $('s-conta').textContent = g ? `Comi ${inteiro(c.kcal)} · Gastei ${inteiro(g.total)}` : `Comi ${inteiro(c.kcal)} · Sem peso no Treino para calcular o gasto`;
-  $('s-gasto').textContent = g ? `Basal ${inteiro(g.basal)} × ${String(FATOR_ATIVIDADE).replace('.', ',')} = ${inteiro(g.rotina)}${g.treino ? ` · Treino +${inteiro(g.treino)}` : ''}${g.andou ? ` · Caminhada +${inteiro(g.caminhada)}` : ''} · ${umaCasa(g.peso)} kg` : '';
+  $('s-gasto').textContent = g ? `Basal ${inteiro(g.basal)} × ${String(FATOR_ATIVIDADE).replace('.', ',')} = ${inteiro(g.rotina)}${g.treino ? ` · Treino +${inteiro(g.treino)}` : ''}${g.caminhada ? ` · Caminhada +${inteiro(g.caminhada.kcal)}` : ''} · ${umaCasa(g.peso)} kg` : '';
   $('andei').hidden = !g;
-  if (g) {
-    $('andei').setAttribute('aria-pressed', String(g.andou));
-    $('andei').textContent = `${diaVisto === hoje() ? 'Andei hoje' : 'Andei neste dia'} · −${inteiro(g.caminhada)} kcal no saldo`;
+  $('andei').setAttribute('aria-pressed', String(!!g?.caminhada));
+  $('andei-campos').hidden = !g?.caminhada;
+  if (g?.caminhada) {
+    const c = g.caminhada, valor = v => v ? String(v).replace('.', ',') : '';
+    if (document.activeElement !== $('c-min')) $('c-min').value = valor(c.minutos);
+    if (document.activeElement !== $('c-km')) $('c-km').value = valor(c.km);
+    $('c-min').placeholder = c.km ? '—' : String(CAMINHADA_MIN_PADRAO);   // o 20 só vale sem km
+    $('c-kcal').textContent = `−${inteiro(c.kcal)} kcal`;
   }
 }
 
@@ -91,6 +96,14 @@ $('d-ant').addEventListener('click', () => { if (diaVisto > inicio()) { diaVisto
 $('d-prox').addEventListener('click', () => { if (diaVisto < hoje()) { diaVisto = somaDias(diaVisto, 1); previa = null; desenhar(); } });
 $('semana').addEventListener('click', ev => { const b = ev.target.closest('[data-dia]'); if (b) { diaVisto = b.dataset.dia; previa = null; desenhar(); } });
 
+// Tempo e distância: o total do dia; vazio ou fora da faixa (até 600 min, 60 km) = não informado
+const campoCaminhada = (id, chave, max) => $(id).addEventListener('change', () => mudar(() => {
+  const d = db.dias.find(x => x.data === diaVisto), v = num($(id).value);
+  if (!d) return;
+  if (v > 0 && v <= max) d[chave] = v; else delete d[chave];
+}));
+campoCaminhada('c-min', 'minutos', 600);
+campoCaminhada('c-km', 'km', 60);
 $('andei').addEventListener('click', () => mudar(() => {
   // Desmarcar apaga o dia: sem caminhada não fica linha (nem conta como dia com registro)
   if (db.dias.some(x => x.data === diaVisto)) db.dias = db.dias.filter(x => x.data !== diaVisto);

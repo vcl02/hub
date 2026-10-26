@@ -5,7 +5,7 @@
     db = {
       itens:     [{ id, nome, porcao, kcal, prot, carb, gord, usos }],       // comidas salvas: o cache da IA e o que foi digitado
       registros: [{ id, data, hora, item?, nome, porcao, qtd, kcal, prot, carb, gord }],   // valores de 1 porção; total = valor × qtd
-      dias:      [{ data, andou }]                                          // andou = caminhada do dia ("Andei hoje")
+      dias:      [{ data, andou, minutos?, km? }]                           // só dias com caminhada ("Andei"): total do dia em min e/ou km
     }
   Só leitura do Treino (tr_medida, tr_treino): peso e horários dos treinos, guardados no aparelho para abrir sem internet.
   Perfil (altura, nascimento, sexo), taxa basal e calorias do treino vêm do hub: ../perfil.js (PERFIL, idadeEm, tmb, kcalTreino).
@@ -24,6 +24,6 @@ const FUNCAO_IA = 'al-estimar';
 // ===== Gasto do dia =====
 // Basal × fator de atividade (sedentário: rotina sem exercício) + o que o treino e a caminhada somam acima da basal.
 const FATOR_ATIVIDADE = 1.2;
-const CAMINHADA_MIN = 40;    // ida e volta da empresa a pé
-const MET_CAMINHADA = 3.5;   // caminhada em ritmo moderado (~5 km/h), Compendium of Physical Activities
+const CAMINHADA_MIN_PADRAO = 20;   // "Andei" sem tempo nem distância
+const VELOCIDADE_PADRAO = 5;       // km/h, quando só o tempo ou só a distância é informado
 const QTDS = [0.5, 1, 1.5, 2, 3];   // porções rápidas (× a porção salva)

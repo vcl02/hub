@@ -11,7 +11,10 @@
 - **Basal:** Mifflin-St Jeor com o perfil do hub (`../perfil.js`) e a idade no dia.
 - **Rotina:** basal × 1,2 (fator de atividade sedentário).
 - **Treino:** treinos do dia no Treino. Soma só o que passa da basal: calorias do treino (`kcalTreino`, 3,5 MET × basal/hora × horas, a mesma conta do Treino) − basal/hora × horas = (3,5 − 1) × basal ÷ 24 × horas.
-- **Caminhada:** toque "Andei hoje" (ou "Andei neste dia") por dia, gravado em `al_dia`; desmarcar apaga a linha do dia (linha antiga com `andou` falso vale como nenhuma). Soma 40 min de caminhada moderada: (3,5 − 1) × basal ÷ 24 × 40/60. O botão mostra o efeito no saldo ("Andei hoje · −139 kcal no saldo"): o gasto sobe e o saldo desce esse tanto.
+- **Caminhada:** botão "Andei" por dia, gravado em `al_dia`; desmarcar apaga a linha do dia (linha antiga com `andou` falso vale como nenhuma). Marcado, aparecem dois campos para o **total do dia** (rua aos poucos ou esteira, tanto faz): minutos e/ou km. Vazios = padrão de 20 min.
+  - Conta (equação de caminhada do ACSM, terreno plano): MET = (0,1 × velocidade em m/min + 3,5) ÷ 3,5; soma (MET − 1) × basal ÷ 24 × horas.
+  - Com minutos e km, a velocidade é a real (limitada a 2–7 km/h); só minutos ou só km, 5 km/h (só km: tempo = km ÷ 5). Ex.: 20 min sem km = 66 kcal; 3 km = 119 kcal (com basal 1.998).
+  - Ao lado dos campos, o efeito no saldo ("−66 kcal"). Esteira dentro do horário de um treino do Treino já conta no treino: lance só a caminhada fora dele.
 - **Gasto** = rotina + treino + caminhada (se marcada). Valores arredondados para kcal inteiras em cada parte.
 
 ## Saldo

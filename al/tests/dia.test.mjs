@@ -10,7 +10,7 @@ const PAO = { nome: 'Pão francês', porcao: '1 unidade (~50 g)', kcal: 150, pro
 const iaCom = (...itens) => () => ({ status: 200, corpo: { itens } });
 const descrever = async (pg, frase) => { await pg.fill('#f-texto', frase); await pg.press('#f-texto', 'Enter'); };
 
-test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei hoje" soma a caminhada e vai para a nuvem', async () => {
+test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei" soma a caminhada (padrão, minutos e/ou km) e vai para a nuvem', async () => {
   const { ctx, pg, nuvem, erros } = await abrirApp({ nuvem: comTreino(novaNuvem()) });
   // basal 1998 × 1,2 = 2398 · treino 1 h: (3,5 − 1) × 1998 ÷ 24 = 208 · nada comido
   assert.equal(await texto(pg, '#s-valor'), '−2.606');
@@ -18,15 +18,30 @@ test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei hoje" soma a 
   assert.match(await pg.getAttribute('#saldo', 'class'), /deficit/);
   assert.equal(await texto(pg, '#s-conta'), 'Comi 0 · Gastei 2.606');
   assert.equal(await texto(pg, '#s-gasto'), 'Basal 1.998 × 1,2 = 2.398 · Treino +208 · 100 kg');
-  assert.equal(await texto(pg, '#andei'), 'Andei hoje · −139 kcal no saldo');   // 40 min: (3,5 − 1) × 1998 ÷ 24 × 40/60
+  assert.equal(await texto(pg, '#andei'), 'Andei');
+  assert.equal(await pg.isVisible('#andei-campos'), false);
   await pg.click('#andei');
   assert.equal(await pg.getAttribute('#andei', 'aria-pressed'), 'true');
-  assert.equal(await texto(pg, '#s-valor'), '−2.745');
-  assert.match(await texto(pg, '#s-gasto'), /Caminhada \+139/);
+  // Padrão 20 min a 5 km/h: MET (0,1 × 83,3 + 3,5) ÷ 3,5 = 3,38 · (3,38 − 1) × 1998 ÷ 24 × 20/60 = 66
+  assert.equal(await texto(pg, '#c-kcal'), '−66 kcal');
+  assert.equal(await texto(pg, '#s-valor'), '−2.672');
+  assert.match(await texto(pg, '#s-gasto'), /Caminhada \+66/);
+  await pg.fill('#c-min', '40'); await pg.press('#c-min', 'Enter'); await pg.locator('#c-min').blur();
+  assert.equal(await texto(pg, '#c-kcal'), '−132 kcal');            // 40 min a 5 km/h
+  await pg.fill('#c-km', '3'); await pg.locator('#c-km').blur();
+  assert.equal(await texto(pg, '#c-kcal'), '−119 kcal');            // 3 km em 40 min = 4,5 km/h: MET 3,14
+  assert.equal(await texto(pg, '#s-valor'), '−2.725');
+  await pg.fill('#c-min', ''); await pg.locator('#c-min').blur();
+  assert.equal(await texto(pg, '#c-kcal'), '−119 kcal');            // só km: 3 km a 5 km/h = 36 min, mesmo gasto líquido
+  await pg.fill('#c-min', '40'); await pg.locator('#c-min').blur();
   await sincronizado(pg);
-  assert.deepEqual(nuvem.tabelas.al_dia.map(x => [x.data, x.andou]), [[DIA, true]]);
+  assert.deepEqual(nuvem.tabelas.al_dia.map(x => [x.data, x.andou, x.minutos, x.km]), [[DIA, true, 40, 3]]);
+  await pg.reload();                                              // volta da nuvem com os mesmos campos
+  await pg.waitForSelector('#v-dia:not([hidden])');
+  assert.equal(await pg.inputValue('#c-min'), '40'); assert.equal(await pg.inputValue('#c-km'), '3');
   await pg.click('#andei');                                      // desmarcar apaga a linha do dia
   assert.equal(await texto(pg, '#s-valor'), '−2.606');
+  assert.equal(await pg.isVisible('#andei-campos'), false);
   await sincronizado(pg);
   assert.deepEqual(nuvem.tabelas.al_dia, []);
   assert.deepEqual(erros, []);
@@ -137,7 +152,7 @@ test('dias anteriores: ‹ e os últimos 7 dias mostram o dia, com saldo e médi
   assert.equal(await pg.isDisabled('#d-prox'), false);
   assert.equal(await pg.isDisabled('#d-ant'), true);          // 1º dia do app
   assert.match(await texto(pg, '#lista li'), /^20:00 Pizza/);
-  assert.equal(await texto(pg, '#andei'), 'Andei neste dia · −139 kcal no saldo');
+  assert.equal(await texto(pg, '#andei'), 'Andei');
   await pg.click('#semana [data-dia="2026-09-14"]');
   assert.equal(await texto(pg, '#d-nome'), 'Hoje');
   await ctx.close();

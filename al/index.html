@@ -49,7 +49,15 @@
     <p class="saldo-num"><b id="s-valor">—</b><small>kcal</small><span id="s-rotulo"></span></p>
     <p class="saldo-conta" id="s-conta"></p>
     <p class="saldo-gasto" id="s-gasto"></p>
-    <button type="button" class="chip-bt" id="andei" aria-pressed="false"></button>
+    <!-- Andei: liga a caminhada do dia; tempo e/ou distância no total do dia (vazios = 20 min) -->
+    <div class="andei">
+      <button type="button" class="chip-bt" id="andei" aria-pressed="false">Andei</button>
+      <span class="andei-campos" id="andei-campos" hidden>
+        <label><input id="c-min" inputmode="decimal" placeholder="20" aria-label="Minutos andando no dia"><small>min</small></label>
+        <label><input id="c-km" inputmode="decimal" placeholder="—" aria-label="Quilômetros andando no dia"><small>km</small></label>
+        <b id="c-kcal"></b>
+      </span>
+    </div>
   </div>
 
   <!-- Macros do dia: gramas e parte das kcal -->
