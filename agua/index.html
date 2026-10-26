@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1B1E21">
+<meta name="color-scheme" content="dark">
+<title>Água</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/agua-192.png">
+<link rel="apple-touch-icon" href="icons/agua-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="css/agua.css">
+</head>
+<body>
+<div class="wrap">
+
+<!-- Login próprio: só aparece com o app servido fora do hub (testes). Dentro do hub, sem sessão vai para o login de lá. -->
+<section id="v-login" class="view" hidden>
+  <form id="l-form" class="login" novalidate>
+    <fieldset id="l-campos">
+      <input id="l-usuario" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Usuário" aria-label="Usuário">
+      <input id="l-senha" type="password" autocomplete="current-password" placeholder="Senha" aria-label="Senha">
+      <button type="submit" class="btn primario">Entrar</button>
+    </fieldset>
+    <p id="l-erro" class="erro" role="alert"></p>
+  </form>
+</section>
+
+<!-- Hoje: total contra a meta, lembretes, beber (ml digitado ou botões das quantidades já usadas), xixi e a bexiga. Tudo por js/telas.js. -->
+<section id="v-agua" class="view" hidden>
+  <header class="topo">
+    <h1>Água</h1>
+    <!-- Hub: volta à página inicial (../), que abre os outros apps -->
+    <a class="icon-btn" href="../" id="i-hub" title="Hub" aria-label="Hub">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M9.9 9.9 6.6 6.6M14.1 9.9l3.3-3.3M9.9 14.1l-3.3 3.3M14.1 14.1l3.3 3.3"/><circle cx="5" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></svg>
+    </a>
+  </header>
+
+  <!-- Total de hoje e a meta; no canto, se bateu -->
+  <div class="cartao total" id="total">
+    <p class="total-num"><b id="t-ml">0</b> <small id="t-meta">/ 1.000 ml</small><span class="bateu" id="t-bateu" hidden>Meta batida</span></p>
+    <div class="barra" aria-hidden="true"><span id="t-barra"></span></div>
+  </div>
+
+  <!-- Lembretes do dia (só no app): feito, atrasado ou ainda não chegou; o da vez em destaque -->
+  <div class="cartao lembretes">
+    <p class="lembrete-agora" id="l-agora" hidden></p>
+    <ul class="horas" id="l-horas" aria-label="Lembretes de hoje"></ul>
+  </div>
+
+  <!-- Beber: digite os ml (vira botão para as próximas vezes) ou toque num botão -->
+  <form id="b-form" class="beber" autocomplete="off">
+    <input id="b-ml" inputmode="numeric" placeholder="ml" aria-label="Quantos ml">
+    <button type="submit" class="bt-mais" title="Bebi" aria-label="Bebi"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+  </form>
+  <ul class="botoes" id="b-botoes" aria-label="Quantidades já usadas"></ul>
+  <ul class="eventos" id="b-lista" aria-label="Água de hoje"></ul>
+
+  <!-- Xixi: +1 com o horário de agora; tocar duas vezes num horário tira -->
+  <div class="cartao xixi">
+    <div class="linha"><span>Xixi <b id="x-total">0</b></span><button type="button" class="chip-bt" id="x-mais" title="Fiz xixi agora" aria-label="Fiz xixi agora">+1</button></div>
+    <ul class="eventos" id="x-lista" aria-label="Xixis de hoje"></ul>
+  </div>
+
+  <h3 class="sec">Bexiga</h3>
+  <div class="cartao" id="bexiga"></div>
+
+  <h3 class="sec">Últimos 7 dias</h3>
+  <div class="cartao" id="semana"></div>
+</section>
+
+<p id="sync" class="sync" role="status" hidden></p>
+<p id="toast" class="toast" role="status" hidden></p>
+</div>
+<script src="../supabase.js"></script>
+<script src="../corpo/perfil.js"></script>
+<script src="js/config.js"></script>
+<script src="js/util.js"></script>
+<script src="js/banco.js"></script>
+<script src="js/conta.js"></script>
+<script src="js/telas.js"></script>
+<script src="js/bootstrap.js"></script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+/* Água — tema escuro do hub, ciano do app; total com barra, lembretes do dia, botões de ml, xixi, bexiga e 7 dias. */
+:root{
+  --bg:#1B1E21; --surface:#24272B; --line:#3B4147; --fg:#E9ECEF; --muted:#AAB1B8;
+  --cyan:#4CC9F0; --cyan-soft:#173643; --on-cyan:#0F1F26;
+  --green:#4CCB78; --green-soft:#1E392A; --red:#F06A61; --red-soft:#402624;
+  --display:'Barlow Condensed','Arial Narrow','Roboto Condensed',sans-serif;
+  --body:'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --r:14px;
+  color-scheme:dark;   /* só tema escuro, mesmo com o celular no modo claro */
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg);color:var(--fg)}
+body{margin:0;font-family:var(--body);font-size:1rem;line-height:1.4;-webkit-tap-highlight-color:transparent}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+p{margin:0}
+ul{list-style:none;margin:0;padding:0}
+.wrap{max-width:560px;margin:0 auto;overflow-x:clip;padding:max(12px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
+.view{display:flex;flex-direction:column;gap:12px}
+h1{font-family:var(--display);font-weight:700;font-size:1.8rem;line-height:1.05;margin:0}
+h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:500;margin:8px 0 0}
+.cartao{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.btn{border-radius:12px;border:1px solid var(--line);background:var(--surface);padding:12px 16px;font-weight:600;min-height:48px}
+.btn.primario{background:var(--cyan);border-color:var(--cyan);color:var(--on-cyan)}
+.erro{color:var(--red);font-size:.875rem;min-height:1.2em}
+.icon-btn{text-decoration:none;width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);display:grid;place-items:center;flex:none}
+.topo{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-top:6px}
+.login fieldset{display:flex;flex-direction:column;gap:10px;margin:40px 0 0;padding:0;border:0}
+.login input{padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+
+/* ---------- Total ---------- */
+.total{display:flex;flex-direction:column;gap:10px}
+.total.ok{border-color:var(--green)}
+.total-num{display:flex;align-items:baseline;gap:6px}
+.total-num b{font-family:var(--display);font-size:3.2rem;line-height:1;font-weight:700;color:var(--cyan)}
+.total-num small{color:var(--muted)}
+.bateu{margin-left:auto;align-self:center;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--green);background:var(--green-soft);border-radius:999px;padding:4px 10px}
+.barra{height:8px;border-radius:8px;background:var(--line);overflow:hidden}
+.barra span{display:block;height:100%;width:0;background:var(--cyan);transition:width .3s}
+.total.ok .barra span{background:var(--green)}
+
+/* ---------- Lembretes ---------- */
+.lembretes{display:flex;flex-direction:column;gap:10px}
+.lembrete-agora{font-weight:700;color:var(--red);display:flex;align-items:center;gap:8px}
+.lembrete-agora::before{content:'';width:10px;height:10px;border-radius:50%;background:var(--red);animation:pulsar 1.2s ease-in-out infinite}
+@keyframes pulsar{50%{transform:scale(1.5);opacity:.5}}
+.horas{display:flex;flex-wrap:wrap;gap:6px}
+.horas li{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:.875rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.horas li.feito{border-color:var(--cyan);background:var(--cyan-soft);color:var(--cyan)}
+.horas li.atrasado{border-color:var(--red);color:var(--red)}
+.horas li.vez{background:var(--red);color:var(--bg);font-weight:700}
+
+/* ---------- Beber ---------- */
+.beber{display:flex;gap:8px}
+.beber input{flex:1;min-width:0;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font-family:var(--display);font-weight:700;font-size:1.3rem}
+.beber input:focus{outline:none;border-color:var(--cyan)}
+.bt-mais{width:56px;border:0;border-radius:12px;background:var(--cyan);color:var(--on-cyan);display:grid;place-items:center;flex:none}
+.botoes{display:flex;flex-wrap:wrap;gap:8px}
+.botoes:empty{display:none}
+.ml-bt{border:1px solid var(--cyan);border-radius:12px;background:var(--cyan-soft);color:var(--cyan);padding:10px 14px;font-weight:700;font-size:1rem;min-width:84px}
+.eventos{display:flex;flex-wrap:wrap;gap:6px}
+.eventos:empty{display:none}
+.eventos button{border:1px solid var(--line);border-radius:999px;background:transparent;padding:4px 10px;font-size:.875rem;font-variant-numeric:tabular-nums}
+.eventos button.armado{border-color:var(--red);background:var(--red);color:var(--bg)}
+
+/* ---------- Xixi ---------- */
+.xixi{display:flex;flex-direction:column;gap:10px}
+.linha{display:flex;align-items:center;gap:8px}
+.linha>span{margin-right:auto;font-size:.95rem}
+.linha>span b{font-family:var(--display);font-size:1.35rem;margin-left:6px;color:var(--cyan)}
+.chip-bt{min-width:64px;border:1px solid var(--cyan);border-radius:999px;background:var(--cyan-soft);padding:8px 14px;color:var(--cyan);font-weight:700}
+
+/* ---------- Bexiga e 7 dias ---------- */
+.numeros{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.numeros li{display:flex;flex-direction:column}
+.numeros b{font-family:var(--display);font-size:1.5rem;line-height:1.1;color:var(--cyan)}
+.numeros span{font-size:.8rem;color:var(--muted)}
+.nota,.vazio{margin-top:8px;font-size:.8rem;color:var(--muted)}
+.vazio{margin:0;font-style:italic}
+.sem-lista li{display:grid;grid-template-columns:1fr auto 5.5em;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:.9rem}
+.sem-lista li:last-child{border-bottom:0}
+.sem-lista li span:nth-child(3){color:var(--muted);text-align:right}
+.sem-lista .ok{color:var(--green);font-weight:600}
+
+/* ---------- Avisos ---------- */
+.sync{font-size:.8rem;color:var(--muted);text-align:center;margin-top:12px}
+.sync.erro{color:var(--red)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:calc(100% - 32px);background:#30353A;border:1px solid var(--line);border-radius:12px;padding:10px 16px;box-shadow:0 10px 30px rgba(0,0,0,.4);font-size:.9rem;z-index:10}
+.toast.erro{border-color:var(--red);color:var(--red)}
+@media (prefers-reduced-motion:reduce){.lembrete-agora::before{animation:none}}

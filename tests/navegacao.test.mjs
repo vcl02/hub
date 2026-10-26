@@ -92,7 +92,7 @@ test('entrou no hub: os apps abrem direto com a mesma sessão, sem login própri
   const { ctx, pg, faltando, erros } = await abrir(base);
   await entrar(pg, 'eu@teste.com', 'senha123');
   await pg.waitForSelector('#v-apps:not([hidden])');
-  assert.deepEqual(await pg.$$eval('.app-nome', s => s.map(x => x.textContent)), ['Fin', 'Treino', 'Alimentação', 'Corpo', 'Agenda', 'Anotações']);
+  assert.deepEqual(await pg.$$eval('.app-nome', s => s.map(x => x.textContent)), ['Fin', 'Treino', 'Alimentação', 'Corpo', 'Água', 'Agenda', 'Anotações']);
   await pg.reload();                                                   // sessão salva: entra direto
   await pg.waitForSelector('#v-apps:not([hidden])');
   assert.equal(await pg.isVisible('#v-login'), false);
@@ -168,6 +168,17 @@ test('Corpo sem sessão: login no hub e volta pro Corpo, que abre com a mesma se
   await ctx.close();
 });
 
+test('Água sem sessão: login no hub e volta pra Água, que abre com a mesma sessão', async () => {
+  const { ctx, pg, faltando, erros } = await abrir(`${base}agua/`);
+  await pg.waitForURL(`${base}?volta=agua%2F`);
+  await entrar(pg, 'eu@teste.com', 'senha123');
+  await pg.waitForURL(`${base}agua/`);
+  await pg.waitForSelector('#v-agua:not([hidden])');
+  assert.deepEqual(faltando, []);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
 test('?volta só leva para a pasta de um app do hub, nunca para fora', async () => {
   for (const volta of ['https://exemplo.test/', '//exemplo.test/', 'fin/../../x', 'javascript:alert(1)', 'outro/']) {
     const { ctx, pg } = await abrir(`${base}?volta=${encodeURIComponent(volta)}`);
@@ -178,8 +189,8 @@ test('?volta só leva para a pasta de um app do hub, nunca para fora', async () 
   }
 });
 
-test('fin, tr, al e Corpo carregam todos os próprios arquivos em subpasta (caminhos relativos)', async () => {
-  for (const app of ['fin/', 'tr/', 'al/', 'corpo/']) {
+test('fin, tr, al, Corpo e Água carregam todos os próprios arquivos em subpasta (caminhos relativos)', async () => {
+  for (const app of ['fin/', 'tr/', 'al/', 'corpo/', 'agua/']) {
     const { ctx, faltando } = await abrir(base + app);
     assert.deepEqual(faltando, [], app);
     await ctx.close();

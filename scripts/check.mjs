@@ -1,4 +1,4 @@
-// Validação do hub inteiro: higiene e testes da raiz, depois a validação própria do fin, do tr, do al e do Corpo.
+// Validação do hub inteiro: higiene e testes da raiz, depois a validação própria do fin, do tr, do al, do Corpo e da Água.
 import { readdirSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
@@ -25,6 +25,7 @@ const comandos = [
   [process.execPath, ['scripts/check.mjs'], 'tr'],
   [process.execPath, ['scripts/check.mjs'], 'al'],
   [process.execPath, ['scripts/check.mjs'], 'corpo'],
+  [process.execPath, ['scripts/check.mjs'], 'agua'],
 ];
 for (const [comando, args, cwd] of comandos) {
   const resultado = spawnSync(comando, args, { stdio: 'inherit', cwd, shell: process.platform === 'win32' });
