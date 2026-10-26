@@ -18,7 +18,7 @@ test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei" soma a camin
   assert.equal(await texto(pg, '#s-rotulo'), 'kcal restantes');        // hoje: quanto ainda cabe, não o déficit do dia inteiro
   assert.match(await pg.getAttribute('#saldo', 'class'), /deficit/);
   assert.deepEqual(await linhasDe(pg, '#s-conta'), ['Meta 2.106 kcal', 'Comi 0 kcal']);   // uma por linha
-  assert.deepEqual(await linhasDe(pg, '#s-gasto'), ['Gasto 2.606 = basal 1.998 + dia a dia 400 + treino 208', 'Meta = gasto − 500 de déficit']);
+  assert.deepEqual(await linhasDe(pg, '#s-gasto'), ['Gasto 2.606 = basal 1.998 + dia a dia 400 + treino 208', '500 kcal de déficit']);
   assert.equal(await texto(pg, '#andei'), 'Andei');
   assert.equal(await pg.isVisible('#andei-campos'), false);
   await pg.click('#andei');

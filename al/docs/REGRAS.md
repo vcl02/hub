@@ -23,7 +23,7 @@
 - **Macros da meta:** proteína 1,6 g por kg de peso; gordura 25% das kcal da meta (÷ 9); carboidrato com o resto ((meta − proteína × 4 − gordura × 9) ÷ 4). Arredondados para gramas inteiros.
 - **Hoje** (o dia não fechou): número grande = quanto ainda cabe até a meta ("1.450 kcal restantes", verde) ou quanto passou dela ("320 kcal acima da meta", vermelho). O gasto do dia inteiro não vira déficit antes da hora.
 - **Dia passado:** saldo final = comido − gasto, sem sinal: "1.304 kcal de déficit" (verde) ou "kcal de superávit" (vermelho).
-- Embaixo do número, uma informação por linha: hoje "Meta" e "Comi"; dia passado "Comi", "Gastei" e "Meta". Depois, em letra menor, de onde sai o gasto ("Gasto 2.606 = basal 1.998 + dia a dia 400 + treino 208 + caminhada 66"; dia a dia = a parte do fator 1,2) e "Meta = gasto − 500 de déficit".
+- Embaixo do número, uma informação por linha: hoje "Meta" e "Comi"; dia passado "Comi", "Gastei" e "Meta". Depois, em letra menor, de onde sai o gasto ("Gasto 2.606 = basal 1.998 + dia a dia 400 + treino 208 + caminhada 66"; dia a dia = a parte do fator 1,2) e o déficit planejado ("500 kcal de déficit"; meta = gasto − 500).
 - **Macros:** cada um com comido / meta em gramas, "faltam X g" ou "passou X g" (vermelho) e a barra até a meta, proporcional ao comido (0 g = barra vazia; cheia ao bater ou passar a meta). Sem pesagem no Corpo, sem meta: só as gramas comidas.
 
 ## Registrar o que comi
