@@ -6,11 +6,9 @@
 // (chave de serviço) leem: nunca no código, no repositório nem no chat.
 // GET ?chave -> { publica }   (a chave pública, para o app se inscrever)
 // POST com x-agua-token -> lembrete do horário (se for a hora e faltar água)
-// POST com a sessão do Victor e { acao: "teste" } -> manda um agora, para conferir
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const DONO = "32f70255-30a0-4e2b-ad76-31d7a1bf54f7";
-const SUPABASE_KEY = "sb_publishable_Fq984qUdQO8mGq4PSYmUiQ_ySaLrmEQ"; // publicável: só para conferir a sessão no Auth
 const PRESENCIAL = [3, 4]; // qua e qui: o mesmo ROTINA.presencial de corpo/perfil.js (o teste confere)
 const INICIO = 10, FIM = 16; // horas
 const CONTATO = "mailto:victor.cabrera0209@gmail.com"; // exigido pelo protocolo VAPID (quem manda os pushes)
@@ -97,12 +95,6 @@ async function bebeuNoIntervalo(data: string, hora: number, minuto: number) {
   return (L[0]?.aguas || []).some((a) => { const [h, m] = String(a.hora).split(":").map(Number); const x = h * 60 + m; return x >= de && x <= ate; });
 }
 
-async function usuario(token: string) {
-  const r = await fetch(`${Deno.env.get("SUPABASE_URL")}/auth/v1/user`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` } });
-  if (!r.ok) return null;
-  return ((await r.json()) as { id?: string })?.id || null;
-}
-
 // Comparação em tempo constante (o tempo da resposta não revela quantos caracteres do token acertaram)
 function iguais(a: string, b: string) {
   const x = new TextEncoder().encode(a), y = new TextEncoder().encode(b);
@@ -117,23 +109,12 @@ Deno.serve(async (req: Request) => {
     const url = new URL(req.url);
     if (req.method === "GET" && url.searchParams.has("chave")) return json({ publica: (await chaves()).publica });
     if (req.method !== "POST") return json({ erro: "método" }, 405);
+    // Só o agendamento, com o token da tabela
     const c = await chaves();
-    // Cron: só com o token da tabela
-    const token = req.headers.get("x-agua-token");
-    if (token != null) {
-      if (!iguais(token, c.token)) return json({ erro: "token" }, 401);
-      const agora = agoraSP();
-      if (!horaDeLembrete(agora.hora, agora.semana)) return json({ enviado: false, motivo: "fora do horário" });
-      if (await bebeuNoIntervalo(agora.data, agora.hora, agora.minuto)) return json({ enviado: false, motivo: "já bebeu" });
-      return json({ enviado: true, ...(await enviarATodos(c)) });
-    }
-    // Teste: só a sessão do Victor
-    const sessao = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
-    const id = sessao ? await usuario(sessao) : null;
-    if (!id) return json({ erro: "sem sessão" }, 401);
-    if (id !== DONO) return json({ erro: "sem acesso" }, 403);
-    const corpo = await req.json().catch(() => ({})) as { acao?: string };
-    if (corpo?.acao !== "teste") return json({ erro: "ação" }, 400);
+    if (!iguais(req.headers.get("x-agua-token") ?? "", c.token)) return json({ erro: "token" }, 401);
+    const agora = agoraSP();
+    if (!horaDeLembrete(agora.hora, agora.semana)) return json({ enviado: false, motivo: "fora do horário" });
+    if (await bebeuNoIntervalo(agora.data, agora.hora, agora.minuto)) return json({ enviado: false, motivo: "já bebeu" });
     return json({ enviado: true, ...(await enviarATodos(c)) });
   } catch (e) {
     return json({ erro: String((e as Error)?.message || e) }, 502);

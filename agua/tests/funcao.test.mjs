@@ -1,4 +1,4 @@
-// Edge Function agua-lembrete: horários do lembrete, "já bebeu", token do agendamento, teste só do Victor e VAPID válido.
+// Edge Function agua-lembrete: horários do lembrete, "já bebeu", só o token do agendamento manda, e VAPID válido.
 // Roda o index.ts de verdade: o Node remove os tipos, `Deno`, o relógio e a rede são simulados; a criptografia é a real.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -14,7 +14,7 @@ const DONO = '32f70255-30a0-4e2b-ad76-31d7a1bf54f7';
 const ENDPOINT = 'https://fcm.googleapis.com/fcm/send/abc';
 
 // banco: { chave, inscricoes, aguas }; push: status que o servidor de push devolve
-function carregar({ agora = '2026-10-19T11:01:00-03:00', aguas = [], inscricoes = [ENDPOINT], push = 201, usuario = DONO } = {}) {
+function carregar({ agora = '2026-10-19T11:01:00-03:00', aguas = [], inscricoes = [ENDPOINT], push = 201 } = {}) {
   let handler = null;
   const banco = { chave: null, inscricoes: [...inscricoes] }, rede = [], fixo = new Date(agora).getTime();
   class Relogio extends Date { constructor(...a) { super(...(a.length ? a : [fixo])); } static now() { return fixo; } }
@@ -24,7 +24,6 @@ function carregar({ agora = '2026-10-19T11:01:00-03:00', aguas = [], inscricoes 
     Response, Request, URL, Intl, Date: Relogio, TextEncoder, crypto, btoa, console,
     fetch: async (url, opcoes = {}) => {
       url = String(url); rede.push({ url, opcoes });
-      if (url.endsWith('/auth/v1/user')) return usuario ? ok({ id: usuario }) : ok({}, 401);
       if (url.includes('/rest/v1/push_chave?select')) return ok(banco.chave ? [banco.chave] : []);
       if (url.includes('/rest/v1/push_chave?on_conflict')) { banco.chave ||= JSON.parse(opcoes.body); return ok(null, 201); }
       if (url.includes('/rest/v1/push_inscricao?select')) return ok(banco.inscricoes.map(endpoint => ({ endpoint })));
@@ -51,7 +50,6 @@ const enviados = f => f.rede.filter(r => r.url === ENDPOINT);
 test('nenhum segredo no código: chaves VAPID e token nascem na função e ficam só no banco', () => {
   assert.doesNotMatch(fonte, /service_role|sb_secret_|"d":|BEGIN PRIVATE/);
   assert.match(fonte, /Deno\.env\.get\("SUPABASE_SERVICE_ROLE_KEY"\)/);
-  assert.match(fonte, /const SUPABASE_KEY = "sb_publishable_/);
 });
 
 test('mesma rotina do Corpo: presencial é o ROTINA.presencial de corpo/perfil.js', () => {
@@ -135,17 +133,12 @@ test('inscrição que o servidor de push diz não existir mais (410) sai da tabe
   assert.deepEqual(f.banco.inscricoes, []);
 });
 
-test('teste pelo app: só a sessão do Victor e com { acao: "teste" }; manda mesmo fora do horário', async () => {
-  const sessao = { authorization: 'Bearer tok', 'content-type': 'application/json' };
-  let f = carregar({ agora: '2026-10-19T22:00:00-03:00' });
-  assert.equal((await pedir(f.handler, { corpo: { acao: 'teste' } })).status, 401);
-  assert.equal((await pedir(f.handler, { headers: sessao, corpo: { acao: 'outra' } })).status, 400);
-  assert.deepEqual(await ler(await pedir(f.handler, { headers: sessao, corpo: { acao: 'teste' } })), { status: 200, corpo: { enviado: true, inscricoes: 1, enviados: 1 } });
-  f = carregar({ usuario: 'outra-conta' });
-  assert.equal((await pedir(f.handler, { headers: sessao, corpo: { acao: 'teste' } })).status, 403);
-  f = carregar({ usuario: null });
-  assert.equal((await pedir(f.handler, { headers: sessao, corpo: { acao: 'teste' } })).status, 401);
+test('sem o token do agendamento (sessão do app, pedido de teste) dá 401 e não manda nada', async () => {
+  const f = carregar();
+  await pedir(f.handler, { metodo: 'GET', busca: '?chave' });
+  assert.equal((await pedir(f.handler, { headers: { authorization: 'Bearer tok', 'content-type': 'application/json' }, corpo: { acao: 'teste' } })).status, 401);
   assert.equal(enviados(f).length, 0);
+  assert.equal(f.rede.some(r => r.url.endsWith('/auth/v1/user')), false);
 });
 
 test('CORS para o app no GitHub Pages; outros métodos recusados', async () => {

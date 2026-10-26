@@ -51,12 +51,10 @@ export async function fakeSupabase(ctx, nuvem, id = DONO) {
     }
     if (u.pathname === '/auth/v1/user') return json(user);
     if (u.pathname === '/auth/v1/logout') return route.fulfill({ status: 204 });
-    // Função agua-lembrete: chave pública e o teste (responde quantos aparelhos estão inscritos)
+    // Função agua-lembrete: o app só pede a chave pública
     if (u.pathname === '/functions/v1/agua-lembrete') {
-      nuvem.funcao.push({ metodo: req.method(), busca: u.search, corpo: req.postDataJSON?.() ?? null, auth: req.headers().authorization });
-      if (req.method() === 'GET') return json({ publica: PUBLICA });
-      const n = nuvem.tabelas.push_inscricao.length;
-      return json({ enviado: true, inscricoes: n, enviados: n });
+      nuvem.funcao.push({ metodo: req.method(), busca: u.search });
+      return req.method() === 'GET' ? json({ publica: PUBLICA }) : json({ erro: 'token' }, 401);
     }
     const t = u.pathname.replace('/rest/v1/', ''), linhas = nuvem.tabelas[t];
     if (!linhas) return json({ message: 'tabela?' }, 404);

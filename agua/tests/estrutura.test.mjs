@@ -81,10 +81,9 @@ test('migration das notificações: inscrições só do Victor, chaves sem polic
   assert.match(agendado, /'x-agua-token', coalesce\(\(select token from public\.push_chave where id = 1\)/);
 });
 
-test('app e função falam a mesma língua: mesmo dono, mesma chave publicável, mesmo nome e horários', () => {
+test('app e função falam a mesma língua: mesmo dono, mesmo nome e horários', () => {
   const funcao = ler(FUNCAO), config = ler('js/config.js');
   assert.equal(funcao.match(/const DONO = "([0-9a-f-]+)"/)[1], DONO);
-  assert.equal(funcao.match(/const SUPABASE_KEY = "([^"]+)"/)[1], config.match(/const SUPABASE_KEY = '([^']+)'/)[1]);
   assert.match(ler('js/notificacoes.js'), /const FUNCAO_PUSH = 'agua-lembrete'/);
   assert.match(funcao, new RegExp(`const INICIO = ${config.match(/LEMBRETE_INICIO = (\d+)/)[1]}, FIM = ${config.match(/LEMBRETE_FIM = (\d+)/)[1]};`));
 });
