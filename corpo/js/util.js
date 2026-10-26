@@ -10,6 +10,7 @@ const pad = n => String(n).padStart(2, '0');
 const iso = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 const deIso = d => { const [a, m, dia] = d.split('-').map(Number); return new Date(a, m - 1, dia); };
 const hoje = () => iso(new Date());
+const somaDias = (d, n) => { const x = deIso(d); x.setDate(x.getDate() + n); return iso(x); };
 const dataOk = d => /^\d{4}-\d{2}-\d{2}$/.test(d);
 const agoraHHMM = () => { const d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
 const minutos = h => { const [a, b] = h.split(':').map(Number); return a * 60 + b; };
@@ -43,26 +44,31 @@ function confirmar(btn) {   // toque duplo: o 1º só deixa o botão vermelho (3
 }
 
 // ===== Gráfico de linha (peso ou barriga) =====
+// Eixo horizontal pela data (a distância entre os pontos é a distância entre os dias), com 3 datas marcadas: a 1ª, a do
+// meio e a última. Eixo vertical com 3 valores: o menor, o do meio e o maior, cada um com sua linha tracejada.
 function grafico(box, P, unidade, rotulo) {   // P = [{ data, valor }] em ordem cronológica
   // Com menos de 2 pontos não há linha: some o gráfico e o título dele (h3 logo antes), sem caixa vazia
   const titulo = box.previousElementSibling?.matches('h3.sec') ? box.previousElementSibling : null;
   box.hidden = P.length < 2; if (titulo) titulo.hidden = box.hidden;
   if (P.length < 2) { box.innerHTML = ''; return; }
-  const W = 320, H = 120, l = 40, r = 12, t = 12, b = 22;
+  const W = 320, H = 140, l = 44, r = 14, t = 12, b = 24;
   let lo = Math.min(...P.map(p => p.valor)), hi = Math.max(...P.map(p => p.valor));
   if (lo === hi) { lo -= 1; hi += 1; }
-  const x = i => l + i * (W - l - r) / (P.length - 1), y = c => t + (hi - c) * (H - t - b) / (hi - lo);
-  const pts = P.map((p, i) => x(i).toFixed(1) + ',' + y(p.valor).toFixed(1)), fim = P[P.length - 1];
+  const dia = d => Math.round(deIso(d) / 864e5), d0 = dia(P[0].data), d1 = dia(P[P.length - 1].data);
+  const x = d => l + (dia(d) - d0) * (W - l - r) / (d1 - d0), y = c => t + (hi - c) * (H - t - b) / (hi - lo);
+  const pts = P.map(p => x(p.data).toFixed(1) + ',' + y(p.valor).toFixed(1)), fim = P[P.length - 1];
+  const meioDia = iso(new Date((d0 + d1) / 2 * 864e5 + 12 * 36e5)), meioValor = (lo + hi) / 2;
+  const valores = [hi, meioValor, lo].map(v => `<line x1="${l}" x2="${W - r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-dasharray="3 3"/>
+    <text class="eixo-y" x="${l - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${fmt(Math.round(v * 10) / 10)}</text>`).join('');
+  const datas = [[P[0].data, 'start', l], [meioDia, 'middle', (l + W - r) / 2], [fim.data, 'end', W - r]]
+    .map(([d, ancora, px]) => `<text class="eixo-x" x="${px}" y="${H - 6}" text-anchor="${ancora}" font-size="11" fill="var(--muted)">${dataCurta(d)}</text>`).join('');
   box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${rotulo}">
-    <line x1="${l}" x2="${W - r}" y1="${y(hi)}" y2="${y(hi)}" stroke="var(--line)" stroke-dasharray="3 3"/>
-    <line x1="${l}" x2="${W - r}" y1="${y(lo)}" y2="${y(lo)}" stroke="var(--line)" stroke-dasharray="3 3"/>
-    <text x="${l - 6}" y="${y(hi) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${fmt(hi)}</text>
-    <text x="${l - 6}" y="${y(lo) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${fmt(lo)}</text>
-    <path d="M${x(0)},${H - b} L${pts.join(' L')} L${x(P.length - 1)},${H - b} Z" fill="var(--teal)" fill-opacity=".12"/>
+    ${valores}
+    <path d="M${x(P[0].data)},${H - b} L${pts.join(' L')} L${x(fim.data)},${H - b} Z" fill="var(--teal)" fill-opacity=".12"/>
     <polyline points="${pts.join(' ')}" fill="none" stroke="var(--teal)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-    <circle cx="${x(P.length - 1)}" cy="${y(fim.valor)}" r="4.5" fill="var(--teal)"/>
-    <text x="${l}" y="${H - 5}" font-size="11" fill="var(--muted)">${dataCurta(P[0].data)}</text>
-    <text x="${W - r}" y="${H - 5}" text-anchor="end" font-size="11" fill="var(--muted)">${dataCurta(fim.data)} · ${fmt(fim.valor)} ${esc(unidade)}</text>
+    ${P.map(p => `<circle cx="${x(p.data)}" cy="${y(p.valor)}" r="2.5" fill="var(--teal)"/>`).join('')}
+    <circle cx="${x(fim.data)}" cy="${y(fim.valor)}" r="4.5" fill="var(--teal)"/>
+    ${datas}
     <g class="dica" visibility="hidden" pointer-events="none">
       <line y1="${t}" y2="${H - b}" stroke="var(--muted)" stroke-dasharray="2 3"/>
       <circle r="5" fill="var(--bg)" stroke="var(--teal)" stroke-width="2.5"/>
@@ -74,7 +80,7 @@ function grafico(box, P, unidade, rotulo) {   // P = [{ data, valor }] em ordem 
   const svg = box.querySelector('svg'), dica = svg.querySelector('.dica');
   const mostrar = ev => {
     const caixa = svg.getBoundingClientRect(), vx = (ev.clientX - caixa.left) * W / caixa.width;
-    const i = Math.max(0, Math.min(P.length - 1, Math.round((vx - l) * (P.length - 1) / (W - l - r)))), px = x(i), py = y(P[i].valor);
+    const i = P.reduce((m, p, k) => Math.abs(x(p.data) - vx) < Math.abs(x(P[m].data) - vx) ? k : m, 0), px = x(P[i].data), py = y(P[i].valor);
     const txt = `${dataCurta(P[i].data)} · ${fmt(P[i].valor)} ${unidade}`, larg = txt.length * 6 + 14;
     const cx = Math.min(W - r - larg / 2, Math.max(l + larg / 2, px)), ty = py - 30 < 0 ? py + 12 : py - 30;
     dica.querySelector('line').setAttribute('x1', px); dica.querySelector('line').setAttribute('x2', px);

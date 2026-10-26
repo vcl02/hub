@@ -94,6 +94,20 @@ test('gráficos: com o mouse em cima (ou o dedo) mostram a data e o valor do pon
   await ctx.close();
 });
 
+test('evolução: só os últimos 90 dias, eixo pela data, 3 datas embaixo e 3 valores do lado', async () => {
+  const nuvem = novaNuvem();
+  // 22/10 é hoje: 90 dias contando hoje = desde 25/07. A de 24/07 fica de fora.
+  [['2026-07-24', 110], ['2026-07-25', 108], ['2026-09-01', 104], ['2026-10-20', 100]].forEach(([data, peso]) => nuvem.tabelas.corpo_medida.push({ user_id: DONO, data, hora: '', peso, cintura: null }));
+  const { ctx, pg } = await abrirApp({ nuvem });
+  assert.deepEqual(await pg.$$eval('#c-grafico .eixo-x', T => T.map(t => t.textContent)), ['25/07', '06/09', '20/10']);   // 1ª, meio (pela data) e última
+  assert.deepEqual(await pg.$$eval('#c-grafico .eixo-y', T => T.map(t => t.textContent)), ['108', '104', '100']);       // maior, meio e menor
+  assert.equal(await pg.locator('#c-grafico svg > circle').count(), 4);                                                   // 3 pontos + o destaque do último
+  // a distância entre os pontos segue as datas: 25/07 → 01/09 são 38 dias e 01/09 → 20/10 são 49
+  const xs = await pg.$$eval('#c-grafico svg > circle', C => C.slice(0, 3).map(c => +c.getAttribute('cx')));
+  assert.ok(Math.abs((xs[1] - xs[0]) / (xs[2] - xs[1]) - 38 / 49) < 0.01, String(xs));
+  await ctx.close();
+});
+
 test('histórico: editar data, horário, peso e barriga (1 por dia), apagar com toque duplo', async () => {
   const nuvem = novaNuvem();
   nuvem.tabelas.corpo_medida.push({ user_id: DONO, data: '2026-10-15', hora: '07:00', peso: 91, cintura: null });

@@ -19,3 +19,4 @@ const emailDoLogin = texto => { const t = String(texto || '').trim(); return t.i
 // ===== Faixas aceitas (as mesmas checagens da tabela) =====
 const PESO_MIN = 30, PESO_MAX = 300;   // kg
 const CINTURA_MAX = 400;               // cm (sem trava baixa: qualquer medida > 0)
+const DIAS_GRAFICO = 90;              // evolução do peso e da barriga: os últimos 90 dias

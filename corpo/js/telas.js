@@ -45,8 +45,10 @@ function desenhar() {
   $('c-cintura').placeholder = C.length ? virgula(C[0].cintura) : '—';
   avisoHorario();
   pintarEvacuacao();
-  grafico($('c-grafico'), P.slice(0, 16).reverse().map(x => ({ data: x.data, valor: x.peso })), 'kg', 'Evolução do peso');
-  grafico($('c-grafico-cint'), C.slice(0, 16).reverse().map(x => ({ data: x.data, valor: x.cintura })), 'cm', 'Evolução da barriga');
+  // Evolução: só os últimos 90 dias (até hoje)
+  const desde = somaDias(hoje(), -(DIAS_GRAFICO - 1)), janela = L => L.filter(x => x.data >= desde).reverse();
+  grafico($('c-grafico'), janela(P).map(x => ({ data: x.data, valor: x.peso })), 'kg', 'Evolução do peso');
+  grafico($('c-grafico-cint'), janela(C).map(x => ({ data: x.data, valor: x.cintura })), 'cm', 'Evolução da barriga');
   pintarHistorico();
 }
 

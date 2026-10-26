@@ -33,7 +33,7 @@
 
 ## Evolução e histórico
 
-- Gráficos do peso e da barriga (últimas 16 medidas de cada), só com 2 ou mais; com menos, nem a caixa nem o título. Mouse em cima (ou o dedo encostado e arrastando para o lado) mostra a data e o valor do ponto mais perto ("18/10 · 103,1 kg"), com uma linha até ele; sai do gráfico, some.
+- Gráficos do peso e da barriga com as medidas dos **últimos 90 dias** (contando hoje), só com 2 ou mais; com menos, nem a caixa nem o título. O eixo horizontal segue as datas (pontos mais longe = mais dias entre eles), com 3 datas embaixo (a 1ª, a do meio e a última); do lado, 3 valores (o maior, o do meio e o menor), cada um com sua linha tracejada. Mouse em cima (ou o dedo encostado e arrastando para o lado) mostra a data e o valor do ponto mais perto ("18/10 · 103,1 kg"), com uma linha até ele; sai do gráfico, some.
 - Histórico, mais recente primeiro: data e horário, peso e barriga numa linha e o IMC. Lápis edita na linha (data, horário, peso, barriga; 1 por dia: "Já tem medida em 15/10"); Esc ou × cancela. Lixeira apaga com toque duplo.
 
 ## Para os outros apps
