@@ -102,10 +102,9 @@ telas.conquistas = () => {
   $('q-lista').innerHTML = CONQUISTAS.map(([nome, desc, f, ano], i) => `${ano && ano !== CONQUISTAS[i - 1][3] ? `<li class="q-ano">${ano}</li>` : ''}<li class="${f(s) ? 'on' : ''}"><span class="q-ico" aria-hidden="true">${f(s) ? '★' : '☆'}</span><span><b>${nome}</b><small>${desc}</small></span></li>`).join('');
   $('q-pontos').innerHTML = PONTOS.map(([, p, txt]) => `<li><b>+${p}</b> ${txt}</li>`).join('');
 };
-// Calorias: MET × peso corporal (kg) × horas. Usa a pesagem mais recente até o dia do treino.
+// Calorias: kcalTreino (../perfil.js, a mesma conta do al) com a pesagem mais recente até o dia do treino.
 function pesoEm(dia) { const L = [...db.medidas].sort((a, b) => b.data.localeCompare(a.data)); return (L.find(m => m.data <= dia) || L[L.length - 1])?.peso; }
-// MET corrigido: 1 MET = a sua taxa basal (não os 1 kcal/kg/h do padrão), então idade, altura e sexo entram na conta
-const kcal = t => { const dia = iso(new Date(t.inicio)), p = pesoEm(dia); return p ? Math.round(MET * tmb(p, dia) / 24 * (t.fim - t.inicio) / 36e5) : null; };
+const kcal = t => { const dia = iso(new Date(t.inicio)), p = pesoEm(dia); return p ? kcalTreino(p, dia, t.fim - t.inicio) : null; };
 function resumoDia(dia) {
   const { ex, va } = mapas(), regs = db.registros.filter(r => r.data === dia), rec = recordesAte(dia);
   const r = { regs, series: 0, volume: 0, recordes: regs.filter(x => rec.has(x)).length, completas: regs.filter(x => completo(x, ex.get(x.variacao))).length };

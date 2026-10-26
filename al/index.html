@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1B1E21">
+<meta name="color-scheme" content="dark">
+<title>Alimentação</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/al-192.png">
+<link rel="apple-touch-icon" href="icons/al-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="css/al.css">
+</head>
+<body>
+<div class="wrap">
+
+<!-- Login próprio: só aparece com o app servido fora do hub (testes). Dentro do hub, sem sessão vai para o login de lá. -->
+<section id="v-login" class="view" hidden>
+  <form id="l-form" class="login" novalidate>
+    <fieldset id="l-campos">
+      <input id="l-usuario" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Usuário" aria-label="Usuário">
+      <input id="l-senha" type="password" autocomplete="current-password" placeholder="Senha" aria-label="Senha">
+      <button type="submit" class="btn primario">Entrar</button>
+    </fieldset>
+    <p id="l-erro" class="erro" role="alert"></p>
+  </form>
+</section>
+
+<!-- O dia: saldo (déficit ou superávit), macros, o que comer agora e o que já foi comido. Tudo preenchido por js/telas.js. -->
+<section id="v-dia" class="view" hidden>
+  <header class="topo">
+    <h1>Alimentação</h1>
+    <!-- Hub: volta à página inicial (../), que abre os outros apps -->
+    <a class="icon-btn" href="../" id="i-hub" title="Hub" aria-label="Hub">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M9.9 9.9 6.6 6.6M14.1 9.9l3.3-3.3M9.9 14.1l-3.3 3.3M14.1 14.1l3.3 3.3"/><circle cx="5" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></svg>
+    </a>
+  </header>
+
+  <!-- ‹ › trocam o dia mostrado (para frente, até hoje) -->
+  <nav class="dia-nav" aria-label="Dia">
+    <button type="button" class="bt-ic" id="d-ant" title="Dia anterior" aria-label="Dia anterior"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <b id="d-nome">Hoje</b>
+    <button type="button" class="bt-ic" id="d-prox" title="Próximo dia" aria-label="Próximo dia"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+  </nav>
+
+  <!-- Saldo do dia: comido − gasto; negativo = déficit (verde), positivo = superávit (vermelho) -->
+  <div class="cartao saldo" id="saldo">
+    <p class="saldo-num"><b id="s-valor">—</b><small>kcal</small><span id="s-rotulo"></span></p>
+    <p class="saldo-conta" id="s-conta"></p>
+    <p class="saldo-gasto" id="s-gasto"></p>
+    <button type="button" class="chip-bt" id="andei" aria-pressed="false"></button>
+  </div>
+
+  <!-- Macros do dia: gramas e parte das kcal -->
+  <div class="cartao macros" id="macros"></div>
+
+  <!-- O que comi: texto livre vai para a IA; nome de comida salva adiciona direto -->
+  <form id="f-comer" class="comer" autocomplete="off">
+    <input id="f-texto" type="text" enterkeyhint="send" maxlength="500" placeholder="O que você comeu?" aria-label="O que você comeu?">
+    <button type="submit" class="bt-enviar" id="f-enviar" title="Adicionar" aria-label="Adicionar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+  </form>
+  <ul class="sugestoes" id="f-sugestoes" aria-label="Comidas salvas"></ul>
+  <p class="carregando" id="f-carregando" role="status" hidden><span class="spin" aria-hidden="true"></span>Estimando…</p>
+
+  <!-- Prévia do que a IA estimou (ou digitação à mão): dá pra corrigir antes de adicionar; o corrigido vai para as salvas -->
+  <div class="cartao previa" id="previa" hidden>
+    <ul id="p-lista"></ul>
+    <div class="linha">
+      <button type="button" class="btn" id="p-cancelar">Cancelar</button>
+      <button type="button" class="btn primario" id="p-adicionar">Adicionar</button>
+    </div>
+  </div>
+
+  <h3 class="sec" id="h-comidas">Comidas</h3>
+  <ul class="lista" id="lista"></ul>
+
+  <h3 class="sec">Últimos 7 dias</h3>
+  <div class="cartao" id="semana"></div>
+</section>
+
+<p id="sync" class="sync" role="status" hidden></p>
+<p id="toast" class="toast" role="status" hidden></p>
+</div>
+<script src="../supabase.js"></script>
+<script src="../perfil.js"></script>
+<script src="js/config.js"></script>
+<script src="js/util.js"></script>
+<script src="js/banco.js"></script>
+<script src="js/conta.js"></script>
+<script src="js/ia.js"></script>
+<script src="js/telas.js"></script>
+<script src="js/bootstrap.js"></script>
+</body>
+</html>

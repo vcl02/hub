@@ -355,7 +355,7 @@ test('ver o resumo de um treino antigo', async () => {
 });
 
 test('parabéns em tela cheia ao finalizar, com as conquistas ganhas no treino', async () => {
-  const { ctx, pg, erros } = await abrirApp();
+  const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-21T19:00:00') });   // quarta: sem o bônus de dia extra (segunda)
   await pg.tap('.slot >> nth=0'); await pg.fill('#e-carga', '40'); await pg.dispatchEvent('#e-carga', 'input');
   await pg.click('#t-feita'); await pg.click('#t-feita');
   await pg.click('#e-finalizar');

@@ -92,7 +92,7 @@ test('entrou no hub: os apps abrem direto com a mesma sessão, sem login própri
   const { ctx, pg, faltando, erros } = await abrir(base);
   await entrar(pg, 'eu@teste.com', 'senha123');
   await pg.waitForSelector('#v-apps:not([hidden])');
-  assert.deepEqual(await pg.$$eval('.app-nome', s => s.map(x => x.textContent)), ['Fin', 'Treino', 'Agenda', 'Anotações']);
+  assert.deepEqual(await pg.$$eval('.app-nome', s => s.map(x => x.textContent)), ['Fin', 'Treino', 'Alimentação', 'Agenda', 'Anotações']);
   await pg.reload();                                                   // sessão salva: entra direto
   await pg.waitForSelector('#v-apps:not([hidden])');
   assert.equal(await pg.isVisible('#v-login'), false);
@@ -139,6 +139,22 @@ test('link do fin sem sessão: login no hub e volta pro mesmo ciclo', async () =
   await ctx.close();
 });
 
+test('Alimentação sem sessão: login no hub e volta pro al, que abre com a mesma sessão', async () => {
+  const nuvem = novaNuvem();
+  Object.assign(nuvem.tabelas, { al_item: [], al_registro: [], al_dia: [] });   // o falso do tr só precisa listar as tabelas do al
+  const { ctx, pg, faltando, erros } = await abrir(`${base}al/`, { nuvem });
+  await pg.waitForURL(`${base}?volta=al%2F`);
+  await pg.waitForSelector('#v-login:not([hidden])');
+  await entrar(pg, 'eu@teste.com', 'senha123');
+  await pg.waitForURL(`${base}al/`);
+  await pg.waitForSelector('#v-dia:not([hidden])');                    // tela do dia, não o login próprio do al
+  assert.equal(await pg.isVisible('#l-form'), false);
+  assert.equal(await pg.getAttribute('#i-hub', 'href'), '../');
+  assert.deepEqual(faltando, []);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
 test('?volta só leva para a pasta de um app do hub, nunca para fora', async () => {
   for (const volta of ['https://exemplo.test/', '//exemplo.test/', 'fin/../../x', 'javascript:alert(1)', 'outro/']) {
     const { ctx, pg } = await abrir(`${base}?volta=${encodeURIComponent(volta)}`);
@@ -149,8 +165,8 @@ test('?volta só leva para a pasta de um app do hub, nunca para fora', async () 
   }
 });
 
-test('fin e tr carregam todos os próprios arquivos em subpasta (caminhos relativos)', async () => {
-  for (const app of ['fin/', 'tr/']) {
+test('fin, tr e al carregam todos os próprios arquivos em subpasta (caminhos relativos)', async () => {
+  for (const app of ['fin/', 'tr/', 'al/']) {
     const { ctx, faltando } = await abrir(base + app);
     assert.deepEqual(faltando, [], app);
     await ctx.close();

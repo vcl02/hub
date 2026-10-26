@@ -15,7 +15,7 @@
   unidade = kg | lb | nível (máquina que marca só a posição/placa, sem peso). passo = quanto a pirâmide sobe (anilha/placa). lados = 2 quando o peso é por lado.
   Pontos, nível, conquistas e calorias são calculados a partir desses dados (nada extra é guardado).
   Fotos das máquinas ficam fora do banco: localStorage "carga.foto.<variação>".
-  Altura, nascimento e sexo (IMC, idade, taxa basal) vêm do perfil do hub: ../perfil.js (PERFIL, idadeEm, tmb).
+  Altura, nascimento e sexo (IMC, idade, taxa basal) e a conta das calorias do treino vêm do perfil do hub: ../perfil.js (PERFIL, idadeEm, tmb, kcalTreino).
 */
 // Este módulo: Configuração do app: Supabase, conta, dias de treino, exercícios padrão e guia de execução.
 
@@ -36,7 +36,6 @@ const UNIDADES = ['kg', 'lb', 'nível'];
 const LB = 0.45359237;
 const MODO_PADRAO = 'invertida';   // pirâmide de exercício novo
 const AVISO_AJUSTE = 7000;         // ms antes do fim do descanso: aviso "Se ajuste" para se ajeitar na máquina
-const MET = 3.5;             // musculação, vários exercícios, 8–15 reps (Compendium of Physical Activities, código 02054)
 const MODOS = { crescente: 'Crescente', reta: 'Mesma carga', invertida: 'Invertida' };
 const PADRAO = [             // grupo, região, descanso (s), [principal, substituto, halter]
   ['Pernas · empurrar', 'Pernas', 90, ['Leg press 45°', 'Agachamento no Smith', 'Agachamento taça com halter']],

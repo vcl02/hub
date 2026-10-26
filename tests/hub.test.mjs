@@ -12,7 +12,7 @@ const html = ler('index.html');
 const cards = [...html.matchAll(/<a class="app" href="([^"]+)" style="--cor:#[0-9A-F]{6}">\s*<img class="app-icone" src="([^"]+)"/g)].map(m => ({ href: m[1], icone: m[2] }));
 
 test('um card por app; cada um aponta para uma pasta com index.html e um ícone que existe', () => {
-  assert.deepEqual(cards.map(c => c.href), ['fin/', 'tr/']);   // os do hub; atalhos externos (class externo) à parte
+  assert.deepEqual(cards.map(c => c.href), ['fin/', 'tr/', 'al/']);   // os do hub; atalhos externos (class externo) à parte
   for (const { href, icone } of cards) {
     assert.ok(existe(`${href}index.html`), href);
     assert.ok(existe(icone), icone);
@@ -22,13 +22,15 @@ test('um card por app; cada um aponta para uma pasta com index.html e um ícone 
 test('cada app volta para o hub (../)', () => {
   assert.match(ler('fin/index.html'), /<a id=voltarHub class=btIcone href="\.\.\/"/);
   assert.match(ler('tr/index.html'), /<a class="icon-btn" href="\.\.\/" id="i-hub"/);
+  assert.match(ler('al/index.html'), /<a class="icon-btn" href="\.\.\/" id="i-hub"/);
 });
 
 test('tema escuro único: hub, fin e tr com o mesmo fundo', () => {
   assert.match(ler('hub.css'), /--bg: #1B1E21;/);
   assert.match(ler('fin/css/base.css'), /--bg: #1B1E21;/);
   assert.match(ler('tr/css/base.css'), /--bg:#1B1E21;/);
-  for (const arquivo of ['index.html', 'fin/index.html', 'tr/index.html']) assert.match(ler(arquivo), /<meta name=("theme-color"|theme-color) content="#1B1E21">/, arquivo);
+  assert.match(ler('al/css/al.css'), /--bg:#1B1E21;/);
+  for (const arquivo of ['index.html', 'fin/index.html', 'tr/index.html', 'al/index.html']) assert.match(ler(arquivo), /<meta name=("theme-color"|theme-color) content="#1B1E21">/, arquivo);
   assert.match(html, /<meta name="color-scheme" content="dark">/);
 });
 
@@ -47,6 +49,7 @@ test('service workers dividem a origem sem apagar o cache um do outro', () => {
   assert.doesNotMatch(sw, /caches\.delete/);
   assert.match(sw, /if \(!ENDERECOS\.has\(url\.href\)\) return;/);   // nunca atende fin/ nem tr/
   assert.match(ler('tr/sw.js'), /k\.startsWith\('carga-'\) && k !== CACHE_ESTATICO/);
+  assert.match(ler('al/sw.js'), /k\.startsWith\('al-'\) && k !== CACHE_ESTATICO/);
   assert.doesNotMatch(ler('fin/service-worker.js'), /caches\.delete/);
 });
 
@@ -87,6 +90,7 @@ test('marca do hub em todo lugar: favicon, celular, login e o botão de volta no
   const marca = codigo => codigo.match(/<circle cx="12" cy="12" r="3" ?\/><path d="M9\.9 9\.9 6\.6 6\.6[^"]*" ?\/>(<circle cx="(5|19)" cy="(5|19)" r="2" ?\/>){4}/);
   assert.ok(marca(ler('fin/index.html').slice(ler('fin/index.html').indexOf('id=voltarHub'))), 'fin');
   assert.ok(marca(ler('tr/index.html').slice(ler('tr/index.html').indexOf('id="i-hub"'))), 'tr');
+  assert.ok(marca(ler('al/index.html').slice(ler('al/index.html').indexOf('id="i-hub"'))), 'al');
 });
 
 test('atalho externo do Google Agenda: abre em outra aba; no Android, o app (intent) com a web de reserva', () => {
@@ -109,16 +113,21 @@ test('card não fica selecionado ao voltar de um app: hover só com mouse, toque
   assert.match(hub, /classList\.add\('tocado'\); toque = setTimeout\(soltarCard, ms\)/);   // e ela some sozinha
 });
 
-test('perfil do hub (perfil.js): dados pessoais num lugar só, carregados pelo tr', () => {
+test('perfil do hub (perfil.js): dados pessoais e calorias do treino num lugar só, carregados pelo tr e pelo al', () => {
   const perfil = ler('perfil.js');
   assert.match(perfil, /^'use strict';\n\/\/ /);
   const ctx = {};
-  new Function('ctx', perfil.replace(/^'use strict';/, '') + '\nctx.PERFIL = PERFIL; ctx.idadeEm = idadeEm; ctx.tmb = tmb;')(ctx);
+  new Function('ctx', perfil.replace(/^'use strict';/, '') + '\nctx.PERFIL = PERFIL; ctx.idadeEm = idadeEm; ctx.tmb = tmb; ctx.kcalTreino = kcalTreino;')(ctx);
   assert.deepEqual({ ...ctx.PERFIL }, { altura: 1.78, nascimento: '2002-09-14', sexo: 'M' });
   assert.ok(Object.isFrozen(ctx.PERFIL));
   assert.equal(ctx.idadeEm('2026-09-13'), 23);   // véspera do aniversário
   assert.equal(ctx.idadeEm('2026-09-14'), 24);
   assert.equal(ctx.tmb(100, '2026-09-14'), 1998);   // 10×100 + 6,25×178 − 5×24 + 5
-  assert.match(ler('tr/index.html'), /<script src="\.\.\/perfil\.js"><\/script>/);
-  assert.doesNotMatch(ler('tr/js/config.js'), /const (ALTURA|NASCIMENTO|SEXO)\b/, 'perfil não se repete no tr');
+  assert.equal(ctx.kcalTreino(100, '2026-09-14', 36e5), 291);   // 3,5 MET × 1998 ÷ 24 × 1 h
+  for (const app of ['tr', 'al']) {
+    assert.match(ler(`${app}/index.html`), /<script src="\.\.\/perfil\.js"><\/script>/, app);
+    assert.match(ler(`${app}/sw.js`), /'\.\.\/perfil\.js'/, app);
+  }
+  assert.doesNotMatch(ler('tr/js/config.js'), /const (ALTURA|NASCIMENTO|SEXO|MET)\b/, 'perfil e conta do treino não se repetem no tr');
+  assert.doesNotMatch(ler('al/js/config.js'), /const (ALTURA|NASCIMENTO|SEXO|MET_MUSCULACAO)\b/, 'nem no al');
 });

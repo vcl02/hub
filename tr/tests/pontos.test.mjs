@@ -6,7 +6,7 @@ import { prepararApp, abrirApp } from './helpers/app.mjs';
 prepararApp();
 
 test('peso corporal, pontos e conquistas', async () => {
-  const { ctx, pg, erros } = await abrirApp();
+  const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-21T19:00:00') });   // quarta: sem o bônus de dia extra (segunda)
   await pg.click('#i-corpo');
   await pg.fill('#c-peso', '90,4'); await pg.click('#c-form button[type=submit]');
   assert.match(await pg.textContent('#c-historico'), /90,4 kg/);

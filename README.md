@@ -6,6 +6,7 @@ Página inicial que reúne os apps pessoais, todos em tema escuro e publicados j
 |---|---|
 | `fin/` | Finanças (ver `fin/AGENTS.md`) |
 | `tr/` | Treino (ver `tr/README.md`) |
+| `al/` | Alimentação: déficit calórico do dia, com IA (ver `al/README.md`, implantação incluída) |
 
 ## Validação
 

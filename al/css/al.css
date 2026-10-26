@@ -1,0 +1,124 @@
+/* Alimentação — tema escuro do hub, amarelo do app, saldo (verde = déficit, vermelho = superávit), macros, campo e listas. */
+:root{
+  --bg:#1B1E21; --surface:#24272B; --line:#3B4147; --fg:#E9ECEF; --muted:#AAB1B8;
+  --yellow:#FFD43B; --yellow-soft:#3A3416; --on-yellow:#1B1E21;
+  --green:#4CCB78; --green-soft:#1E392A;
+  --red:#F06A61; --red-soft:#402624;
+  --prot:#6E9BFF; --carb:#FFD43B; --gord:#F0915F;
+  --display:'Barlow Condensed','Arial Narrow','Roboto Condensed',sans-serif;
+  --body:'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --r:14px;
+  color-scheme:dark;   /* só tema escuro, mesmo com o celular no modo claro */
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg);color:var(--fg)}
+body{margin:0;font-family:var(--body);font-size:1rem;line-height:1.4;-webkit-tap-highlight-color:transparent}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+p{margin:0}
+.wrap{max-width:560px;margin:0 auto;padding:max(12px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
+.view{display:flex;flex-direction:column;gap:12px}
+h1{font-family:var(--display);font-weight:700;font-size:1.8rem;line-height:1.05;margin:0}
+h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:500;margin:8px 0 0}
+.cartao{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.btn{border-radius:12px;border:1px solid var(--line);background:var(--surface);padding:12px 16px;font-weight:600;min-height:48px;flex:1 1 0}
+.btn.primario{background:var(--yellow);border-color:var(--yellow);color:var(--on-yellow)}
+.linha{display:flex;gap:8px}
+.erro{color:var(--red);font-size:.875rem;min-height:1.2em}
+.bt-ic{display:grid;place-items:center;width:36px;height:36px;padding:0;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--muted);flex:none}
+.bt-ic:disabled{opacity:.35}
+.bt-ic.perigo.armado{border-color:var(--red);background:var(--red);color:var(--bg)}
+.icon-btn{text-decoration:none;width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);display:grid;place-items:center;flex:none}
+
+/* ---------- Login (só fora do hub) ---------- */
+.login fieldset{display:flex;flex-direction:column;gap:10px;margin:40px 0 0;padding:0;border:0}
+.login input{padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+
+/* ---------- Topo e dia ---------- */
+.topo{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-top:6px}
+.dia-nav{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dia-nav b{font-weight:600;text-transform:capitalize}
+
+/* ---------- Saldo ---------- */
+.saldo{display:flex;flex-direction:column;gap:6px}
+.saldo-num{display:flex;align-items:baseline;gap:6px}
+.saldo-num b{font-family:var(--display);font-size:3.4rem;line-height:1;font-weight:700;font-variant-numeric:tabular-nums}
+.saldo-num small{color:var(--muted)}
+.saldo-num span{margin-left:auto;font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:.8rem}
+.saldo.deficit{border-color:var(--green);background:linear-gradient(160deg,var(--green-soft),var(--surface) 70%)}
+.saldo.deficit .saldo-num b,.saldo.deficit .saldo-num span{color:var(--green)}
+.saldo.superavit{border-color:var(--red);background:linear-gradient(160deg,var(--red-soft),var(--surface) 70%)}
+.saldo.superavit .saldo-num b,.saldo.superavit .saldo-num span{color:var(--red)}
+.saldo-conta{font-weight:500}
+.saldo-gasto{color:var(--muted);font-size:.8rem}
+.chip-bt{align-self:flex-start;margin-top:4px;border:1px solid var(--line);border-radius:999px;background:transparent;padding:6px 12px;font-size:.875rem;color:var(--muted)}
+.chip-bt[aria-pressed="true"]{border-color:var(--yellow);background:var(--yellow-soft);color:var(--yellow);font-weight:600}
+
+/* ---------- Macros ---------- */
+.m-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.m-cols p{display:flex;flex-direction:column}
+.m-cols b{font-family:var(--display);font-size:1.7rem;line-height:1;font-weight:700}
+.m-cols b small{font-size:.9rem;color:var(--muted);margin-left:2px}
+.m-cols span{font-size:.8rem;color:var(--muted)}
+.m-cols i{font-size:.8rem}
+.m-cols .m-prot b{color:var(--prot)} .m-cols .m-carb b{color:var(--carb)} .m-cols .m-gord b{color:var(--gord)}
+.m-barra{display:flex;height:6px;margin-top:10px;border-radius:6px;background:var(--line);overflow:hidden}
+.m-barra .m-prot{background:var(--prot)} .m-barra .m-carb{background:var(--carb)} .m-barra .m-gord{background:var(--gord)}
+
+/* ---------- O que comi ---------- */
+.comer{display:flex;gap:8px}
+.comer input{flex:1;min-width:0;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.comer input:focus{outline:none;border-color:var(--yellow)}
+.bt-enviar{width:52px;border:0;border-radius:12px;background:var(--yellow);color:var(--on-yellow);display:grid;place-items:center;flex:none}
+.bt-enviar:disabled{opacity:.5}
+.sugestoes{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.sugestoes:empty{display:none}
+.sug{display:flex;gap:6px;align-items:baseline;border:1px solid var(--line);border-radius:999px;background:var(--surface);padding:6px 12px;font-size:.875rem;max-width:100%}
+.sug b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sug span{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sug i{color:var(--yellow);font-style:normal;white-space:nowrap}
+.carregando{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.875rem}
+.spin{width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--yellow);border-radius:50%;animation:girar .8s linear infinite}
+@keyframes girar{to{transform:rotate(360deg)}}
+
+/* ---------- Prévia ---------- */
+.previa{display:flex;flex-direction:column;gap:12px;border-color:var(--yellow)}
+.previa ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.previa li{display:flex;flex-direction:column;gap:6px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.previa input{width:100%;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.p-nome{display:grid;grid-template-columns:1fr auto;gap:6px}
+.p-nome [data-campo="porcao"]{grid-column:1/-1;grid-row:2}   /* porção numa linha só dela: "2 unidades (~100 g)" inteira */
+.p-num{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.p-num label{display:flex;flex-direction:column;gap:2px;font-size:.75rem;color:var(--muted)}
+
+/* ---------- Lista do dia ---------- */
+.lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.lista li{display:grid;grid-template-columns:3em 1fr auto auto;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 10px 10px 12px}
+.l-hora{color:var(--muted);font-size:.8rem;font-style:italic}
+.l-txt{display:flex;flex-direction:column;min-width:0}
+.l-txt b{font-weight:600}
+.l-txt small{color:var(--muted);font-size:.8rem}
+.l-txt .l-mac{font-size:.75rem}
+.l-kcal{font-family:var(--display);font-weight:700;font-size:1.3rem;text-align:right;line-height:1}
+.l-kcal small{display:block;font-family:var(--body);font-weight:400;font-size:.7rem;color:var(--muted)}
+.l-acoes{display:flex;gap:4px;align-items:center}
+.l-acoes select{height:36px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:0 4px}
+
+/* ---------- Últimos 7 dias ---------- */
+.sem-lista{list-style:none;margin:0;padding:0}
+.sem-lista button{display:grid;grid-template-columns:1fr auto 5em;gap:8px;width:100%;padding:8px 0;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;font-size:.9rem}
+.sem-lista li:last-child button{border-bottom:0}
+.sem-lista li.visto span:first-child{color:var(--yellow);font-weight:600}
+.sem-lista span:first-child{text-transform:capitalize}
+.sem-lista b{text-align:right}
+.bom{color:var(--green)} .ruim{color:var(--red)}
+.sem-media{margin-top:8px;font-size:.9rem}
+
+/* ---------- Avisos ---------- */
+.sync{font-size:.8rem;color:var(--muted);text-align:center;margin-top:12px}
+.sync.erro{color:var(--red)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:calc(100% - 32px);background:#30353A;border:1px solid var(--line);border-radius:12px;padding:10px 16px;box-shadow:0 10px 30px rgba(0,0,0,.4);font-size:.9rem;z-index:10}
+.toast.erro{border-color:var(--red);color:var(--red)}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
