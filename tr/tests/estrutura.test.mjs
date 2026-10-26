@@ -73,6 +73,14 @@ test('migrations no formato do DataGrip e RLS só do dono em todas as tabelas tr
   }
 });
 
+test('exercício incluído por migration tem a descrição e a posição no GUIA (js/config.js)', () => {
+  const config = ler('js/config.js');
+  // linhas de tr_variacao: (user_id, id, exercicio_id, ordem, nome, unidade, …)
+  const nomes = listar('migrations', '.sql').flatMap(f => [...ler(f).matchAll(/'[\w]+', '[\w]+', [0-2], '([^']+)', '(?:kg|lb|nível)'/g)].map(m => m[1]));
+  assert.deepEqual(nomes, ['Elevação pélvica na máquina', 'Elevação pélvica no Smith', 'Elevação pélvica com halter']);
+  for (const nome of nomes) assert.ok(config.includes(`'${nome.toLowerCase()}': [`), `${nome} sem GUIA`);
+});
+
 test('nenhum segredo no repositório; a chave do Supabase é a publicável', () => {
   const textos = ['index.html', 'sw.js', 'AGENTS.md', ...listar('js', '.js'), ...listar('docs', '.md'), ...listar('migrations', '.sql')];
   for (const f of textos) assert.doesNotMatch(ler(f), /service_role|sb_secret_/, f);
