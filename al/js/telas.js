@@ -14,13 +14,18 @@ function desenhar() {
   pintarSaldo(); pintarMacros(); pintarSugestoes(); pintarPrevia(); pintarLista(); pintarSemana();
 }
 
+// Hoje: quanto ainda cabe até a meta (restam) ou quanto passou dela; o gasto só fecha no fim do dia.
+// Dias passados: o saldo final (comido − gasto), déficit ou superávit.
 function pintarSaldo() {
-  const { gasto: g, comido: c, saldo } = saldoDoDia(diaVisto);
-  $('saldo').className = 'cartao saldo' + (saldo == null ? '' : saldo <= 0 ? ' deficit' : ' superavit');
-  $('s-valor').textContent = saldo == null ? '—' : (saldo > 0 ? '+' : saldo < 0 ? '−' : '') + inteiro(Math.abs(saldo));
-  $('s-rotulo').textContent = saldo == null ? '' : saldo <= 0 ? 'déficit' : 'superávit';
-  $('s-conta').textContent = g ? `Comi ${inteiro(c.kcal)} · Gastei ${inteiro(g.total)}` : `Comi ${inteiro(c.kcal)} · Sem pesagem no Corpo para calcular o gasto`;
-  $('s-gasto').textContent = g ? `Basal ${inteiro(g.basal)} × ${String(FATOR_ATIVIDADE).replace('.', ',')} = ${inteiro(g.rotina)}${g.treino ? ` · Treino +${inteiro(g.treino)}` : ''}${g.caminhada ? ` · Caminhada +${inteiro(g.caminhada.kcal)}` : ''} · ${umaCasa(g.peso)} kg` : '';
+  const { gasto: g, comido: c, saldo } = saldoDoDia(diaVisto), meta = metaDoDia(diaVisto), aberto = diaVisto === hoje();
+  const resto = meta ? meta.kcal - c.kcal : null;
+  const bom = aberto ? resto != null && resto >= 0 : saldo != null && saldo <= 0;
+  $('saldo').className = 'cartao saldo' + (!g ? '' : bom ? ' deficit' : ' superavit');
+  $('s-valor').textContent = !g ? '—' : aberto ? inteiro(Math.abs(resto)) : (saldo > 0 ? '+' : saldo < 0 ? '−' : '') + inteiro(Math.abs(saldo));
+  $('s-rotulo').textContent = !g ? '' : aberto ? (resto >= 0 ? 'restam' : 'passou') : saldo <= 0 ? 'déficit' : 'superávit';
+  $('s-conta').textContent = !g ? `Comi ${inteiro(c.kcal)} · Sem pesagem no Corpo para calcular o gasto`
+    : aberto ? `Meta ${inteiro(meta.kcal)} · Comi ${inteiro(c.kcal)}` : `Comi ${inteiro(c.kcal)} · Gastei ${inteiro(g.total)} · Meta ${inteiro(meta.kcal)}`;
+  $('s-gasto').textContent = g ? `Gasto ${inteiro(g.total)} − ${inteiro(DEFICIT_META)} de déficit = meta · Basal ${inteiro(g.basal)} × ${String(FATOR_ATIVIDADE).replace('.', ',')} = ${inteiro(g.rotina)}${g.treino ? ` · Treino +${inteiro(g.treino)}` : ''}${g.caminhada ? ` · Caminhada +${inteiro(g.caminhada.kcal)}` : ''} · ${umaCasa(g.peso)} kg` : '';
   $('andei').hidden = !g;
   $('andei').setAttribute('aria-pressed', String(!!g?.caminhada));
   $('andei-campos').hidden = !g?.caminhada;
@@ -33,12 +38,17 @@ function pintarSaldo() {
   }
 }
 
+// Macros do dia contra a meta: gramas comidas / meta, quanto falta ou quanto passou, e a barra de cada um
 function pintarMacros() {
-  const c = comidoNoDia(diaVisto), kc = { prot: c.prot * 4, carb: c.carb * 4, gord: c.gord * 9 }, soma = kc.prot + kc.carb + kc.gord;
-  const pct = k => soma ? Math.round(kc[k] / soma * 100) : 0;
+  const c = comidoNoDia(diaVisto), meta = metaDoDia(diaVisto);
   const M = [['prot', 'Proteína'], ['carb', 'Carboidrato'], ['gord', 'Gordura']];
-  $('macros').innerHTML = `<div class="m-cols">${M.map(([k, nome]) => `<p class="m-${k}"><b>${inteiro(c[k])}<small>g</small></b><span>${nome}</span><i>${pct(k)}%</i></p>`).join('')}</div>
-    <div class="m-barra" aria-hidden="true">${soma ? M.map(([k]) => `<span class="m-${k}" style="width:${kc[k] / soma * 100}%"></span>`).join('') : ''}</div>`;
+  $('macros').innerHTML = M.map(([k, nome]) => {
+    const alvo = meta?.[k], dif = alvo != null ? alvo - c[k] : null;
+    return `<div class="m-linha m-${k}">
+      <p><span>${nome}</span> <b>${inteiro(c[k])}${alvo != null ? ` <small>/ ${inteiro(alvo)} g</small>` : ' <small>g</small>'}</b> ${dif == null ? '' : `<i class="${dif >= 0 ? '' : 'ruim'}">${dif >= 0 ? `faltam ${inteiro(dif)} g` : `passou ${inteiro(-dif)} g`}</i>`}</p>
+      ${alvo ? `<div class="m-barra" aria-hidden="true"><span style="width:${Math.min(100, c[k] / alvo * 100)}%"></span></div>` : ''}
+    </div>`;
+  }).join('');
 }
 
 // Sugestões enquanto digita (comidas salvas parecidas); com o campo vazio, as mais usadas.
@@ -78,15 +88,16 @@ function pintarLista() {
   </li>`).join('');
 }
 
-// Últimos 7 dias até hoje (desde o 1º dia do app): comido e saldo de cada um (o dia mostrado em destaque), e a média dos dias com comida
+// Últimos 7 dias até hoje (desde o 1º dia do app): comido e saldo de cada um (o dia mostrado em destaque). Hoje ainda não
+// fechou: sem saldo e fora da média, que é só dos dias fechados com comida registrada.
 function pintarSemana() {
   const dias = Array.from({ length: 7 }, (_, i) => somaDias(hoje(), -i)).filter(d => d >= inicio());
-  const S = dias.map(d => ({ d, ...saldoDoDia(d) }));
+  const S = dias.map(d => ({ d, ...saldoDoDia(d) })).map(s => s.d === hoje() ? { ...s, saldo: null } : s);
   const comDados = S.filter(s => s.comido.kcal > 0 && s.saldo != null);
   const media = comDados.length ? Math.round(comDados.reduce((t, s) => t + s.saldo, 0) / comDados.length) : null;
   const sinal = v => (v > 0 ? '+' : v < 0 ? '−' : '') + inteiro(Math.abs(v));
   $('semana').innerHTML = `<ul class="sem-lista">${S.map(s => `<li class="${s.d === diaVisto ? 'visto' : ''}"><button type="button" data-dia="${s.d}"><span>${nomeDoDia(s.d)}</span> <span>${s.comido.kcal ? inteiro(s.comido.kcal) + ' kcal' : '—'}</span> <b class="${s.saldo == null || !s.comido.kcal ? '' : s.saldo <= 0 ? 'bom' : 'ruim'}">${s.saldo == null || !s.comido.kcal ? '' : sinal(s.saldo)}</b></button></li>`).join('')}</ul>
-    ${media == null ? '' : `<p class="sem-media">Média ${comDados.length === 1 ? 'de 1 dia' : `de ${comDados.length} dias`}: <b class="${media <= 0 ? 'bom' : 'ruim'}">${sinal(media)} kcal/dia</b></p>`}`;
+    ${media == null ? '' : `<p class="sem-media">Média ${comDados.length === 1 ? 'de 1 dia fechado' : `de ${comDados.length} dias fechados`}: <b class="${media <= 0 ? 'bom' : 'ruim'}">${sinal(media)} kcal/dia</b></p>`}`;
 }
 
 // ===== Interações =====

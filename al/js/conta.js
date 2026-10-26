@@ -29,6 +29,14 @@ function comidoNoDia(dia) {
   for (const r of db.registros) if (r.data === dia) for (const k in t) t[k] += r[k] * r.qtd;
   return { kcal: Math.round(t.kcal), prot: Math.round(t.prot), carb: Math.round(t.carb), gord: Math.round(t.gord) };
 }
+// Meta do dia: kcal = gasto − déficit planejado (sobe junto com treino e caminhada); proteína por kg de peso,
+// gordura em % das kcal e carboidrato com o que sobra. Sem pesagem, sem meta.
+function metaDoDia(dia) {
+  const g = gastoDoDia(dia);
+  if (!g) return null;
+  const kcal = Math.max(0, g.total - DEFICIT_META), prot = Math.round(PROT_G_KG * g.peso), gord = Math.round(kcal * GORD_PCT / 9);
+  return { kcal, prot, gord, carb: Math.max(0, Math.round((kcal - prot * 4 - gord * 9) / 4)) };
+}
 // saldo < 0 = déficit (comi menos do que gastei)
 function saldoDoDia(dia) {
   const g = gastoDoDia(dia), c = comidoNoDia(dia);

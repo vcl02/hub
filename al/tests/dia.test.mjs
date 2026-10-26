@@ -12,25 +12,25 @@ const descrever = async (pg, frase) => { await pg.fill('#f-texto', frase); await
 
 test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei" soma a caminhada (padrão, minutos e/ou km) e vai para a nuvem', async () => {
   const { ctx, pg, nuvem, erros } = await abrirApp({ nuvem: comTreino(novaNuvem()) });
-  // basal 1998 × 1,2 = 2398 · treino 1 h: (3,5 − 1) × 1998 ÷ 24 = 208 · nada comido
-  assert.equal(await texto(pg, '#s-valor'), '−2.606');
-  assert.equal(await texto(pg, '#s-rotulo'), 'déficit');
+  // basal 1998 × 1,2 = 2398 · treino 1 h: (3,5 − 1) × 1998 ÷ 24 = 208 · gasto 2606 − 500 de déficit = meta 2106 · nada comido
+  assert.equal(await texto(pg, '#s-valor'), '2.106');
+  assert.equal(await texto(pg, '#s-rotulo'), 'restam');                // hoje: quanto ainda cabe, não o déficit do dia inteiro
   assert.match(await pg.getAttribute('#saldo', 'class'), /deficit/);
-  assert.equal(await texto(pg, '#s-conta'), 'Comi 0 · Gastei 2.606');
-  assert.equal(await texto(pg, '#s-gasto'), 'Basal 1.998 × 1,2 = 2.398 · Treino +208 · 100 kg');
+  assert.equal(await texto(pg, '#s-conta'), 'Meta 2.106 · Comi 0');
+  assert.equal(await texto(pg, '#s-gasto'), 'Gasto 2.606 − 500 de déficit = meta · Basal 1.998 × 1,2 = 2.398 · Treino +208 · 100 kg');
   assert.equal(await texto(pg, '#andei'), 'Andei');
   assert.equal(await pg.isVisible('#andei-campos'), false);
   await pg.click('#andei');
   assert.equal(await pg.getAttribute('#andei', 'aria-pressed'), 'true');
   // Padrão 20 min a 5 km/h: MET (0,1 × 83,3 + 3,5) ÷ 3,5 = 3,38 · (3,38 − 1) × 1998 ÷ 24 × 20/60 = 66
   assert.equal(await texto(pg, '#c-kcal'), '−66 kcal');
-  assert.equal(await texto(pg, '#s-valor'), '−2.672');
+  assert.equal(await texto(pg, '#s-valor'), '2.172');               // a caminhada sobe o gasto e a meta junto
   assert.match(await texto(pg, '#s-gasto'), /Caminhada \+66/);
   await pg.fill('#c-min', '40'); await pg.press('#c-min', 'Enter'); await pg.locator('#c-min').blur();
   assert.equal(await texto(pg, '#c-kcal'), '−132 kcal');            // 40 min a 5 km/h
   await pg.fill('#c-km', '3'); await pg.locator('#c-km').blur();
   assert.equal(await texto(pg, '#c-kcal'), '−119 kcal');            // 3 km em 40 min = 4,5 km/h: MET 3,14
-  assert.equal(await texto(pg, '#s-valor'), '−2.725');
+  assert.equal(await texto(pg, '#s-valor'), '2.225');
   await pg.fill('#c-min', ''); await pg.locator('#c-min').blur();
   assert.equal(await texto(pg, '#c-kcal'), '−119 kcal');            // só km: 3 km a 5 km/h = 36 min, mesmo gasto líquido
   await pg.fill('#c-min', '40'); await pg.locator('#c-min').blur();
@@ -40,7 +40,7 @@ test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei" soma a camin
   await pg.waitForSelector('#v-dia:not([hidden])');
   assert.equal(await pg.inputValue('#c-min'), '40'); assert.equal(await pg.inputValue('#c-km'), '3');
   await pg.click('#andei');                                      // desmarcar apaga a linha do dia
-  assert.equal(await texto(pg, '#s-valor'), '−2.606');
+  assert.equal(await texto(pg, '#s-valor'), '2.106');
   assert.equal(await pg.isVisible('#andei-campos'), false);
   await sincronizado(pg);
   assert.deepEqual(nuvem.tabelas.al_dia, []);
@@ -70,9 +70,12 @@ test('IA: a frase vira itens na prévia, dá pra corrigir antes de adicionar e o
   assert.equal(await pg.inputValue('#f-texto'), '');
   assert.equal(await pg.locator('#lista li').count(), 2);
   assert.match(await texto(pg, '#lista li:first-child'), /^15:30 Ovo mexido 2 unidades \(~100 g\) P 12,5 · C 1,2 · G 14 180 kcal/);
-  // 180 + 140 = 320 comidos · 320 − 2606 = −2286
-  assert.equal(await texto(pg, '#s-valor'), '−2.286');
-  assert.equal(await texto(pg, '#macros .m-prot b'), '17g');   // 12,5 + 4,7
+  // 180 + 140 = 320 comidos · meta 2106 − 320 = 1786 restam
+  assert.equal(await texto(pg, '#s-valor'), '1.786');
+  // Metas: proteína 1,6 × 100 kg = 160 g · gordura 25% de 2106 ÷ 9 = 59 g · carboidrato (2106 − 640 − 531) ÷ 4 = 234 g
+  assert.equal(await texto(pg, '#macros .m-prot p'), 'Proteína 17 / 160 g faltam 143 g');   // 12,5 + 4,7
+  assert.equal(await texto(pg, '#macros .m-carb p'), 'Carboidrato 31 / 234 g faltam 203 g');
+  assert.equal(await texto(pg, '#macros .m-gord p'), 'Gordura 16 / 59 g faltam 43 g');
   await sincronizado(pg);
   assert.deepEqual(nuvem.tabelas.al_item.map(i => [i.nome, i.kcal, i.usos]).sort(), [['Ovo mexido', 180, 1], ['Pão francês', 140, 1]]);
   assert.equal(nuvem.tabelas.al_registro.length, 2);
@@ -84,10 +87,25 @@ test('IA: a frase vira itens na prévia, dá pra corrigir antes de adicionar e o
   await descrever(pg, 'pão FRANCES');
   assert.equal(await pg.locator('#lista li').count(), 4);
   assert.equal(nuvem.chamadasIA, 1);
-  assert.equal(await texto(pg, '#s-valor'), '−1.966');   // 320 × 2 − 2606
+  assert.equal(await texto(pg, '#s-valor'), '1.466');   // 2106 − 320 × 2
   // Campo vazio: as mais usadas
   assert.deepEqual(await pg.$$eval('#f-sugestoes b', bs => bs.map(b => b.textContent)), ['Ovo mexido', 'Pão francês']);
   assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test('hoje passou da meta: mostra quanto passou (vermelho), e os macros que passaram; dia passado mostra o saldo final', async () => {
+  const nuvem = comTreino(novaNuvem());
+  nuvem.ia = iaCom({ nome: 'Rodízio', porcao: '1 noite', kcal: 3000, prot: 150, carb: 300, gord: 120 });
+  const { ctx, pg } = await abrirApp({ nuvem });
+  await descrever(pg, 'rodízio de pizza');
+  await pg.click('#p-adicionar');
+  assert.equal(await texto(pg, '#s-valor'), '894');                    // 3000 − 2106
+  assert.equal(await texto(pg, '#s-rotulo'), 'passou');
+  assert.match(await pg.getAttribute('#saldo', 'class'), /superavit/);
+  assert.equal(await texto(pg, '#macros .m-gord i'), 'passou 61 g');   // 120 − 59
+  assert.match(await pg.getAttribute('#macros .m-gord i', 'class'), /ruim/);
+  assert.equal(await pg.evaluate(() => document.querySelector('#macros .m-gord .m-barra span').style.width), '100%');
   await ctx.close();
 });
 
@@ -145,7 +163,8 @@ test('dias anteriores: ‹ e os últimos 7 dias mostram o dia, com saldo e médi
   assert.equal(await pg.isDisabled('#d-prox'), true);
   // 13/09: 23 anos, basal 2003 × 1,2 = 2404, sem treino · 1100 − 2404 = −1304
   assert.match(await texto(pg, '#semana li:nth-child(2)'), /^Ontem 1\.100 kcal −1\.304$/);
-  assert.equal(await texto(pg, '#semana .sem-media'), 'Média de 1 dia: −1.304 kcal/dia');
+  assert.equal(await texto(pg, '#semana .sem-media'), 'Média de 1 dia fechado: −1.304 kcal/dia');   // hoje ainda não fechou: fora da média
+  assert.match(await texto(pg, '#semana li:nth-child(1)'), /^Hoje —$/);
   assert.equal(await pg.locator('#semana li').count(), 2);   // começou ontem: nada antes
   await pg.click('#d-ant');
   assert.equal(await texto(pg, '#d-nome'), 'Ontem');

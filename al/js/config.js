@@ -27,3 +27,8 @@ const FATOR_ATIVIDADE = 1.2;
 const CAMINHADA_MIN_PADRAO = 20;   // "Andei" sem tempo nem distância
 const VELOCIDADE_PADRAO = 5;       // km/h, quando só o tempo ou só a distância é informado
 const QTDS = [0.5, 1, 1.5, 2, 3];   // porções rápidas (× a porção salva)
+
+// ===== Metas do dia (perder gordura mantendo músculo) =====
+const DEFICIT_META = 500;   // kcal/dia abaixo do gasto: ~0,5 kg de gordura por semana
+const PROT_G_KG = 1.6;      // proteína em g por kg de peso
+const GORD_PCT = 0.25;      // gordura: 25% das kcal da meta; carboidrato fica com o resto

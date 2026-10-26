@@ -62,16 +62,18 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 .chip-bt{align-self:flex-start;border:1px solid var(--line);border-radius:999px;background:transparent;padding:6px 12px;font-size:.875rem;color:var(--muted)}
 .chip-bt[aria-pressed="true"]{border-color:var(--yellow);background:var(--yellow-soft);color:var(--yellow);font-weight:600}
 
-/* ---------- Macros ---------- */
-.m-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.m-cols p{display:flex;flex-direction:column}
-.m-cols b{font-family:var(--display);font-size:1.7rem;line-height:1;font-weight:700}
-.m-cols b small{font-size:.9rem;color:var(--muted);margin-left:2px}
-.m-cols span{font-size:.8rem;color:var(--muted)}
-.m-cols i{font-size:.8rem}
-.m-cols .m-prot b{color:var(--prot)} .m-cols .m-carb b{color:var(--carb)} .m-cols .m-gord b{color:var(--gord)}
-.m-barra{display:flex;height:6px;margin-top:10px;border-radius:6px;background:var(--line);overflow:hidden}
-.m-barra .m-prot{background:var(--prot)} .m-barra .m-carb{background:var(--carb)} .m-barra .m-gord{background:var(--gord)}
+/* ---------- Macros (contra a meta do dia) ---------- */
+.macros{display:flex;flex-direction:column;gap:10px}
+.m-linha p{display:flex;align-items:baseline;gap:8px}
+.m-linha span{font-size:.875rem;color:var(--muted);min-width:6.2em}
+.m-linha b{font-family:var(--display);font-size:1.35rem;line-height:1;font-weight:700}
+.m-linha b small{font-family:var(--body);font-size:.8rem;color:var(--muted);font-weight:400}
+.m-linha i{margin-left:auto;font-size:.8rem;font-style:normal;color:var(--muted)}
+.m-linha i.ruim{color:var(--red)}
+.m-prot b{color:var(--prot)} .m-carb b{color:var(--carb)} .m-gord b{color:var(--gord)}
+.m-barra{height:6px;margin-top:6px;border-radius:6px;background:var(--line);overflow:hidden}
+.m-barra span{display:block;height:100%}
+.m-prot .m-barra span{background:var(--prot)} .m-carb .m-barra span{background:var(--carb)} .m-gord .m-barra span{background:var(--gord)}
 
 /* ---------- O que comi ---------- */
 .comer{display:flex;gap:8px}

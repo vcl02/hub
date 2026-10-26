@@ -17,10 +17,13 @@
   - Ao lado dos campos, o efeito no saldo ("−66 kcal"). Esteira dentro do horário de um treino do Treino já conta no treino: lance só a caminhada fora dele.
 - **Gasto** = rotina + treino + caminhada (se marcada). Valores arredondados para kcal inteiras em cada parte.
 
-## Saldo
+## Meta, saldo e macros
 
-- Saldo = comido − gasto. Negativo ou zero = **déficit** (verde); positivo = **superávit** (vermelho). Número grande com sinal (−2.606), "Comi X · Gastei Y" e a conta do gasto embaixo ("Basal 1.998 × 1,2 = 2.398 · Treino +208 · Caminhada +139 · 100 kg").
-- **Macros do dia:** proteína, carboidrato e gordura em gramas inteiros, com a parte de cada um nas kcal dos macros (4/4/9 kcal por grama) e uma barra.
+- **Meta do dia** = gasto do dia − 500 kcal (déficit planejado, ~0,5 kg de gordura por semana). Sobe junto com treino e caminhada.
+- **Macros da meta:** proteína 1,6 g por kg de peso; gordura 25% das kcal da meta (÷ 9); carboidrato com o resto ((meta − proteína × 4 − gordura × 9) ÷ 4). Arredondados para gramas inteiros.
+- **Hoje** (o dia não fechou): número grande = quanto ainda cabe até a meta, "restam" (verde), ou quanto passou dela, "passou" (vermelho). Embaixo, "Meta X · Comi Y" e a conta ("Gasto 2.606 − 500 de déficit = meta · Basal 1.998 × 1,2 = 2.398 · Treino +208 · Caminhada +66 · 100 kg"). O gasto do dia inteiro não vira déficit antes da hora.
+- **Dia passado:** saldo final = comido − gasto. Negativo ou zero = **déficit** (verde); positivo = **superávit** (vermelho). Embaixo, "Comi X · Gastei Y · Meta Z".
+- **Macros:** cada um com comido / meta em gramas, "faltam X g" ou "passou X g" (vermelho) e a barra até a meta. Sem pesagem no Corpo, sem meta: só as gramas comidas.
 
 ## Registrar o que comi
 
@@ -40,7 +43,7 @@
 ## Dias
 
 - O app começa no 1º dia com algo registrado (comida ou "Andei"); sem nada, hoje. ‹ › trocam o dia mostrado: ‹ para no 1º dia, › para em hoje. Tudo (saldo, macros, lista, "Andei") é do dia mostrado, e o que for adicionado entra nele.
-- **Últimos 7 dias** (até hoje, sem dias antes do 1º dia do app): dia, kcal comidas e saldo de cada um (verde déficit, vermelho superávit; sem comida, sem saldo). Tocar abre o dia. Média do saldo dos dias com comida registrada.
+- **Últimos 7 dias** (até hoje, sem dias antes do 1º dia do app): dia, kcal comidas e saldo final de cada dia fechado (verde déficit, vermelho superávit; sem comida, sem saldo). Hoje não tem saldo nem entra na média, porque ainda não fechou. Tocar abre o dia. Embaixo, a média do saldo dos dias fechados com comida registrada ("Média de 3 dias fechados: −480 kcal/dia").
 - Com o app aberto na virada do dia, ao voltar para ele "Hoje" passa a ser o dia novo.
 
 ## Limites da IA
