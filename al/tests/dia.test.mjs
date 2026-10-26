@@ -18,7 +18,7 @@ test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei hoje" soma a 
   assert.match(await pg.getAttribute('#saldo', 'class'), /deficit/);
   assert.equal(await texto(pg, '#s-conta'), 'Comi 0 · Gastei 2.606');
   assert.equal(await texto(pg, '#s-gasto'), 'Basal 1.998 × 1,2 = 2.398 · Treino +208 · 100 kg');
-  assert.equal(await texto(pg, '#andei'), 'Andei hoje · +139 kcal');   // 40 min: (3,5 − 1) × 1998 ÷ 24 × 40/60
+  assert.equal(await texto(pg, '#andei'), 'Andei hoje · −139 kcal no saldo');   // 40 min: (3,5 − 1) × 1998 ÷ 24 × 40/60
   await pg.click('#andei');
   assert.equal(await pg.getAttribute('#andei', 'aria-pressed'), 'true');
   assert.equal(await texto(pg, '#s-valor'), '−2.745');
@@ -131,7 +131,7 @@ test('dias anteriores: ‹ e os últimos 7 dias mostram o dia, com saldo e médi
   assert.equal(await pg.isDisabled('#d-prox'), false);
   assert.equal(await pg.isDisabled('#d-ant'), true);          // 1º dia do app
   assert.match(await texto(pg, '#lista li'), /^20:00 Pizza/);
-  assert.equal(await texto(pg, '#andei'), 'Andei neste dia · +139 kcal');
+  assert.equal(await texto(pg, '#andei'), 'Andei neste dia · −139 kcal no saldo');
   await pg.click('#semana [data-dia="2026-09-14"]');
   assert.equal(await texto(pg, '#d-nome'), 'Hoje');
   await ctx.close();

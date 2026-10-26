@@ -24,7 +24,7 @@ function pintarSaldo() {
   $('andei').hidden = !g;
   if (g) {
     $('andei').setAttribute('aria-pressed', String(g.andou));
-    $('andei').textContent = `${diaVisto === hoje() ? 'Andei hoje' : 'Andei neste dia'} · +${inteiro(g.caminhada)} kcal`;
+    $('andei').textContent = `${diaVisto === hoje() ? 'Andei hoje' : 'Andei neste dia'} · −${inteiro(g.caminhada)} kcal no saldo`;
   }
 }
 
