@@ -55,7 +55,6 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 .notif{font-size:.875rem;color:var(--muted)}
 .notif .chip-bt{width:100%}
 .notif #n-ligadas{color:var(--cyan);font-weight:600}
-.link{background:none;border:0;padding:0 0 0 8px;color:var(--fg);text-decoration:underline;font-weight:500}
 
 /* ---------- Beber ---------- */
 .beber{display:flex;gap:8px}

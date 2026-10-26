@@ -1,4 +1,4 @@
-// Notificações de verdade: ativar inscreve o aparelho (push simulado no navegador), testar chama a função, e o service
+// Notificações de verdade: ativar inscreve o aparelho (push simulado no navegador) e o service
 // worker mostra a notificação e abre a Água ao tocar (sw.js num contexto falso).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -27,7 +27,7 @@ function pushFalso({ resposta = 'granted', semPush = false } = {}) {
 }
 const visiveis = pg => pg.$$eval('#n-linha > *', L => L.filter(x => !x.hidden).map(x => x.id));
 
-test('ativar: pede permissão, inscreve com a chave da função e grava o aparelho; testar chama a função', async () => {
+test('ativar: pede permissão, inscreve com a chave da função e grava o aparelho; sem botão de testar', async () => {
   const nuvem = novaNuvem();
   const { ctx, pg, erros } = await abrirApp({ nuvem, iniciar: [pushFalso, {}] });
   assert.deepEqual(await visiveis(pg), ['n-ativar']);
@@ -40,12 +40,7 @@ test('ativar: pede permissão, inscreve com a chave da função e grava o aparel
   assert.deepEqual(inscreveu.chave, [4, ...Array.from({ length: 64 }, (_, i) => i + 1)]);   // a chave pública decodificada
   assert.deepEqual(nuvem.tabelas.push_inscricao, [{ user_id: DONO, endpoint: 'https://push.exemplo.test/abc', app: 'agua' }]);
   assert.deepEqual(nuvem.funcao.map(x => [x.metodo, x.busca]), [['GET', '?chave']]);
-  await pg.click('#n-testar');
-  await pg.waitForFunction(() => document.getElementById('toast').textContent.startsWith('Enviada'));
-  assert.equal(await texto(pg, '#toast'), 'Enviada: chega em instantes.');
-  const teste = nuvem.funcao.at(-1);
-  assert.deepEqual([teste.metodo, teste.corpo], ['POST', { acao: 'teste' }]);
-  assert.match(teste.auth, /^Bearer .+\..+\..+/);                       // vai com a sessão do Victor
+  assert.equal(await pg.$('#n-testar'), null);
   assert.deepEqual(erros, []);
   await ctx.close();
 });

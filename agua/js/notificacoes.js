@@ -1,6 +1,6 @@
 'use strict';
 // Notificações de verdade (Web Push): inscreve este aparelho (push_inscricao) com a chave pública da função agua-lembrete,
-// mostra se estão ligadas e manda um teste. Navegador sem push (ou iPhone fora da tela inicial): a linha some.
+// e mostra se estão ligadas. Navegador sem push (ou iPhone fora da tela inicial): a linha some.
 const FUNCAO_PUSH = 'agua-lembrete';
 const pushSuportado = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 const deB64url = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - s.length % 4) % 4)), c => c.charCodeAt(0));
@@ -29,9 +29,4 @@ async function ativarNotificacoes() {
   } catch (e) { toast('Não consegui ligar as notificações.', true); }
   pintarNotificacoes();
 }
-async function testarNotificacao() {
-  const { data, error } = await sb.functions.invoke(FUNCAO_PUSH, { body: { acao: 'teste' } });
-  toast(error ? 'O teste falhou.' : data?.enviados ? 'Enviada: chega em instantes.' : 'Nenhum aparelho inscrito.', !!error || !data?.enviados);
-}
 $('n-ativar').addEventListener('click', ativarNotificacoes);
-$('n-testar').addEventListener('click', testarNotificacao);

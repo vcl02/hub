@@ -24,7 +24,7 @@
 ## Notificações
 
 - Notificação de verdade (chega com o app fechado) nos mesmos horários dos lembretes, só se ainda não bebeu água de 30 min antes do horário até a hora do envio (no minuto 1 de cada hora). Texto: "Hora de beber água · Toque para registrar."; tocar abre a Água (ou volta para ela).
-- Embaixo dos lembretes: **Ativar notificações** (pede a permissão e inscreve este aparelho). Ligadas: "Notificações ligadas" e **Testar** (manda uma agora, a qualquer hora). Permissão negada: "Notificações bloqueadas nas configurações do celular". Navegador sem notificação (iPhone fora da tela de início): a linha não aparece.
+- Embaixo dos lembretes: **Ativar notificações** (pede a permissão e inscreve este aparelho). Ligadas: "Notificações ligadas". Permissão negada: "Notificações bloqueadas nas configurações do celular". Navegador sem notificação (iPhone fora da tela de início): a linha não aparece.
 - Cada aparelho ativado recebe; aparelho que o navegador desinscreveu sai sozinho da lista.
 
 ## Bexiga
