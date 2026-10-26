@@ -99,31 +99,47 @@ test('histórico: editar data, horário, peso e barriga (1 por dia), apagar com 
   await ctx.close();
 });
 
-test('evacuou: Sim ou Não no dia escolhido, salva no toque, tocar de novo desmarca; mostra a última e avisa com 3 dias sem', async () => {
+test('evacuação: +1 grava com o horário de agora, conta, tira com toque duplo e mostra a última', async () => {
   const nuvem = novaNuvem();
-  nuvem.tabelas.corpo_dia.push({ user_id: DONO, data: '2026-10-19', evacuou: true }, { user_id: DONO, data: '2026-10-20', evacuou: false });
-  const { ctx, pg, erros } = await abrirApp({ nuvem });                 // 22/10
-  assert.equal(await texto(pg, '#ev-rotulo'), 'Evacuou hoje');
-  assert.equal(await pg.getAttribute('#ev-sim', 'aria-pressed'), 'false');
-  assert.equal(await pg.getAttribute('#ev-nao', 'aria-pressed'), 'false');
+  nuvem.tabelas.corpo_dia.push({ user_id: DONO, data: '2026-10-19', evacuou: null, evacuacoes: [''], sono: null });   // o sim da migration 01, já convertido pela 02
+  const { ctx, pg, erros } = await abrirApp({ nuvem });                 // 22/10, 08:00
+  assert.equal(await texto(pg, '#ev-total'), '0');
   assert.equal(await texto(pg, '#ev-ultima'), 'Última: há 3 dias (19/10)');
   assert.match(await pg.getAttribute('#ev-ultima', 'class'), /alerta/);
-  await pg.click('#ev-sim');
-  assert.equal(await pg.getAttribute('#ev-sim', 'aria-pressed'), 'true');
-  assert.equal(await texto(pg, '#ev-ultima'), 'Última: hoje');
+  await pg.click('#ev-mais');
+  await pg.clock.fastForward('06:30:00'); await pg.click('#ev-mais');   // 14:30
+  assert.equal(await texto(pg, '#ev-total'), '2');
+  assert.deepEqual(await pg.$$eval('#ev-horas button', B => B.map(b => b.textContent)), ['08:00 ×', '14:30 ×']);
+  assert.equal(await texto(pg, '#ev-ultima'), 'Última: hoje 14:30');
   assert.doesNotMatch(await pg.getAttribute('#ev-ultima', 'class'), /alerta/);
-  await pg.fill('#c-data', '2026-10-20'); await pg.dispatchEvent('#c-data', 'change');   // outro dia: o que foi marcado nele
-  assert.equal(await texto(pg, '#ev-rotulo'), 'Evacuou neste dia');
-  assert.equal(await pg.getAttribute('#ev-nao', 'aria-pressed'), 'true');
-  await pg.click('#ev-nao');                                              // tocar de novo desmarca
-  assert.equal(await pg.getAttribute('#ev-nao', 'aria-pressed'), 'false');
+  await pg.click('[data-tirar-ev="0"]');
+  assert.equal(await texto(pg, '#ev-total'), '2');                       // 1º toque só arma
+  await pg.click('[data-tirar-ev="0"]');
+  assert.deepEqual(await pg.$$eval('#ev-horas button', B => B.map(b => b.textContent)), ['14:30 ×']);
+  await pg.fill('#c-data', '2026-10-20'); await pg.dispatchEvent('#c-data', 'change');   // outro dia: também o horário de agora
+  await pg.fill('#c-hora', '21:15'); await pg.click('#ev-mais');
+  assert.deepEqual(await pg.$$eval('#ev-horas button', B => B.map(b => b.textContent)), ['14:30 ×']);
   await sincronizado(pg);
-  assert.deepEqual(nuvem.tabelas.corpo_dia.map(x => [x.data, x.evacuou]).sort(), [['2026-10-19', true], ['2026-10-22', true]]);
-  assert.equal(nuvem.tabelas.corpo_medida.length, 0);                     // evacuou não mexe nas pesagens
+  assert.deepEqual(nuvem.tabelas.corpo_dia.map(x => [x.data, x.evacuacoes, x.evacuou]).sort(),
+    [['2026-10-19', [''], null], ['2026-10-20', ['14:30'], null], ['2026-10-22', ['14:30'], null]]);
+  assert.equal(nuvem.tabelas.corpo_medida.length, 0);                     // não mexe nas pesagens
   assert.deepEqual(erros, []); await ctx.close();
 });
 
-test('sem a tabela corpo_dia (migration 01 não aplicada): pesagens funcionam e "Evacuou" some, sem erro', async () => {
+test('sono: horas do dia escolhido (vírgula aceita), vazio tira; dia sem sono nem evacuação some', async () => {
+  const { ctx, pg, nuvem } = await abrirApp();
+  await pg.fill('#d-sono', '7,5'); await pg.locator('#d-sono').blur();
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.corpo_dia.map(x => [x.data, x.sono, x.evacuacoes]), [['2026-10-22', 7.5, []]]);
+  await pg.fill('#d-sono', '30'); await pg.locator('#d-sono').blur();
+  assert.equal(await texto(pg, '#toast'), 'Sono em horas, de 0 a 24');
+  await pg.fill('#d-sono', ''); await pg.locator('#d-sono').blur();
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.corpo_dia, []);
+  await ctx.close();
+});
+
+test('sem a tabela corpo_dia (ou sem as colunas da migration 02): pesagens funcionam e o cartão do dia some, sem erro', async () => {
   const nuvem = novaNuvem();
   delete nuvem.tabelas.corpo_dia;                                          // o falso responde 404, como o PostgREST sem a tabela
   const { ctx, pg, erros } = await abrirApp({ nuvem });
@@ -145,9 +161,9 @@ test('cópia do aparelho da versão anterior (base só com pesagens) continua si
   }, DONO);
   await pg.reload(); await pg.waitForSelector('#v-corpo:not([hidden])');
   assert.match(await texto(pg, '#c-historico'), /91 kg/);
-  await pg.click('#ev-sim');
+  await pg.click('#ev-mais');
   await sincronizado(pg);
-  assert.deepEqual(nuvem.tabelas.corpo_dia.map(x => [x.data, x.evacuou]), [['2026-10-22', true]]);
+  assert.deepEqual(nuvem.tabelas.corpo_dia.map(x => [x.data, x.evacuacoes]), [['2026-10-22', ['08:00']]]);
   assert.equal(nuvem.tabelas.corpo_medida.length, 1);                     // nada apagado nem duplicado
   await ctx.close();
 });

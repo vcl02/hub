@@ -1,5 +1,5 @@
 'use strict';
-// Tela do corpo: peso atual (IMC, faixa, quanto falta, variação, barriga), perfil, nova medida, evacuou, gráficos e histórico.
+// Tela do corpo: peso atual (IMC, faixa, quanto falta, variação, barriga), perfil, nova medida, sono e evacuações, gráficos e histórico.
 // IMC = peso / altura² · faixas da OMS para adultos, com os graus de magreza e de obesidade: [limite de cima (exclusivo), nome]
 const imc = peso => Math.round(peso / PERFIL.altura ** 2 * 10) / 10;
 const FAIXAS_IMC = [[16, 'Magreza III'], [17, 'Magreza II'], [18.5, 'Magreza I'], [25, 'Normal'], [30, 'Sobrepeso'],
@@ -50,22 +50,34 @@ function desenhar() {
   pintarHistorico();
 }
 
-// Evacuou no dia do formulário (Sim / Não / sem resposta) e há quanto tempo foi a última "Sim".
+// O dia do formulário: horas de sono e evacuações (quantas e os horários) e há quanto tempo foi a última evacuação.
 // 3 dias ou mais sem evacuar desde a última: em vermelho (prisão de ventre é comum em dieta: fibra e água).
 const SEM_EVACUAR_ALERTA = 3;
+const diaDoForm = () => db.dias.find(d => d.data === $('c-data').value);
 function pintarEvacuacao() {
   $('ev-cartao').hidden = semCorpoDia;
-  const dia = $('c-data').value, x = db.dias.find(d => d.data === dia);
-  $('ev-rotulo').textContent = dia === hoje() ? 'Evacuou hoje' : 'Evacuou neste dia';
-  $('ev-sim').setAttribute('aria-pressed', String(x?.evacuou === true));
-  $('ev-nao').setAttribute('aria-pressed', String(x?.evacuou === false));
-  const ultima = [...db.dias].reverse().find(d => d.evacuou && d.data <= hoje());
+  const x = diaDoForm(), ev = x?.evacuacoes || [];
+  if (document.activeElement !== $('d-sono')) $('d-sono').value = x?.sono != null ? virgula(x.sono) : '';
+  $('ev-total').textContent = ev.length;
+  $('ev-horas').innerHTML = ev.map((h, i) => `<li><button type="button" data-tirar-ev="${i}" title="Tirar (toque duplo)" aria-label="Tirar evacuação ${h || 'sem horário'}">${h || 'sem horário'} ×</button></li>`).join('');
+  const ultima = [...db.dias].reverse().find(d => d.evacuacoes.length && d.data <= hoje());
   $('ev-ultima').hidden = !ultima;
   if (!ultima) return;
-  const n = Math.round((deIso(hoje()) - deIso(ultima.data)) / 864e5);
-  $('ev-ultima').textContent = n === 0 ? 'Última: hoje' : n === 1 ? 'Última: ontem' : `Última: há ${n} dias (${dataCurta(ultima.data)})`;
+  const n = Math.round((deIso(hoje()) - deIso(ultima.data)) / 864e5), h = ultima.evacuacoes[ultima.evacuacoes.length - 1];
+  $('ev-ultima').textContent = n === 0 ? `Última: hoje${h ? ' ' + h : ''}` : n === 1 ? `Última: ontem${h ? ' ' + h : ''}` : `Última: há ${n} dias (${dataCurta(ultima.data)})`;
   $('ev-ultima').classList.toggle('alerta', n >= SEM_EVACUAR_ALERTA);
 }
+// Muda o registro do dia do formulário; dia que fica sem evacuação nem sono sai (preparar)
+function mudarDia(acao) {
+  const dia = $('c-data').value;
+  if (!dataOk(dia) || dia > hoje()) { toast('Data inválida', true); return; }
+  mudar(() => {
+    let x = db.dias.find(d => d.data === dia);
+    if (!x) { x = { data: dia, evacuacoes: [] }; db.dias.push(x); }
+    acao(x); db = preparar(db);
+  });
+}
+
 function avisoHorario() {   // só recomenda o horário de sempre: qualquer horário é aceito
   const hab = horaHabitual(), h = $('c-hora').value, longe = hab && h && Math.abs(minutos(h) - minutos(hab)) > 60;
   $('c-aviso').hidden = !longe;
@@ -93,15 +105,22 @@ function lerValores(peso, cintura) {
 function mudar(acao) { acao(); gravar(); desenhar(); }
 
 $('c-hora').addEventListener('input', avisoHorario);
-// Sim / Não salvam na hora; tocar no que já está marcado desmarca (volta a sem resposta)
-document.querySelectorAll('[data-evac]').forEach(b => b.addEventListener('click', () => mudar(() => {
-  const dia = $('c-data').value, v = b.dataset.evac === 'sim', x = db.dias.find(d => d.data === dia);
-  if (!dataOk(dia) || dia > hoje()) return;
-  if (x && x.evacuou === v) db.dias = db.dias.filter(d => d.data !== dia);
-  else if (x) x.evacuou = v;
-  else db.dias.push({ data: dia, evacuou: v });
-  db = preparar(db);
-})));
+// +1: evacuação com o horário de agora (o do celular, fuso de São Paulo); tocar num horário (duas vezes) tira
+$('ev-mais').addEventListener('click', () => {
+  const h = agoraHHMM();
+  mudarDia(x => { x.evacuacoes.push(h); });
+  toast(`Evacuação${h ? ' às ' + h : ''}`);
+});
+$('ev-horas').addEventListener('click', ev => {
+  const b = ev.target.closest('[data-tirar-ev]');
+  if (b && confirmar(b)) mudarDia(x => { x.evacuacoes.splice(+b.dataset.tirarEv, 1); });
+});
+// Sono: horas (0 a 24, vírgula aceita); vazio tira
+$('d-sono').addEventListener('change', () => {
+  const v = String($('d-sono').value).trim() ? num($('d-sono').value) : null;
+  if (v != null && !(v >= 0 && v <= 24)) { toast('Sono em horas, de 0 a 24', true); return; }
+  mudarDia(x => { if (v == null) delete x.sono; else x.sono = v; });
+});
 $('c-data').addEventListener('change', () => { $('c-peso').value = ''; $('c-cintura').value = ''; desenhar(); });
 document.querySelectorAll('[data-passo]').forEach(b => b.addEventListener('click', () => {   // − / +: peso de 0,1 em 0,1 kg, barriga de 0,5 cm
   const inp = $(b.dataset.passo === 'peso' ? 'c-peso' : 'c-cintura'), d = b.dataset.passo === 'peso' ? .1 : .5;

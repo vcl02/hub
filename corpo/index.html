@@ -65,13 +65,14 @@
     <button class="btn primario" type="submit">Salvar</button>
   </form>
 
-  <!-- Evacuou no dia escolhido acima: Sim ou Não (salva no toque; tocar de novo desmarca) e quando foi a última -->
+  <!-- O dia escolhido acima: horas de sono e evacuações (+1 com o horário; tocar num horário tira) e quando foi a última -->
   <div class="cartao evac" id="ev-cartao">
-    <div class="evac-linha">
-      <span id="ev-rotulo">Evacuou hoje</span>
-      <button type="button" class="chip-bt" id="ev-sim" data-evac="sim" aria-pressed="false">Sim</button>
-      <button type="button" class="chip-bt" id="ev-nao" data-evac="nao" aria-pressed="false">Não</button>
+    <label class="dia-linha"><span>Sono</span><input id="d-sono" inputmode="decimal" placeholder="—" aria-label="Horas de sono"><small>h</small></label>
+    <div class="dia-linha">
+      <span>Evacuação <b id="ev-total">0</b></span>
+      <button type="button" class="chip-bt mais" id="ev-mais" title="Evacuei agora" aria-label="Evacuei agora">+1</button>
     </div>
+    <ul class="ev-horas" id="ev-horas"></ul>
     <p class="evac-ultima" id="ev-ultima" hidden></p>
   </div>
 

@@ -70,6 +70,8 @@ test('migration no formato do DataGrip, RLS só do Victor e cópia do que estava
   assert.match(tudo, /create table if not exists public\.corpo_dia/);
   assert.match(tudo, /alter table public\.corpo_dia enable row level security/);
   assert.match(tudo, /revoke all on public\.corpo_dia from anon/);
+  assert.match(tudo, /add column if not exists evacuacoes jsonb/);
+  assert.match(tudo, /add column if not exists sono numeric/);
   assert.match(tudo, new RegExp(`create policy corpo_dia_somente_victor on public\\.corpo_dia as restrictive[^;]*'${DONO}'`));
 });
 

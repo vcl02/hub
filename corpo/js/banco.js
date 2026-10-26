@@ -9,12 +9,12 @@ let db = null, usuario = null, base = null, enviando = false, tEnvio = null, err
 // corpo_dia ainda não criada no banco (migration 01 não aplicada): o app segue só com as pesagens e esconde "Evacuou"
 let semCorpoDia = false;
 
-// Tabelas e a chave de cada linha (além de user_id): corpo_medida (pesagem e barriga) e corpo_dia (evacuou sim ou não)
+// Tabelas e a chave de cada linha (além de user_id): corpo_medida (pesagem e barriga) e corpo_dia (evacuações com horário e sono)
 const TABELAS = { corpo_medida: 'data', corpo_dia: 'data' };
 function linhas(d) {   // db → { tabela: { data: linha } }
   return {
     corpo_medida: Object.fromEntries(d.medidas.map(m => [m.data, { data: m.data, hora: m.hora || '', peso: m.peso ?? null, cintura: m.cintura ?? null }])),
-    corpo_dia: Object.fromEntries(d.dias.map(x => [x.data, { data: x.data, evacuou: x.evacuou }]))
+    corpo_dia: Object.fromEntries(d.dias.map(x => [x.data, { data: x.data, evacuou: null, evacuacoes: x.evacuacoes, sono: x.sono ?? null }]))
   };
 }
 // base das versões antigas (só pesagens, { data: linha }) → formato com as duas tabelas
@@ -72,7 +72,13 @@ setInterval(() => { if (temPendente()) enviar(); }, 60000);
 // Valida e completa o db (cópia local ou linhas do servidor), com a mesma limpeza que os outros apps usam
 const preparar = d => ({
   medidas: ordenarMedidas(d?.medidas || []),
-  dias: (d?.dias || []).filter(x => x && dataOk(x.data) && typeof x.evacuou === 'boolean').map(x => ({ data: x.data, evacuou: x.evacuou })).sort((a, b) => a.data.localeCompare(b.data))
+  // Dia: evacuações (horários "HH:MM", "" = sem horário, em ordem) e sono (h). Formato da migration 01 (evacuou sim ou não):
+  // sim vira 1 evacuação sem horário. Dia sem evacuação nem sono não fica guardado.
+  dias: (d?.dias || []).filter(x => x && dataOk(x.data)).map(x => {
+    const ev = Array.isArray(x.evacuacoes) ? x.evacuacoes.map(h => /^\d{2}:\d{2}$/.test(h) ? h : '').slice(0, 20) : x.evacuou === true ? [''] : [];
+    const sono = num(x.sono);
+    return { data: x.data, evacuacoes: ev.sort(), ...(sono >= 0 && sono <= 24 && { sono }) };
+  }).filter(x => x.evacuacoes.length || x.sono != null).sort((a, b) => a.data.localeCompare(b.data))
 });
 // Baixa uma tabela inteira (de 1000 em 1000)
 async function todas(tabela, colunas) {

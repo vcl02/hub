@@ -57,12 +57,18 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 .mid:focus-within{outline:3px solid var(--teal);outline-offset:1px}
 .unit{color:var(--muted);flex:none;min-width:2.2em;font-size:.875rem}
 
-/* ---------- Evacuou ---------- */
-.evac{display:flex;flex-direction:column;gap:8px}
-.evac-linha{display:flex;align-items:center;gap:8px}
-.evac-linha span{margin-right:auto;font-size:.95rem}
-.chip-bt{min-width:64px;border:1px solid var(--line);border-radius:999px;background:transparent;padding:8px 14px;color:var(--muted);font-weight:600}
-.chip-bt[aria-pressed="true"]{border-color:var(--teal);background:var(--teal-soft);color:var(--teal)}
+/* ---------- Dia: sono e evacuações ---------- */
+.evac{display:flex;flex-direction:column;gap:10px}
+.dia-linha{display:flex;align-items:center;gap:8px}
+.dia-linha>span{margin-right:auto;font-size:.95rem}
+.dia-linha>span b{font-family:var(--display);font-size:1.35rem;margin-left:6px;color:var(--teal)}
+.dia-linha input{width:4.5em;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);text-align:right;font-family:var(--display);font-weight:700;font-size:1.25rem}
+.dia-linha small{color:var(--muted)}
+.chip-bt{min-width:64px;border:1px solid var(--teal);border-radius:999px;background:var(--teal-soft);padding:8px 14px;color:var(--teal);font-weight:700}
+.ev-horas{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.ev-horas:empty{display:none}
+.ev-horas button{border:1px solid var(--line);border-radius:999px;background:transparent;padding:4px 10px;font-size:.875rem;color:var(--fg)}
+.ev-horas button.armado{border-color:var(--red);background:var(--red);color:var(--bg)}
 .evac-ultima{font-size:.875rem;color:var(--muted)}
 .evac-ultima.alerta{color:var(--red);font-weight:600}
 

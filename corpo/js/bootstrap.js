@@ -22,7 +22,7 @@ async function carregar(u) {
   if (local && temPendente()) await enviar();
   try {
     // corpo_dia que não existe (migration 01 não aplicada) não derruba o app: só as pesagens seguem
-    const [M, D] = await Promise.all([todas('corpo_medida', 'data,hora,peso,cintura'), todas('corpo_dia', 'data,evacuou').then(L => { semCorpoDia = false; return L; }, () => { semCorpoDia = true; return []; })]);
+    const [M, D] = await Promise.all([todas('corpo_medida', 'data,hora,peso,cintura'), todas('corpo_dia', 'data,evacuou,evacuacoes,sono').then(L => { semCorpoDia = false; return L; }, () => { semCorpoDia = true; return []; })]);
     if (usuario !== u) return;
     // Pendente que não subiu (sem internet) continua valendo: a nuvem só entra quando não há nada a enviar.
     if (!local || !temPendente()) {
