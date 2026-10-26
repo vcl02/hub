@@ -102,6 +102,10 @@ function lerValores(peso, cintura) {
   return { ...(p != null && { peso: p }), ...(c != null && { cintura: c }) };
 }
 
+// Quando o peso do dia foi lançado (pesoEm, relógio do celular): o primeiro lançamento fica, corrigir o valor depois não muda;
+// sem peso, nada. O hábito do peso na página inicial do hub só conta pesagem lançada no próprio dia.
+const pesoLancado = (antes, v) => !v.peso ? {} : antes?.peso ? (antes.pesoEm ? { pesoEm: antes.pesoEm } : {}) : { pesoEm: new Date().toISOString() };
+
 // ===== Interações =====
 function mudar(acao) { acao(); gravar(); desenhar(); }
 
@@ -120,7 +124,8 @@ $('ev-horas').addEventListener('click', ev => {
 $('d-sono').addEventListener('change', () => {
   const v = String($('d-sono').value).trim() ? num($('d-sono').value) : null;
   if (v != null && !(v >= 0 && v <= 24)) { toast('Sono em horas, de 0 a 24', true); return; }
-  mudarDia(x => { if (v == null) delete x.sono; else x.sono = v; });
+  // sonoEm: quando o sono do dia foi lançado (corrigir as horas depois mantém o primeiro lançamento)
+  mudarDia(x => { if (v == null) { delete x.sono; delete x.sonoEm; } else { if (x.sono == null) x.sonoEm = new Date().toISOString(); x.sono = v; } });
 });
 $('c-data').addEventListener('change', () => { $('c-peso').value = ''; $('c-cintura').value = ''; desenhar(); });
 document.querySelectorAll('[data-passo]').forEach(b => b.addEventListener('click', () => {   // − / +: peso de 0,1 em 0,1 kg, barriga de 0,5 cm
@@ -135,8 +140,9 @@ $('c-form').addEventListener('submit', ev => {
   if (!dataOk(data) || data > hoje()) { toast('Data inválida', true); return; }
   if (v.erro) { toast(v.erro, true); return; }
   mudar(() => {
+    const antes = db.medidas.find(m => m.data === data);
     db.medidas = db.medidas.filter(m => m.data !== data);
-    db.medidas.push({ data, hora: $('c-hora').value, ...v });
+    db.medidas.push({ data, hora: $('c-hora').value, ...v, ...pesoLancado(antes, v) });
     db = preparar(db);
   });
   toast(`Salvo${v.peso ? ': ' + fmt(v.peso) + ' kg' : ''}${v.cintura ? (v.peso ? ' · ' : ': ') + fmt(v.cintura) + ' cm' : ''}`);
@@ -154,7 +160,8 @@ $('c-historico').addEventListener('click', ev => {
     if (v.erro) { toast(v.erro, true); return; }
     if (data !== d.salvar && db.medidas.some(x => x.data === data)) { toast('Já tem medida em ' + dataCurta(data), true); return; }   // 1 por dia
     editando = null;
-    mudar(() => { db.medidas = db.medidas.filter(m => m.data !== d.salvar); db.medidas.push({ data, hora: $('em-hora').value, ...v }); db = preparar(db); });
+    const antes = data === d.salvar ? db.medidas.find(m => m.data === data) : null;   // mudou de dia: é um lançamento novo nele
+    mudar(() => { db.medidas = db.medidas.filter(m => m.data !== d.salvar); db.medidas.push({ data, hora: $('em-hora').value, ...v, ...pesoLancado(antes, v) }); db = preparar(db); });
     toast('Medida atualizada');
   }
   else if (d.apagar && confirmar(b)) mudar(() => { db.medidas = db.medidas.filter(m => m.data !== d.apagar); });

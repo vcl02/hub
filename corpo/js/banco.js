@@ -13,9 +13,10 @@ let semCorpoDia = false;
 const TABELAS = { corpo_medida: 'data', corpo_dia: 'data' };
 function linhas(d) {   // db → { tabela: { data: linha } }
   return {
-    corpo_medida: Object.fromEntries(d.medidas.map(m => [m.data, { data: m.data, hora: m.hora || '', peso: m.peso ?? null, cintura: m.cintura ?? null }])),
+    // peso_em e sono_em (quando foram lançados, migration 03) só vão quando existem: linha antiga continua igual à da nuvem
+    corpo_medida: Object.fromEntries(d.medidas.map(m => [m.data, { data: m.data, hora: m.hora || '', peso: m.peso ?? null, cintura: m.cintura ?? null, ...(m.pesoEm && { peso_em: m.pesoEm }) }])),
     // evacuacoes copiada: a base não pode mudar junto quando o +1 mexe na lista do dia
-    corpo_dia: Object.fromEntries(d.dias.map(x => [x.data, { data: x.data, evacuou: null, evacuacoes: [...x.evacuacoes], sono: x.sono ?? null }]))
+    corpo_dia: Object.fromEntries(d.dias.map(x => [x.data, { data: x.data, evacuou: null, evacuacoes: [...x.evacuacoes], sono: x.sono ?? null, ...(x.sonoEm && { sono_em: x.sonoEm }) }]))
   };
 }
 // base das versões antigas (só pesagens, { data: linha }) → formato com as duas tabelas
@@ -73,12 +74,13 @@ setInterval(() => { if (temPendente()) enviar(); }, 60000);
 // Valida e completa o db (cópia local ou linhas do servidor), com a mesma limpeza que os outros apps usam
 const preparar = d => ({
   medidas: ordenarMedidas(d?.medidas || []),
-  // Dia: evacuações (horários "HH:MM", "" = sem horário, em ordem) e sono (h). Formato da migration 01 (evacuou sim ou não):
+  // Dia: evacuações (horários "HH:MM", "" = sem horário, em ordem), sono (h) e quando o sono foi lançado (sonoEm). Formato da migration 01 (evacuou sim ou não):
   // sim vira 1 evacuação sem horário. Dia sem evacuação nem sono não fica guardado.
   dias: (d?.dias || []).filter(x => x && dataOk(x.data)).map(x => {
     const ev = Array.isArray(x.evacuacoes) ? x.evacuacoes.map(h => /^\d{2}:\d{2}$/.test(h) ? h : '').slice(0, 20) : x.evacuou === true ? [''] : [];
-    const sono = num(x.sono);
-    return { data: x.data, evacuacoes: ev.sort(), ...(sono >= 0 && sono <= 24 && { sono }) };
+    const sono = num(x.sono), sonoEm = x.sonoEm || x.sono_em;
+    return { data: x.data, evacuacoes: ev.sort(), ...(sono >= 0 && sono <= 24 && { sono }),
+      ...(sono >= 0 && sono <= 24 && sonoEm && !isNaN(Date.parse(sonoEm)) && { sonoEm: new Date(sonoEm).toISOString() }) };
   }).filter(x => x.evacuacoes.length || x.sono != null).sort((a, b) => a.data.localeCompare(b.data))
 });
 // Baixa uma tabela inteira (de 1000 em 1000)

@@ -20,21 +20,24 @@ const kcalTreino = (peso, dia, ms) => Math.round(MET_MUSCULACAO * tmb(peso, dia)
 const metEsteira = (vel, incl) => { const v = vel * 1000 / 60, g = incl / 100, corre = vel >= 8; return (3.5 + (corre ? 0.2 : 0.1) * v + (corre ? 0.9 : 1.8) * v * g) / 3.5; };
 const kcalEsteira = (peso, dia, ms, vel, incl) => Math.round(metEsteira(vel, incl) * tmb(peso, dia) / 24 * ms / 36e5);
 
-// Pesagens e medidas (corpo_medida): { data, hora, peso?, cintura? } em kg e cm (cintura = barriga na linha do umbigo).
-// Os outros apps só leem: lerMedidas busca na nuvem e guarda a cópia no aparelho (corpo.medidas.<conta>), que
-// medidasGuardadas devolve na hora, inclusive sem internet. Em ordem de data, da mais antiga para a mais recente.
+// Pesagens e medidas (corpo_medida): { data, hora, peso?, cintura?, pesoEm? } em kg e cm (cintura = barriga na linha do umbigo).
+// pesoEm (coluna peso_em) = quando o peso foi lançado no app, pelo relógio do celular: o hábito do peso (página inicial do hub)
+// só conta pesagem lançada no próprio dia. Os outros apps só leem: lerMedidas busca na nuvem e guarda a cópia no aparelho
+// (corpo.medidas.<conta>), que medidasGuardadas devolve na hora, inclusive sem internet. Em ordem de data, da mais antiga para a mais recente.
 const K_MEDIDAS = id => 'corpo.medidas.' + id;
 const medidaLimpa = m => {
-  const peso = parseFloat(m.peso), cintura = parseFloat(m.cintura);
-  return { data: m.data, hora: /^\d{2}:\d{2}$/.test(m.hora) ? m.hora : '', ...(peso > 0 && { peso }), ...(cintura > 0 && { cintura }) };
+  const peso = parseFloat(m.peso), cintura = parseFloat(m.cintura), pesoEm = m.pesoEm || m.peso_em;
+  return { data: m.data, hora: /^\d{2}:\d{2}$/.test(m.hora) ? m.hora : '', ...(peso > 0 && { peso }), ...(cintura > 0 && { cintura }),
+    ...(peso > 0 && pesoEm && !isNaN(Date.parse(pesoEm)) && { pesoEm: new Date(pesoEm).toISOString() }) };
 };
 const ordenarMedidas = L => L.filter(m => m && /^\d{4}-\d{2}-\d{2}$/.test(m.data)).map(medidaLimpa).filter(m => m.peso || m.cintura).sort((a, b) => a.data.localeCompare(b.data));
 function medidasGuardadas(id) { try { return ordenarMedidas(JSON.parse(localStorage.getItem(K_MEDIDAS(id))) || []); } catch (e) { return []; } }
 function guardarMedidas(id, L) { try { localStorage.setItem(K_MEDIDAS(id), JSON.stringify(ordenarMedidas(L))); } catch (e) {} }
+// select('*'): com ou sem a coluna peso_em (migration 03 do Corpo), a leitura funciona
 async function lerMedidas(sb, id) {
   const L = [];
   for (let i = 0; ; i += 1000) {
-    const { data, error } = await sb.from('corpo_medida').select('data,hora,peso,cintura').range(i, i + 999);
+    const { data, error } = await sb.from('corpo_medida').select('*').range(i, i + 999);
     if (error) throw error;
     L.push(...data); if (data.length < 1000) break;
   }

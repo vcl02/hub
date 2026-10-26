@@ -8,7 +8,8 @@
 ## Arquitetura
 
 - `index.html` é o único documento; telas são `<section class="view">`. Um stylesheet só: `css/al.css`.
-- Scripts clássicos nesta ordem, depois de `../supabase.js` (do hub) e `../corpo/perfil.js` (módulo do app Corpo), sem cópia aqui: `config`, `util`, `banco`, `conta`, `ia`, `telas`, `bootstrap`. Escopo global compartilhado; a 1ª linha de cada um diz a responsabilidade.
+- Scripts clássicos nesta ordem, depois de `../supabase.js` (do hub), `../corpo/perfil.js` (módulo do app Corpo) e `gasto.js`: `config`, `util`, `banco`, `conta`, `ia`, `telas`, `bootstrap`. Escopo global compartilhado; a 1ª linha de cada um diz a responsabilidade.
+- **Módulo compartilhado:** `gasto.js` (funções puras) tem o gasto e a meta do dia (`gastoNoDia`, `metaKcal`, fator de atividade, caminhada e `DEFICIT_META`). A página inicial do hub usa o mesmo arquivo para o hábito do déficit: mudou a conta, ela muda nos dois. Não declare ali nomes que o hub ou os apps já usam (`$`, `iso`, `sb`…).
 - Arquivo novo em `css/` ou `js/` entra no `index.html` e no `ARQUIVOS_ESTATICOS` do `sw.js` (o teste `tests/estrutura.test.mjs` confere). O service worker é rede primeiro, cache `al-estatico`, e só apaga caches `al-`.
 - Perfil, taxa basal, calorias do treino e pesagens vêm de `../corpo/perfil.js` (`PERFIL`, `idadeEm`, `tmb`, `kcalTreino`, `kcalEsteira`, `medidasGuardadas`, `lerMedidas`, `pesoNoDia`): nunca repita esses valores aqui.
 - Treinos (`tr_treino`) e pesagens (`corpo_medida`, do app Corpo) são **só lidos** e guardados no aparelho (`al.tr.<id>` e `corpo.medidas.<id>`). O al nunca grava em `tr_*` nem em `corpo_medida`.

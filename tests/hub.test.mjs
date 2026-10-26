@@ -1,4 +1,4 @@
-// Estrutura da página inicial do hub (sem navegador): cards, PWA, service workers e workflows da raiz.
+// Estrutura da página inicial do hub (sem navegador): hábitos e atalhos, PWA, service workers e workflows da raiz.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
@@ -9,14 +9,19 @@ const RAIZ = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ler = arquivo => readFileSync(path.join(RAIZ, arquivo), 'utf8');
 const existe = arquivo => existsSync(path.join(RAIZ, arquivo));
 const html = ler('index.html');
-const cards = [...html.matchAll(/<a class="app" href="([^"]+)" style="--cor:#[0-9A-F]{6}">\s*<img class="app-icone" src="([^"]+)"/g)].map(m => ({ href: m[1], icone: m[2] }));
+const habitos = [...html.matchAll(/<a class="app habito" href="([^"]+)" data-habito="([a-z]+)" style="--cor:#[0-9A-F]{6}">\s*<img class="app-icone" src="([^"]+)"/g)].map(m => ({ href: m[1], id: m[2], icone: m[3] }));
+const atalhos = [...html.matchAll(/<a class="app atalho" href="([^"]+)" style="--cor:#[0-9A-F]{6}">\s*<img class="app-icone" src="([^"]+)"/g)].map(m => ({ href: m[1], icone: m[2] }));
 
-test('um card por app; cada um aponta para uma pasta com index.html e um ícone que existe', () => {
-  assert.deepEqual(cards.map(c => c.href), ['fin/', 'tr/', 'al/', 'corpo/', 'agua/']);   // os do hub; atalhos externos (class externo) à parte
-  for (const { href, icone } of cards) {
+test('um hábito por linha (os de habitos.js) e o Fin como atalho; cada um aponta para uma pasta com index.html e um ícone que existe', () => {
+  assert.deepEqual(habitos.map(h => [h.id, h.href]), [['treino', 'tr/'], ['deficit', 'al/'], ['peso', 'corpo/'], ['sono', 'corpo/'], ['agua', 'agua/']]);
+  const lista = [...ler('habitos.js').matchAll(/\{ id: '([a-z]+)', nome: '[^']+', pasta: '([^']+)' \}/g)].map(m => [m[1], m[2]]);
+  assert.deepEqual(lista, habitos.map(h => [h.id, h.href]));            // mesma lista e ordem do habitos.js
+  assert.deepEqual(atalhos.map(a => a.href), ['fin/']);                 // os externos (class externo) à parte
+  for (const { href, icone } of [...habitos, ...atalhos]) {
     assert.ok(existe(`${href}index.html`), href);
     assert.ok(existe(icone), icone);
   }
+  assert.ok(html.indexOf('class="habitos"') < html.indexOf('class="doca"'), 'atalhos depois dos hábitos');
 });
 
 test('cada app volta para o hub (../)', () => {
@@ -50,6 +55,7 @@ test('service workers dividem a origem sem apagar o cache um do outro', () => {
   const sw = ler('sw.js');
   const arquivos = JSON.parse(sw.match(/const ARQUIVOS_ESTATICOS = (\[[^\]]*\]);/)[1].replace(/'/g, '"'));
   for (const arquivo of arquivos) if (arquivo !== './') assert.ok(existe(arquivo), arquivo);
+  for (const f of ['./habitos.js', './corpo/perfil.js', './al/gasto.js']) assert.ok(arquivos.includes(f), f);   // a página inicial abre sem internet
   assert.doesNotMatch(sw, /caches\.delete/);
   assert.match(sw, /if \(!ENDERECOS\.has\(url\.href\)\) return;/);   // nunca atende fin/ nem tr/
   assert.match(ler('tr/sw.js'), /k\.startsWith\('carga-'\) && k !== CACHE_ESTATICO/);
@@ -79,15 +85,16 @@ test('login do hub antes dos apps: mesma conta e mesmo supabase-js do tr', () =>
   assert.match(hub, /const SUPABASE_KEY = 'sb_publishable_/);
   assert.doesNotMatch(hub, /service_role|sb_secret_/);
   assert.ok(readFileSync(path.join(RAIZ, 'supabase.js')).equals(readFileSync(path.join(RAIZ, 'tr/supabase.js'))), 'supabase.js igual ao do tr');
-  assert.match(html, /<script src="supabase\.js"><\/script>\n<script src="hub\.js"><\/script>/);
+  // supabase-js, os módulos compartilhados (dados sobre mim e gasto do dia), os hábitos e só então hub.js
+  assert.match(html, /<script src="supabase\.js"><\/script>\n<script src="corpo\/perfil\.js"><\/script>\n<script src="al\/gasto\.js"><\/script>\n<script src="habitos\.js"><\/script>\n<script src="hub\.js"><\/script>/);
 });
 
 test('marca do hub em todo lugar: favicon, celular, login e o botão de volta nos apps', () => {
   assert.match(html, /<link rel="icon" href="icons\/hub\.svg" type="image\/svg\+xml">/);
   assert.match(html, /<link rel="icon" href="icons\/hub-32\.png" sizes="32x32" type="image\/png">/);
   assert.match(html, /<link rel="apple-touch-icon" href="icons\/hub-180\.png">/);
-  assert.equal([...html.matchAll(/<h1><img class="marca" src="icons\/hub\.svg" alt=""/g)].length, 1);   // só no login; nos cards o título é só o texto
-  assert.equal([...html.matchAll(/class="app-icone" src="icons\/hub\.svg"/g)].length, 0);   // nenhum card usa a marca
+  assert.equal([...html.matchAll(/<h1><img class="marca" src="icons\/hub\.svg" alt=""/g)].length, 1);   // só no login; nos hábitos o título é só o texto
+  assert.equal([...html.matchAll(/class="app-icone" src="icons\/hub\.svg"/g)].length, 0);   // nenhum hábito ou atalho usa a marca
   assert.match(html, /href="https:\/\/wa\.me\/\d+"[\s\S]*?src="icons\/anotacoes\.svg"[\s\S]*?<span class="app-nome">Anotações<\/span>/);
   for (const arquivo of ['icons/hub.svg', 'icons/hub-32.png', 'icons/hub-180.png', 'icons/hub-192.png', 'icons/hub-512.png']) assert.ok(existe(arquivo), arquivo);
   const png = arquivo => { const b = readFileSync(path.join(RAIZ, arquivo)); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };
@@ -102,7 +109,7 @@ test('marca do hub em todo lugar: favicon, celular, login e o botão de volta no
 });
 
 test('atalho externo do Google Agenda: abre em outra aba; no Android, o app (intent) com a web de reserva', () => {
-  assert.match(html, /<a class="app externo" id="agenda" href="https:\/\/calendar\.google\.com\/calendar\/r" target="_blank" rel="noopener"/);
+  assert.match(html, /<a class="app atalho externo" id="agenda" href="https:\/\/calendar\.google\.com\/calendar\/r" target="_blank" rel="noopener"/);
   assert.ok(existe('icons/agenda.svg'));
   const hub = ler('hub.js');
   assert.match(hub, /intent:\/\/calendar\.google\.com\/calendar\/r#Intent;scheme=https;package=com\.google\.android\.calendar;S\.browser_fallback_url=\$\{encodeURIComponent\(web\)\};end/);
@@ -111,7 +118,7 @@ test('atalho externo do Google Agenda: abre em outra aba; no Android, o app (int
   assert.doesNotMatch(html, /chat\.whatsapp\.com|play\.google\.com/);   // cards Hub (grupo) e Água saíram
 });
 
-test('card não fica selecionado ao voltar de um app: hover só com mouse, toque com efeito que some e foco solto ao voltar', () => {
+test('hábito ou atalho não fica selecionado ao voltar de um app: hover só com mouse, toque com efeito que some e foco solto ao voltar', () => {
   assert.match(ler('hub.css'), /@media \(hover: hover\) \{\s*\.app:hover \{/);
   assert.doesNotMatch(ler('hub.css').replace(/@media \(hover: hover\) \{[\s\S]*?\n\}/, ''), /\.app:hover/);
   const hub = ler('hub.js');
@@ -141,6 +148,10 @@ test('dados sobre mim num lugar só: corpo/perfil.js, carregado pelo tr, pelo al
   const M = ctx.ordenarMedidas([{ data: '2026-10-20', peso: '91' }, { data: '2026-10-10', peso: 93, hora: 'x' }, { data: '2026-10-22', cintura: 100 }, { data: 'ruim', peso: 1 }]);
   assert.deepEqual(JSON.parse(JSON.stringify(M)), [{ data: '2026-10-10', hora: '', peso: 93 }, { data: '2026-10-20', hora: '', peso: 91 }, { data: '2026-10-22', hora: '', cintura: 100 }]);
   assert.deepEqual([ctx.pesoNoDia(M, '2026-10-01'), ctx.pesoNoDia(M, '2026-10-15'), ctx.pesoNoDia(M, '2026-10-30'), ctx.pesoNoDia([], '2026-10-30')], [93, 93, 91, null]);
+  // Gasto do dia num lugar só: al/gasto.js, o mesmo no al e no hábito do déficit
+  assert.match(ler('al/index.html'), /<script src="\.\.\/corpo\/perfil\.js"><\/script>\n<script src="gasto\.js"><\/script>/);
+  assert.doesNotMatch(ler('al/js/config.js'), /const (FATOR_ATIVIDADE|DEFICIT_META)\b/);
+  assert.doesNotMatch(ler('hub.js') + ler('habitos.js'), /const (FATOR_ATIVIDADE|DEFICIT_META|MET_MUSCULACAO)\b/);
   for (const app of ['tr', 'al', 'agua']) {
     assert.match(ler(`${app}/index.html`), /<script src="\.\.\/corpo\/perfil\.js"><\/script>/, app);
     assert.match(ler(`${app}/sw.js`), /'\.\.\/corpo\/perfil\.js'/, app);

@@ -33,7 +33,7 @@ export function prepararApp() {
 }
 
 // Supabase falso (auth + PostgREST em memória): o teste não depende de internet nem do banco real.
-export const CHAVES = { tr_exercicio: ['id'], tr_variacao: ['id'], tr_registro: ['variacao_id', 'data'], tr_treino: ['inicio'], corpo_medida: ['data'], corpo_dia: ['data'], agua_dia: ['data'] };   // do Corpo e da Água (o hub abre os dois com este falso)
+export const CHAVES = { tr_exercicio: ['id'], tr_variacao: ['id'], tr_registro: ['variacao_id', 'data'], tr_treino: ['inicio'], corpo_medida: ['data'], corpo_dia: ['data'], agua_dia: ['data'], al_registro: ['id'], al_dia: ['data'] };   // do Corpo, da Água e do al (o hub abre e lê todos com este falso)
 export const novaNuvem = () => ({ online: true, tabelas: Object.fromEntries(Object.keys(CHAVES).map(t => [t, []])) });
 const b64u = o => Buffer.from(JSON.stringify(o)).toString('base64url');
 export async function fakeSupabase(ctx, nuvem, id = '32f70255-30a0-4e2b-ad76-31d7a1bf54f7') {
