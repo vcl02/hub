@@ -17,6 +17,7 @@
   - Ao lado dos campos, o efeito no saldo ("−66 kcal"). Esteira dentro do horário de um treino do Treino já conta no treino: lance só a caminhada fora dele.
 - **Gasto** = rotina + treino + caminhada (se marcada).
 - **Treino previsto:** hoje é dia de treino (quarta e quinta, `ROTINA.treino`; ou segunda, o extra opcional, `ROTINA.treinoExtra`) e ainda não há treino registrado no Treino: linha em amarelo "Treino previsto hoje: +157 kcal depois de treinar (~45 min)" (segunda: "Treino extra hoje (opcional): …"), com a duração média dos últimos 8 treinos (sem nenhum, 1 h). É só aviso: a meta sobe de verdade quando o treino é registrado.
+- **Treino obrigatório (dia opcional):** hoje é o dia do treino extra (segunda, `ROTINA.treinoExtra`), ainda sem treino registrado, e o que foi comido passou da meta: no lugar do aviso amarelo, alerta vermelho "Treino obrigatório hoje" (ícone pulsando) com quanto passou, o que o treino previsto faz ("você volta para a meta" ou "o excesso cai para X kcal"), e, se sem treino o dia fecharia em superávit, quanto ("…; treinando, ainda fecha em déficit" quando é o caso). Botão "Ir treinar" abre o Treino (`../tr/`). Nos dias fixos (quarta e quinta, já obrigatórios) e nos dias passados não aparece.
 
 ## Meta, saldo e macros
 

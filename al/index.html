@@ -49,6 +49,12 @@
     <p class="saldo-num"><b id="s-valor">—</b> <small id="s-rotulo">kcal</small></p>
     <p class="saldo-conta" id="s-conta"></p>
     <p class="previsto" id="s-previsto" hidden></p>
+    <!-- Treino extra virou obrigatório: passou da meta no dia de treino opcional e ainda não treinou -->
+    <div class="alerta-treino" id="s-alerta" role="alert" hidden>
+      <p class="alerta-titulo"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17h.01"/></svg>Treino obrigatório hoje</p>
+      <p class="alerta-txt" id="s-alerta-txt"></p>
+      <a class="alerta-bt" href="../tr/" id="s-alerta-bt">Ir treinar</a>
+    </div>
     <!-- Andei: liga a caminhada do dia; tempo e/ou distância no total do dia (vazios = 20 min) -->
     <div class="andei">
       <button type="button" class="chip-bt" id="andei" aria-pressed="false">Andei</button>

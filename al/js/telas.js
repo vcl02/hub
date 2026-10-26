@@ -29,7 +29,20 @@ function pintarSaldo() {
   $('s-conta').innerHTML = !g ? `${linha('Comi', c.kcal)}<span>Sem pesagem no Corpo para calcular o gasto</span>`
     : aberto ? linhaMeta() + linha('Comi', c.kcal) : linha('Comi', c.kcal) + linha('Gastei', g.total) + linhaMeta();
   // Hoje é dia de treino e ainda não treinou: quanto a mais dá para comer depois do treino
-  $('s-previsto').hidden = !(aberto && g?.previsto);
+  // Dia de treino opcional (extra) em que já passou da meta e ainda não treinou: o treino vira obrigatório. Alerta urgente
+  // com o quanto o treino ajuda (volta para a meta ou só diminui o excesso), o risco de fechar em superávit e o botão do Treino.
+  const urgente = aberto && g?.previsto?.extra && resto < 0;
+  $('s-alerta').hidden = !urgente;
+  if (urgente) {
+    const p = g.previsto, passou = -resto, depois = passou - p.kcal, superavit = c.kcal - g.total, comTreino = c.kcal - g.total - p.kcal;
+    $('s-alerta-txt').innerHTML = [
+      `Passou <b>${inteiro(passou)} kcal</b> da meta.`,
+      depois <= 0 ? `Treinando (~${p.minutos} min, +${inteiro(p.kcal)} kcal) você <b>volta para a meta</b>.`
+        : `Treinando (~${p.minutos} min, +${inteiro(p.kcal)} kcal) o excesso cai para <b>${inteiro(depois)} kcal</b>.`,
+      superavit > 0 ? `Sem treino o dia fecha em <b>superávit de ${inteiro(superavit)} kcal</b>${comTreino <= 0 ? '; treinando, ainda fecha em déficit' : ''}.` : ''
+    ].filter(Boolean).map(t => `<span>${t}</span>`).join('');
+  }
+  $('s-previsto').hidden = !(aberto && g?.previsto) || urgente;
   if (aberto && g?.previsto) $('s-previsto').textContent = `${g.previsto.extra ? 'Treino extra hoje (opcional)' : 'Treino previsto hoje'}: +${inteiro(g.previsto.kcal)} kcal depois de treinar (~${g.previsto.minutos} min)`;
   $('andei').hidden = !g;
   $('andei').setAttribute('aria-pressed', String(!!g?.caminhada));

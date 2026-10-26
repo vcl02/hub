@@ -55,6 +55,14 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 .saldo-conta small{margin-right:auto;color:var(--muted);font-size:.75rem}
 .saldo-conta b{font-variant-numeric:tabular-nums}
 .previsto{font-size:.875rem;color:var(--yellow);font-weight:500}
+/* Treino obrigatório (dia opcional, passou da meta): vermelho, ícone pulsando e botão para o Treino */
+.alerta-treino{display:flex;flex-direction:column;gap:8px;margin-top:4px;padding:12px;border:2px solid var(--red);border-radius:12px;background:var(--red-soft)}
+.alerta-titulo{display:flex;align-items:center;gap:8px;color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:.875rem}
+.alerta-titulo svg{animation:pulsar 1.2s ease-in-out infinite}
+@keyframes pulsar{50%{transform:scale(1.25);opacity:.6}}
+.alerta-txt{display:flex;flex-direction:column;gap:2px;font-size:.9rem}
+.alerta-txt b{color:var(--red)}
+.alerta-bt{display:block;text-align:center;padding:12px;border-radius:12px;background:var(--red);color:#1B1E21;font-weight:700;text-decoration:none;font-size:1rem}
 .andei{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:4px}
 .andei-campos{display:flex;align-items:center;gap:8px}
 .andei-campos label{display:flex;align-items:baseline;gap:4px}
@@ -131,4 +139,4 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 .sync.erro{color:var(--red)}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:calc(100% - 32px);background:#30353A;border:1px solid var(--line);border-radius:12px;padding:10px 16px;box-shadow:0 10px 30px rgba(0,0,0,.4);font-size:.9rem;z-index:10}
 .toast.erro{border-color:var(--red);color:var(--red)}
-@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+@media (prefers-reduced-motion:reduce){.spin,.alerta-titulo svg{animation:none}}

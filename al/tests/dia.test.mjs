@@ -152,6 +152,43 @@ test('dia de treino (quarta e quinta, e a segunda opcional) ainda sem treino: av
   await b.ctx.close();
 });
 
+test('segunda (treino opcional) passando da meta sem ter treinado: alerta urgente, treino obrigatório e botão para o Treino', async () => {
+  const nuvem = novaNuvem();
+  nuvem.tabelas.corpo_medida.push({ user_id: 'x', data: '2026-09-10', hora: '', peso: '100', cintura: null });
+  let kcal = 2000;
+  nuvem.ia = () => ({ status: 200, corpo: { itens: [{ nome: 'Comida', porcao: '1', kcal, prot: 10, carb: 10, gord: 10 }] } });
+  const { ctx, pg } = await abrirApp({ nuvem, relogio: new Date('2026-09-14T20:00:00-03:00') });   // segunda, sem treino registrado
+  assert.equal(await pg.isVisible('#s-alerta'), false);                 // dentro da meta: só o aviso amarelo
+  assert.equal(await pg.isVisible('#s-previsto'), true);
+  // meta 1898 (2398 − 500) · treino previsto 1 h = +208 · comeu 2000: passou 102, o treino cobre
+  await descrever(pg, 'jantar'); await pg.click('#p-adicionar');
+  assert.equal(await pg.isVisible('#s-alerta'), true);
+  assert.equal(await pg.isVisible('#s-previsto'), false);
+  assert.equal(await texto(pg, '#s-alerta .alerta-titulo'), 'Treino obrigatório hoje');
+  assert.deepEqual(await linhasDe(pg, '#s-alerta-txt'), ['Passou 102 kcal da meta.', 'Treinando (~60 min, +208 kcal) você volta para a meta.']);
+  assert.equal(await pg.getAttribute('#s-alerta-bt', 'href'), '../tr/');
+  // mais 600: passou 702, o treino só reduz (494); sem treino fecha em superávit (2600 − 2398 = 202), com treino ainda déficit
+  kcal = 600; await descrever(pg, 'sobremesa'); await pg.click('#p-adicionar');
+  assert.deepEqual(await linhasDe(pg, '#s-alerta-txt'), ['Passou 702 kcal da meta.', 'Treinando (~60 min, +208 kcal) o excesso cai para 494 kcal.',
+    'Sem treino o dia fecha em superávit de 202 kcal; treinando, ainda fecha em déficit.']);
+  await ctx.close();
+});
+
+test('dias fixos (quarta e quinta) e dias passados não têm o alerta urgente, mesmo passando da meta', async () => {
+  const nuvem = novaNuvem();
+  nuvem.tabelas.corpo_medida.push({ user_id: 'x', data: '2026-09-10', hora: '', peso: '100', cintura: null });
+  nuvem.tabelas.al_registro.push({ user_id: 'x', id: 'r1', data: '2026-09-14', hora: '20:00', item_id: null, nome: 'Rodízio', porcao: '1', qtd: '1', kcal: '3000', prot: '1', carb: '1', gord: '1' });
+  nuvem.ia = iaCom({ nome: 'Rodízio', porcao: '1', kcal: 3000, prot: 1, carb: 1, gord: 1 });
+  const { ctx, pg } = await abrirApp({ nuvem, relogio: new Date('2026-09-16T20:00:00-03:00') });   // quarta (fixo)
+  await descrever(pg, 'rodízio'); await pg.click('#p-adicionar');
+  assert.equal(await texto(pg, '#s-rotulo'), 'kcal acima da meta');
+  assert.equal(await pg.isVisible('#s-alerta'), false);
+  assert.equal(await pg.isVisible('#s-previsto'), true);
+  await pg.click('#semana [data-dia="2026-09-14"]');                    // a segunda que passou: dia fechado, sem alerta
+  assert.equal(await pg.isVisible('#s-alerta'), false);
+  await ctx.close();
+});
+
 test('IA fora do ar: avisa e abre a prévia para digitar à mão, com o nome já preenchido', async () => {
   const nuvem = novaNuvem();
   nuvem.ia = () => ({ status: 503, corpo: { erro: 'IA não configurada' } });
