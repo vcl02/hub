@@ -78,6 +78,22 @@ test('gráficos só com 2 medidas ou mais (sem caixa vazia nem título)', async 
   await ctx.close();
 });
 
+test('gráficos: com o mouse em cima (ou o dedo) mostram a data e o valor do ponto mais perto', async () => {
+  const nuvem = novaNuvem();
+  [['2026-10-15', 104], ['2026-10-18', 103.1], ['2026-10-21', 102.3]].forEach(([data, peso]) => nuvem.tabelas.corpo_medida.push({ user_id: DONO, data, hora: '', peso, cintura: null }));
+  const { ctx, pg } = await abrirApp({ nuvem });
+  assert.equal(await pg.getAttribute('#c-grafico .dica', 'visibility'), 'hidden');
+  const caixa = await pg.locator('#c-grafico svg').boundingBox();
+  await pg.mouse.move(caixa.x + caixa.width * 0.55, caixa.y + caixa.height / 2);   // perto do ponto do meio
+  assert.equal(await pg.getAttribute('#c-grafico .dica', 'visibility'), 'visible');
+  assert.equal(await texto(pg, '#c-grafico .dica text'), '18/10 · 103,1 kg');
+  await pg.mouse.move(caixa.x + caixa.width - 2, caixa.y + 10);                     // ponta direita: o último
+  assert.equal(await texto(pg, '#c-grafico .dica text'), '21/10 · 102,3 kg');
+  await pg.mouse.move(caixa.x + caixa.width / 2, caixa.y + caixa.height + 200);     // saiu do gráfico: some
+  assert.equal(await pg.getAttribute('#c-grafico .dica', 'visibility'), 'hidden');
+  await ctx.close();
+});
+
 test('histórico: editar data, horário, peso e barriga (1 por dia), apagar com toque duplo', async () => {
   const nuvem = novaNuvem();
   nuvem.tabelas.corpo_medida.push({ user_id: DONO, data: '2026-10-15', hora: '07:00', peso: 91, cintura: null });

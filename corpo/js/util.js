@@ -63,5 +63,28 @@ function grafico(box, P, unidade, rotulo) {   // P = [{ data, valor }] em ordem 
     <circle cx="${x(P.length - 1)}" cy="${y(fim.valor)}" r="4.5" fill="var(--teal)"/>
     <text x="${l}" y="${H - 5}" font-size="11" fill="var(--muted)">${dataCurta(P[0].data)}</text>
     <text x="${W - r}" y="${H - 5}" text-anchor="end" font-size="11" fill="var(--muted)">${dataCurta(fim.data)} · ${fmt(fim.valor)} ${esc(unidade)}</text>
+    <g class="dica" visibility="hidden" pointer-events="none">
+      <line y1="${t}" y2="${H - b}" stroke="var(--muted)" stroke-dasharray="2 3"/>
+      <circle r="5" fill="var(--bg)" stroke="var(--teal)" stroke-width="2.5"/>
+      <rect height="20" rx="6" fill="#30353A" stroke="var(--line)"/>
+      <text font-size="11" fill="var(--fg)" text-anchor="middle"></text>
+    </g>
   </svg>`;
+  // Mouse em cima (ou dedo encostado/arrastando, no celular): data e valor do ponto mais perto, com uma linha até ele
+  const svg = box.querySelector('svg'), dica = svg.querySelector('.dica');
+  const mostrar = ev => {
+    const caixa = svg.getBoundingClientRect(), vx = (ev.clientX - caixa.left) * W / caixa.width;
+    const i = Math.max(0, Math.min(P.length - 1, Math.round((vx - l) * (P.length - 1) / (W - l - r)))), px = x(i), py = y(P[i].valor);
+    const txt = `${dataCurta(P[i].data)} · ${fmt(P[i].valor)} ${unidade}`, larg = txt.length * 6 + 14;
+    const cx = Math.min(W - r - larg / 2, Math.max(l + larg / 2, px)), ty = py - 30 < 0 ? py + 12 : py - 30;
+    dica.querySelector('line').setAttribute('x1', px); dica.querySelector('line').setAttribute('x2', px);
+    dica.querySelector('circle').setAttribute('cx', px); dica.querySelector('circle').setAttribute('cy', py);
+    Object.entries({ x: cx - larg / 2, y: ty, width: larg }).forEach(([k, v]) => dica.querySelector('rect').setAttribute(k, v));
+    dica.querySelector('text').setAttribute('x', cx); dica.querySelector('text').setAttribute('y', ty + 14);
+    dica.querySelector('text').textContent = txt;
+    dica.setAttribute('visibility', 'visible');
+  };
+  svg.addEventListener('pointermove', mostrar);
+  svg.addEventListener('pointerdown', mostrar);
+  svg.addEventListener('pointerleave', () => dica.setAttribute('visibility', 'hidden'));
 }

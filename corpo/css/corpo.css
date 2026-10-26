@@ -73,7 +73,7 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 
 /* ---------- Gráficos ---------- */
 .chart{padding:10px}
-.chart svg{display:block;width:100%;height:auto}
+.chart svg{display:block;width:100%;height:auto;touch-action:pan-y;cursor:crosshair}   /* arrastar o dedo para o lado mostra os pontos; para cima e para baixo rola */
 
 /* ---------- Histórico ---------- */
 .hist{list-style:none;margin:0;padding:0}
