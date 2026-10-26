@@ -122,7 +122,10 @@ test('evacuação: +1 grava com o horário de agora, conta, tira com toque duplo
   assert.equal(await texto(pg, '#ev-total'), '0');
   assert.equal(await texto(pg, '#ev-ultima'), '3 dias sem evacuar (última em 19/10)');   // só aparece com 3 dias ou mais
   await pg.click('#ev-mais');
+  await sincronizado(pg);                                                // já na nuvem: o +1 seguinte também precisa subir
   await pg.clock.fastForward('06:30:00'); await pg.click('#ev-mais');   // 14:30
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.corpo_dia.find(x => x.data === '2026-10-22').evacuacoes, ['08:00', '14:30']);
   assert.equal(await texto(pg, '#ev-total'), '2');
   assert.deepEqual(await pg.$$eval('#ev-horas button', B => B.map(b => b.textContent)), ['08:00 ×', '14:30 ×']);
   assert.equal(await pg.isVisible('#ev-ultima'), false);                  // evacuou hoje: sem linha

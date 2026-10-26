@@ -14,7 +14,8 @@ const TABELAS = { corpo_medida: 'data', corpo_dia: 'data' };
 function linhas(d) {   // db → { tabela: { data: linha } }
   return {
     corpo_medida: Object.fromEntries(d.medidas.map(m => [m.data, { data: m.data, hora: m.hora || '', peso: m.peso ?? null, cintura: m.cintura ?? null }])),
-    corpo_dia: Object.fromEntries(d.dias.map(x => [x.data, { data: x.data, evacuou: null, evacuacoes: x.evacuacoes, sono: x.sono ?? null }]))
+    // evacuacoes copiada: a base não pode mudar junto quando o +1 mexe na lista do dia
+    corpo_dia: Object.fromEntries(d.dias.map(x => [x.data, { data: x.data, evacuou: null, evacuacoes: [...x.evacuacoes], sono: x.sono ?? null }]))
   };
 }
 // base das versões antigas (só pesagens, { data: linha }) → formato com as duas tabelas
