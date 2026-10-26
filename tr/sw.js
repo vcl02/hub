@@ -3,9 +3,9 @@
 // domínios — Supabase e fontes do Google ficam fora deste worker.
 const CACHE_ESTATICO = 'carga-estatico';
 const ARQUIVOS_ESTATICOS = [
-  './js/config.js', './js/util.js', './js/piramide.js', './js/banco.js', './js/login.js', './js/pontos.js', './js/inicio.js', './js/exercicio.js', './js/corpo.js', './js/treino.js', './js/series.js', './js/interacoes.js', './js/ajustes.js', './js/bootstrap.js',
+  './js/config.js', './js/util.js', './js/piramide.js', './js/banco.js', './js/login.js', './js/pontos.js', './js/inicio.js', './js/exercicio.js', './js/treino.js', './js/series.js', './js/interacoes.js', './js/ajustes.js', './js/bootstrap.js',
   './css/base.css', './css/inicio.css', './css/telas.css', './css/flutuantes.css', './css/exercicio.css', './css/resumo.css',
-  './', './index.html', './supabase.js', '../perfil.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
+  './', './index.html', './supabase.js', '../corpo/perfil.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', evento => {
   evento.waitUntil(caches.open(CACHE_ESTATICO).then(cache => Promise.all(

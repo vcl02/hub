@@ -4,7 +4,7 @@
 const CACHE_ESTATICO = 'al-estatico';
 const ARQUIVOS_ESTATICOS = [
   './js/config.js', './js/util.js', './js/banco.js', './js/conta.js', './js/ia.js', './js/telas.js', './js/bootstrap.js',
-  './css/al.css', './', './index.html', '../supabase.js', '../perfil.js', './manifest.webmanifest', './icons/al-192.png', './icons/al-512.png'];
+  './css/al.css', './', './index.html', '../supabase.js', '../corpo/perfil.js', './manifest.webmanifest', './icons/al-192.png', './icons/al-512.png'];
 
 self.addEventListener('install', evento => {
   evento.waitUntil(caches.open(CACHE_ESTATICO).then(cache => Promise.all(

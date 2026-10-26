@@ -5,10 +5,9 @@
 .ed-inline{display:flex;gap:4px;align-items:center;flex-wrap:wrap;font-size:var(--t-sm);color:var(--muted)}
 .ed-inline input{border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:5px 6px;font-size:.85rem;color:var(--fg);max-width:4.6em}
 .ed-inline input[type=date]{max-width:7.6em}
-.ed-inline #em-peso,.ed-inline #em-cint{max-width:3.4em}
 /* sem o ícone de relógio/calendário dentro do campo: no celular, tocar no campo já abre o seletor */
 .ed-inline input::-webkit-calendar-picker-indicator{display:none}
-/* Edição numa linha só: rótulo, campos e botões de ícone; se não couber (pesagem), os botões descem à direita */
+/* Edição numa linha só: rótulo, campos e botões de ícone; se não couber, os botões descem à direita */
 .hist li.editando{display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:8px}
 .hist li.editando .ed-acoes{margin-left:auto;gap:4px}
 .bt-ic{width:32px;height:32px;flex:none;display:grid;place-items:center;padding:0;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--muted)}

@@ -1,7 +1,7 @@
 // Treino: pirâmide, séries, aquecimento, tempo, um treino por dia, resumo e lembrete.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { prepararApp, abrirApp, arrastar, linhas } from './helpers/app.mjs';
+import { prepararApp, abrirApp, arrastar, linhas, novaNuvem } from './helpers/app.mjs';
 
 prepararApp();
 
@@ -229,8 +229,9 @@ test('nº do aparelho e anotações ficam salvos', async () => {
 });
 
 test('editar o horário do treino e ver calorias', async () => {
-  const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-21T19:00:00') });
-  await pg.click('#i-corpo'); await pg.fill('#c-peso', '90'); await pg.click('#c-form button[type=submit]'); await pg.goBack();
+  const nuvem = novaNuvem();
+  nuvem.tabelas.corpo_medida.push({ user_id: 'x', data: '2026-10-21', hora: '07:00', peso: '90', cintura: null });   // pesagem do app Corpo
+  const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-21T19:00:00'), nuvem });
   await pg.tap('.slot >> nth=0'); await pg.fill('#e-carga', '40'); await pg.dispatchEvent('#e-carga', 'input');
   await pg.clock.fastForward('10:00'); await pg.click('#t-feita');
   await pg.click('#e-finalizar');

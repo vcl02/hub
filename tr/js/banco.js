@@ -4,11 +4,13 @@
 // Cada mudança grava a cópia local na hora e, 0,8 s depois, envia ao Supabase só as linhas que mudaram
 // (diferença para "base", a última versão confirmada pelo servidor). Sem internet, fica pendente e envia ao reconectar.
 // Tabelas (todas com user_id e RLS "só o dono"): chave de cada linha entre colchetes.
-const TABELAS = { tr_exercicio: ['id'], tr_variacao: ['id'], tr_registro: ['variacao_id', 'data'], tr_treino: ['inicio'], tr_medida: ['data'] };
+const TABELAS = { tr_exercicio: ['id'], tr_variacao: ['id'], tr_registro: ['variacao_id', 'data'], tr_treino: ['inicio'] };
 const ORDEM = Object.keys(TABELAS);   // pais antes dos filhos
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const K_LOCAL = id => 'tr.db.' + id, K_BASE = id => 'tr.base.' + id;
 let db = null, usuario = null, base = null, enviando = false, tEnvio = null, erroSync = '';
+// Pesagens do app Corpo (só leitura, ../corpo/perfil.js): o peso das calorias do treino
+let medidas = [];
 function linhas(d) {   // db → { tabela: { chave: linha } }
   const L = Object.fromEntries(ORDEM.map(t => [t, {}]));
   const por = (t, l) => { L[t][TABELAS[t].map(k => l[k]).join('|')] = l; };
@@ -18,7 +20,6 @@ function linhas(d) {   // db → { tabela: { chave: linha } }
   });
   d.registros.forEach(r => por('tr_registro', { variacao_id: r.variacao, data: r.data, series: r.series }));
   d.treinos.forEach(t => por('tr_treino', { inicio: new Date(t.inicio).toISOString(), fim: new Date(t.fim).toISOString(), fechado: !!t.fechado }));
-  d.medidas.forEach(m => por('tr_medida', { data: m.data, hora: m.hora || '', peso: m.peso, cintura: m.cintura ?? null }));
   return L;
 }
 function deLinhas(R) {   // linhas do servidor → db
@@ -26,8 +27,7 @@ function deLinhas(R) {   // linhas do servidor → db
   return preparar({
     exercicios: [...R.tr_exercicio].sort((a, b) => a.ordem - b.ordem).map(e => ({ ...e, variacoes: (vs[e.id] || []).sort((a, b) => a.ordem - b.ordem) })),
     registros: R.tr_registro.map(r => ({ variacao: r.variacao_id, data: r.data, series: r.series })),
-    treinos: R.tr_treino.map(t => ({ inicio: Date.parse(t.inicio), fim: Date.parse(t.fim), fechado: t.fechado })),
-    medidas: R.tr_medida
+    treinos: R.tr_treino.map(t => ({ inicio: Date.parse(t.inicio), fim: Date.parse(t.fim), fechado: t.fechado }))
   });
 }
 function diferenca(a, b) {   // o que enviar para o servidor sair de a e chegar em b; null = nada
@@ -100,7 +100,7 @@ function alterar(acao) {
 function bancoNovo() {
   return {
     exercicios: PADRAO.map(([grupo, regiao, descanso, nomes]) => ({ grupo, regiao, series: 3, reps: 12, descanso, modo: MODO_PADRAO, variacoes: nomes.map(nome => ({ nome })) })),
-    registros: [], treinos: [], medidas: []
+    registros: [], treinos: []
   };
 }
 // reps aceitam o formato antigo em texto ("10–12" → 12)
@@ -136,7 +136,5 @@ function preparar(d) {           // valida, completa campos e migra formatos ant
     return { variacao: r.variacao, data: r.data, series: series.map(s => ({ kg: Math.max(0, num(s.kg) || 0), reps: Math.max(0, parseInt(s.reps, 10) || 0), ...(s.falha === true && { falha: true }) })) };
   }).filter(r => varDe.has(r.variacao) && r.series.length && r.series.every(s => s.kg > 0));
   const treinos = (d.treinos || []).filter(t => t && t.inicio > 0 && t.fim >= t.inicio).map(t => ({ inicio: +t.inicio, fim: +t.fim, ...(t.fechado && { fechado: true }) }));
-  const medidas = (d.medidas || []).filter(m => m && dataOk(m.data) && num(m.peso) > 0)
-    .map(m => ({ data: m.data, hora: /^\d{2}:\d{2}$/.test(m.hora) ? m.hora : '', peso: num(m.peso), ...(num(m.cintura) > 0 && { cintura: num(m.cintura) }) }));
-  return { exercicios, registros, treinos, medidas };
+  return { exercicios, registros, treinos };   // pesagens antigas da cópia local (medidas) ficam de fora: agora são do app Corpo
 }

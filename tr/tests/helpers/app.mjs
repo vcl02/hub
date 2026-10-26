@@ -15,9 +15,9 @@ let servidor;
 export function prepararApp() {
   before(async () => {
     servidor = http.createServer((req, res) => {
-      // Fora do hub o tr fica na raiz do servidor: ../perfil.js (perfil do hub) chega como /perfil.js.
+      // Fora do hub o tr fica na raiz do servidor: ../corpo/perfil.js (módulo do app Corpo) chega como /corpo/perfil.js.
       const u = decodeURIComponent(req.url.split('?')[0]);
-      let p = u === '/perfil.js' ? path.join(RAIZ, '..', 'perfil.js') : path.join(RAIZ, u);
+      let p = u === '/corpo/perfil.js' ? path.join(RAIZ, '..', 'corpo', 'perfil.js') : path.join(RAIZ, u);
       if (p.endsWith(path.sep)) p += 'index.html';
       fs.readFile(p, (e, d) => {
         if (e) { res.writeHead(404); res.end(); return; }
@@ -33,7 +33,7 @@ export function prepararApp() {
 }
 
 // Supabase falso (auth + PostgREST em memória): o teste não depende de internet nem do banco real.
-export const CHAVES = { tr_exercicio: ['id'], tr_variacao: ['id'], tr_registro: ['variacao_id', 'data'], tr_treino: ['inicio'], tr_medida: ['data'] };
+export const CHAVES = { tr_exercicio: ['id'], tr_variacao: ['id'], tr_registro: ['variacao_id', 'data'], tr_treino: ['inicio'], corpo_medida: ['data'] };   // corpo_medida: só leitura (pesagens do app Corpo)
 export const novaNuvem = () => ({ online: true, tabelas: Object.fromEntries(Object.keys(CHAVES).map(t => [t, []])) });
 const b64u = o => Buffer.from(JSON.stringify(o)).toString('base64url');
 export async function fakeSupabase(ctx, nuvem, id = '32f70255-30a0-4e2b-ad76-31d7a1bf54f7') {

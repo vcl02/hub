@@ -2,7 +2,7 @@
 // Pontos, nível, conquistas, calorias e resumo de um dia (tudo calculado dos dados).
 // ===== Pontos, nível, conquistas e resumo (calculados dos dados) =====
 const PONTOS = [['treino', 50, 'por dia de treino'], ['exercicio', 10, 'por exercício feito'], ['piramide', 10, 'por pirâmide completa'],
-  ['recorde', 25, 'por recorde de carga'], ['extra', 20, 'por treino extra na segunda'], ['pesagem', 10, 'por pesagem semanal']];
+  ['recorde', 25, 'por recorde de carga'], ['extra', 20, 'por treino extra na segunda']];
 const PTS_NIVEL = 300;
 const semanaDe = d => { const x = deIso(d); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return iso(x); };
 const somaDias = (d, n) => { const x = deIso(d); x.setDate(x.getDate() + n); return iso(x); };
@@ -21,7 +21,7 @@ function recordesAte(fim) {   // registros que bateram a maior carga anterior da
 }
 function estatisticas() {
   const { ex } = mapas(), dias = diasTreinados();
-  const s = { treino: dias.size, exercicio: db.registros.length, piramide: 0, recorde: recordesAte().size, extra: 0, pesagem: 0, perda: 0, rapido: false };
+  const s = { treino: dias.size, exercicio: db.registros.length, piramide: 0, recorde: recordesAte().size, extra: 0, rapido: false };
   s.piramide = db.registros.filter(r => completo(r, ex.get(r.variacao))).length;
   s.extra = [...dias].filter(d => DIAS_EXTRA.includes(deIso(d).getDay())).length;
   const porSemana = {}; dias.forEach(d => { const w = semanaDe(d); porSemana[w] = (porSemana[w] || 0) + 1; });
@@ -33,9 +33,6 @@ function estatisticas() {
   s.melhorSequencia = 0; let corrida = 0;
   const semanas = Object.keys(porSemana).sort();
   if (semanas.length) for (let x = semanas[0]; x <= semanaDe(hoje()); x = somaDias(x, 7)) { corrida = (porSemana[x] || 0) >= 2 ? corrida + 1 : 0; s.melhorSequencia = Math.max(s.melhorSequencia, corrida); }
-  s.pesagem = new Set(db.medidas.map(m => semanaDe(m.data))).size;
-  const ms = [...db.medidas].sort((a, b) => a.data.localeCompare(b.data));
-  if (ms.length > 1) s.perda = Math.round((ms[0].peso - ms[ms.length - 1].peso) * 10) / 10;
   const primeiro = [...dias].sort()[0];
   s.dias = primeiro ? diasDesde(primeiro) : 0;   // dias desde o 1º treino
   s.rapido = db.treinos.some(t => { const min = (t.fim - t.inicio) / 6e4, d = iso(new Date(t.inicio)); return min >= 15 && min <= 45 && db.registros.filter(r => r.data === d).length >= 4; });
@@ -50,16 +47,13 @@ const CONQUISTAS = [
   ['Semana cheia', '3 treinos na mesma semana (com o extra)', s => s.semanasCheias >= 1],
   ['Pirâmide perfeita', 'Bata todas as reps de uma pirâmide', s => s.piramide >= 1],
   ['Primeiro recorde', 'Suba a carga de um exercício', s => s.recorde >= 1],
-  ['Na balança', '4 pesagens em semanas diferentes', s => s.pesagem >= 4],
   ['Rápido e completo', 'Treino de até 45 min com 4+ exercícios', s => s.rapido],
   ['4 semanas seguidas', 'Meta de 2 treinos por 4 semanas seguidas', s => s.melhorSequencia >= 4],
   ['10 treinos', '10 dias de treino', s => s.treino >= 10],
-  ['−2 kg', 'Perca 2 kg desde a 1ª pesagem', s => s.perda >= 2],
   ['10 recordes', '10 recordes de carga', s => s.recorde >= 10],
   ['20 pirâmides perfeitas', 'Bata todas as reps em 20 pirâmides', s => s.piramide >= 20],
   ['8 semanas seguidas', 'Meta de 2 treinos por 8 semanas seguidas', s => s.melhorSequencia >= 8],
   ['25 treinos', '25 dias de treino', s => s.treino >= 25],
-  ['−5 kg', 'Perca 5 kg desde a 1ª pesagem', s => s.perda >= 5],
   ['50 treinos', '50 dias de treino', s => s.treino >= 50],
   // Longo prazo, ano a ano. Base: meta de 2 treinos/semana batida em ~80% das semanas ≈ 80 treinos e 40 semanas batidas por ano.
   ...[1, 2, 3, 4, 5].flatMap(n => [
@@ -73,7 +67,7 @@ const CONQUISTAS = [
 function ganhosDoDia(dia) {
   const salvo = db; let antes;
   try {
-    db = { ...db, registros: db.registros.filter(r => r.data < dia), treinos: db.treinos.filter(t => iso(new Date(t.inicio)) < dia), medidas: db.medidas.filter(m => m.data < dia) };
+    db = { ...db, registros: db.registros.filter(r => r.data < dia), treinos: db.treinos.filter(t => iso(new Date(t.inicio)) < dia) };
     antes = estatisticas();
   } finally { db = salvo; }
   const depois = estatisticas();
@@ -102,9 +96,8 @@ telas.conquistas = () => {
   $('q-lista').innerHTML = CONQUISTAS.map(([nome, desc, f, ano], i) => `${ano && ano !== CONQUISTAS[i - 1][3] ? `<li class="q-ano">${ano}</li>` : ''}<li class="${f(s) ? 'on' : ''}"><span class="q-ico" aria-hidden="true">${f(s) ? '★' : '☆'}</span><span><b>${nome}</b><small>${desc}</small></span></li>`).join('');
   $('q-pontos').innerHTML = PONTOS.map(([, p, txt]) => `<li><b>+${p}</b> ${txt}</li>`).join('');
 };
-// Calorias: kcalTreino (../perfil.js, a mesma conta do al) com a pesagem mais recente até o dia do treino.
-function pesoEm(dia) { const L = [...db.medidas].sort((a, b) => b.data.localeCompare(a.data)); return (L.find(m => m.data <= dia) || L[L.length - 1])?.peso; }
-const kcal = t => { const dia = iso(new Date(t.inicio)), p = pesoEm(dia); return p ? kcalTreino(p, dia, t.fim - t.inicio) : null; };
+// Calorias: kcalTreino com a pesagem mais recente até o dia do treino (pesoNoDia), as duas do app Corpo (../corpo/perfil.js).
+const kcal = t => { const dia = iso(new Date(t.inicio)), p = pesoNoDia(medidas, dia); return p ? kcalTreino(p, dia, t.fim - t.inicio) : null; };
 function resumoDia(dia) {
   const { ex, va } = mapas(), regs = db.registros.filter(r => r.data === dia), rec = recordesAte(dia);
   const r = { regs, series: 0, volume: 0, recordes: regs.filter(x => rec.has(x)).length, completas: regs.filter(x => completo(x, ex.get(x.variacao))).length };

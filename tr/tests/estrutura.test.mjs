@@ -42,8 +42,8 @@ test('index.html carrega todos os css/ e js/, e o service worker guarda os mesmo
   assert.deepEqual([...jsDoHtml].sort(), listar('js', '.js').sort());
   assert.equal(jsDoHtml[0], 'js/config.js'); assert.equal(jsDoHtml.at(-1), 'js/bootstrap.js');
   assert.ok(html.indexOf('src="supabase.js"') < html.indexOf('src="js/'), 'supabase.js antes dos módulos');
-  assert.ok(html.indexOf('src="../perfil.js"') > 0 && html.indexOf('src="../perfil.js"') < html.indexOf('src="js/'), '../perfil.js (perfil do hub) antes dos módulos');
-  assert.match(ler('sw.js'), /'\.\.\/perfil\.js'/, 'sw.js guarda ../perfil.js');
+  assert.ok(html.indexOf('src="../corpo/perfil.js"') > 0 && html.indexOf('src="../corpo/perfil.js"') < html.indexOf('src="js/'), '../corpo/perfil.js (módulo do app Corpo) antes dos módulos');
+  assert.match(ler('sw.js'), /'\.\.\/corpo\/perfil\.js'/, 'sw.js guarda ../corpo/perfil.js');
   const sw = ler('sw.js'), guardados = [...sw.matchAll(/'\.\/([^']*)'/g)].map(m => m[1]);
   for (const f of [...cssDoHtml, ...jsDoHtml, 'index.html', 'supabase.js', 'manifest.webmanifest']) assert.ok(guardados.includes(f), `sw.js não guarda ${f}`);
   for (const f of guardados.filter(Boolean)) assert.ok(existsSync(path.join(RAIZ, f)), `sw.js guarda ${f}, que não existe`);
@@ -86,7 +86,8 @@ test('higiene textual do .editorconfig (scripts/check-style.mjs)', () => {
 
 test('hub: marca do hub na tela inicial volta para ../ e o service worker só apaga os próprios caches', () => {
   assert.match(html, /<a class="icon-btn" href="\.\.\/" id="i-hub" title="Hub" aria-label="Hub">/);
-  assert.ok(html.indexOf('id="i-hub"') < html.indexOf('id="i-corpo"'));
+  assert.ok(html.indexOf('id="i-hub"') < html.indexOf('data-ir="editar"'));
+  assert.doesNotMatch(html, /id="(i-corpo|v-corpo)"/);                                        // pesagem é do app Corpo
   // fin e a página inicial do hub dividem a origem (e os caches) com o tr.
   assert.match(ler('sw.js'), /ks\.filter\(k => k\.startsWith\('carga-'\) && k !== CACHE_ESTATICO\)/);
   assert.match(ler('docs/REGRAS.md'), /marca do hub \(volta ao hub, `\.\.\/`\)/);

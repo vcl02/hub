@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1B1E21">
+<meta name="color-scheme" content="dark">
+<title>Corpo</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/corpo-192.png">
+<link rel="apple-touch-icon" href="icons/corpo-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="css/corpo.css">
+</head>
+<body>
+<div class="wrap">
+
+<!-- Login próprio: só aparece com o app servido fora do hub (testes). Dentro do hub, sem sessão vai para o login de lá. -->
+<section id="v-login" class="view" hidden>
+  <form id="l-form" class="login" novalidate>
+    <fieldset id="l-campos">
+      <input id="l-usuario" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Usuário" aria-label="Usuário">
+      <input id="l-senha" type="password" autocomplete="current-password" placeholder="Senha" aria-label="Senha">
+      <button type="submit" class="btn primario">Entrar</button>
+    </fieldset>
+    <p id="l-erro" class="erro" role="alert"></p>
+  </form>
+</section>
+
+<!-- Corpo: peso atual, perfil, medida do dia, evolução e histórico. Tudo preenchido por js/telas.js. -->
+<section id="v-corpo" class="view" hidden>
+  <header class="topo">
+    <h1>Corpo</h1>
+    <!-- Hub: volta à página inicial (../), que abre os outros apps -->
+    <a class="icon-btn" href="../" id="i-hub" title="Hub" aria-label="Hub">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M9.9 9.9 6.6 6.6M14.1 9.9l3.3-3.3M9.9 14.1l-3.3 3.3M14.1 14.1l3.3 3.3"/><circle cx="5" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></svg>
+    </a>
+  </header>
+  <div class="peso-card" id="c-resumo" hidden></div>
+  <p class="perfil" id="c-perfil"></p>
+
+  <!-- Medida do dia (hoje por padrão; outro dia pela data): peso e/ou barriga, 1 por dia -->
+  <form id="c-form" class="cartao form" novalidate>
+    <div class="quando">
+      <input id="c-data" type="date" aria-label="Dia" required>
+      <input id="c-hora" type="time" aria-label="Horário da medida">
+    </div>
+    <p class="aviso" id="c-aviso" hidden></p>
+    <div class="campo">
+      <label for="c-peso">Peso</label>
+      <div class="stepper">
+        <button type="button" data-passo="peso" data-dir="-1" aria-label="Diminuir peso">−</button>
+        <div class="mid"><input id="c-peso" inputmode="decimal" autocomplete="off" placeholder="—"><span class="unit">kg</span></div>
+        <button type="button" data-passo="peso" data-dir="1" aria-label="Aumentar peso">+</button>
+      </div>
+    </div>
+    <div class="campo">
+      <label for="c-cintura" title="Na linha do umbigo">Barriga</label>
+      <div class="stepper">
+        <button type="button" data-passo="cintura" data-dir="-1" aria-label="Diminuir barriga">−</button>
+        <div class="mid"><input id="c-cintura" inputmode="decimal" autocomplete="off" placeholder="—"><span class="unit">cm</span></div>
+        <button type="button" data-passo="cintura" data-dir="1" aria-label="Aumentar barriga">+</button>
+      </div>
+    </div>
+    <button class="btn primario" type="submit">Salvar</button>
+  </form>
+
+  <h3 class="sec">Evolução do peso</h3>
+  <div id="c-grafico" class="cartao chart"></div>
+  <h3 class="sec">Evolução da barriga</h3>
+  <div id="c-grafico-cint" class="cartao chart"></div>
+  <h3 class="sec">Histórico</h3>
+  <ul id="c-historico" class="cartao hist"></ul>
+</section>
+
+<p id="sync" class="sync" role="status" hidden></p>
+<p id="toast" class="toast" role="status" hidden></p>
+</div>
+<script src="../supabase.js"></script>
+<script src="perfil.js"></script>
+<script src="js/config.js"></script>
+<script src="js/util.js"></script>
+<script src="js/banco.js"></script>
+<script src="js/telas.js"></script>
+<script src="js/bootstrap.js"></script>
+</body>
+</html>

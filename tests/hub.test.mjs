@@ -12,7 +12,7 @@ const html = ler('index.html');
 const cards = [...html.matchAll(/<a class="app" href="([^"]+)" style="--cor:#[0-9A-F]{6}">\s*<img class="app-icone" src="([^"]+)"/g)].map(m => ({ href: m[1], icone: m[2] }));
 
 test('um card por app; cada um aponta para uma pasta com index.html e um ícone que existe', () => {
-  assert.deepEqual(cards.map(c => c.href), ['fin/', 'tr/', 'al/']);   // os do hub; atalhos externos (class externo) à parte
+  assert.deepEqual(cards.map(c => c.href), ['fin/', 'tr/', 'al/', 'corpo/']);   // os do hub; atalhos externos (class externo) à parte
   for (const { href, icone } of cards) {
     assert.ok(existe(`${href}index.html`), href);
     assert.ok(existe(icone), icone);
@@ -23,6 +23,7 @@ test('cada app volta para o hub (../)', () => {
   assert.match(ler('fin/index.html'), /<a id=voltarHub class=btIcone href="\.\.\/"/);
   assert.match(ler('tr/index.html'), /<a class="icon-btn" href="\.\.\/" id="i-hub"/);
   assert.match(ler('al/index.html'), /<a class="icon-btn" href="\.\.\/" id="i-hub"/);
+  assert.match(ler('corpo/index.html'), /<a class="icon-btn" href="\.\.\/" id="i-hub"/);
 });
 
 test('tema escuro único: hub, fin e tr com o mesmo fundo', () => {
@@ -30,7 +31,8 @@ test('tema escuro único: hub, fin e tr com o mesmo fundo', () => {
   assert.match(ler('fin/css/base.css'), /--bg: #1B1E21;/);
   assert.match(ler('tr/css/base.css'), /--bg:#1B1E21;/);
   assert.match(ler('al/css/al.css'), /--bg:#1B1E21;/);
-  for (const arquivo of ['index.html', 'fin/index.html', 'tr/index.html', 'al/index.html']) assert.match(ler(arquivo), /<meta name=("theme-color"|theme-color) content="#1B1E21">/, arquivo);
+  assert.match(ler('corpo/css/corpo.css'), /--bg:#1B1E21;/);
+  for (const arquivo of ['index.html', 'fin/index.html', 'tr/index.html', 'al/index.html', 'corpo/index.html']) assert.match(ler(arquivo), /<meta name=("theme-color"|theme-color) content="#1B1E21">/, arquivo);
   assert.match(html, /<meta name="color-scheme" content="dark">/);
 });
 
@@ -50,6 +52,7 @@ test('service workers dividem a origem sem apagar o cache um do outro', () => {
   assert.match(sw, /if \(!ENDERECOS\.has\(url\.href\)\) return;/);   // nunca atende fin/ nem tr/
   assert.match(ler('tr/sw.js'), /k\.startsWith\('carga-'\) && k !== CACHE_ESTATICO/);
   assert.match(ler('al/sw.js'), /k\.startsWith\('al-'\) && k !== CACHE_ESTATICO/);
+  assert.match(ler('corpo/sw.js'), /k\.startsWith\('corpo-'\) && k !== CACHE_ESTATICO/);
   assert.doesNotMatch(ler('fin/service-worker.js'), /caches\.delete/);
 });
 
@@ -91,6 +94,7 @@ test('marca do hub em todo lugar: favicon, celular, login e o botão de volta no
   assert.ok(marca(ler('fin/index.html').slice(ler('fin/index.html').indexOf('id=voltarHub'))), 'fin');
   assert.ok(marca(ler('tr/index.html').slice(ler('tr/index.html').indexOf('id="i-hub"'))), 'tr');
   assert.ok(marca(ler('al/index.html').slice(ler('al/index.html').indexOf('id="i-hub"'))), 'al');
+  assert.ok(marca(ler('corpo/index.html').slice(ler('corpo/index.html').indexOf('id="i-hub"'))), 'corpo');
 });
 
 test('atalho externo do Google Agenda: abre em outra aba; no Android, o app (intent) com a web de reserva', () => {
@@ -113,21 +117,29 @@ test('card não fica selecionado ao voltar de um app: hover só com mouse, toque
   assert.match(hub, /classList\.add\('tocado'\); toque = setTimeout\(soltarCard, ms\)/);   // e ela some sozinha
 });
 
-test('perfil do hub (perfil.js): dados pessoais e calorias do treino num lugar só, carregados pelo tr e pelo al', () => {
-  const perfil = ler('perfil.js');
+test('dados sobre mim num lugar só: corpo/perfil.js, carregado pelo tr, pelo al e pelo próprio Corpo', () => {
+  const perfil = ler('corpo/perfil.js');
+  assert.ok(!existe('perfil.js'), 'o perfil saiu da raiz');
   assert.match(perfil, /^'use strict';\n\/\/ /);
   const ctx = {};
-  new Function('ctx', perfil.replace(/^'use strict';/, '') + '\nctx.PERFIL = PERFIL; ctx.idadeEm = idadeEm; ctx.tmb = tmb; ctx.kcalTreino = kcalTreino;')(ctx);
+  new Function('ctx', perfil.replace(/^'use strict';/, '') + '\nObject.assign(ctx, { PERFIL, idadeEm, tmb, kcalTreino, pesoNoDia, ordenarMedidas });')(ctx);
   assert.deepEqual({ ...ctx.PERFIL }, { altura: 1.78, nascimento: '2002-09-14', sexo: 'M' });
   assert.ok(Object.isFrozen(ctx.PERFIL));
   assert.equal(ctx.idadeEm('2026-09-13'), 23);   // véspera do aniversário
   assert.equal(ctx.idadeEm('2026-09-14'), 24);
   assert.equal(ctx.tmb(100, '2026-09-14'), 1998);   // 10×100 + 6,25×178 − 5×24 + 5
   assert.equal(ctx.kcalTreino(100, '2026-09-14', 36e5), 291);   // 3,5 MET × 1998 ÷ 24 × 1 h
+  const M = ctx.ordenarMedidas([{ data: '2026-10-20', peso: '91' }, { data: '2026-10-10', peso: 93, hora: 'x' }, { data: '2026-10-22', cintura: 100 }, { data: 'ruim', peso: 1 }]);
+  assert.deepEqual(JSON.parse(JSON.stringify(M)), [{ data: '2026-10-10', hora: '', peso: 93 }, { data: '2026-10-20', hora: '', peso: 91 }, { data: '2026-10-22', hora: '', cintura: 100 }]);
+  assert.deepEqual([ctx.pesoNoDia(M, '2026-10-01'), ctx.pesoNoDia(M, '2026-10-15'), ctx.pesoNoDia(M, '2026-10-30'), ctx.pesoNoDia([], '2026-10-30')], [93, 93, 91, null]);
   for (const app of ['tr', 'al']) {
-    assert.match(ler(`${app}/index.html`), /<script src="\.\.\/perfil\.js"><\/script>/, app);
-    assert.match(ler(`${app}/sw.js`), /'\.\.\/perfil\.js'/, app);
+    assert.match(ler(`${app}/index.html`), /<script src="\.\.\/corpo\/perfil\.js"><\/script>/, app);
+    assert.match(ler(`${app}/sw.js`), /'\.\.\/corpo\/perfil\.js'/, app);
+    assert.doesNotMatch(ler(`${app}/index.html`), /src="\.\.\/perfil\.js"/, app);
   }
+  assert.match(ler('corpo/index.html'), /<script src="perfil\.js"><\/script>/);
   assert.doesNotMatch(ler('tr/js/config.js'), /const (ALTURA|NASCIMENTO|SEXO|MET)\b/, 'perfil e conta do treino não se repetem no tr');
   assert.doesNotMatch(ler('al/js/config.js'), /const (ALTURA|NASCIMENTO|SEXO|MET_MUSCULACAO)\b/, 'nem no al');
+  // Só o Corpo grava as pesagens: tr e al não escrevem em corpo_medida nem em tr_medida
+  for (const f of ['tr/js/banco.js', 'al/js/banco.js']) assert.doesNotMatch(ler(f), /tr_medida|corpo_medida'?\s*[:\]]/, f);
 });

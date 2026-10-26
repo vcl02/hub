@@ -22,16 +22,16 @@ test('sem internet guarda no aparelho e envia ao reconectar', async () => {
   const { ctx, pg, nuvem, erros } = await abrirApp();
   await sincronizado(pg);
   nuvem.online = false;
-  await pg.click('#i-corpo'); await pg.fill('#c-peso', '91'); await pg.click('#c-form button[type=submit]');
+  await pg.tap('.slot >> nth=0'); await pg.fill('#e-carga', '40'); await pg.dispatchEvent('#e-carga', 'input'); await pg.click('#t-feita'); await pg.click('#t-feita');
   await pg.waitForFunction(() => erroSync);
   await pg.goBack();
   assert.match(await pg.textContent('#i-sync'), /Sem internet/);
   await pg.reload(); await pg.waitForSelector('#v-inicio:not([hidden])');                     // abre offline com a cópia local
-  await pg.click('#i-corpo'); assert.match(await pg.textContent('#c-historico'), /91 kg/); await pg.goBack();
+  assert.match(await pg.textContent('.slot >> nth=0'), /40kg/);
   nuvem.online = true;
   await pg.evaluate(() => dispatchEvent(new Event('online')));
   await sincronizado(pg);
-  assert.equal(nuvem.tabelas.tr_medida[0].peso, 91);
+  assert.equal(nuvem.tabelas.tr_registro[0].series[0].kg, 40);
   assert.equal(await pg.isVisible('#i-sync'), false);
   assert.deepEqual(erros, []); await ctx.close();
 });

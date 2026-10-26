@@ -1,0 +1,15 @@
+{
+  "name": "Corpo",
+  "short_name": "Corpo",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1B1E21",
+  "theme_color": "#1B1E21",
+  "icons": [
+    { "src": "icons/corpo-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/corpo-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

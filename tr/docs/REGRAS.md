@@ -8,7 +8,7 @@ Fonte de verdade do comportamento do app. Toda mudança de regra atualiza este a
 - As dicas de execução dos exercícios (posição, postura) não são ajuda do app: ficam, dentro de "Como fazer, ajustes e anotações".
 - `aria-label` em botões só de ícone continua (não aparece na tela).
 - Tela inicial: só "Full body" no título (sem data), centralizado na altura dos botões do canto.
-- Edição de treino e de pesagem na própria linha, com botões só de ícone: lixeira (excluir, toque duplo), X (cancelar) e ✓ (salvar). No histórico de pesagens, lápis (editar) e lixeira (apagar, toque duplo).
+- Edição de treino na própria linha, com botões só de ícone: lixeira (excluir, toque duplo), X (cancelar) e ✓ (salvar).
 - Confirmações (apagar, excluir) são por toque duplo: o 1º toque deixa o botão vermelho por 3 s, o 2º confirma. Sem alertas nem avisos escritos pedindo confirmação.
 - Voltar: só a seta azul "<" no canto superior esquerdo (sem texto).
 - Esc: fecha a tela cheia aberta (garrafinha = X, parabéns = Ver resumo), senão cancela a edição na linha, senão volta uma tela. Na tela inicial e no login não faz nada.
@@ -21,7 +21,7 @@ Fonte de verdade do comportamento do app. Toda mudança de regra atualiza este a
 - Mesma conta do fin. Só a conta `DONO` (`js/config.js`) entra: outra conta sai na hora com "Esta conta não tem acesso ao Treino.". O RLS das tabelas `tr_*` também só libera essa conta (migration 02).
 - Conta recriada (24/10/2026, `DONO_ANTIGO` em `js/config.js`): a nuvem da conta antiga foi apagada com ela. Ao entrar com a nova, se o aparelho não tem cópia dela mas tem a da antiga, o app adota essa cópia e reenvia tudo; a cópia antiga fica guardada.
 - Sem "Esqueci a senha" e sem "Trocar senha": a senha é a do Supabase e se troca fora do app.
-- Tela inicial, canto superior direito: marca do hub (volta ao hub, `../`), balança (peso corporal), engrenagem, que vai direto para a edição de exercícios (no fim dela: instalar e o estado da conta e da nuvem). Não há tela de Ajustes nem botão de sair: o login e o Sair ficam só na página inicial do hub.
+- Tela inicial, canto superior direito: marca do hub (volta ao hub, `../`) e engrenagem, que vai direto para a edição de exercícios (no fim dela: instalar e o estado da conta e da nuvem). Não há tela de Ajustes nem botão de sair: o login e o Sair ficam só na página inicial do hub.
 - Nome do app: "Treino" (título, manifest e card do hub). Ícone (`icon-192.png`/`icon-512.png`, também no card do hub): halter branco em fundo azul, fundo inteiro para o sistema recortar.
 - A sessão fica salva no aparelho e é a mesma do hub: o app entra direto, inclusive sem internet. Sair só pelo hub; a cópia local continua no aparelho, e o que estiver pendente envia no próximo login.
 - Dentro do hub (`…/tr/`), o login é o da página inicial: sem sessão, o tr vai direto para `../?volta=tr/` e o hub devolve para cá depois de entrar (`irParaLoginDoHub` em `js/bootstrap.js`). A tela de login própria só aparece com o tr servido fora do hub (ex.: testes).
@@ -36,7 +36,8 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 | `tr_variacao` | `id` | exercicio_id, ordem (0 principal, 1 substituto, 2 halter), nome, unidade, passo, lados, equip, nota |
 | `tr_registro` | `variacao_id, data` | series `[{ kg, reps, falha? }]` (`falha: true` só na série que falhou) |
 | `tr_treino` | `inicio` | fim, fechado |
-| `tr_medida` | `data` | hora, peso, cintura (a barriga, na linha do umbigo: o nome da coluna ficou) |
+
+`tr_medida` (as pesagens que o Treino gravava) ficou como estava no banco, sem uso: as pesagens foram copiadas para `corpo_medida` e agora são do app Corpo (`../corpo/`). O Treino só lê `corpo_medida` (peso das calorias), nunca grava.
 
 - O app grava primeiro uma cópia local (`tr.db.<usuário>`) e, 0,8 s depois de cada mudança, envia só as linhas que mudaram em relação à última versão confirmada (`tr.base.<usuário>`): upsert de pais para filhos, delete de filhos para pais.
 - Sem internet, a mudança fica pendente e envia ao reconectar, ao voltar para o app ou a cada 1 min. Ao abrir, envia o pendente e só então baixa a versão da nuvem, que passa a valer.
@@ -70,20 +71,16 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 - **Lista da tela inicial em outro dia:** arrastar a lista (ou a barra de progresso) para a **direita** (o contrário das semanas) mostra, **na própria tela inicial**, o treino anterior: cada exercício com o que foi feito naquele dia (peso, reps, ✓ Feito / Não feito, ✗ Falhou), o progresso do dia ("Qua, 21/10 · 1/6") e o dia marcado em azul na semana, que acompanha. Para a esquerda avança até hoje; "Hoje" volta direto. Sair da tela inicial e voltar mostra hoje de novo.
 - **Lembrete da garrafinha:** tela cheia azul ao abrir o 1º exercício do dia (qualquer dia), até "Já peguei" (não volta mais no dia) ou o dia contar como treinado. O X (canto superior direito) só fecha: ela volta ao começar o treino de novo (reabrir o app) no mesmo dia.
 
-## Peso corporal
+## Peso e calorias
 
-- Pesagem diária: 1 por dia (a nova substitui a do dia), em qualquer horário. Peso de 30 a 300 kg; **barriga** opcional, medida **na linha do umbigo** (em cm; guardada no campo `cintura`), sem limite de valor (vazia ou 0 = sem barriga). Na tela inicial, a balança fica no canto superior (ao lado da engrenagem), com um ponto azul enquanto não houver pesagem hoje.
-- O horário é livre: o campo vem com a hora de agora. O habitual é o da pesagem mais recente; mais de 1 h fora dele só recomenda voltar a ele (aviso azul), nunca bloqueia.
-- Na edição dá para mudar data, horário, peso e barriga (vazia = sem barriga, sem limite de valor).
-- Gráficos: evolução do peso (com 2+ pesagens) e, com 2+ medidas de barriga, evolução da barriga. Com menos de 2 pontos, o gráfico e o título dele somem (vale também para a evolução da carga dos exercícios). O card do topo mostra a barriga mais recente e a variação desde a 1ª (menos = verde). Data no futuro ou dia que já tem pesagem é recusado.
-- **IMC:** peso ÷ altura² com a altura do perfil do hub = 1,78 m (`../perfil.js`), 1 casa decimal. Faixas da OMS com graus: < 16 Magreza III, < 17 Magreza II, < 18,5 Magreza I, < 25 Normal, < 30 Sobrepeso, < 35 Obesidade I, < 40 Obesidade II, ≥ 40 Obesidade III. No card do topo, IMC e faixa ficam numa linha ("IMC 31,5 · Obesidade I"); a data só aparece se a última pesagem não for de hoje; variação de peso ou de barriga igual a zero não aparece. O card também mostra quanto falta para a faixa seguinte rumo ao normal ("−7,5 kg até Sobrepeso"; abaixo do normal, "+X kg até…"; no normal, nada), em passos de 0,1 kg com o mesmo IMC arredondado da tela, para o número sempre bater com a faixa mostrada. Aparece no card do topo da tela de peso (peso atual em destaque, IMC e variação desde a 1ª pesagem) e em cada pesagem do histórico, numa linha só: peso e barriga juntos e o IMC logo depois ("102,3 kg · 101,5 cm · IMC 32,3"), com a hora embaixo da data.
-- **Perfil** (do hub, em `../perfil.js`: só no código, fora do banco, o mesmo para todos os apps): altura 1,78 m, nascimento 14/09/2002, sexo masculino. Idade e taxa basal também vêm de lá (`idadeEm`, `tmb`). A tela de peso mostra idade, altura e a taxa basal.
+- Pesagem, barriga, IMC e perfil ficam no app Corpo (`../corpo/`). O Treino não tem tela de peso nem grava pesagens: lê as do Corpo pelo módulo compartilhado `../corpo/perfil.js` (a cópia do aparelho na hora, a nuvem logo depois).
 - **Taxa basal (TMB):** Mifflin-St Jeor = 10 × peso + 6,25 × altura (cm) − 5 × idade + 5 (homem), em kcal/dia, com a idade no dia.
-- **Calorias:** estimativa com MET corrigido = 3,5 MET (Compendium of Physical Activities, 02054) × TMB ÷ 24 × horas de treino, com o peso da pesagem mais recente até o dia. A conta é `kcalTreino` do perfil do hub (`../perfil.js`), a mesma que o al usa no gasto do dia. O padrão assume 1 MET = 1 kcal/kg/h para todo mundo; usar a sua basal ajusta a conta para idade, altura e sexo.
+- **Calorias:** estimativa com MET corrigido = 3,5 MET (Compendium of Physical Activities, 02054) × TMB ÷ 24 × horas de treino, com o peso da pesagem mais recente até o dia. A conta é `kcalTreino` e o peso vem de `pesoNoDia`, os dois do `../corpo/perfil.js`, a mesma conta que o al usa no gasto do dia. Sem pesagem nenhuma no Corpo, sem calorias. O padrão assume 1 MET = 1 kcal/kg/h para todo mundo; usar a sua basal ajusta a conta para idade, altura e sexo.
 
 ## Pontos e conquistas
 
-- Calculados a partir dos dados, nada extra é guardado. +50 por dia treinado, +10 por exercício, +10 por pirâmide completa, +25 por recorde, +20 por treino extra, +10 por semana com pesagem. Nível sobe a cada 300 pontos.
+- Calculados a partir dos dados, nada extra é guardado. +50 por dia treinado, +10 por exercício, +10 por pirâmide completa, +25 por recorde, +20 por treino extra. Nível sobe a cada 300 pontos.
+- Só de treino: pesagem não pontua nem dá conquista (as de pesagem saíram com ela para o Corpo).
 - Sequência = semanas seguidas com 2+ treinos; a semana atual só entra quando bate a meta.
 - **Longo prazo, ano a ano (1 a 5):** base de ~80 treinos e ~40 semanas batidas por ano. Ano N: N anos desde o 1º treino com 80×N treinos · 40×N semanas batidas (não precisam ser seguidas) · 25×N recordes · 100×N pirâmides perfeitas.
 

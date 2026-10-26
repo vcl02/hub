@@ -8,10 +8,10 @@
 ## Arquitetura
 
 - `index.html` é o único documento; telas são `<section class="view">`. Um stylesheet só: `css/al.css`.
-- Scripts clássicos nesta ordem, depois de `../supabase.js` e `../perfil.js` (do hub, sem cópia aqui): `config`, `util`, `banco`, `conta`, `ia`, `telas`, `bootstrap`. Escopo global compartilhado; a 1ª linha de cada um diz a responsabilidade.
+- Scripts clássicos nesta ordem, depois de `../supabase.js` (do hub) e `../corpo/perfil.js` (módulo do app Corpo), sem cópia aqui: `config`, `util`, `banco`, `conta`, `ia`, `telas`, `bootstrap`. Escopo global compartilhado; a 1ª linha de cada um diz a responsabilidade.
 - Arquivo novo em `css/` ou `js/` entra no `index.html` e no `ARQUIVOS_ESTATICOS` do `sw.js` (o teste `tests/estrutura.test.mjs` confere). O service worker é rede primeiro, cache `al-estatico`, e só apaga caches `al-`.
-- Perfil, taxa basal e calorias do treino vêm de `../perfil.js` (`PERFIL`, `idadeEm`, `tmb`, `kcalTreino`): nunca repita esses valores aqui.
-- Peso e treinos são **só lidos** das tabelas do tr (`tr_medida`, `tr_treino`) e guardados no aparelho (`al.tr.<id>`). O al nunca grava em `tr_*`.
+- Perfil, taxa basal, calorias do treino e pesagens vêm de `../corpo/perfil.js` (`PERFIL`, `idadeEm`, `tmb`, `kcalTreino`, `medidasGuardadas`, `lerMedidas`, `pesoNoDia`): nunca repita esses valores aqui.
+- Treinos (`tr_treino`) e pesagens (`corpo_medida`, do app Corpo) são **só lidos** e guardados no aparelho (`al.tr.<id>` e `corpo.medidas.<id>`). O al nunca grava em `tr_*` nem em `corpo_medida`.
 - Todo arquivo `.js`, `.mjs`, `.ts`, `.css` e `.sql` começa com um comentário curto de responsabilidade.
 
 ## IA (Edge Function `al-estimar`)

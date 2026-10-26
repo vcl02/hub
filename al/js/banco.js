@@ -7,7 +7,7 @@ const TABELAS = { al_item: ['id'], al_registro: ['id'], al_dia: ['data'] };
 const ORDEM = Object.keys(TABELAS);
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const K_LOCAL = id => 'al.db.' + id, K_BASE = id => 'al.base.' + id, K_TR = id => 'al.tr.' + id;
-let db = null, tr = { medidas: [], treinos: [] }, usuario = null, base = null, enviando = false, tEnvio = null, erroSync = '';
+let db = null, tr = { treinos: [] }, medidas = [], usuario = null, base = null, enviando = false, tEnvio = null, erroSync = '';
 
 const macros = x => ({ kcal: x.kcal, prot: x.prot, carb: x.carb, gord: x.gord });
 function linhas(d) {   // db → { tabela: { chave: linha } }
@@ -68,13 +68,11 @@ async function baixar() {
   for (const t of ORDEM) R[t] = await todas(t);
   return R;
 }
-// Peso e treinos do Treino (só leitura): ficam no aparelho para a conta do gasto abrir sem internet.
+// Treinos do Treino e pesagens do Corpo (só leitura): ficam no aparelho para a conta do gasto abrir sem internet.
 async function baixarTreino() {
-  const [medidas, treinos] = await Promise.all([todas('tr_medida', 'data,peso'), todas('tr_treino', 'inicio,fim')]);
-  tr = {
-    medidas: medidas.map(m => ({ data: m.data, peso: num(m.peso) })).filter(m => m.peso > 0).sort((a, b) => a.data.localeCompare(b.data)),
-    treinos: treinos.map(t => ({ inicio: Date.parse(t.inicio), fim: Date.parse(t.fim) })).filter(t => t.fim >= t.inicio)
-  };
+  const [treinos, M] = await Promise.all([todas('tr_treino', 'inicio,fim'), lerMedidas(sb, usuario.id)]);
+  tr = { treinos: treinos.map(t => ({ inicio: Date.parse(t.inicio), fim: Date.parse(t.fim) })).filter(t => t.fim >= t.inicio) };
+  medidas = M;
   store.set(K_TR(usuario.id), JSON.stringify(tr));
 }
 function gravar() {

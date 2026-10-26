@@ -31,12 +31,12 @@ test('index.html: tags de bloco fecham na ordem certa e o css tem chaves balance
   assert.equal(n, 0);
 });
 
-test('ordem de carga: supabase e perfil do hub antes dos módulos; o service worker guarda tudo', () => {
+test('ordem de carga: supabase do hub e módulo do Corpo antes dos módulos; o service worker guarda tudo', () => {
   assert.deepEqual([...jsDoHtml].sort(), listar('js', '.js').sort());
   assert.deepEqual(jsDoHtml, ['js/config.js', 'js/util.js', 'js/banco.js', 'js/conta.js', 'js/ia.js', 'js/telas.js', 'js/bootstrap.js']);
-  assert.match(html, /<script src="\.\.\/supabase\.js"><\/script>\n<script src="\.\.\/perfil\.js"><\/script>\n<script src="js\/config\.js">/);
+  assert.match(html, /<script src="\.\.\/supabase\.js"><\/script>\n<script src="\.\.\/corpo\/perfil\.js"><\/script>\n<script src="js\/config\.js">/);
   const sw = ler('sw.js'), guardados = [...sw.matchAll(/'(\.\.?\/[^']*)'/g)].map(m => m[1]);
-  for (const f of ['./index.html', './css/al.css', './manifest.webmanifest', '../supabase.js', '../perfil.js', ...jsDoHtml.map(f => './' + f)]) assert.ok(guardados.includes(f), `sw.js não guarda ${f}`);
+  for (const f of ['./index.html', './css/al.css', './manifest.webmanifest', '../supabase.js', '../corpo/perfil.js', ...jsDoHtml.map(f => './' + f)]) assert.ok(guardados.includes(f), `sw.js não guarda ${f}`);
   for (const f of guardados) assert.ok(existsSync(path.join(RAIZ, f)), `sw.js guarda ${f}, que não existe`);
   assert.match(sw, /const CACHE_ESTATICO = 'al-estatico';/);
 });

@@ -1,0 +1,75 @@
+// Estrutura do Corpo (sem navegador): cabeçalhos, ordem de carga, service worker, PWA, migration/RLS, segredos e o módulo compartilhado.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const RAIZ = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+const ler = arquivo => readFileSync(path.join(RAIZ, arquivo), 'utf8');
+const listar = (pasta, ext) => readdirSync(path.join(RAIZ, pasta)).filter(n => n.endsWith(ext)).map(n => `${pasta}/${n}`);
+const html = ler('index.html');
+const jsDoHtml = [...html.matchAll(/<script src="(js\/[^"]+)"><\/script>/g)].map(m => m[1]);
+const DONO = ler('js/config.js').match(/const DONO = '([0-9a-f-]{36})'/)[1];
+
+test('todo arquivo de código começa com um comentário de responsabilidade', () => {
+  for (const f of ['perfil.js', ...listar('js', '.js')]) assert.match(ler(f), /^'use strict';\n(\/\/ |\/\*)/, f);
+  for (const f of listar('css', '.css')) assert.match(ler(f), /^\/\* /, f);
+  for (const f of ['sw.js', ...listar('scripts', '.mjs'), ...listar('tests', '.mjs'), ...listar('tests/helpers', '.mjs')]) assert.match(ler(f), /^\/\/ /, f);
+  for (const f of listar('migrations', '.sql')) assert.match(ler(f), /^-- /, f);
+});
+
+test('index.html: tags de bloco fecham na ordem certa e o css tem chaves balanceadas', () => {
+  const pilha = [];
+  for (const [, fecha, tag] of html.replace(/<!--[\s\S]*?-->/g, '').matchAll(/<(\/?)(div|section|form|ul|header|fieldset|button|p)\b[^>]*>/g)) {
+    if (!fecha) { pilha.push(tag); continue; }
+    assert.equal(pilha.pop(), tag, `</${tag}> fora de ordem`);
+  }
+  assert.deepEqual(pilha, [], 'tags sem fechar');
+  let n = 0;
+  for (const c of ler('css/corpo.css').replace(/\/\*[\s\S]*?\*\//g, '')) { n += c === '{' ? 1 : c === '}' ? -1 : 0; assert.ok(n >= 0); }
+  assert.equal(n, 0);
+});
+
+test('ordem de carga: supabase do hub e perfil antes dos módulos; o service worker guarda tudo', () => {
+  assert.deepEqual([...jsDoHtml].sort(), listar('js', '.js').sort());
+  assert.deepEqual(jsDoHtml, ['js/config.js', 'js/util.js', 'js/banco.js', 'js/telas.js', 'js/bootstrap.js']);
+  assert.match(html, /<script src="\.\.\/supabase\.js"><\/script>\n<script src="perfil\.js"><\/script>\n<script src="js\/config\.js">/);
+  const sw = ler('sw.js'), guardados = [...sw.matchAll(/'(\.\.?\/[^']*)'/g)].map(m => m[1]);
+  for (const f of ['./index.html', './perfil.js', './css/corpo.css', './manifest.webmanifest', '../supabase.js', ...jsDoHtml.map(f => './' + f)]) assert.ok(guardados.includes(f), `sw.js não guarda ${f}`);
+  for (const f of guardados) assert.ok(existsSync(path.join(RAIZ, f)), `sw.js guarda ${f}, que não existe`);
+  assert.match(sw, /k\.startsWith\('corpo-'\) && k !== CACHE_ESTATICO/);
+});
+
+test('PWA: manifest válido, ícones existem e o service worker é registrado', () => {
+  const m = JSON.parse(ler('manifest.webmanifest'));
+  assert.equal(m.display, 'standalone'); assert.equal(m.start_url, './');
+  for (const i of m.icons) assert.ok(existsSync(path.join(RAIZ, i.src)), i.src);
+  assert.match(ler('js/bootstrap.js'), /serviceWorker\.register\('sw\.js', \{ updateViaCache: 'none' \}\)/);
+});
+
+test('localStorage só com prefixo corpo.', () => {
+  for (const f of ['perfil.js', ...listar('js', '.js')]) for (const [, chave] of ler(f).matchAll(/K_\w+ = id => '([^']+)'/g)) assert.ok(chave.startsWith('corpo.'), chave);
+});
+
+test('migration no formato do DataGrip, RLS só do Victor e cópia do que estava no Treino', () => {
+  const sql = listar('migrations', '.sql').map(ler), tudo = sql.join('\n');
+  for (const s of sql) {
+    assert.doesNotMatch(s, /do \$\$/);
+    for (const linha of s.split('\n').filter(l => l.trim().startsWith('--'))) assert.ok(!linha.includes(';'), `; em comentário: ${linha}`);
+    assert.match(s, /^begin;$/m); assert.match(s, /^commit;$/m);
+  }
+  assert.match(tudo, /create table if not exists public\.corpo_medida/);
+  assert.match(tudo, /alter table public\.corpo_medida enable row level security/);
+  assert.match(tudo, /revoke all on public\.corpo_medida from anon/);
+  assert.match(tudo, /create policy corpo_medida_somente_dono on public\.corpo_medida for all to authenticated using \(user_id = \(select auth\.uid\(\)\)\)/);
+  assert.match(tudo, new RegExp(`create policy corpo_medida_somente_victor on public\\.corpo_medida as restrictive[^;]*'${DONO}'`));
+  assert.match(tudo, /insert into public\.corpo_medida \(user_id, data, hora, peso, cintura\)\n\s+select user_id, data, hora, peso, cintura from public\.tr_medida\n\s+on conflict \(user_id, data\) do nothing;/);
+  assert.doesNotMatch(tudo, /drop table|delete from|truncate/i, 'não apaga tr_medida');
+});
+
+test('nenhum segredo; só este app grava corpo_medida (perfil.js só lê)', () => {
+  for (const f of ['index.html', 'sw.js', 'perfil.js', 'AGENTS.md', 'README.md', ...listar('js', '.js'), ...listar('docs', '.md'), ...listar('migrations', '.sql')]) assert.doesNotMatch(ler(f), /service_role|sb_secret_/, f);
+  assert.match(ler('js/config.js'), /const SUPABASE_KEY = 'sb_publishable_/);
+  assert.doesNotMatch(ler('perfil.js'), /upsert|insert|delete\(|update\(/);
+});

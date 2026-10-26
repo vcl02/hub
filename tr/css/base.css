@@ -71,9 +71,6 @@ h3.sec{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color
 .icon-btn{text-decoration:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-size:1.4rem;line-height:1;flex:none;display:grid;place-items:center;padding:0}
 .acoes-topo{display:flex;gap:6px}
 .acoes-topo .icon-btn{width:40px;height:40px}
-/* Ponto azul na balança: falta a pesagem de hoje */
-.icon-btn.pendente{position:relative;border-color:var(--blue);color:var(--blue)}
-.icon-btn.pendente::after{content:'';position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--blue)}
 /* Sair como no fin: vermelho; 1º toque com dados sem enviar só arma (borda cheia) */
 .bar{display:flex;align-items:center;min-height:44px}
 .nav{justify-content:space-between;gap:8px}

@@ -10,7 +10,7 @@
 
 - O Treino mora em `tr/` do repositório `vcl02/hub`, publicado junto com a página inicial do hub e os outros apps (guia geral em `../AGENTS.md`). Dentro de `tr/`, `tr/index.html` é o único documento: cada tela é uma `<section class="view">`. Não crie outras páginas HTML nesta pasta nem introduza framework sem decisão explícita.
 - Os estilos são carregados nesta ordem (cascata): `css/base.css`, `inicio.css`, `telas.css`, `flutuantes.css`, `exercicio.css`, `resumo.css`.
-- Os scripts clássicos são carregados nesta ordem, depois de `supabase.js` e do perfil do hub (`../perfil.js`: `PERFIL`, `idadeEm`, `tmb`, `kcalTreino`): `config`, `util`, `piramide`, `banco`, `login`, `pontos`, `inicio`, `exercicio`, `corpo`, `treino`, `series`, `interacoes`, `ajustes`, `bootstrap`. Eles compartilham o escopo global: código que roda ao carregar (não dentro de função) só pode usar o que veio de um arquivo anterior. Preserve a responsabilidade de cada módulo, descrita na 1ª linha dele.
+- Os scripts clássicos são carregados nesta ordem, depois de `supabase.js` e do módulo do app Corpo (`../corpo/perfil.js`: `PERFIL`, `idadeEm`, `tmb`, `kcalTreino`, `medidasGuardadas`, `lerMedidas`, `pesoNoDia`; o Treino só lê as pesagens, nunca grava): `config`, `util`, `piramide`, `banco`, `login`, `pontos`, `inicio`, `exercicio`, `treino`, `series`, `interacoes`, `ajustes`, `bootstrap`. Eles compartilham o escopo global: código que roda ao carregar (não dentro de função) só pode usar o que veio de um arquivo anterior. Preserve a responsabilidade de cada módulo, descrita na 1ª linha dele.
 - Arquivo novo em `css/` ou `js/` entra no `index.html` e no `ARQUIVOS_ESTATICOS` do `sw.js`; o teste `tests/estrutura.test.mjs` confere.
 - `supabase.js` é o `@supabase/supabase-js` copiado byte a byte (UMD) para funcionar offline: atualize versão e arquivo juntos, de preferência para uma versão publicada há pelo menos duas semanas.
 - `sw.js` busca da rede primeiro e só usa o cache sem internet; não intercepta outros domínios (Supabase, fontes). Ao criar arquivo estático novo, inclua-o em `ARQUIVOS_ESTATICOS`.
@@ -29,7 +29,7 @@
 ## Como concluir uma mudança
 
 1. Mapeie a regra afetada em `docs/REGRAS.md` e atualize-a na mesma alteração.
-2. Acrescente ou ajuste testes de regressão em `tests/`: um arquivo por área (`treino`, `corpo`, `pontos`, `nuvem`, `ajustes`) com Playwright + `node:test` e a infra em `tests/helpers/app.mjs` (servidor, Supabase falso); `estrutura.test.mjs` protege cabeçalhos, HTML/CSS balanceados, ordem de carga, PWA, migrations/RLS e segredos.
+2. Acrescente ou ajuste testes de regressão em `tests/`: um arquivo por área (`treino`, `pontos`, `nuvem`, `ajustes`) com Playwright + `node:test` e a infra em `tests/helpers/app.mjs` (servidor, Supabase falso); `estrutura.test.mjs` protege cabeçalhos, HTML/CSS balanceados, ordem de carga, PWA, migrations/RLS e segredos.
 3. Rode `node scripts/check.mjs` dentro de `tr/` (sintaxe, higiene textual do `.editorconfig`, testes e `git diff --check`) e, antes do push, também na raiz do hub (página inicial, fin e tr juntos). Informe precisamente o que foi validado; não alegue validação no celular ou no Supabase real se ela não ocorreu.
 4. Depois de os testes passarem, faça commit e push para `origin/main` do `vcl02/hub`. Nunca inclua alterações alheias no commit.
 5. Trabalhe direto na branch `main`: projeto pessoal, sem fluxo de PR. Não crie worktree, branch auxiliar nem peça revisão antes de puxar pra `main`.

@@ -92,7 +92,7 @@ test('entrou no hub: os apps abrem direto com a mesma sessão, sem login própri
   const { ctx, pg, faltando, erros } = await abrir(base);
   await entrar(pg, 'eu@teste.com', 'senha123');
   await pg.waitForSelector('#v-apps:not([hidden])');
-  assert.deepEqual(await pg.$$eval('.app-nome', s => s.map(x => x.textContent)), ['Fin', 'Treino', 'Alimentação', 'Agenda', 'Anotações']);
+  assert.deepEqual(await pg.$$eval('.app-nome', s => s.map(x => x.textContent)), ['Fin', 'Treino', 'Alimentação', 'Corpo', 'Agenda', 'Anotações']);
   await pg.reload();                                                   // sessão salva: entra direto
   await pg.waitForSelector('#v-apps:not([hidden])');
   assert.equal(await pg.isVisible('#v-login'), false);
@@ -155,6 +155,19 @@ test('Alimentação sem sessão: login no hub e volta pro al, que abre com a mes
   await ctx.close();
 });
 
+test('Corpo sem sessão: login no hub e volta pro Corpo, que abre com a mesma sessão', async () => {
+  const { ctx, pg, faltando, erros } = await abrir(`${base}corpo/`);
+  await pg.waitForURL(`${base}?volta=corpo%2F`);
+  await pg.waitForSelector('#v-login:not([hidden])');
+  await entrar(pg, 'eu@teste.com', 'senha123');
+  await pg.waitForURL(`${base}corpo/`);
+  await pg.waitForSelector('#v-corpo:not([hidden])');
+  assert.equal(await pg.isVisible('#l-form'), false);
+  assert.deepEqual(faltando, []);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
 test('?volta só leva para a pasta de um app do hub, nunca para fora', async () => {
   for (const volta of ['https://exemplo.test/', '//exemplo.test/', 'fin/../../x', 'javascript:alert(1)', 'outro/']) {
     const { ctx, pg } = await abrir(`${base}?volta=${encodeURIComponent(volta)}`);
@@ -165,8 +178,8 @@ test('?volta só leva para a pasta de um app do hub, nunca para fora', async () 
   }
 });
 
-test('fin, tr e al carregam todos os próprios arquivos em subpasta (caminhos relativos)', async () => {
-  for (const app of ['fin/', 'tr/', 'al/']) {
+test('fin, tr, al e Corpo carregam todos os próprios arquivos em subpasta (caminhos relativos)', async () => {
+  for (const app of ['fin/', 'tr/', 'al/', 'corpo/']) {
     const { ctx, faltando } = await abrir(base + app);
     assert.deepEqual(faltando, [], app);
     await ctx.close();

@@ -127,9 +127,9 @@ function pintarSalvo(e) {
     : falta ? 'Sem peso: não salvo.' : '';
   $('e-finalizar').hidden = !emAndamento(ultimoTreino());
 }
-const CAMPOS = { carga: 'e-carga', peso: 'c-peso', cintura: 'c-cintura' };
+const CAMPOS = { carga: 'e-carga' };
 function passo(campo, dir) {   // peso do exercício muda de 1 em 1
-  const inp = $(CAMPOS[campo]), d = campo === 'peso' ? .1 : campo === 'cintura' ? .5 : 1;
+  const inp = $(CAMPOS[campo]), d = 1;
   let n = num(inp.value); if (!isFinite(n)) n = 0;
   inp.value = virgula(Math.max(0, Math.round((n + dir * d) * 100) / 100));
   if (campo === 'carga') guardarRascunho();

@@ -19,7 +19,7 @@ function pintarSaldo() {
   $('saldo').className = 'cartao saldo' + (saldo == null ? '' : saldo <= 0 ? ' deficit' : ' superavit');
   $('s-valor').textContent = saldo == null ? '—' : (saldo > 0 ? '+' : saldo < 0 ? '−' : '') + inteiro(Math.abs(saldo));
   $('s-rotulo').textContent = saldo == null ? '' : saldo <= 0 ? 'déficit' : 'superávit';
-  $('s-conta').textContent = g ? `Comi ${inteiro(c.kcal)} · Gastei ${inteiro(g.total)}` : `Comi ${inteiro(c.kcal)} · Sem peso no Treino para calcular o gasto`;
+  $('s-conta').textContent = g ? `Comi ${inteiro(c.kcal)} · Gastei ${inteiro(g.total)}` : `Comi ${inteiro(c.kcal)} · Sem pesagem no Corpo para calcular o gasto`;
   $('s-gasto').textContent = g ? `Basal ${inteiro(g.basal)} × ${String(FATOR_ATIVIDADE).replace('.', ',')} = ${inteiro(g.rotina)}${g.treino ? ` · Treino +${inteiro(g.treino)}` : ''}${g.caminhada ? ` · Caminhada +${inteiro(g.caminhada.kcal)}` : ''} · ${umaCasa(g.peso)} kg` : '';
   $('andei').hidden = !g;
   $('andei').setAttribute('aria-pressed', String(!!g?.caminhada));

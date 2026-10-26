@@ -95,7 +95,7 @@ function ir(nome) {
 function voltar() { if (pilha.length > 1) history.back(); else mostrar('inicio'); }
 addEventListener('popstate', () => { if (db && pilha.length > 1) { pilha.pop(); mostrar(pilha[pilha.length - 1]); } });
 
-// ===== Gráfico de linha (carga ou peso corporal) =====
+// ===== Gráfico de linha (carga) =====
 function grafico(box, P, unidade, rotulo) {   // P = [{ data, valor }] em ordem cronológica
   // Com menos de 2 pontos não há linha: some o gráfico e o título dele (h3 logo antes), sem caixa vazia
   const titulo = box.previousElementSibling?.matches('h3.sec') ? box.previousElementSibling : null;

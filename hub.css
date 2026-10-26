@@ -169,6 +169,10 @@ h1 span {
   animation-delay: .21s;
 }
 
+.app:nth-child(5) {
+  animation-delay: .28s;
+}
+
 .app-icone {
   width: 64px;
   height: 64px;

@@ -7,8 +7,8 @@
 
 ## Gasto do dia
 
-- **Peso:** a pesagem mais recente até o dia, lida do Treino. Sem nenhuma pesagem: sem gasto e sem saldo ("Sem peso no Treino para calcular o gasto"), só o que foi comido.
-- **Basal:** Mifflin-St Jeor com o perfil do hub (`../perfil.js`) e a idade no dia.
+- **Peso:** a pesagem mais recente até o dia, lida do app Corpo (`pesoNoDia`). Sem nenhuma pesagem: sem gasto e sem saldo ("Sem pesagem no Corpo para calcular o gasto"), só o que foi comido.
+- **Basal:** Mifflin-St Jeor com o perfil do Corpo (`../corpo/perfil.js`) e a idade no dia.
 - **Rotina:** basal × 1,2 (fator de atividade sedentário).
 - **Treino:** treinos do dia no Treino. Soma só o que passa da basal: calorias do treino (`kcalTreino`, 3,5 MET × basal/hora × horas, a mesma conta do Treino) − basal/hora × horas = (3,5 − 1) × basal ÷ 24 × horas.
 - **Caminhada:** botão "Andei" por dia, gravado em `al_dia`; desmarcar apaga a linha do dia (linha antiga com `andou` falso vale como nenhuma). Marcado, aparecem dois campos para o **total do dia** (rua aos poucos ou esteira, tanto faz): minutos e/ou km. Vazios = padrão de 20 min.

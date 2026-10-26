@@ -1,8 +1,8 @@
-// Validação do hub inteiro: higiene e testes da raiz, depois a validação própria do fin, do tr e do al.
+// Validação do hub inteiro: higiene e testes da raiz, depois a validação própria do fin, do tr, do al e do Corpo.
 import { readdirSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
-const arquivos = ['index.html', 'hub.css', 'hub.js', 'perfil.js', 'sw.js', 'manifest.webmanifest', 'AGENTS.md', 'README.md', '.editorconfig', '.gitignore', '.mcp.json',
+const arquivos = ['index.html', 'hub.css', 'hub.js', 'sw.js', 'manifest.webmanifest', 'AGENTS.md', 'README.md', '.editorconfig', '.gitignore', '.mcp.json',
   '.claude/settings.json', '.claude/hooks/session-start.sh',
   ...readdirSync('tests').map(n => `tests/${n}`), ...readdirSync('scripts').map(n => `scripts/${n}`),
   ...readdirSync('.github/workflows').map(n => `.github/workflows/${n}`)];
@@ -20,11 +20,11 @@ if (erros.length) { console.error(erros.join('\n')); process.exit(1); }
 const comandos = [
   [process.execPath, ['--check', 'sw.js'], '.'],
   [process.execPath, ['--check', 'hub.js'], '.'],
-  [process.execPath, ['--check', 'perfil.js'], '.'],
   [process.execPath, ['--test', 'tests/hub.test.mjs', 'tests/navegacao.test.mjs'], '.'],
   [process.execPath, ['scripts/check.mjs'], 'fin'],
   [process.execPath, ['scripts/check.mjs'], 'tr'],
   [process.execPath, ['scripts/check.mjs'], 'al'],
+  [process.execPath, ['scripts/check.mjs'], 'corpo'],
 ];
 for (const [comando, args, cwd] of comandos) {
   const resultado = spawnSync(comando, args, { stdio: 'inherit', cwd, shell: process.platform === 'win32' });

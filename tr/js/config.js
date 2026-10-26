@@ -7,15 +7,15 @@
       exercicios: [{ id, grupo, regiao, series, reps, descanso, modo, ativo,
                      variacoes: [{ id, nome, unidade, passo, lados, equip?, nota? }] }],
       registros:  [{ variacao, data, series: [{ kg, reps, falha? }] }],   // 1 por exercício por dia; kg na unidade da variação; falha = não completou a série
-      treinos:    [{ inicio, fim, fechado? }],                     // horários (ms); fim = última interação ou "Finalizar"
-      medidas:    [{ data, hora, peso, cintura? }]                 // peso corporal (kg), horário e barriga (cm, linha do umbigo; o campo segue "cintura")
+      treinos:    [{ inicio, fim, fechado? }]                      // horários (ms); fim = última interação ou "Finalizar"
     }
   reps = reps da série mais leve (topo da faixa). modo = crescente | reta | invertida.
   variacoes[0] = principal, [1] = substituto (máquina), [2] = halter. "ativo" = variação em uso.
   unidade = kg | lb | nível (máquina que marca só a posição/placa, sem peso). passo = quanto a pirâmide sobe (anilha/placa). lados = 2 quando o peso é por lado.
   Pontos, nível, conquistas e calorias são calculados a partir desses dados (nada extra é guardado).
   Fotos das máquinas ficam fora do banco: localStorage "carga.foto.<variação>".
-  Altura, nascimento e sexo (IMC, idade, taxa basal) e a conta das calorias do treino vêm do perfil do hub: ../perfil.js (PERFIL, idadeEm, tmb, kcalTreino).
+  Peso corporal, perfil (idade, taxa basal) e a conta das calorias do treino vêm do app Corpo: ../corpo/perfil.js (medidasGuardadas,
+  lerMedidas, pesoNoDia, tmb, kcalTreino). O Treino não grava pesagens.
 */
 // Este módulo: Configuração do app: Supabase, conta, dias de treino, exercícios padrão e guia de execução.
 

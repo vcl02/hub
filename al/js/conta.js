@@ -1,10 +1,6 @@
 'use strict';
 // Conta do dia: o que comi (kcal e macros), o gasto (basal × fator de atividade + treino + caminhada) e o saldo.
-// Peso: a pesagem mais recente até o dia (do Treino); sem pesagem nenhuma, não há gasto nem saldo.
-function pesoEm(dia) {
-  const L = tr.medidas;
-  return ([...L].reverse().find(m => m.data <= dia) || L[0])?.peso || null;
-}
+// Peso: a pesagem mais recente até o dia (do app Corpo, pesoNoDia); sem pesagem nenhuma, não há gasto nem saldo.
 // Caminhada do dia (rua ou esteira, plano): equação de caminhada do ACSM, VO2 = 0,1 × velocidade (m/min) + 3,5 ml/kg/min,
 // e MET = VO2 ÷ 3,5. Com tempo e distância a velocidade é a real (limitada a 2–7 km/h, faixa de caminhada); com um só, 5 km/h.
 // Sem nenhum, 20 min. O gasto líquido da caminhada depende quase só da distância: com km informado, o tempo pouco muda.
@@ -19,7 +15,7 @@ function caminhadaDoDia(dia, porHora) {
 }
 // Treino e caminhada contam só o que passa da basal ((MET − 1) × basal/hora): a basal do dia já está no fator de atividade.
 function gastoDoDia(dia) {
-  const peso = pesoEm(dia);
+  const peso = pesoNoDia(medidas, dia);
   if (!peso) return null;
   const basal = tmb(peso, dia), porHora = basal / 24;
   const msTreino = tr.treinos.filter(t => iso(new Date(t.inicio)) === dia).reduce((s, t) => s + t.fim - t.inicio, 0);

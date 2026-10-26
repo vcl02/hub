@@ -19,6 +19,8 @@ async function carregar(u) {
   // Conta recriada: a nuvem da antiga foi apagada junto com ela. Adota a cópia do aparelho feita com a
   // conta antiga (sem a base, tudo fica pendente e é reenviado). A chave antiga fica como reserva.
   if (!store.get(K_LOCAL(u.id)) && store.get(K_LOCAL(DONO_ANTIGO))) store.set(K_LOCAL(u.id), store.get(K_LOCAL(DONO_ANTIGO)));
+  medidas = medidasGuardadas(u.id);   // pesagens do app Corpo: a cópia do aparelho já, a nuvem logo depois
+  lerMedidas(sb, u.id).then(L => { if (usuario === u) medidas = L; }).catch(() => {});
   let local = null;
   try { local = JSON.parse(store.get(K_LOCAL(u.id))); base = JSON.parse(store.get(K_BASE(u.id))); } catch (e) { local = null; }
   if (local) { db = local; await entrou(); }
@@ -60,14 +62,13 @@ async function abrirAntigo(chave) {
   const c = JSON.parse(store.get(K_ANTIGO));
   return preparar(JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: deB64(c.iv) }, chave, deB64(c.ct)))));
 }
-// Junta os dados antigos do aparelho com os da nuvem; no mesmo dia (treino), variação+dia (registro) ou dia (pesagem), vale o do aparelho.
+// Junta os dados antigos do aparelho com os da nuvem; no mesmo dia (treino) ou variação+dia (registro), vale o do aparelho.
 function juntar(nuvem, local) {
   const dia = t => iso(new Date(t.inicio)), dias = new Set(local.treinos.map(dia));
   return preparar({
     exercicios: local.exercicios,
     registros: [...nuvem.registros.filter(r => !local.registros.some(x => x.variacao === r.variacao && x.data === r.data)), ...local.registros],
-    treinos: [...nuvem.treinos.filter(t => !dias.has(dia(t))), ...local.treinos].sort((a, b) => a.inicio - b.inicio),
-    medidas: [...nuvem.medidas.filter(m => !local.medidas.some(x => x.data === m.data)), ...local.medidas]
+    treinos: [...nuvem.treinos.filter(t => !dias.has(dia(t))), ...local.treinos].sort((a, b) => a.inicio - b.inicio)
   });
 }
 // Com "manter desbloqueado" a chave está salva e a migração é automática. Sem a chave não há como abrir: a senha agora é só a do Supabase.

@@ -30,7 +30,7 @@ function pintarInicio() {
   $('i-hoje').hidden = !passado;
   $('i-cont').textContent = trav ? '✓ Treino feito' : feitos + '/' + db.exercicios.length;
   $('i-barra').style.width = (trav ? 100 : db.exercicios.length ? feitos / db.exercicios.length * 100 : 0) + '%';
-  semana(); pintarTempo(); pintarJogo(estatisticas()); pintarCorpoInicio();
+  semana(); pintarTempo(); pintarJogo(estatisticas());
 }
 // Mostra um dia na lista: a semana acompanha (a do dia mostrado) e o dia fica marcado nela
 function mostrarDia(dia) {

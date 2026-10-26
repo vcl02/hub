@@ -1,0 +1,116 @@
+'use strict';
+// Tela do corpo: peso atual (IMC, faixa, quanto falta, variação, barriga), perfil, nova medida, gráficos e histórico.
+// IMC = peso / altura² · faixas da OMS para adultos, com os graus de magreza e de obesidade: [limite de cima (exclusivo), nome]
+const imc = peso => Math.round(peso / PERFIL.altura ** 2 * 10) / 10;
+const FAIXAS_IMC = [[16, 'Magreza III'], [17, 'Magreza II'], [18.5, 'Magreza I'], [25, 'Normal'], [30, 'Sobrepeso'],
+  [35, 'Obesidade I'], [40, 'Obesidade II'], [Infinity, 'Obesidade III']];
+const faixaImc = i => FAIXAS_IMC.find(([lim]) => i < lim)[1];
+// Quanto falta para a faixa seguinte rumo ao normal (acima do normal, kg a perder · abaixo, kg a ganhar · normal, nada).
+// Anda de 0,1 em 0,1 kg com o mesmo IMC arredondado da tela, para o número sempre bater com a faixa mostrada.
+function rumoAoNormal(peso) {
+  const atual = faixaImc(imc(peso)), k = FAIXAS_IMC.findIndex(f => f[1] === atual), normal = 3;
+  if (k === normal) return '';
+  const passo = k > normal ? -1 : 1;
+  for (let d = 1; d <= 3000; d++) {
+    const p = Math.round((peso + passo * d / 10) * 10) / 10, f = faixaImc(imc(p));
+    if (f !== atual) return `${passo < 0 ? '−' : '+'}${fmt(d / 10)} kg até ${f}`;
+  }
+  return '';
+}
+const sinal = n => (n > 0 ? '+' : n < 0 ? '−' : '') + fmt(Math.abs(n));
+const recentes = () => [...db.medidas].reverse();   // mais recente primeiro
+const horaHabitual = () => recentes().find(m => m.peso && m.hora)?.hora || '';
+let editando = null;
+
+function desenhar() {
+  const L = recentes(), P = L.filter(m => m.peso), C = L.filter(m => m.cintura), u = P[0], prim = P[P.length - 1];
+  // Card do peso atual: número grande, IMC, faixa, quanto falta, variação desde a 1ª pesagem e barriga
+  $('c-resumo').hidden = !u && !C.length;
+  const dif = u ? Math.round((u.peso - prim.peso) * 10) / 10 : 0, falta = u ? rumoAoNormal(u.peso) : '';
+  const dc = C.length > 1 ? Math.round((C[0].cintura - C[C.length - 1].cintura) * 10) / 10 : 0;
+  $('c-resumo').innerHTML = `${u ? `<b>${fmt(u.peso)}<small>kg</small></b>` : ''}<span class="pc-lado">
+    ${u && u.data !== hoje() ? `<span><i>${quando(u.data)}</i></span>` : ''}
+    ${u ? `<span>IMC <b>${fmt(imc(u.peso))}</b> · <b>${faixaImc(imc(u.peso))}</b></span>` : ''}
+    ${falta ? `<span class="falta">${falta}</span>` : ''}
+    ${P.length > 1 && dif ? `<span class="${dif < 0 ? 'bom' : 'ruim'}">${sinal(dif)} kg desde ${dataCurta(prim.data)}</span>` : ''}
+    ${C.length ? `<span>Barriga <b>${fmt(C[0].cintura)} cm</b>${dc ? ` · <span class="${dc < 0 ? 'bom' : 'ruim'}">${sinal(dc)} cm</span>` : ''}</span>` : ''}
+  </span>`;
+  $('c-perfil').textContent = `${idadeEm(hoje())} anos · ${virgula(PERFIL.altura)} m${u ? ` · basal ~${tmb(u.peso, hoje()).toLocaleString('pt-BR')} kcal/dia` : ''}`;
+  // Formulário: o dia escolhido (hoje por padrão) já com o que foi medido nele
+  const m = db.medidas.find(x => x.data === $('c-data').value);
+  if (document.activeElement !== $('c-peso')) $('c-peso').value = m?.peso ? virgula(m.peso) : '';
+  if (document.activeElement !== $('c-cintura')) $('c-cintura').value = m?.cintura ? virgula(m.cintura) : '';
+  // Campo vazio mostra, apagada, a última medida (é dela que o − / + parte)
+  $('c-peso').placeholder = u ? virgula(u.peso) : '—';
+  $('c-cintura').placeholder = C.length ? virgula(C[0].cintura) : '—';
+  avisoHorario();
+  grafico($('c-grafico'), P.slice(0, 16).reverse().map(x => ({ data: x.data, valor: x.peso })), 'kg', 'Evolução do peso');
+  grafico($('c-grafico-cint'), C.slice(0, 16).reverse().map(x => ({ data: x.data, valor: x.cintura })), 'cm', 'Evolução da barriga');
+  pintarHistorico();
+}
+
+function avisoHorario() {   // só recomenda o horário de sempre: qualquer horário é aceito
+  const hab = horaHabitual(), h = $('c-hora').value, longe = hab && h && Math.abs(minutos(h) - minutos(hab)) > 60;
+  $('c-aviso').hidden = !longe;
+  $('c-aviso').innerHTML = longe ? `Fora do seu horário de sempre (<b>${hab}</b>): para comparar os dias, prefira pesar perto dele.` : '';
+}
+
+function pintarHistorico() {
+  const L = recentes();
+  $('c-historico').innerHTML = L.length ? L.map(m => m.data === editando
+    ? `<li class="editando"><span class="ed-inline"><input type="date" id="em-data" value="${m.data}" max="${hoje()}" aria-label="Data"><input type="time" id="em-hora" value="${m.hora}" aria-label="Horário"><input id="em-peso" inputmode="decimal" value="${m.peso ? virgula(m.peso) : ''}" placeholder="kg" title="Peso (kg)" aria-label="Peso em kg"><input id="em-cint" inputmode="decimal" value="${m.cintura ? virgula(m.cintura) : ''}" placeholder="cm" title="Barriga (cm, linha do umbigo)" aria-label="Barriga em cm"></span><span class="ed-acoes">${btIcone('x', 'Cancelar', 'data-cancelar')}${btIcone('ok', 'Salvar', `data-salvar="${m.data}"`, 'ok')}</span></li>`
+    : `<li class="medida"><i class="h-d">${dataCurta(m.data)}${m.hora ? ' <br>' + m.hora : ''}</i> <span class="h-v">${[m.peso && fmt(m.peso) + '\u00a0kg', m.cintura && fmt(m.cintura) + '\u00a0cm'].filter(Boolean).join(' · ')}${m.peso ? `<small class="h-sub"> · IMC ${fmt(imc(m.peso))}</small>` : ''}</span> <span class="ed-acoes">${btIcone('lapis', 'Editar', `data-editar="${m.data}"`)}${btIcone('lixo', 'Apagar', `data-apagar="${m.data}"`, 'perigo')}</span></li>`).join('')
+    : '<li class="vazio">Nenhuma medida ainda.</li>';
+}
+
+// Peso e barriga válidos: peso de 30 a 300 kg, barriga > 0; vazio = não medido. Pelo menos um dos dois.
+function lerValores(peso, cintura) {
+  const p = String(peso).trim() ? num(peso) : null, c = String(cintura).trim() ? num(cintura) : null;
+  if (p != null && !(p >= PESO_MIN && p <= PESO_MAX)) return { erro: 'Peso entre 30 e 300 kg' };
+  if (c != null && !(c > 0 && c <= CINTURA_MAX)) return { erro: 'Barriga em cm' };
+  if (p == null && c == null) return { erro: 'Informe o peso ou a barriga' };
+  return { ...(p != null && { peso: p }), ...(c != null && { cintura: c }) };
+}
+
+// ===== Interações =====
+function mudar(acao) { acao(); gravar(); desenhar(); }
+
+$('c-hora').addEventListener('input', avisoHorario);
+$('c-data').addEventListener('change', () => { $('c-peso').value = ''; $('c-cintura').value = ''; desenhar(); });
+document.querySelectorAll('[data-passo]').forEach(b => b.addEventListener('click', () => {   // − / +: peso de 0,1 em 0,1 kg, barriga de 0,5 cm
+  const inp = $(b.dataset.passo === 'peso' ? 'c-peso' : 'c-cintura'), d = b.dataset.passo === 'peso' ? .1 : .5;
+  const atual = num(inp.value), ref = isFinite(atual) ? atual : num(inp.placeholder) || 0;
+  inp.value = virgula(Math.max(0, Math.round((ref + +b.dataset.dir * d) * 100) / 100));
+}));
+
+$('c-form').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const data = $('c-data').value, v = lerValores($('c-peso').value, $('c-cintura').value);
+  if (!dataOk(data) || data > hoje()) { toast('Data inválida', true); return; }
+  if (v.erro) { toast(v.erro, true); return; }
+  mudar(() => {
+    db.medidas = db.medidas.filter(m => m.data !== data);
+    db.medidas.push({ data, hora: $('c-hora').value, ...v });
+    db = preparar(db);
+  });
+  toast(`Salvo${v.peso ? ': ' + fmt(v.peso) + ' kg' : ''}${v.cintura ? (v.peso ? ' · ' : ': ') + fmt(v.cintura) + ' cm' : ''}`);
+});
+
+$('c-historico').addEventListener('click', ev => {
+  const b = ev.target.closest('[data-editar],[data-salvar],[data-cancelar],[data-apagar]');
+  if (!b) return;
+  const d = b.dataset;
+  if (d.editar) { editando = d.editar; pintarHistorico(); }
+  else if ('cancelar' in d) { editando = null; pintarHistorico(); }
+  else if (d.salvar) {
+    const data = $('em-data').value, v = lerValores($('em-peso').value, $('em-cint').value);
+    if (!dataOk(data) || data > hoje()) { toast('Data inválida', true); return; }
+    if (v.erro) { toast(v.erro, true); return; }
+    if (data !== d.salvar && db.medidas.some(x => x.data === data)) { toast('Já tem medida em ' + dataCurta(data), true); return; }   // 1 por dia
+    editando = null;
+    mudar(() => { db.medidas = db.medidas.filter(m => m.data !== d.salvar); db.medidas.push({ data, hora: $('em-hora').value, ...v }); db = preparar(db); });
+    toast('Medida atualizada');
+  }
+  else if (d.apagar && confirmar(b)) mudar(() => { db.medidas = db.medidas.filter(m => m.data !== d.apagar); });
+});
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && editando) { editando = null; pintarHistorico(); } });

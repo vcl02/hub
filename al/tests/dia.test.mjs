@@ -51,7 +51,7 @@ test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei" soma a camin
 test('sem pesagem no Treino não há gasto nem saldo, só o que foi comido', async () => {
   const { ctx, pg } = await abrirApp();
   assert.equal(await texto(pg, '#s-valor'), '—');
-  assert.equal(await texto(pg, '#s-conta'), 'Comi 0 · Sem peso no Treino para calcular o gasto');
+  assert.equal(await texto(pg, '#s-conta'), 'Comi 0 · Sem pesagem no Corpo para calcular o gasto');
   assert.equal(await pg.isVisible('#andei'), false);
   await ctx.close();
 });
@@ -116,7 +116,7 @@ test('lista do dia: porções mudam o total e apagar pede toque duplo', async ()
   await pg.click('#p-adicionar');
   await pg.selectOption('#lista select', '2');
   assert.match(await texto(pg, '#lista li'), /2 × 1 unidade .* 300 kcal/);
-  assert.equal(await texto(pg, '#s-conta'), 'Comi 300 · Sem peso no Treino para calcular o gasto');
+  assert.equal(await texto(pg, '#s-conta'), 'Comi 300 · Sem pesagem no Corpo para calcular o gasto');
   await pg.click('#lista [data-apagar]');
   assert.equal(await pg.locator('#lista li').count(), 1);   // 1º toque só arma
   await pg.click('#lista [data-apagar]');

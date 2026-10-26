@@ -28,7 +28,7 @@ function editorExercicio(e) {
 telas.editar = () => {
   $('ed-lista').innerHTML = db.exercicios.map(editorExercicio).join('');
   $('a-instalar').hidden = !eventoInstalar;
-  $('a-info').textContent = `Conta: ${usuario?.email || '—'}. ${pintarSync()} ${db.registros.length} registro(s) e ${db.medidas.length} pesagem(ns). Versão ${versaoAtual || '—'}.`;
+  $('a-info').textContent = `Conta: ${usuario?.email || '—'}. ${pintarSync()} ${db.registros.length} registro(s). Versão ${versaoAtual || '—'}.`;
 };
 $('ed-novo').addEventListener('click', () => { $('ed-lista').insertAdjacentHTML('beforeend', editorExercicio({ grupo: '', regiao: 'Superior' })); $('ed-lista').lastElementChild.querySelector('.ed-grupo').focus(); });
 $('ed-lista').addEventListener('click', ev => {

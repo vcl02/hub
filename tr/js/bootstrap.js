@@ -3,7 +3,7 @@
 // ===== Sempre a última versão =====
 // Ao abrir, ao voltar para o app e a cada 10 min, compara os arquivos publicados com os que estão rodando.
 // Se mudaram, recarrega sozinho (a sessão do dia está salva). Espera o treino acabar e não age em telas com formulário.
-const ARQUIVOS_APP = ['index.html', ...[...document.querySelectorAll('link[rel=stylesheet][href^="css/"], script[src^="js/"], script[src="../perfil.js"]')].map(e => e.getAttribute('href') || e.getAttribute('src'))];
+const ARQUIVOS_APP = ['index.html', ...[...document.querySelectorAll('link[rel=stylesheet][href^="css/"], script[src^="js/"], script[src="../corpo/perfil.js"]')].map(e => e.getAttribute('href') || e.getAttribute('src'))];
 const TELAS_SEGURAS = ['inicio', 'exercicio', 'conquistas', 'fim'];
 let versaoAtual = null, atualizacaoPendente = false, ultimaChecagem = 0;
 const hash = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36); };
