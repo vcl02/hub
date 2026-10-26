@@ -126,7 +126,7 @@ test('dados sobre mim num lugar só: corpo/perfil.js, carregado pelo tr, pelo al
   assert.ok(!existe('perfil.js'), 'o perfil saiu da raiz');
   assert.match(perfil, /^'use strict';\n\/\/ /);
   const ctx = {};
-  new Function('ctx', perfil.replace(/^'use strict';/, '') + '\nObject.assign(ctx, { PERFIL, ROTINA, idadeEm, tmb, kcalTreino, pesoNoDia, ordenarMedidas });')(ctx);
+  new Function('ctx', perfil.replace(/^'use strict';/, '') + '\nObject.assign(ctx, { PERFIL, ROTINA, idadeEm, tmb, kcalTreino, kcalEsteira, pesoNoDia, ordenarMedidas });')(ctx);
   assert.deepEqual(JSON.parse(JSON.stringify(ctx.ROTINA)), { treino: [3, 4], treinoExtra: [1], presencial: [3, 4] });   // qua e qui · seg · qua e qui
   assert.match(ler('tr/js/config.js'), /const DIAS_FIXOS = ROTINA\.treino;/);
   assert.deepEqual({ ...ctx.PERFIL }, { altura: 1.78, nascimento: '2002-09-14', sexo: 'M' });
@@ -135,6 +135,9 @@ test('dados sobre mim num lugar só: corpo/perfil.js, carregado pelo tr, pelo al
   assert.equal(ctx.idadeEm('2026-09-14'), 24);
   assert.equal(ctx.tmb(100, '2026-09-14'), 1998);   // 10×100 + 6,25×178 − 5×24 + 5
   assert.equal(ctx.kcalTreino(100, '2026-09-14', 36e5), 291);   // 3,5 MET × 1998 ÷ 24 × 1 h
+  // Esteira (ACSM): 6 km/h no plano = caminhada, MET (3,5 + 0,1 × 100) ÷ 3,5 = 3,86 · 10 km/h a 2% = corrida,
+  // MET (3,5 + 0,2 × 166,7 + 0,9 × 166,7 × 0,02) ÷ 3,5 = 11,38 · × 1998 ÷ 24 × 1 h
+  assert.deepEqual([ctx.kcalEsteira(100, '2026-09-14', 36e5, 6, 0), ctx.kcalEsteira(100, '2026-09-14', 36e5, 10, 2)], [321, 947]);
   const M = ctx.ordenarMedidas([{ data: '2026-10-20', peso: '91' }, { data: '2026-10-10', peso: 93, hora: 'x' }, { data: '2026-10-22', cintura: 100 }, { data: 'ruim', peso: 1 }]);
   assert.deepEqual(JSON.parse(JSON.stringify(M)), [{ data: '2026-10-10', hora: '', peso: 93 }, { data: '2026-10-20', hora: '', peso: 91 }, { data: '2026-10-22', hora: '', cintura: 100 }]);
   assert.deepEqual([ctx.pesoNoDia(M, '2026-10-01'), ctx.pesoNoDia(M, '2026-10-15'), ctx.pesoNoDia(M, '2026-10-30'), ctx.pesoNoDia([], '2026-10-30')], [93, 93, 91, null]);

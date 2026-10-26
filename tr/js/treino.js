@@ -25,6 +25,11 @@ function reabrirTreino() {
 function pintarTempo() {
   if (!db) return;
   const t = ultimoTreino(), ativo = emAndamento(t), box = $('i-treino');
+  if (C) {   // cardio rodando (ou pausado) depois do treino: o tempo que falta e o atalho de volta para o cronômetro
+    $('e-tempo').textContent = ''; box.classList.add('on'); box.hidden = false;
+    box.innerHTML = `<span>Cardio na esteira${C.desde ? '' : ' · pausado'}</span><b>${relogio(C.alvo - feitoCardio())}</b><button type="button" class="btn sm" data-ir="cardio">Abrir</button>`;
+    return;
+  }
   $('e-tempo').textContent = ativo ? '⏱ ' + duracao(Date.now() - t.inicio) : '';
   box.classList.toggle('on', ativo);
   // Só durante o treino: o último treino já aparece em "Últimos treinos", no fim da tela inicial
@@ -42,13 +47,19 @@ function finalizarTreino() {
   const t = ultimoTreino();
   if (emAndamento(t)) { t.fim = Date.now(); t.fechado = true; gravar(); }
   clearInterval(T.intervalo); T.intervalo = null; T.fim = 0; manterTela(false); salvarSessao();
-  diaVisto = null; ir('fim');
+  diaVisto = null; parabensPendente = true; ir('fim');
 }
 setInterval(pintarTempo, 15000);
 
 // ===== Resumo do treino: no fim do treino de hoje ou ao tocar num dia antigo =====
 let diaVisto = null;   // null = treino que acabou de terminar
+let parabensPendente = false;   // só ao finalizar: voltar ao resumo (do cardio, por exemplo) não mostra os parabéns de novo
 telas.fim = () => {
+  const { dia, r, t } = pintarResumo();
+  if (parabensPendente && !diaVisto) parabens(dia, r, t);
+  parabensPendente = false;
+};
+function pintarResumo() {
   const dia = diaVisto || hoje(), antigo = !!diaVisto, r = resumoDia(dia), { ex, va } = mapas(), t = r.treino;
   $('f-data').textContent = deIso(dia).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   // ‹ treino anterior · › treino seguinte, ou a lista de hoje depois do mais recente
@@ -59,7 +70,7 @@ telas.fim = () => {
   $('f-msg').textContent = !r.regs.length ? 'Nenhum exercício registrado neste dia.' : r.recordes ? `${r.recordes} ${r.recordes === 1 ? 'recorde' : 'recordes'}${antigo ? '' : ' hoje. Mandou bem!'}` : antigo ? '' : 'Mais um treino na conta. Constância é o que dá resultado.';
   const tiles = [
     ['Duração', t ? duracao(t.fim - t.inicio) : '—', t ? `${hhmm(t.inicio)}–${hhmm(t.fim)}` : ''],
-    ['Calorias', r.kcal != null ? '~' + r.kcal : '—', r.kcal != null ? 'kcal, estimativa' : ''],
+    ['Calorias', r.kcal != null ? '~' + (r.kcal + (r.kcalCardio || 0)) : '—', r.kcal != null ? (r.kcalCardio ? 'kcal, com o cardio' : 'kcal, estimativa') : ''],
     ['Exercícios', `${r.regs.length}/${db.exercicios.length}`, `${r.series} ${r.series === 1 ? 'série' : 'séries'}`],
     ['Volume', r.volume ? fmt(Math.round(r.volume)) : '—', r.volume ? 'kg levantados' : ''],
     ['Pontos', '+' + r.pontos, `${r.completas} pirâmides completas`]
@@ -73,8 +84,9 @@ telas.fim = () => {
   const rec = recordesAte(dia);
   $('f-lista').innerHTML = r.regs.map(x => { const v = va.get(x.variacao); return `<li><span class="h-v">${esc(v?.nome || '')}${rec.has(x) ? ' <span class="chip ok">Recorde</span>' : ''}</span><span class="h-d">${kgsTxt(x)} ${esc(v ? unidadeTxt(v) : '')} × ${repsTxt(x)}</span></li>`; }).join('') || '<li class="empty">Nada registrado.</li>';
   pintarLinhaTreino(t);
-  if (!antigo) parabens(dia, r, t);
-};
+  pintarCardioResumo(dia, t);
+  return { dia, r, t };
+}
 // Dia treinado anterior / seguinte a partir de um dia (o mostrado no resumo, por padrão), ou null nas pontas
 function diaVizinho(dir, de = diaVisto || hoje()) {
   const dias = [...diasTreinados()].sort();

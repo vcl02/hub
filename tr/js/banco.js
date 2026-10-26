@@ -19,7 +19,7 @@ function linhas(d) {   // db → { tabela: { chave: linha } }
     e.variacoes.forEach((v, i) => por('tr_variacao', { id: v.id, exercicio_id: e.id, ordem: i, nome: v.nome, unidade: v.unidade, passo: v.passo, lados: v.lados, equip: v.equip || null, nota: v.nota || null }));
   });
   d.registros.forEach(r => por('tr_registro', { variacao_id: r.variacao, data: r.data, series: r.series }));
-  d.treinos.forEach(t => por('tr_treino', { inicio: new Date(t.inicio).toISOString(), fim: new Date(t.fim).toISOString(), fechado: !!t.fechado }));
+  d.treinos.forEach(t => por('tr_treino', { inicio: new Date(t.inicio).toISOString(), fim: new Date(t.fim).toISOString(), fechado: !!t.fechado, cardio: t.cardio || null }));
   return L;
 }
 function deLinhas(R) {   // linhas do servidor → db
@@ -27,7 +27,7 @@ function deLinhas(R) {   // linhas do servidor → db
   return preparar({
     exercicios: [...R.tr_exercicio].sort((a, b) => a.ordem - b.ordem).map(e => ({ ...e, variacoes: (vs[e.id] || []).sort((a, b) => a.ordem - b.ordem) })),
     registros: R.tr_registro.map(r => ({ variacao: r.variacao_id, data: r.data, series: r.series })),
-    treinos: R.tr_treino.map(t => ({ inicio: Date.parse(t.inicio), fim: Date.parse(t.fim), fechado: t.fechado }))
+    treinos: R.tr_treino.map(t => ({ inicio: Date.parse(t.inicio), fim: Date.parse(t.fim), fechado: t.fechado, cardio: t.cardio }))
   });
 }
 function diferenca(a, b) {   // o que enviar para o servidor sair de a e chegar em b; null = nada
@@ -135,6 +135,8 @@ function preparar(d) {           // valida, completa campos e migra formatos ant
     }
     return { variacao: r.variacao, data: r.data, series: series.map(s => ({ kg: Math.max(0, num(s.kg) || 0), reps: Math.max(0, parseInt(s.reps, 10) || 0), ...(s.falha === true && { falha: true }) })) };
   }).filter(r => varDe.has(r.variacao) && r.series.length && r.series.every(s => s.kg > 0));
-  const treinos = (d.treinos || []).filter(t => t && t.inicio > 0 && t.fim >= t.inicio).map(t => ({ inicio: +t.inicio, fim: +t.fim, ...(t.fechado && { fechado: true }) }));
+  // cardio (esteira depois do treino): { inicio, ms, vel, incl } em ms, ms, km/h e %; sem tempo ou sem velocidade, descartado
+  const cardio = c => c && c.inicio > 0 && c.ms > 0 && num(c.vel) > 0 ? { inicio: +c.inicio, ms: Math.round(+c.ms), vel: num(c.vel), incl: Math.max(0, num(c.incl) || 0) } : null;
+  const treinos = (d.treinos || []).filter(t => t && t.inicio > 0 && t.fim >= t.inicio).map(t => ({ inicio: +t.inicio, fim: +t.fim, ...(t.fechado && { fechado: true }), ...(cardio(t.cardio) && { cardio: cardio(t.cardio) }) }));
   return { exercicios, registros, treinos };   // pesagens antigas da cópia local (medidas) ficam de fora: agora são do app Corpo
 }

@@ -13,6 +13,7 @@ function restaurarSessao() {
   let s = null; try { s = JSON.parse(store.get(K_SESSAO)); } catch (e) {}
   const existe = id => db.exercicios.some(e => e.id === id);
   ir('inicio');
+  retomarCardio();   // cardio na esteira que estava rodando (js/cardio.js)
   if (!s || s.dia !== hoje()) return;
   T.dia = s.dia; T.series = s.series || {}; T.ajuste = s.ajuste || {}; rascunho = s.rascunho || {};
   T.feitas = s.feitas || Object.fromEntries(Object.entries(s.reps || {}).map(([id, a]) => [id, a.map(reps => ({ reps }))]));   // versão anterior guardava só reps

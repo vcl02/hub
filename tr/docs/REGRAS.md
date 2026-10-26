@@ -35,7 +35,7 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 | `tr_exercicio` | `id` | ordem, grupo, regiao, series, reps, descanso, modo, ativo |
 | `tr_variacao` | `id` | exercicio_id, ordem (0 principal, 1 substituto, 2 halter), nome, unidade, passo, lados, equip, nota |
 | `tr_registro` | `variacao_id, data` | series `[{ kg, reps, falha? }]` (`falha: true` só na série que falhou) |
-| `tr_treino` | `inicio` | fim, fechado |
+| `tr_treino` | `inicio` | fim, fechado, cardio `{ inicio, ms, vel, incl }` (esteira depois do treino; null = sem cardio, migration 05) |
 
 `tr_medida` (as pesagens que o Treino gravava) foi copiada para `corpo_medida` e depois apagada: as pesagens agora são do app Corpo (`../corpo/`). O Treino só lê `corpo_medida` (peso das calorias), nunca grava.
 
@@ -45,7 +45,7 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 - Registro de variação que não existe mais é descartado.
 - **Versão antiga** (cofre criptografado `carga.vault.v1`): no 1º login é juntada à conta automaticamente se a chave estava salva; sem a chave, fica no aparelho sem ser aberta (não existe mais senha mestra: a senha é só a do Supabase). No mesmo dia (treino), variação+dia (registro) ou dia (pesagem), vale o do aparelho.
 - Sem backup manual (baixar ou restaurar .json): os dados já ficam no Supabase.
-- Fica só no aparelho, fora do banco: fotos das máquinas (`carga.foto.<variação>`), sessão do dia (`carga.sessao`), lembrete da água (`carga.agua`).
+- Fica só no aparelho, fora do banco: fotos das máquinas (`carga.foto.<variação>`), sessão do dia (`carga.sessao`), cardio em andamento (`carga.cardio`), lembrete da água (`carga.agua`).
 
 ## Treino
 
@@ -69,13 +69,22 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 - **Parabéns:** ao finalizar o treino de hoje, tela cheia verde com duração, exercícios, recordes, pontos e o que foi ganho no dia (nível novo e conquistas desbloqueadas pelos dados do dia). "Ver resumo" fecha e mostra o resumo (sem X).
 - **Resumo:** no fim do treino e ao tocar num dia feito (✓) da semana: duração, calorias, exercícios, volume, pontos, o que foi feito e a linha do horário com Editar (mudar horário ou excluir o treino do dia). Finalizou antes de fazer todos: abaixo dos números, "Ficou de fora: …" com os exercícios sem registro no dia. No resumo, ‹ › ao lado da data, ou arrastar a tela (para a esquerda o anterior, para a direita o seguinte), vão de um treino para o outro (só dias treinados; para no 1º); depois do mais recente, › e arrastar para a direita voltam para a lista de hoje.
 - **Lista da tela inicial em outro dia:** arrastar a lista (ou a barra de progresso) para a **direita** (o contrário das semanas) mostra, **na própria tela inicial**, o treino anterior: cada exercício com o que foi feito naquele dia (peso, reps, ✓ Feito / Não feito, ✗ Falhou), o progresso do dia ("Qua, 21/10 · 1/6") e o dia marcado em azul na semana, que acompanha. Para a esquerda avança até hoje; "Hoje" volta direto. Sair da tela inicial e voltar mostra hoje de novo.
+- **Cardio na esteira (depois do treino, qualquer dia):** no resumo do treino de hoje (ao finalizar ou tocando no dia de hoje na semana; treino em andamento ou já encerrado), botão "Cardio na esteira" (em destaque azul na segunda, `DIAS_EXTRA`). Abre a tela do cardio (`js/cardio.js`):
+  - Antes de começar: duração (5–120 min, de 5 em 5), velocidade (1–20 km/h, de 0,5) e inclinação (0–15 %, de 1) com − / +, e o anel mostrando a duração. Vem com os ajustes do último cardio (duração arredondada a 5 min); sem nenhum, 20 min a 6 km/h no plano.
+  - **Começar** encerra o treino em andamento naquela hora (o cardio não entra no tempo de musculação) e o descanso que sobrava. O anel azul esvazia com o tempo que falta, com o tempo grande no centro, "de 20 min" embaixo e, abaixo do anel, velocidade, inclinação e as calorias até agora. Tela sempre ligada enquanto roda.
+  - **Pausar / Continuar** (pausado: anel cinza e o tempo piscando), **+5 min** (até 4 h) e **Encerrar** (toque duplo: grava o tempo feito até ali). Falta 1 min: vibra uma vez. No fim: vibra, grava, o anel fica cheio e verde com "Feito" e aparece "Ver resumo".
+  - Conta pelo relógio (hora da retomada + tempo até a última pausa, em `carga.cardio`): fechar o app, apagar a tela ou ir para outra tela não para nem perde a contagem; acabou com o app fechado, grava ao abrir. Fora da tela do cardio, a tela inicial mostra "Cardio na esteira" com o tempo que falta e Abrir.
+  - Menos de 1 min não grava ("Cardio com menos de 1 min: não salvo"). Um cardio por treino.
+  - No resumo (de hoje ou de outro dia): linha "Cardio" com duração, velocidade, inclinação e calorias, e lixeira (toque duplo, com Desfazer). Excluir o treino do dia exclui o cardio junto. Não dá pontos nem conquistas e não muda o dia treinado.
+  - Voltar ao resumo (do cardio, por exemplo) não mostra os parabéns de novo: só ao finalizar.
 - **Lembrete da garrafinha:** tela cheia azul ao abrir o 1º exercício do dia (qualquer dia), até "Já peguei" (não volta mais no dia) ou o dia contar como treinado. O X (canto superior direito) só fecha: ela volta ao começar o treino de novo (reabrir o app) no mesmo dia.
 
 ## Peso e calorias
 
 - Pesagem, barriga, IMC e perfil ficam no app Corpo (`../corpo/`). O Treino não tem tela de peso nem grava pesagens: lê as do Corpo pelo módulo compartilhado `../corpo/perfil.js` (a cópia do aparelho na hora, a nuvem logo depois).
 - **Taxa basal (TMB):** Mifflin-St Jeor = 10 × peso + 6,25 × altura (cm) − 5 × idade + 5 (homem), em kcal/dia, com a idade no dia.
-- **Calorias:** estimativa com MET corrigido = 3,5 MET (Compendium of Physical Activities, 02054) × TMB ÷ 24 × horas de treino, com o peso da pesagem mais recente até o dia. A conta é `kcalTreino` e o peso vem de `pesoNoDia`, os dois do `../corpo/perfil.js`, a mesma conta que o al usa no gasto do dia. Sem pesagem nenhuma no Corpo, sem calorias. O padrão assume 1 MET = 1 kcal/kg/h para todo mundo; usar a sua basal ajusta a conta para idade, altura e sexo.
+- **Calorias:** estimativa com MET corrigido = 3,5 MET (Compendium of Physical Activities, 02054) × TMB ÷ 24 × horas de treino, com o peso da pesagem mais recente até o dia. A conta é `kcalTreino` e o peso vem de `pesoNoDia`, os dois do `../corpo/perfil.js`, a mesma conta que o al usa no gasto do dia. Sem pesagem nenhuma no Corpo, sem calorias. No resumo, o card Calorias soma o cardio ("kcal, com o cardio").
+- **Calorias do cardio:** `kcalEsteira` (`../corpo/perfil.js`): MET das equações do ACSM para esteira, de caminhada até 8 km/h (VO2 = 3,5 + 0,1 × v + 1,8 × v × inclinação) e de corrida a partir daí (3,5 + 0,2 × v + 0,9 × v × inclinação), v em m/min, MET = VO2 ÷ 3,5, × TMB ÷ 24 × horas na esteira (mesmo MET corrigido do treino). O al soma no gasto do dia. O padrão assume 1 MET = 1 kcal/kg/h para todo mundo; usar a sua basal ajusta a conta para idade, altura e sexo.
 
 ## Pontos e conquistas
 

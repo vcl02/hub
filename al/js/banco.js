@@ -70,8 +70,10 @@ async function baixar() {
 }
 // Treinos do Treino e pesagens do Corpo (só leitura): ficam no aparelho para a conta do gasto abrir sem internet.
 async function baixarTreino() {
-  const [treinos, M] = await Promise.all([todas('tr_treino', 'inicio,fim'), lerMedidas(sb, usuario.id)]);
-  tr = { treinos: treinos.map(t => ({ inicio: Date.parse(t.inicio), fim: Date.parse(t.fim) })).filter(t => t.fim >= t.inicio) };
+  const [treinos, M] = await Promise.all([todas('tr_treino', 'inicio,fim,cardio'), lerMedidas(sb, usuario.id)]);
+  // cardio = esteira depois do treino, no Treino: { ms, vel, incl } (tempo feito, km/h e %)
+  const cardio = c => c && c.ms > 0 && c.vel > 0 ? { ms: +c.ms, vel: +c.vel, incl: Math.max(0, +c.incl || 0) } : null;
+  tr = { treinos: treinos.map(t => ({ inicio: Date.parse(t.inicio), fim: Date.parse(t.fim), ...(cardio(t.cardio) && { cardio: cardio(t.cardio) }) })).filter(t => t.fim >= t.inicio) };
   medidas = M;
   store.set(K_TR(usuario.id), JSON.stringify(tr));
 }

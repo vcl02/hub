@@ -7,8 +7,8 @@
       registros: [{ id, data, hora, item?, nome, porcao, qtd, kcal, prot, carb, gord }],   // valores de 1 porção; total = valor × qtd
       dias:      [{ data, caminhadas: [{ hora, minutos?, km? }] }]          // caminhada ("Andei +"): um trecho por marcação, soma no dia
     }
-  Só leitura: horários dos treinos (tr_treino) e pesagens do app Corpo (corpo_medida, por ../corpo/perfil.js), guardados no
-  aparelho para abrir sem internet. Perfil, taxa basal e calorias do treino também vêm de ../corpo/perfil.js (PERFIL, idadeEm, tmb, kcalTreino).
+  Só leitura: horários e cardio dos treinos (tr_treino) e pesagens do app Corpo (corpo_medida, por ../corpo/perfil.js), guardados no
+  aparelho para abrir sem internet. Perfil, taxa basal e calorias do treino também vêm de ../corpo/perfil.js (PERFIL, idadeEm, tmb, kcalTreino, kcalEsteira).
   A IA (Claude Haiku) roda na Edge Function al-estimar (supabase/functions), que guarda a chave: nunca no navegador.
 */
 // Este módulo: Configuração: Supabase, conta, fator de atividade, caminhada e porções rápidas.

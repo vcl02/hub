@@ -1,6 +1,6 @@
 'use strict';
 // Dados sobre mim, para todos os apps do hub (módulo do app Corpo): altura, nascimento, sexo, idade, taxa basal, calorias do
-// treino e a leitura das pesagens e medidas. Altura, nascimento e sexo ficam só no código, fora do banco; pesagens e medidas
+// treino e da esteira e a leitura das pesagens e medidas. Altura, nascimento e sexo ficam só no código, fora do banco; pesagens e medidas
 // ficam na tabela corpo_medida, que só o app Corpo grava. Os apps carregam com <script src="../corpo/perfil.js">.
 const PERFIL = Object.freeze({ altura: 1.78, nascimento: '2002-09-14', sexo: 'M' });   // altura em metros; sexo M | F
 // Rotina da semana (Date.getDay: 0 = domingo): treino fixo, treino extra sugerido (opcional) e dias presenciais no serviço
@@ -14,6 +14,11 @@ const tmb = (peso, dia) => Math.round(10 * peso + 6.25 * PERFIL.altura * 100 - 5
 // basal por hora (não os 1 kcal/kg/h do padrão), então idade, altura e sexo entram na conta. ms = duração do treino.
 const MET_MUSCULACAO = 3.5;
 const kcalTreino = (peso, dia, ms) => Math.round(MET_MUSCULACAO * tmb(peso, dia) / 24 * ms / 36e5);
+// Calorias da esteira (cardio do Treino): equações do ACSM, de caminhada até 8 km/h e de corrida a partir daí, com v em m/min
+// e a inclinação em fração: VO2 = 3,5 + 0,1 × v + 1,8 × v × incl (andando) ou 3,5 + 0,2 × v + 0,9 × v × incl (correndo).
+// MET = VO2 ÷ 3,5 e, como no treino, 1 MET = a sua basal por hora. vel em km/h, incl em %, ms = tempo na esteira.
+const metEsteira = (vel, incl) => { const v = vel * 1000 / 60, g = incl / 100, corre = vel >= 8; return (3.5 + (corre ? 0.2 : 0.1) * v + (corre ? 0.9 : 1.8) * v * g) / 3.5; };
+const kcalEsteira = (peso, dia, ms, vel, incl) => Math.round(metEsteira(vel, incl) * tmb(peso, dia) / 24 * ms / 36e5);
 
 // Pesagens e medidas (corpo_medida): { data, hora, peso?, cintura? } em kg e cm (cintura = barriga na linha do umbigo).
 // Os outros apps só leem: lerMedidas busca na nuvem e guarda a cópia no aparelho (corpo.medidas.<conta>), que

@@ -104,6 +104,7 @@ function resumoDia(dia) {
   regs.forEach(x => { r.series += x.series.length; const v = va.get(x.variacao); if (v) x.series.forEach(s => { r.volume += emKg(s.kg, v) * s.reps; }); });
   r.treino = [...db.treinos].reverse().find(t => iso(new Date(t.inicio)) === dia);
   r.kcal = r.treino ? kcal(r.treino) : null;
+  r.kcalCardio = r.treino?.cardio ? kcalCardio(r.treino.cardio, dia) : null;   // esteira depois do treino (js/cardio.js)
   r.pontos = regs.length ? 50 + 10 * regs.length + 10 * r.completas + 25 * r.recordes + (DIAS_EXTRA.includes(deIso(dia).getDay()) ? 20 : 0) : 0;
   return r;
 }

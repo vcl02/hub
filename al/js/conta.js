@@ -18,13 +18,16 @@ function caminhadaDoDia(dia, porHora) {
   const trechos = T.map(t => ({ ...t, kcal: kcalTrecho(t, porHora) }));
   return { trechos, kcal: trechos.reduce((s, t) => s + t.kcal, 0) };
 }
-// Treino e caminhada contam só o que passa da basal ((MET − 1) × basal/hora): a basal do dia já está no fator de atividade.
+// Treino (com o cardio na esteira feito depois dele, kcalEsteira) e caminhada contam só o que passa da basal ((MET − 1) × basal/hora):
+// a basal do dia já está no fator de atividade.
 function gastoDoDia(dia) {
   const peso = pesoNoDia(medidas, dia);
   if (!peso) return null;
   const basal = tmb(peso, dia), porHora = basal / 24;
-  const msTreino = tr.treinos.filter(t => iso(new Date(t.inicio)) === dia).reduce((s, t) => s + t.fim - t.inicio, 0);
-  const treino = msTreino ? kcalTreino(peso, dia, msTreino) - Math.round(porHora * msTreino / 36e5) : 0;
+  const doDia = tr.treinos.filter(t => iso(new Date(t.inicio)) === dia);
+  const msTreino = doDia.reduce((s, t) => s + t.fim - t.inicio, 0);
+  const cardio = doDia.filter(t => t.cardio).reduce((s, { cardio: c }) => s + kcalEsteira(peso, dia, c.ms, c.vel, c.incl) - Math.round(porHora * c.ms / 36e5), 0);
+  const treino = (msTreino ? kcalTreino(peso, dia, msTreino) - Math.round(porHora * msTreino / 36e5) : 0) + cardio;
   const caminhada = caminhadaDoDia(dia, porHora);
   const rotina = Math.round(basal * FATOR_ATIVIDADE);
   // Treino previsto: dia de treino fixo ou extra (opcional) da ROTINA ainda sem treino registrado no Treino. Quanto a meta

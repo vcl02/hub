@@ -7,7 +7,8 @@
       exercicios: [{ id, grupo, regiao, series, reps, descanso, modo, ativo,
                      variacoes: [{ id, nome, unidade, passo, lados, equip?, nota? }] }],
       registros:  [{ variacao, data, series: [{ kg, reps, falha? }] }],   // 1 por exercício por dia; kg na unidade da variação; falha = não completou a série
-      treinos:    [{ inicio, fim, fechado? }]                      // horários (ms); fim = última interação ou "Finalizar"
+      treinos:    [{ inicio, fim, fechado?, cardio? }]             // horários (ms); fim = última interação ou "Finalizar"
+                                                                   // cardio = esteira depois do treino: { inicio, ms, vel, incl } (ms, ms, km/h, %)
     }
   reps = reps da série mais leve (topo da faixa). modo = crescente | reta | invertida.
   variacoes[0] = principal, [1] = substituto (máquina), [2] = halter. "ativo" = variação em uso.

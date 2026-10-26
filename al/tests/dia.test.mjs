@@ -59,6 +59,15 @@ test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei +" soma cada 
   await ctx.close();
 });
 
+test('cardio na esteira do Treino (tr_treino.cardio) entra no gasto, só o que passa da basal', async () => {
+  const nuvem = comTreino(novaNuvem());
+  nuvem.tabelas.tr_treino[0].cardio = { inicio: Date.parse('2026-09-18T14:00:00+00:00'), ms: 30 * 6e4, vel: 6, incl: 0 };
+  const { ctx, pg, erros } = await abrirApp({ nuvem });
+  // 30 min a 6 km/h no plano: MET 3,86 × 1998 ÷ 24 × 0,5 h = 161, menos a basal dessa meia hora (42) = 119 · meta 2106 + 119
+  assert.equal(await texto(pg, '#s-valor'), '2.225');
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
 test('sem pesagem no Corpo não há gasto nem saldo, só o que foi comido', async () => {
   const { ctx, pg } = await abrirApp();
   assert.equal(await texto(pg, '#s-valor'), '—');

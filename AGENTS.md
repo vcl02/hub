@@ -15,7 +15,7 @@
 | `supabase.js` | `@supabase/supabase-js` (UMD), cópia byte a byte de `tr/supabase.js` (o teste confere); atualize os dois juntos. O al usa este (`../supabase.js`), sem cópia própria |
 | `sw.js` · `manifest.webmanifest` · `icons/` | Instalação e cache offline da página inicial |
 | `fin/` · `tr/` · `al/` · `corpo/` · `agua/` | Os apps, cada um com `index.html`, service worker e manifest próprios |
-| `corpo/perfil.js` | Dados sobre mim para todos os apps: perfil (altura, nascimento, sexo), rotina da semana (`ROTINA`: dias de treino e presenciais), `idadeEm`/`tmb`, calorias do treino (`kcalTreino`) e a leitura das pesagens (`lerMedidas`, `medidasGuardadas`, `pesoNoDia`); tr, al e agua carregam com `../corpo/perfil.js` |
+| `corpo/perfil.js` | Dados sobre mim para todos os apps: perfil (altura, nascimento, sexo), rotina da semana (`ROTINA`: dias de treino e presenciais), `idadeEm`/`tmb`, calorias do treino e da esteira (`kcalTreino`, `kcalEsteira`) e a leitura das pesagens (`lerMedidas`, `medidasGuardadas`, `pesoNoDia`); tr, al e agua carregam com `../corpo/perfil.js` |
 | `tests/` | Estrutura do hub (`hub.test.mjs`) e, no Chromium com o Supabase falso do tr, login no hub e os apps abrindo com a mesma sessão (`navegacao.test.mjs`) |
 | `scripts/check.mjs` | Validação completa: raiz, `fin/`, `tr/`, `al/`, `corpo/` e `agua/` |
 | `.github/workflows/` | Validação em todo push e e-mail de publicação do Pages (só funcionam na raiz) |
