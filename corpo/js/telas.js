@@ -54,6 +54,7 @@ function desenhar() {
 // 3 dias ou mais sem evacuar desde a última: em vermelho (prisão de ventre é comum em dieta: fibra e água).
 const SEM_EVACUAR_ALERTA = 3;
 function pintarEvacuacao() {
+  $('ev-cartao').hidden = semCorpoDia;
   const dia = $('c-data').value, x = db.dias.find(d => d.data === dia);
   $('ev-rotulo').textContent = dia === hoje() ? 'Evacuou hoje' : 'Evacuou neste dia';
   $('ev-sim').setAttribute('aria-pressed', String(x?.evacuou === true));

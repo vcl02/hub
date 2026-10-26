@@ -6,6 +6,8 @@
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const K_LOCAL = id => 'corpo.db.' + id, K_BASE = id => 'corpo.base.' + id;
 let db = null, usuario = null, base = null, enviando = false, tEnvio = null, erroSync = '';
+// corpo_dia ainda não criada no banco (migration 01 não aplicada): o app segue só com as pesagens e esconde "Evacuou"
+let semCorpoDia = false;
 
 // Tabelas e a chave de cada linha (além de user_id): corpo_medida (pesagem e barriga) e corpo_dia (evacuou sim ou não)
 const TABELAS = { corpo_medida: 'data', corpo_dia: 'data' };
@@ -26,7 +28,7 @@ function diferenca(a, b) {   // o que enviar para sair de a e chegar em b; null 
   }
   return n ? { up, del } : null;
 }
-const temPendente = () => !!(db && usuario && diferenca(base, linhas(db)));
+const temPendente = () => { const d = db && usuario && diferenca(base, linhas(db)); return !!d && (!semCorpoDia || Object.keys(TABELAS).some(t => t !== 'corpo_dia' && (d.up[t].length || d.del[t].length))); };
 async function enviar() {
   clearTimeout(tEnvio);
   if (enviando || !usuario || !db) return;
@@ -35,13 +37,15 @@ async function enviar() {
   enviando = true;
   try {
     for (const t in TABELAS) {
+      if (t === 'corpo_dia' && semCorpoDia) continue;
       if (mud.up[t].length) {
         const { error } = await sb.from(t).upsert(mud.up[t].map(l => ({ user_id: usuario.id, ...l })), { onConflict: 'user_id,' + TABELAS[t] });
         if (error) throw error;
       }
       for (const k of mud.del[t]) { const { error } = await sb.from(t).delete().eq(TABELAS[t], k); if (error) throw error; }
     }
-    base = agora; store.set(K_BASE(usuario.id), JSON.stringify(base)); erroSync = '';
+    base = semCorpoDia ? { ...agora, corpo_dia: base?.corpo_dia || {} } : agora;
+    store.set(K_BASE(usuario.id), JSON.stringify(base)); erroSync = '';
   } catch (e) { erroSync = e.message || String(e); }
   finally { enviando = false; }
   pintarSync();

@@ -123,6 +123,18 @@ test('evacuou: Sim ou Não no dia escolhido, salva no toque, tocar de novo desma
   assert.deepEqual(erros, []); await ctx.close();
 });
 
+test('sem a tabela corpo_dia (migration 01 não aplicada): pesagens funcionam e "Evacuou" some, sem erro', async () => {
+  const nuvem = novaNuvem();
+  delete nuvem.tabelas.corpo_dia;                                          // o falso responde 404, como o PostgREST sem a tabela
+  const { ctx, pg, erros } = await abrirApp({ nuvem });
+  assert.equal(await pg.isVisible('#ev-cartao'), false);
+  await pg.fill('#c-peso', '90'); await pg.click('#c-form button[type=submit]');
+  await sincronizado(pg);
+  assert.equal(nuvem.tabelas.corpo_medida.length, 1);
+  assert.equal(await pg.isVisible('#sync'), false);                        // sem erro de envio
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
 test('cópia do aparelho da versão anterior (base só com pesagens) continua sincronizando', async () => {
   const nuvem = novaNuvem();
   nuvem.tabelas.corpo_medida.push({ user_id: DONO, data: '2026-10-20', hora: '07:00', peso: 91, cintura: null });

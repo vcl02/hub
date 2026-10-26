@@ -19,6 +19,7 @@
 
 ## Evacuou
 
+- Sem a tabela `corpo_dia` no banco (migration 01 não aplicada), o cartão some e o resto do Corpo funciona normal.
 - Cartão logo abaixo do formulário, para o mesmo dia escolhido nele: "Evacuou hoje" (ou "neste dia") com Sim e Não. Salva no toque, em `corpo_dia` (1 linha por dia); tocar no que já está marcado desmarca (sem resposta = sem linha).
 - Embaixo, a última vez com Sim: "Última: hoje", "ontem" ou "há 3 dias (19/10)". Com 3 dias ou mais, em vermelho (prisão de ventre é comum em dieta: fibra e água). Sem nenhum Sim, a linha não aparece.
 
