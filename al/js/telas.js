@@ -14,18 +14,22 @@ function desenhar() {
   pintarSaldo(); pintarMacros(); pintarSugestoes(); pintarPrevia(); pintarLista(); pintarSemana();
 }
 
-// Hoje: quanto ainda cabe até a meta (restam) ou quanto passou dela; o gasto só fecha no fim do dia.
-// Dias passados: o saldo final (comido − gasto), déficit ou superávit.
+// Hoje: quanto ainda cabe até a meta ("kcal restantes") ou quanto passou dela; o gasto só fecha no fim do dia.
+// Dias passados: o saldo final (comido − gasto), de déficit ou de superávit.
+// Embaixo, uma informação por linha: meta, comido (e gasto nos dias passados), e de onde sai o gasto e a meta.
 function pintarSaldo() {
   const { gasto: g, comido: c, saldo } = saldoDoDia(diaVisto), meta = metaDoDia(diaVisto), aberto = diaVisto === hoje();
   const resto = meta ? meta.kcal - c.kcal : null;
   const bom = aberto ? resto != null && resto >= 0 : saldo != null && saldo <= 0;
+  const linha = (rotulo, v) => `<span>${rotulo} <b>${inteiro(v)} kcal</b></span>`;
   $('saldo').className = 'cartao saldo' + (!g ? '' : bom ? ' deficit' : ' superavit');
-  $('s-valor').textContent = !g ? '—' : aberto ? inteiro(Math.abs(resto)) : (saldo > 0 ? '+' : saldo < 0 ? '−' : '') + inteiro(Math.abs(saldo));
-  $('s-rotulo').textContent = !g ? '' : aberto ? (resto >= 0 ? 'restam' : 'passou') : saldo <= 0 ? 'déficit' : 'superávit';
-  $('s-conta').textContent = !g ? `Comi ${inteiro(c.kcal)} · Sem pesagem no Corpo para calcular o gasto`
-    : aberto ? `Meta ${inteiro(meta.kcal)} · Comi ${inteiro(c.kcal)}` : `Comi ${inteiro(c.kcal)} · Gastei ${inteiro(g.total)} · Meta ${inteiro(meta.kcal)}`;
-  $('s-gasto').textContent = g ? `Gasto ${inteiro(g.total)} − ${inteiro(DEFICIT_META)} de déficit = meta · Basal ${inteiro(g.basal)} × ${String(FATOR_ATIVIDADE).replace('.', ',')} = ${inteiro(g.rotina)}${g.treino ? ` · Treino +${inteiro(g.treino)}` : ''}${g.caminhada ? ` · Caminhada +${inteiro(g.caminhada.kcal)}` : ''} · ${umaCasa(g.peso)} kg` : '';
+  $('s-valor').textContent = !g ? '—' : inteiro(Math.abs(aberto ? resto : saldo));
+  $('s-rotulo').textContent = !g ? 'kcal' : aberto ? (resto >= 0 ? 'kcal restantes' : 'kcal acima da meta') : saldo <= 0 ? 'kcal de déficit' : 'kcal de superávit';
+  $('s-conta').innerHTML = !g ? `${linha('Comi', c.kcal)}<span>Sem pesagem no Corpo para calcular o gasto</span>`
+    : aberto ? linha('Meta', meta.kcal) + linha('Comi', c.kcal) : linha('Comi', c.kcal) + linha('Gastei', g.total) + linha('Meta', meta.kcal);
+  // Gasto = basal + o dia a dia (a parte do fator 1,2) + treino + caminhada; meta = gasto − déficit planejado
+  const partes = [`basal ${inteiro(g?.basal)}`, `dia a dia ${inteiro(g ? g.rotina - g.basal : 0)}`, ...(g?.treino ? [`treino ${inteiro(g.treino)}`] : []), ...(g?.caminhada ? [`caminhada ${inteiro(g.caminhada.kcal)}`] : [])];
+  $('s-gasto').innerHTML = g ? `<span>Gasto ${inteiro(g.total)} = ${partes.map(p => p.replace(/ (?=\d)/, '\u00a0')).join(' + ')}</span><span>Meta = gasto − ${inteiro(DEFICIT_META)} de déficit</span>` : '';
   $('andei').hidden = !g;
   $('andei').setAttribute('aria-pressed', String(!!g?.caminhada));
   $('andei-campos').hidden = !g?.caminhada;
