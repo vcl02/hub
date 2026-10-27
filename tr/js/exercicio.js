@@ -32,18 +32,22 @@ telas.exercicio = () => {
   $('e-travado').hidden = !trav;
   pintarAgua(trav);
   if (trav) $('e-travado-msg').textContent = `O treino de hoje foi finalizado às ${hhmm(trav.fim)}. Um treino por dia.`;
-  e.ativo = variacaoAtiva(e); editando = null;
+  aplicarPlanos(); e.ativo = variacaoAtiva(e); editando = null;
   const v = e.variacoes[e.ativo], pos = db.exercicios.indexOf(e), u = ultimo(v.id), guia = GUIA[v.nome.toLowerCase()];
   $('e-pos').textContent = (pos + 1) + '/' + db.exercicios.length;
   pintarTempo(); pintarTrilha();
   $('e-grupo').textContent = e.grupo;
   $('e-variacoes').innerHTML = e.variacoes.map((x, i) => x.nome ? `<button type="button" class="seg" role="radio" aria-checked="${i === e.ativo}" data-var="${i}"><span class="seg-k">${TIPOS[i]}</span><span class="seg-n">${esc(x.nome)}</span></button>` : '').join('');
-  $('e-variacoes').hidden = e.variacoes.filter(x => x.nome).length < 2;
+  $('e-variacoes').hidden = e.variacoes.filter(x => x.nome).length < 2 || !!PLANOS[e.id];   // com plano, o plano escolhe
   $('e-fig').innerHTML = foto(v); $('e-fig').hidden = !$('e-fig').innerHTML;
   $('e-nome').textContent = v.nome;
   $('e-desc').textContent = guia?.[0] || ''; $('e-desc').hidden = !guia;
   $('e-equip').value = v.equip || '';
-  $('e-presc').innerHTML = `<b>${Array.from({ length: e.series }, (_, i) => alvoReps(e, i)).join(' → ')} reps</b> · descanso ${e.descanso} s`;
+  $('e-presc').innerHTML = (semPeso(v) ? `<b>${e.series} × ${alvoReps(e, 0)} ${medidaSemPeso(v)}</b>` : `<b>${Array.from({ length: e.series }, (_, i) => alvoReps(e, i)).join(' → ')} reps</b>`) + ` · descanso ${e.descanso} s`;
+  // Plano por mês: em que etapa e semana está e quando vem a próxima
+  const p = PLANOS[e.id], pe = p && etapaDoPlano(p, hoje()), prox = pe?.ate && e.variacoes[p.etapas[pe.k + 1].variacao];
+  $('e-plano').hidden = !p;
+  if (p) $('e-plano').innerHTML = `<b>Mês ${pe.k + 1} de ${p.etapas.length}</b> · semana ${pe.semana + 1}${pe.semana === 3 ? '+' : ''}${prox ? ` · ${prox.id === v.id ? 'mais reps' : esc(prox.nome)} a partir de ${dataCurta(pe.ate)}` : ''}`;
   $('e-guia').innerHTML = guia ? `<b>Posição:</b> ${esc(guia[1])}` : ''; $('e-guia').hidden = !guia;
   $('e-nota').value = v.nota || '';
   $('e-youtube').href = 'https://www.youtube.com/results?search_query=' + encodeURIComponent((v.nome + ' execução correta').replace(/[()]/g, ' ').replace(/\s+/g, ' ').trim());
@@ -51,10 +55,11 @@ telas.exercicio = () => {
   $('e-foto-rm').hidden = !store.get('carga.foto.' + v.id);
   const fl = falhas(v.id);   // onde você vem falhando: ✗ nas séries e quantos dos últimos treinos
   $('e-ultima').innerHTML = u
-    ? `<span>Última vez: <b>${kgsTxt(u)} ${esc(unidadeTxt(v))}</b> × ${repsTxt(u)} · <i>${quando(u.data)}</i></span>${completo(u, e) ? '<span class="chip acao">↑ Completou: suba a carga</span>' : ''}${fl.treinos ? `<span class="chip falha">✗ Falhou em ${fl.treinos} de ${fl.de} · ${fl.series.length === 1 ? 'série' : 'séries'} ${fl.series.join(', ')}</span>` : ''}`
+    ? `<span>Última vez: ${registroTxt(u, v)} · <i>${quando(u.data)}</i></span>${completo(u, e) ? (semPeso(v) ? '<span class="chip ok">✓ Bateu a meta</span>' : '<span class="chip acao">↑ Completou: suba a carga</span>') : ''}${fl.treinos ? `<span class="chip falha">✗ Falhou em ${fl.treinos} de ${fl.de} · ${fl.series.length === 1 ? 'série' : 'séries'} ${fl.series.join(', ')}</span>` : ''}`
     : '';
   const rs = rascunho[v.id];   // valor digitado e ainda não salvo tem prioridade
   $('e-carga').value = rs ? rs.carga : u ? virgula(u.series[0].kg) : '';
+  $('e-carga').closest('.field').hidden = semPeso(v);   // corpo e segundos: sem campo de peso
   pintarPeso(e); pintarDescanso(e); pintarSalvo(e); pintarHistorico(e);
 };
 function pintarPeso(e) {   // rótulo, unidade, por lado/total e o mesmo peso na outra unidade (editável)
@@ -95,9 +100,9 @@ function pintarTrilha() {   // barra do treino de hoje: cada exercício enche co
 function pintarHistorico(e) {
   const v = e.variacoes[e.ativo], lista = db.registros.filter(r => r.variacao === v.id).sort((a, b) => b.data.localeCompare(a.data));
   $('e-historico').innerHTML = lista.length
-    ? lista.map(r => `<li><i class="h-d">${dataCurta(r.data)}</i><span class="h-v">${kgsTxt(r)} ${esc(unidadeTxt(v))} <small>× ${repsTxt(r)}</small></span><button type="button" class="del" data-apagar="${r.data}">Apagar</button></li>`).join('')
+    ? lista.map(r => `<li><i class="h-d">${dataCurta(r.data)}</i><span class="h-v">${semPeso(v) ? `${repsTxt(r)} <small>${medidaSemPeso(v)}</small>` : `${kgsTxt(r)} ${esc(unidadeTxt(v))} <small>× ${repsTxt(r)}</small>`}</span><button type="button" class="del" data-apagar="${r.data}">Apagar</button></li>`).join('')
     : '<li class="empty">Nenhum registro ainda.</li>';
-  grafico($('e-grafico'), lista.slice(0, 12).reverse().map(r => ({ data: r.data, valor: topo(r) })), unidadeTxt(v), 'Evolução da carga máxima');
+  grafico($('e-grafico'), lista.slice(0, 12).reverse().map(r => ({ data: r.data, valor: topo(r) })), semPeso(v) ? medidaSemPeso(v) : unidadeTxt(v), semPeso(v) ? (v.unidade === 's' ? 'Evolução do tempo' : 'Evolução das reps') : 'Evolução da carga máxima');
 }
 // Séries de trabalho já feitas hoje (peso manual ou o calculado pela pirâmide)
 function seriesHoje(e) {
@@ -110,7 +115,7 @@ function autoSalvar(e) {
   if (!k) db.registros = db.registros.filter(r => !(r.data === h && doExercicio.has(r.variacao)));          // séries zeradas
   else {
     const series = seriesHoje(e);
-    if (series.every(s => s.kg > 0)) {                                                                       // sem peso: não mexe no que já está salvo
+    if (semPeso(v) || series.every(s => s.kg > 0)) {                                                         // sem peso: não mexe no que já está salvo
       db.registros = db.registros.filter(r => !(r.data === h && doExercicio.has(r.variacao) && r.variacao !== v.id));   // trocou de variação
       const r = db.registros.find(x => x.variacao === v.id && x.data === h);
       if (r) r.series = series; else db.registros.push({ variacao: v.id, data: h, series });
@@ -123,7 +128,7 @@ function pintarSalvo(e) {
   const v = e.variacoes[e.ativo], r = db.registros.find(x => x.variacao === v.id && x.data === hoje()), k = seriesDeTrabalho(e);
   const falta = !r && k > 0;
   $('e-salvo').classList.toggle('ok', !!r); $('e-salvo').classList.toggle('erro', falta);
-  $('e-salvo').innerHTML = r ? `✓ Salvo: <b>${kgsTxt(r)} ${esc(unidadeTxt(v))}</b> × ${repsTxt(r)}`
+  $('e-salvo').innerHTML = r ? `✓ Salvo: ${registroTxt(r, v)}`
     : falta ? 'Sem peso: não salvo.' : '';
   $('e-finalizar').hidden = !emAndamento(ultimoTreino());
 }

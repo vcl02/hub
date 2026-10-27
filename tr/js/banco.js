@@ -134,7 +134,7 @@ function preparar(d) {           // valida, completa campos e migra formatos ant
       series = reps.map((n, i) => ({ kg: e && v ? alvoKg({ ...e, modo: 'crescente' }, v, +r.carga, i) : +r.carga, reps: n }));
     }
     return { variacao: r.variacao, data: r.data, series: series.map(s => ({ kg: Math.max(0, num(s.kg) || 0), reps: Math.max(0, parseInt(s.reps, 10) || 0), ...(s.falha === true && { falha: true }) })) };
-  }).filter(r => varDe.has(r.variacao) && r.series.length && r.series.every(s => s.kg > 0));
+  }).filter(r => varDe.has(r.variacao) && r.series.length && (semPeso(varDe.get(r.variacao)) || r.series.every(s => s.kg > 0)));   // corpo e s: kg 0
   // cardio (esteira depois do treino): { inicio, ms, vel, incl } em ms, ms, km/h e %; sem tempo ou sem velocidade, descartado
   const cardio = c => c && c.inicio > 0 && c.ms > 0 && num(c.vel) > 0 ? { inicio: +c.inicio, ms: Math.round(+c.ms), vel: num(c.vel), incl: Math.max(0, num(c.incl) || 0) } : null;
   const treinos = (d.treinos || []).filter(t => t && t.inicio > 0 && t.fim >= t.inicio).map(t => ({ inicio: +t.inicio, fim: +t.fim, ...(t.fechado && { fechado: true }), ...(cardio(t.cardio) && { cardio: cardio(t.cardio) }) }));

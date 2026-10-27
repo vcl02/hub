@@ -33,7 +33,7 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 | Tabela | Chave | Campos |
 |---|---|---|
 | `tr_exercicio` | `id` | ordem, grupo, regiao, series, reps, descanso, modo, ativo |
-| `tr_variacao` | `id` | exercicio_id, ordem (0 principal, 1 substituto, 2 halter), nome, unidade, passo, lados, equip, nota |
+| `tr_variacao` | `id` | exercicio_id, ordem (0 principal, 1 substituto, 2 halter), nome, unidade (`kg`, `lb`, `nível`, `corpo`, `s`; migration 07), passo, lados, equip, nota |
 | `tr_registro` | `variacao_id, data` | series `[{ kg, reps, falha? }]` (`falha: true` só na série que falhou) |
 | `tr_treino` | `inicio` | fim, fechado, cardio `{ inicio, ms, vel, incl }` (esteira depois do treino; null = sem cardio, migration 05) |
 
@@ -52,12 +52,19 @@ Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 - **Dias:** `DIAS_FIXOS` (quarta, quinta) e `DIAS_EXTRA` (segunda) em `js/config.js`, lidos da rotina do app Corpo (`ROTINA` em `../corpo/perfil.js`), a mesma que o Alimentação usa.
 - **Pirâmide:** `modo` crescente (+10% de peso, −2 reps), reta (mesma carga) ou invertida. **Padrão de exercício novo: invertida** (`MODO_PADRAO`). Você põe o peso da 1ª série; as outras sobem (ou descem, na invertida) ~10% arredondado ao `passo` do aparelho, no mínimo 1 passo. Cada série pode ter peso e reps ajustados. Bateu todas as reps-alvo, sem falha = pirâmide completa ("↑ Subir carga").
 - **Unidades:** `kg`, `lb` ou `nível` (máquina que marca só a posição/placa, sem peso: não converte e não entra no volume). `lados: 2` = peso por lado (mostra o total).
+  - **Sem peso:** `corpo` (peso do corpo: só reps, como a flexão) e `s` (segundos, como pendurar na barra: a série guarda os segundos no lugar das reps). As duas gravam `kg: 0`, não têm campo de peso, aquecimento, tipo de pirâmide nem peso no editor da série (no `s`, o campo é "Segundos", até 600) e não entram no volume. Aparecem como "6/5/6 reps" ou "10/15 s"; recorde e gráfico usam o maior número de reps (ou segundos). Completou o alvo: "✓ Bateu a meta" (sem "↑ Subir carga").
+  - **Segurar (`s`):** o botão vira "Pendurar · 15 s" e começa a contar a série (encerra o descanso que estava rodando); o relógio mostra quanto falta e o botão "Soltei · 10 s". Soltou antes: marca os segundos que deu. Chegou no alvo: vibra e marca sozinho. Depois, o descanso normal.
   - O botão da unidade alterna **kg ↔ lb**; `nível` se escolhe em Editar exercícios. Os pesos ficam guardados na unidade da variação, então trocar kg ↔ lb (no botão ou no editor) **converte** o histórico da variação, as séries de hoje e o peso digitado (1 casa decimal).
   - Ao lado do peso aparece o mesmo peso na outra unidade (lb → kg, kg → lb), **editável**: digitar converte para a unidade da variação, e − / + andam de 1 em 1 indo para o inteiro vizinho (22,7 → 23 → 24). O mesmo vale no editor de cada série.
 - **Falha:** numa série já feita, o editor dela tem **Falhei**: marca que não completou a série sem mexer nas reps (fica `falha: true` na série). A série fica com ✗ vermelho, as reps aparecem com ✗ ("8/10✗/12") e a pirâmide não conta como completa. Na tela do exercício: "✗ Falhou em N de M · série X" (últimos 5 registros da variação); na tela inicial: "✗ Falhou na última".
 - **Desfazer série:** "Desfazer última série" (abaixo do cronômetro) desmarca a última série marcada, a qualquer hora; o aviso logo depois de marcar também tem Desfazer. Desfazer depois de já ter ido para o próximo exercício volta para o exercício da série.
 - **Aquecimento:** o 1º exercício de cada `regiao` (Pernas / Superior) no dia ganha 1 série de 50% × 15, com 45 s de descanso.
-- **Série sem peso:** não pode ser marcada (sem peso o registro não é salvo).
+- **Série sem peso:** em `kg`, `lb` e `nível` não pode ser marcada (sem peso o registro não é salvo); em `corpo` e `s` não tem peso.
+- **Plano por mês (`PLANOS` em `js/config.js`, pelo id do exercício):** cada etapa vale 1 mês a partir do início (`inicio` + k meses; mês curto pega o último dia) e a última continua valendo. Em cada etapa: a variação, as séries e o alvo de cada semana da etapa (1ª, 2ª, 3ª e da 4ª em diante), o mesmo em todas as séries (modo reta). O plano escolhe a variação, as séries e as reps do exercício ao abrir a tela inicial ou o exercício: trocar à mão (botões de variação somem, editor) não vale. Na tela do exercício: "Mês 1 de 3 · semana 2 · Negativa na barra a partir de 28/11" (ou "mais reps", quando a próxima etapa é a mesma variação); na tela inicial, "· mês 1" no grupo.
+  - **Flexão** (`flexao`, desde 28/10/2026, 3 séries, 60 s): mês 1 com joelhos apoiados, 6 → 8 → 10 → 12 reps · mês 2 completa, 3 → 4 → 5 → 6 · mês 3 em diante completa, 6 → 8 → 10 → 12.
+  - **Barra** (`barrafix`, desde 28/10/2026, 3 séries, 90 s): mês 1 pendurar, 15 → 20 → 25 → 30 s · mês 2 negativa (sobe com o banco, desce em 3 a 5 s), 3 → 3 → 4 → 5 · mês 3 em diante barra completa, 1 → 2 → 2 → 3.
+  - **Antebraço** (`antebraco`, sem plano): rosca de punho com halteres (ou a invertida), 2 × 15, 45 s, mesma carga.
+  - Os três ficam no fim do treino (migration 07, na ordem flexão, barra, antebraço).
 - **Registro:** 1 por exercício por dia, salvo a cada série marcada, ajuste, peso ou troca de variação.
 - **Descanso:** faltando 7 s (`AVISO_AJUSTE`), aparece **"Se ajuste"** piscando acima do cronômetro, a faixa de baixo troca "Descanso" por "Se ajuste" e o celular vibra uma vez, para se ajeitar na máquina. Com +15 s depois do aviso, avisa de novo.
 - **Última série do exercício:** a tela já vai para o próximo exercício que falta, e o descanso que sobra segue na faixa de baixo (a mesma de quando você sai do exercício durante o descanso). Sem próximo (era o último que faltava), fica no descanso e, no fim dele, encerra o treino.

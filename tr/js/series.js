@@ -32,6 +32,7 @@ function seriesFeitas(id) { if (T.dia !== hoje()) { T.series = {}; T.feitas = {}
 // O 1º exercício começado de cada região (pernas / superior) ganha uma série de aquecimento
 function temAquecimento(e) {
   seriesFeitas(e.id);
+  if (semPeso(e.variacoes[e.ativo])) return false;   // peso do corpo e segundos: sem aquecimento
   if (T.aquecimento[e.regiao]) return T.aquecimento[e.regiao] === e.id;
   return !db.exercicios.some(x => x.regiao === e.regiao && ((T.series[x.id] || 0) > 0 || registroHoje(x)));
 }
@@ -76,17 +77,18 @@ function tick() {
 function planoAtual(e) { return plano(e, e.variacoes[e.ativo], num($('e-carga').value), temAquecimento(e), T.ajuste[e.id]); }
 function pintarDescanso(e) {
   const v = e.variacoes[e.ativo], n = seriesFeitas(e.id), P = planoAtual(e), f = T.feitas[e.id] || [];
+  $('t-modos').hidden = semPeso(v);   // sem peso, todas as séries com o mesmo alvo
   $('t-modos').innerHTML = Object.entries(MODOS).map(([k, nome]) => `<button type="button" role="radio" aria-checked="${e.modo === k}" data-modo="${k}">${nome}</button>`).join('');
   $('t-plano').innerHTML = P.map((s, k) => {
     const feito = k < n, classe = feito ? 'ok' : k === n ? 'cur' : '';
     if (s.aq) return `<li class="aq ${classe}"><span>${s.nome}</span><b>${esc(pesoTxt(s.kg, v))} × ${s.reps}</b><span class="st">${feito ? '✓' : ''}</span></li>`;
     const kg = feito ? f[s.i]?.kg ?? s.kg : s.kg, reps = feito ? f[s.i]?.reps ?? s.reps : s.reps, aberta = editando === s.i, falhou = feito && f[s.i]?.falha;
     const outra = outraUnidade(v);
-    return `<li class="${classe}${feito && reps < s.reps ? ' baixo' : ''}${falhou ? ' falhou' : ''}${aberta ? ' aberta' : ''}" data-linha="${s.i}"><span>${s.nome}</span><b>${esc(pesoTxt(kg, v))} × ${reps}</b><span class="st">${falhou ? '✗' : feito ? '✓' : '✎'}</span>${aberta ? `
+    return `<li class="${classe}${feito && reps < s.reps ? ' baixo' : ''}${falhou ? ' falhou' : ''}${aberta ? ' aberta' : ''}" data-linha="${s.i}"><span>${s.nome}</span><b>${esc(serieTxt(kg, reps, v))}</b><span class="st">${falhou ? '✗' : feito ? '✓' : '✎'}</span>${aberta ? `
       <div class="linha-ed">
-        <span>Peso <button type="button" data-aj="kg" data-d="-1" aria-label="Menos 1">−</button><input data-aj-in="kg" inputmode="decimal" value="${kg > 0 ? virgula(kg) : ''}" aria-label="Peso da ${s.nome}"><button type="button" data-aj="kg" data-d="1" aria-label="Mais 1">+</button></span>
+        ${semPeso(v) ? '' : `<span>Peso <button type="button" data-aj="kg" data-d="-1" aria-label="Menos 1">−</button><input data-aj-in="kg" inputmode="decimal" value="${kg > 0 ? virgula(kg) : ''}" aria-label="Peso da ${s.nome}"><button type="button" data-aj="kg" data-d="1" aria-label="Mais 1">+</button></span>`}
         ${outra ? `<span>≈ <button type="button" data-aj="conv" data-d="-1" aria-label="Menos 1 ${outra}">−</button><input data-aj-in="conv" inputmode="decimal" value="${kg > 0 ? virgula(naOutra(kg, v)) : ''}" aria-label="Peso da ${s.nome} em ${outra}"><button type="button" data-aj="conv" data-d="1" aria-label="Mais 1 ${outra}">+</button> ${outra}</span>` : ''}
-        <span>Reps <button type="button" data-aj="reps" data-d="-1" aria-label="Menos 1 rep">−</button><input data-aj-in="reps" inputmode="numeric" value="${reps}" aria-label="Reps da ${s.nome}"><button type="button" data-aj="reps" data-d="1" aria-label="Mais 1 rep">+</button></span>
+        <span>${v.unidade === 's' ? 'Segundos' : 'Reps'} <button type="button" data-aj="reps" data-d="-1" aria-label="Menos 1">−</button><input data-aj-in="reps" inputmode="numeric" value="${reps}" aria-label="${v.unidade === 's' ? 'Segundos' : 'Reps'} da ${s.nome}"><button type="button" data-aj="reps" data-d="1" aria-label="Mais 1">+</button></span>
         ${feito ? `<button type="button" class="tog falha" data-aj="falha" aria-pressed="${!!falhou}" title="Não completou a série (as reps ficam como o alvo)">${falhou ? '✗ Falhei' : 'Falhei'}</button>` : ''}
       </div>` : ''}</li>`;
   }).join('');
@@ -100,10 +102,11 @@ function pintarRelogio(e, P = planoAtual(e)) {
   $('t-relogio').classList.toggle('run', rodando);
   $('t-parado').hidden = n >= P.length;
   $('t-rodando').hidden = !rodando;
-  $('t-feita').textContent = prox ? `${prox.nome} feita · descansar` : '';
+  $('t-feita').textContent = !prox ? '' : v.unidade === 's' ? `Pendurar · ${prox.reps} s` : `${prox.nome} feita · descansar`;
   $('t-nota').textContent = n >= P.length ? (rodando ? 'Último descanso: depois vai para o próximo exercício.' : 'Exercício feito e salvo.')
-    : !prox.kg ? ''
-    : (rodando ? 'Próxima: ' : 'Agora: ') + prox.nome.toLowerCase() + ' · ' + pesoTxt(prox.kg, v) + ' × ' + prox.reps;
+    : !prox.kg && !semPeso(v) ? ''
+    : (rodando ? 'Próxima: ' : 'Agora: ') + prox.nome.toLowerCase() + ' · ' + serieTxt(prox.kg, prox.reps, v);
+  if (segurando?.id === e.id) pintarSegurando();
 }
 // Ajuste de uma série: feita → muda o que foi feito; ainda não feita → muda o plano.
 // campo: kg | reps | conv (peso na outra unidade, convertido) | falha (só série feita: liga/desliga)
@@ -113,18 +116,23 @@ function ajustarSerie(e, i, campo, valor) {
   const alvo = feita ? ((T.feitas[e.id] ||= [])[i] ||= { reps: planoAtual(e).find(s => s.i === i)?.reps }) : (((T.ajuste[e.id] ||= {})[i]) ||= {});
   if (campo === 'conv') { campo = 'kg'; valor = daOutra(valor, e.variacoes[e.ativo]); }
   if (campo === 'falha') { if (valor) alvo.falha = true; else delete alvo.falha; }
-  else alvo[campo] = campo === 'reps' ? Math.max(0, Math.min(50, Math.round(valor))) : Math.max(0, Math.round(valor * 100) / 100);
+  else alvo[campo] = campo === 'reps' ? Math.max(0, Math.min(e.variacoes[e.ativo].unidade === 's' ? 600 : 50, Math.round(valor))) : Math.max(0, Math.round(valor * 100) / 100);
   salvarSessao(); pintarDescanso(e); marcarAtividade();
   if (seriesDeTrabalho(e)) autoSalvar(e);
 }
 $('t-feita').addEventListener('click', () => {
   if (travadoHoje()) return;
-  const e = exAtual(), aq = temAquecimento(e), n = seriesFeitas(e.id), ehAquecimento = aq && n === 0;
+  const e = exAtual();
+  if (e.variacoes[e.ativo].unidade === 's') segurar(e); else marcarSerie(e);
+});
+// Marca a próxima série (feitas = reps, ou segundos, que deu; sem, o alvo) e começa o descanso
+function marcarSerie(e, feitas) {
+  const aq = temAquecimento(e), n = seriesFeitas(e.id), ehAquecimento = aq && n === 0;
   const s = planoAtual(e)[n]; if (!s) return;
-  if (!(s.kg > 0)) { toast('Coloque o peso antes de marcar a série: sem peso não salva', null, true); $('e-carga').focus(); return; }
+  if (!(s.kg > 0) && !semPeso(e.variacoes[e.ativo])) { toast('Coloque o peso antes de marcar a série: sem peso não salva', null, true); $('e-carga').focus(); return; }
   if (aq) T.aquecimento[e.regiao] = e.id;
   T.series[e.id] = n + 1; editando = null;
-  if (!ehAquecimento) (T.feitas[e.id] ||= [])[s.i] = { reps: s.reps, ...(T.ajuste[e.id]?.[s.i]?.kg != null && { kg: T.ajuste[e.id][s.i].kg }) };
+  if (!ehAquecimento) (T.feitas[e.id] ||= [])[s.i] = { reps: feitas ?? s.reps, ...(T.ajuste[e.id]?.[s.i]?.kg != null && { kg: T.ajuste[e.id][s.i].kg }) };
   vibrar(40);
   iniciarDescanso(e, ehAquecimento ? descansoAquecimento(e) : e.descanso);   // salva a sessão
   const msgs = autoSalvar(e);
@@ -132,7 +140,33 @@ $('t-feita').addEventListener('click', () => {
   toast([s.nome + (ehAquecimento ? ' feito' : ' feita'), ...msgs].join(' · '), () => desfazerSerie(e.id));
   // Última série: o descanso que sobra vai para a faixa de baixo e a tela já mostra o próximo exercício
   if (terminouExercicio(e) && proximoQueFalta()) { const prox = proximoQueFalta(); atual = prox.id; telas.exercicio(); salvarSessao(); tick(); window.scrollTo(0, 0); }
-});
+}
+// Pendurar (unidade s): o botão começa a contar a série, o relógio mostra quanto falta e, no alvo, vibra e marca sozinho.
+// "Soltei" antes do alvo marca os segundos que deu. Começar encerra o descanso que estava rodando.
+let segurando = null;   // { id, inicio, alvo (ms), intervalo }
+function segurar(e) {
+  if (segurando) { soltar(true); return; }
+  const s = planoAtual(e)[seriesFeitas(e.id)]; if (!s) return;
+  if (T.fim) { clearInterval(T.intervalo); T.intervalo = null; T.fim = 0; salvarSessao(); tick(); }
+  segurando = { id: e.id, inicio: Date.now(), alvo: s.reps * 1000, intervalo: setInterval(pintarSegurando, 200) };
+  manterTela(true); vibrar(40); marcarAtividade(); pintarSegurando();
+}
+function pintarSegurando() {
+  if (!segurando) return;
+  const passou = Date.now() - segurando.inicio;
+  if (passou >= segurando.alvo) { soltar(false); return; }
+  if (atual !== segurando.id || $('v-exercicio').hidden) return;
+  $('t-relogio').textContent = relogio(segurando.alvo - passou); $('t-relogio').classList.add('run');
+  $('t-feita').textContent = `Soltei · ${Math.floor(passou / 1000)} s`;
+}
+function soltar(antes) {
+  const { id, inicio, alvo, intervalo } = segurando; clearInterval(intervalo); segurando = null;
+  const e = db.exercicios.find(x => x.id === id); if (!e) return;
+  const seg = antes ? Math.floor((Date.now() - inicio) / 1000) : Math.round(alvo / 1000);
+  if (!antes) vibrar([400, 150, 400]);
+  if (seg < 1) { if (atual === id) pintarDescanso(e); return; }   // soltou no mesmo instante: não marca
+  marcarSerie(e, seg);
+}
 function desfazerSerie(id) {
   const e = db.exercicios.find(x => x.id === id); if (!e) return;
   const n = seriesFeitas(id); if (!n) return;

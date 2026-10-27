@@ -6,7 +6,7 @@ const registroHoje = e => db.registros.find(r => r.data === hoje() && e.variacoe
 // Dia mostrado na lista: null = hoje. Arrastar a lista (ou o progresso) troca o dia, só entre dias treinados, sem sair da tela.
 let diaInicio = null;
 const registroDe = (e, dia) => db.registros.find(r => r.data === dia && e.variacoes.some(v => v.id === r.variacao));
-telas.inicio = () => { diaInicio = null; pintarInicio(); };
+telas.inicio = () => { diaInicio = null; aplicarPlanos(); pintarInicio(); };
 function pintarInicio() {
   const dia = diaInicio || hoje(), passado = !!diaInicio;
   let feitos = 0; const trav = !passado && travadoHoje();
@@ -16,12 +16,13 @@ function pintarInicio() {
     const v = e.variacoes[iv], u = passado ? rDia : ultimo(v.id), feito = passado ? !!rDia : !!registroHoje(e); if (feito) feitos++;
     const chips = passado
       ? (feito ? '<span class="chip ok">✓ Feito</span>' : '<span class="chip">Não feito</span>')
-      : (feito ? '<span class="chip ok">✓ Feito hoje</span>' : trav ? '<span class="chip">Sem séries salvas hoje</span>' : '') + (completo(u, e) ? '<span class="chip acao">↑ Subir carga</span>' : '');
+      : (feito ? '<span class="chip ok">✓ Feito hoje</span>' : trav ? '<span class="chip">Sem séries salvas hoje</span>' : '') + (completo(u, e) && !semPeso(v) ? '<span class="chip acao">↑ Subir carga</span>' : '');
+    const p = !passado && PLANOS[e.id] && etapaDoPlano(PLANOS[e.id], dia), un = semPeso(v) ? medidaSemPeso(v) : unidadeTxt(v);
     return `<li><button type="button" class="slot" data-ex="${e.id}">
-      <span class="slot-main"><span class="eyebrow">${esc(e.grupo)}${iv > 0 ? ` · <i>${TIPOS[iv].toLowerCase()}</i>` : ''}${v.equip ? ` · nº ${esc(v.equip)}` : ''}</span>
-      <span class="name">${esc(v.nome)}</span><span class="r">${Array.from({ length: e.series }, (_, i) => alvoReps(e, i)).join(' → ')} reps · ${e.descanso} s</span>
+      <span class="slot-main"><span class="eyebrow">${esc(e.grupo)}${p ? ` · <i>mês ${p.k + 1}</i>` : iv > 0 ? ` · <i>${TIPOS[iv].toLowerCase()}</i>` : ''}${v.equip ? ` · nº ${esc(v.equip)}` : ''}</span>
+      <span class="name">${esc(v.nome)}</span><span class="r">${semPeso(v) ? `${e.series} × ${alvoReps(e, 0)} ${medidaSemPeso(v)}` : `${Array.from({ length: e.series }, (_, i) => alvoReps(e, i)).join(' → ')} reps`} · ${e.descanso} s</span>
       <span class="chips">${chips}${u?.series.some(s => s.falha) ? `<span class="chip falha">✗ Falhou${passado ? '' : ' na última'}</span>` : ''}</span></span>
-      <span class="slot-load">${u ? `<span class="w">${fmt(topo(u))}<small>${esc(unidadeTxt(v))}</small></span><span class="r">${repsTxt(u)} · <i>${passado ? dataCurta(u.data) : quando(u.data)}</i></span>` : `<span class="r">${passado ? '—' : 'sem registro'}</span>`}</span>
+      <span class="slot-load">${u ? `<span class="w">${fmt(topo(u))}<small>${esc(un)}</small></span><span class="r">${repsTxt(u)} · <i>${passado ? dataCurta(u.data) : quando(u.data)}</i></span>` : `<span class="r">${passado ? '—' : 'sem registro'}</span>`}</span>
     </button></li>`;
   }).join('');
   $('i-lista').classList.toggle('travado', !!trav);

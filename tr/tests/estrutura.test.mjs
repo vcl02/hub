@@ -76,8 +76,9 @@ test('migrations no formato do DataGrip e RLS só do dono em todas as tabelas tr
 test('exercício incluído por migration tem a descrição e a posição no GUIA (js/config.js)', () => {
   const config = ler('js/config.js');
   // linhas de tr_variacao: (user_id, id, exercicio_id, ordem, nome, unidade, …)
-  const nomes = listar('migrations', '.sql').flatMap(f => [...ler(f).matchAll(/'[\w]+', '[\w]+', [0-2], '([^']+)', '(?:kg|lb|nível)'/g)].map(m => m[1]));
-  assert.deepEqual(nomes, ['Elevação pélvica na máquina', 'Elevação pélvica no Smith', 'Elevação pélvica com halter']);
+  const nomes = listar('migrations', '.sql').flatMap(f => [...ler(f).matchAll(/'[\w]+', '[\w]+', [0-2], '([^']*)', '(?:kg|lb|nível|corpo|s)'/g)].map(m => m[1])).filter(Boolean);
+  assert.deepEqual(nomes, ['Elevação pélvica na máquina', 'Elevação pélvica no Smith', 'Elevação pélvica com halter', 'Flexão com joelhos apoiados', 'Flexão completa',
+    'Pendurar na barra', 'Negativa na barra', 'Barra fixa', 'Rosca de punho com halteres', 'Rosca de punho invertida com halteres']);
   for (const nome of nomes) assert.ok(config.includes(`'${nome.toLowerCase()}': [`), `${nome} sem GUIA`);
 });
 
