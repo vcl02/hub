@@ -2,8 +2,8 @@
 // Tela de hoje: total e meta, lembretes, beber (bebida, campo de ml e botões das quantidades já usadas) e 7 dias.
 let bebida = 'agua';   // a bebida do próximo lançamento; volta para água depois de cada outra bebida
 const nomeBebida = a => BEBIDAS[a.bebida]?.nome.toLowerCase() || '';
-// "10:00 · 300 ml" ou "10:00 · suco 300 ml (264 ml de água)"
-const textoAgua = a => a.bebida ? `${a.hora} · ${nomeBebida(a)} ${inteiro(a.volume)} ml (${inteiro(a.ml)} ml de água)` : `${a.hora} · ${inteiro(a.ml)} ml`;
+// "10:00 · 300 ml" ou "10:00 · suco 300 ml (264 ml de água · 120 kcal)": as kcal entram no Alimentação
+const textoAgua = a => a.bebida ? `${a.hora} · ${nomeBebida(a)} ${inteiro(a.volume)} ml (${inteiro(a.ml)} ml de água · ${inteiro(nutrientesBebida(a).kcal)} kcal)` : `${a.hora} · ${inteiro(a.ml)} ml`;
 
 function desenhar() {
   const dia = hoje(), x = doDia(dia), total = totalMl(dia);

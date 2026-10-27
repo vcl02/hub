@@ -12,7 +12,7 @@
 - **Módulo compartilhado:** `gasto.js` (funções puras) tem o gasto e a meta do dia (`gastoNoDia`, `metaKcal`, fator de atividade, caminhada e `DEFICIT_META`). A página inicial do hub usa o mesmo arquivo para o hábito do déficit: mudou a conta, ela muda nos dois. Não declare ali nomes que o hub ou os apps já usam (`$`, `iso`, `sb`…).
 - Arquivo novo em `css/` ou `js/` entra no `index.html` e no `ARQUIVOS_ESTATICOS` do `sw.js` (o teste `tests/estrutura.test.mjs` confere). O service worker é rede primeiro, cache `al-estatico`, e só apaga caches `al-`.
 - Perfil, taxa basal, calorias do treino e pesagens vêm de `../corpo/perfil.js` (`PERFIL`, `idadeEm`, `tmb`, `kcalTreino`, `kcalEsteira`, `medidasGuardadas`, `lerMedidas`, `pesoNoDia`): nunca repita esses valores aqui.
-- Treinos (`tr_treino`) e pesagens (`corpo_medida`, do app Corpo) são **só lidos** e guardados no aparelho (`al.tr.<id>` e `corpo.medidas.<id>`). O al nunca grava em `tr_*` nem em `corpo_medida`.
+- Treinos (`tr_treino`), pesagens (`corpo_medida`, do app Corpo) e as bebidas com calorias da Água (`agua_dia`, kcal por `../agua/bebidas.js`) são **só lidos** e guardados no aparelho (`al.tr.<id>`, `corpo.medidas.<id>` e `al.bebidas.<id>`). O al nunca grava em `tr_*` nem em `corpo_medida`.
 - Todo arquivo `.js`, `.mjs`, `.ts`, `.css` e `.sql` começa com um comentário curto de responsabilidade.
 
 ## IA (Edge Function `al-estimar`)

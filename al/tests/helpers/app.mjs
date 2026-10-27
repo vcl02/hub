@@ -1,5 +1,6 @@
 // Infra dos testes de ponta a ponta do al: servidor estático, Chromium (o Playwright do tr), Supabase falso e a IA falsa.
-// Fora do hub o al fica na raiz do servidor: ../supabase.js (do hub) e ../corpo/perfil.js chegam como /supabase.js e /corpo/perfil.js.
+// Fora do hub o al fica na raiz do servidor: ../supabase.js (do hub), ../corpo/perfil.js e ../agua/bebidas.js chegam como /supabase.js,
+// /corpo/perfil.js e /agua/bebidas.js.
 import { before, after } from 'node:test';
 import http from 'node:http';
 import fs from 'node:fs';
@@ -19,7 +20,7 @@ export function prepararApp() {
   before(async () => {
     servidor = http.createServer((req, res) => {
       const u = decodeURIComponent(req.url.split('?')[0]);
-      let p = ['/corpo/perfil.js', '/supabase.js'].includes(u) ? path.join(HUB, u) : path.join(RAIZ, u);
+      let p = ['/corpo/perfil.js', '/supabase.js', '/agua/bebidas.js'].includes(u) ? path.join(HUB, u) : path.join(RAIZ, u);
       if (p.endsWith(path.sep)) p += 'index.html';
       fs.readFile(p, (e, d) => {
         if (e) { res.writeHead(404); res.end(); return; }
@@ -35,7 +36,7 @@ export function prepararApp() {
 
 // Supabase falso (auth + PostgREST em memória + a Edge Function al-estimar): nada sai para a rede.
 // nuvem.ia(texto) responde pela IA: { status, corpo }. nuvem.chamadasIA conta as chamadas.
-export const CHAVES = { al_item: ['id'], al_registro: ['id'], al_dia: ['data'], corpo_medida: ['data'], tr_treino: ['inicio'] };
+export const CHAVES = { al_item: ['id'], al_registro: ['id'], al_dia: ['data'], corpo_medida: ['data'], tr_treino: ['inicio'], agua_dia: ['data'] };
 export const novaNuvem = () => ({ online: true, chamadasIA: 0, ia: () => ({ status: 200, corpo: { itens: [] } }), tabelas: Object.fromEntries(Object.keys(CHAVES).map(t => [t, []])) });
 const b64u = o => Buffer.from(JSON.stringify(o)).toString('base64url');
 export async function fakeSupabase(ctx, nuvem, id = DONO) {

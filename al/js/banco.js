@@ -6,7 +6,9 @@
 const TABELAS = { al_item: ['id'], al_registro: ['id'], al_dia: ['data'] };
 const ORDEM = Object.keys(TABELAS);
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const K_LOCAL = id => 'al.db.' + id, K_BASE = id => 'al.base.' + id, K_TR = id => 'al.tr.' + id;
+const K_LOCAL = id => 'al.db.' + id, K_BASE = id => 'al.base.' + id, K_TR = id => 'al.tr.' + id, K_BEBIDAS = id => 'al.bebidas.' + id;
+// bebidas = { dia: [{ hora, bebida, volume }] }: suco, refri e as outras lançadas na Água (agua_dia, só leitura); contam como comido
+let bebidas = {};
 let db = null, tr = { treinos: [] }, medidas = [], usuario = null, base = null, enviando = false, tEnvio = null, erroSync = '';
 
 const macros = x => ({ kcal: x.kcal, prot: x.prot, carb: x.carb, gord: x.gord });
@@ -76,6 +78,13 @@ async function baixarTreino() {
   tr = { treinos: treinos.map(t => ({ inicio: Date.parse(t.inicio), fim: Date.parse(t.fim), ...(cardio(t.cardio) && { cardio: cardio(t.cardio) }) })).filter(t => t.fim >= t.inicio) };
   medidas = M;
   store.set(K_TR(usuario.id), JSON.stringify(tr));
+  // Bebidas da Água (só leitura): se agua_dia falhar, fica a cópia do aparelho
+  try {
+    const A = await todas('agua_dia', 'data,aguas');
+    bebidas = Object.fromEntries(A.map(x => [x.data, (Array.isArray(x.aguas) ? x.aguas : [])
+      .filter(a => nutrientesBebida(a)).map(a => ({ hora: /^\d{2}:\d{2}$/.test(a.hora) ? a.hora : '', bebida: a.bebida, volume: +a.volume }))]).filter(([, L]) => L.length));
+    store.set(K_BEBIDAS(usuario.id), JSON.stringify(bebidas));
+  } catch (e) { /* fica a cópia */ }
 }
 function gravar() {
   if (!usuario || !db) return;

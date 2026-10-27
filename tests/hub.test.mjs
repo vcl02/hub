@@ -55,7 +55,7 @@ test('service workers dividem a origem sem apagar o cache um do outro', () => {
   const sw = ler('sw.js');
   const arquivos = JSON.parse(sw.match(/const ARQUIVOS_ESTATICOS = (\[[^\]]*\]);/)[1].replace(/'/g, '"'));
   for (const arquivo of arquivos) if (arquivo !== './') assert.ok(existe(arquivo), arquivo);
-  for (const f of ['./habitos.js', './corpo/perfil.js', './al/gasto.js']) assert.ok(arquivos.includes(f), f);   // a página inicial abre sem internet
+  for (const f of ['./habitos.js', './corpo/perfil.js', './agua/bebidas.js', './al/gasto.js']) assert.ok(arquivos.includes(f), f);   // a página inicial abre sem internet
   assert.doesNotMatch(sw, /caches\.delete/);
   assert.match(sw, /if \(!ENDERECOS\.has\(url\.href\)\) return;/);   // nunca atende fin/ nem tr/
   assert.match(ler('tr/sw.js'), /k\.startsWith\('carga-'\) && k !== CACHE_ESTATICO/);
@@ -86,7 +86,7 @@ test('login do hub antes dos apps: mesma conta e mesmo supabase-js do tr', () =>
   assert.doesNotMatch(hub, /service_role|sb_secret_/);
   assert.ok(readFileSync(path.join(RAIZ, 'supabase.js')).equals(readFileSync(path.join(RAIZ, 'tr/supabase.js'))), 'supabase.js igual ao do tr');
   // supabase-js, os módulos compartilhados (dados sobre mim e gasto do dia), os hábitos e só então hub.js
-  assert.match(html, /<script src="supabase\.js"><\/script>\n<script src="corpo\/perfil\.js"><\/script>\n<script src="al\/gasto\.js"><\/script>\n<script src="habitos\.js"><\/script>\n<script src="hub\.js"><\/script>/);
+  assert.match(html, /<script src="supabase\.js"><\/script>\n<script src="corpo\/perfil\.js"><\/script>\n<script src="agua\/bebidas\.js"><\/script>\n<script src="al\/gasto\.js"><\/script>\n<script src="habitos\.js"><\/script>\n<script src="hub\.js"><\/script>/);
 });
 
 test('marca do hub em todo lugar: favicon, celular, login e o botão de volta nos apps', () => {
@@ -149,7 +149,7 @@ test('dados sobre mim num lugar só: corpo/perfil.js, carregado pelo tr, pelo al
   assert.deepEqual(JSON.parse(JSON.stringify(M)), [{ data: '2026-10-10', hora: '', peso: 93 }, { data: '2026-10-20', hora: '', peso: 91 }, { data: '2026-10-22', hora: '', cintura: 100 }]);
   assert.deepEqual([ctx.pesoNoDia(M, '2026-10-01'), ctx.pesoNoDia(M, '2026-10-15'), ctx.pesoNoDia(M, '2026-10-30'), ctx.pesoNoDia([], '2026-10-30')], [93, 93, 91, null]);
   // Gasto do dia num lugar só: al/gasto.js, o mesmo no al e no hábito do déficit
-  assert.match(ler('al/index.html'), /<script src="\.\.\/corpo\/perfil\.js"><\/script>\n<script src="gasto\.js"><\/script>/);
+  assert.match(ler('al/index.html'), /<script src="\.\.\/corpo\/perfil\.js"><\/script>\n<script src="\.\.\/agua\/bebidas\.js"><\/script>\n<script src="gasto\.js"><\/script>/);
   assert.doesNotMatch(ler('al/js/config.js'), /const (FATOR_ATIVIDADE|DEFICIT_META)\b/);
   assert.doesNotMatch(ler('hub.js') + ler('habitos.js'), /const (FATOR_ATIVIDADE|DEFICIT_META|MET_MUSCULACAO)\b/);
   for (const app of ['tr', 'al', 'agua']) {

@@ -154,6 +154,21 @@ test('uma comida salva por nome: repetidas de antes viram uma só (a mais usada)
   await ctx.close();
 });
 
+test('bebidas lançadas na Água (suco, refri…) contam como comido: na lista, só para ver, e no saldo e nos macros', async () => {
+  const nuvem = comTreino(novaNuvem());
+  nuvem.tabelas.agua_dia.push({ user_id: 'x', data: DIA, aguas: [{ hora: '10:00', ml: 200 }, { hora: '12:27', ml: 132, bebida: 'suco', volume: 150 }] });
+  const { ctx, pg, erros } = await abrirApp({ nuvem });
+  // suco 150 ml: 40 kcal e 10 g de carboidrato por 100 ml = 60 kcal e 15 g · a água pura não entra
+  assert.equal(await pg.locator('#lista li').count(), 1);
+  assert.match(await texto(pg, '#lista li.da-agua'), /^12:27 Suco 150 ml · da Água P 0 · C 15 · G 0 60 kcal$/);
+  assert.equal(await pg.locator('#lista li.da-agua select, #lista li.da-agua button').count(), 0);   // muda na Água, não aqui
+  assert.equal(await texto(pg, '#s-valor'), '2.046');                  // 2106 − 60
+  assert.match(await texto(pg, '#macros .m-carb p'), /^Carboidrato 15 \//);
+  assert.equal(nuvem.tabelas.agua_dia[0].aguas.length, 2);              // só lê a Água
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
 test('hoje passou da meta: mostra quanto passou (vermelho), e os macros que passaram; dia passado mostra o saldo final', async () => {
   const nuvem = comTreino(novaNuvem());
   nuvem.ia = iaCom({ nome: 'Rodízio', porcao: '1 noite', kcal: 3000, prot: 150, carb: 300, gord: 120 });

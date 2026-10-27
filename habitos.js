@@ -4,6 +4,7 @@
 // e de al/gasto.js (gastoNoDia, metaKcal, diaDoInstante, semanaDoDia). hub.js baixa os dados e desenha.
 //   D = { treinos:  [{ inicio, fim, cardio? }]              tr_treino, instantes em ms
 //         comidas:  { dia: [{ hora, kcal }] }               al_registro (kcal já × qtd; hora '' = lançado depois do dia)
+//         bebidas:  { dia: [{ hora, kcal }] }               agua_dia: suco, refri… (kcal por agua/bebidas.js), contam como comida
 //         trechos:  { dia: [{ hora, minutos?, km? }] }      al_dia.caminhadas (hora '' = lançado depois do dia)
 //         medidas:  [{ data, hora, peso?, cintura?, pesoEm? }]   corpo_medida, por ordenarMedidas (corpo/perfil.js)
 //         sonos:    { dia: { sono, sonoEm? } }               corpo_dia
@@ -27,7 +28,7 @@ const lancadoNoDia = (em, dia) => dia < LANCADO_NO_DIA_DESDE || (!!em && diaDoIn
 // Comido e meta do dia, só com o que foi lançado no dia (a partir da regra): comida ou caminhada lançada depois não conta
 function contaDoDia(D, dia) {
   const vale = x => dia < LANCADO_NO_DIA_DESDE || !!x.hora;
-  const comidas = D.comidas[dia] || [], trechos = (D.trechos[dia] || []).filter(vale);
+  const comidas = [...(D.comidas[dia] || []), ...(D.bebidas?.[dia] || [])], trechos = (D.trechos[dia] || []).filter(vale);
   const gasto = gastoNoDia(D.medidas, D.treinos, trechos, dia);
   return { comidas, tarde: comidas.some(c => !vale(c)), comido: Math.round(comidas.reduce((s, c) => s + c.kcal, 0)), meta: gasto ? metaKcal(gasto) : null };
 }

@@ -14,7 +14,7 @@ const DONO = ler('js/config.js').match(/const DONO = '([0-9a-f-]{36})'/)[1];
 const FUNCAO = 'supabase/functions/agua-lembrete/index.ts';
 
 test('todo arquivo de código começa com um comentário de responsabilidade', () => {
-  for (const f of listar('js', '.js')) assert.match(ler(f), /^'use strict';\n(\/\/ |\/\*)/, f);
+  for (const f of [...listar('js', '.js'), 'bebidas.js']) assert.match(ler(f), /^'use strict';\n(\/\/ |\/\*)/, f);
   for (const f of listar('css', '.css')) assert.match(ler(f), /^\/\* /, f);
   for (const f of ['sw.js', FUNCAO, ...listar('scripts', '.mjs'), ...listar('tests', '.mjs'), ...listar('tests/helpers', '.mjs')]) assert.match(ler(f), /^\/\/ /, f);
   for (const f of listar('migrations', '.sql')) assert.match(ler(f), /^-- /, f);
@@ -35,9 +35,9 @@ test('index.html: tags de bloco fecham na ordem certa e o css tem chaves balance
 test('ordem de carga: supabase do hub e módulo do Corpo antes dos módulos; o service worker guarda tudo', () => {
   assert.deepEqual([...jsDoHtml].sort(), listar('js', '.js').sort());
   assert.deepEqual(jsDoHtml, ['js/config.js', 'js/util.js', 'js/banco.js', 'js/conta.js', 'js/notificacoes.js', 'js/telas.js', 'js/bootstrap.js']);
-  assert.match(html, /<script src="\.\.\/supabase\.js"><\/script>\n<script src="\.\.\/corpo\/perfil\.js"><\/script>\n<script src="js\/config\.js">/);
+  assert.match(html, /<script src="\.\.\/supabase\.js"><\/script>\n<script src="\.\.\/corpo\/perfil\.js"><\/script>\n<script src="bebidas\.js"><\/script>\n<script src="js\/config\.js">/);
   const sw = ler('sw.js'), guardados = [...sw.matchAll(/'(\.\.?\/[^']*)'/g)].map(m => m[1]);
-  for (const f of ['./index.html', './css/agua.css', './manifest.webmanifest', '../supabase.js', '../corpo/perfil.js', ...jsDoHtml.map(f => './' + f)]) assert.ok(guardados.includes(f), `sw.js não guarda ${f}`);
+  for (const f of ['./index.html', './css/agua.css', './manifest.webmanifest', '../supabase.js', '../corpo/perfil.js', './bebidas.js', ...jsDoHtml.map(f => './' + f)]) assert.ok(guardados.includes(f), `sw.js não guarda ${f}`);
   for (const f of guardados) assert.ok(existsSync(path.join(RAIZ, f)), `sw.js guarda ${f}, que não existe`);
   assert.match(sw, /k\.startsWith\('agua-'\) && k !== CACHE_ESTATICO/);
 });

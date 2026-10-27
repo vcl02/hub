@@ -45,11 +45,11 @@ test('outras bebidas (suco, refri, cappuccino, leite com Toddy): só a parte que
   await beber(pg, 350);                                                    // refri: 350 × 89% = 312
   await pg.click('[data-ml="300"]');                                       // o botão é o volume do copo; agora, água pura
   assert.deepEqual(await pg.$$eval('#b-lista button', B => B.map(b => b.textContent)),
-    ['09:00 · suco 300 ml (264 ml de água) ×', '09:00 · refri 350 ml (312 ml de água) ×', '09:00 · 300 ml ×']);
+    ['09:00 · suco 300 ml (264 ml de água · 120 kcal) ×', '09:00 · refri 350 ml (312 ml de água · 147 kcal) ×', '09:00 · 300 ml ×']);
   assert.equal(await texto(pg, '#t-ml'), '876');                           // 264 + 312 + 300
   await pg.click('[data-bebida="toddy"]'); await beber(pg, 200);           // leite com Toddy: 200 × 82% = 164
   await pg.click('[data-bebida="cappuccino"]'); await beber(pg, 150);      // cappuccino: 150 × 88% = 132
-  assert.deepEqual((await pg.$$eval('#b-lista button', B => B.map(b => b.textContent))).slice(3), ['09:00 · leite com toddy 200 ml (164 ml de água) ×', '09:00 · cappuccino 150 ml (132 ml de água) ×']);
+  assert.deepEqual((await pg.$$eval('#b-lista button', B => B.map(b => b.textContent))).slice(3), ['09:00 · leite com toddy 200 ml (164 ml de água · 170 kcal) ×', '09:00 · cappuccino 150 ml (132 ml de água · 90 kcal) ×']);
   assert.equal(await texto(pg, '#t-ml'), '1.172');
   await sincronizado(pg);
   assert.deepEqual(nuvem.tabelas.agua_dia[0].aguas, [

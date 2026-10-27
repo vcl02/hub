@@ -88,6 +88,11 @@ test('déficit: comido ≤ meta (gasto − 500); dia sem registro, com comida la
   assert.equal(dia('2026-11-04'), 'falhou');
   D.trechos['2026-11-04'] = [{ hora: '18:00', km: 5 }];
   assert.equal(dia('2026-11-04'), 'feito');
+  // Bebida lançada na Água (suco, refri…) conta como comida: no limite, um suco passa da meta
+  D.comidas['2026-11-01'] = [{ hora: '12:00', kcal: meta('2026-11-01') - 50 }];
+  assert.equal(dia('2026-11-01'), 'feito');
+  D.bebidas = { '2026-11-01': [{ hora: '15:00', kcal: 60 }] };
+  assert.equal(dia('2026-11-01'), 'falhou');
   // Sem pesagem nenhuma não há meta: falha
   assert.equal(H.estadoNoDia('deficit', '2026-11-01', { ...D, medidas: [] }, HOJE), 'falhou');
 });

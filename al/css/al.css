@@ -126,6 +126,7 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 /* ---------- Lista do dia ---------- */
 .lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .lista li{display:grid;grid-template-columns:3em 1fr auto auto;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 10px 10px 12px}
+.lista li.da-agua{border-style:dashed}   /* bebida lançada na Água: só para ver, muda lá */
 .l-hora{color:var(--muted);font-size:.8rem;font-style:italic}
 .l-txt{display:flex;flex-direction:column;min-width:0}
 .l-txt b{font-weight:600}

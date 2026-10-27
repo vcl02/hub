@@ -109,15 +109,27 @@ function lerPrevia() {
   });
 }
 
+// Lista do dia: comidas e, só para ver, as bebidas lançadas na Água (mudam lá); em ordem de hora
 function pintarLista() {
-  const L = db.registros.filter(r => r.data === diaVisto).sort((a, b) => (a.hora || '99').localeCompare(b.hora || '99'));
+  const L = [...db.registros.filter(r => r.data === diaVisto), ...(bebidas[diaVisto] || []).map(b => ({ ...b, daAgua: true }))]
+    .sort((a, b) => (a.hora || '99').localeCompare(b.hora || '99'));
   $('h-comidas').hidden = !L.length;
-  $('lista').innerHTML = L.map(r => `<li>
+  $('lista').innerHTML = L.map(r => r.daAgua ? linhaBebida(r) : `<li>
     <span class="l-hora">${r.hora || ''}</span>
     <span class="l-txt"><b>${esc(r.nome)}</b> <small>${r.qtd !== 1 ? fmtQtd(r.qtd) + ' × ' : ''}${esc(r.porcao)}</small> <small class="l-mac">P ${umaCasa(r.prot * r.qtd)} · C ${umaCasa(r.carb * r.qtd)} · G ${umaCasa(r.gord * r.qtd)}</small></span>
     <span class="l-kcal">${inteiro(r.kcal * r.qtd)} <small>kcal</small></span>
     <span class="l-acoes"><select data-qtd="${r.id}" title="Porções" aria-label="Porções"${passado() ? ' disabled' : ''}>${[...new Set([...QTDS, r.qtd])].sort((a, b) => a - b).map(q => `<option value="${q}"${q === r.qtd ? ' selected' : ''}>${fmtQtd(q)}×</option>`).join('')}</select>${btIcone('lixo', 'Apagar', `data-apagar="${r.id}"${passado() ? ' disabled' : ''}`, 'perigo')}</span>
   </li>`).join('');
+}
+
+function linhaBebida(b) {
+  const n = nutrientesBebida(b);
+  return `<li class="da-agua">
+    <span class="l-hora">${b.hora || ''}</span>
+    <span class="l-txt"><b>${esc(BEBIDAS[b.bebida].nome)}</b> <small>${inteiro(b.volume)} ml · da Água</small> <small class="l-mac">P ${umaCasa(n.prot)} · C ${umaCasa(n.carb)} · G ${umaCasa(n.gord)}</small></span>
+    <span class="l-kcal">${inteiro(n.kcal)} <small>kcal</small></span>
+    <span class="l-acoes"></span>
+  </li>`;
 }
 
 // Últimos 7 dias até hoje (desde o 1º dia do app): comido e saldo de cada um (o dia mostrado em destaque). Hoje ainda não

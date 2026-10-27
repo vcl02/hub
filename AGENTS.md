@@ -15,6 +15,7 @@
 | `index.html` · `hub.css` · `hub.js` | Página inicial: login, os hábitos (uma linha por hábito, que abre o app) e os atalhos fixos embaixo (Fin, Agenda, Anotações). `hub.js` baixa os dados dos apps (só leitura) e desenha |
 | `habitos.js` | Regras dos hábitos, só funções puras: estado de cada dia, ofensivas, dias perfeitos, proteções e o resumo de hoje (testes em `tests/habitos.test.mjs`) |
 | `al/gasto.js` | Gasto e meta do dia (módulo do al), o mesmo no al e no hábito do déficit |
+| `agua/bebidas.js` | Bebidas da Água além da água (suco, refri, cappuccino, leite com Toddy): quanto é água e kcal/macros por 100 ml; a Água, o al e a página inicial carregam |
 | `supabase.js` | `@supabase/supabase-js` (UMD), cópia byte a byte de `tr/supabase.js` (o teste confere); atualize os dois juntos. O al usa este (`../supabase.js`), sem cópia própria |
 | `sw.js` · `manifest.webmanifest` · `icons/` | Instalação e cache offline da página inicial |
 | `fin/` · `tr/` · `al/` · `corpo/` · `agua/` | Os apps, cada um com `index.html`, service worker e manifest próprios |
@@ -39,12 +40,12 @@
 - Mesma origem para todos: `localStorage`, caches e a sessão do Supabase são compartilhados.
   - Chaves de `localStorage` e nomes de cache sempre com prefixo do app (`fin-`, `carga-`/`tr.`, `al-`/`al.`, `corpo-`/`corpo.`, `agua-`/`agua.`, `hub-`). Nenhum service worker apaga cache de outro prefixo.
   - A sessão do Supabase (mesmo projeto, mesma chave) vale para todos os apps: entrar em um entra em todos, e Sair em qualquer um sai de todos.
-- O service worker da raiz só atende os arquivos da própria página inicial (incluindo os módulos que ela carrega, `corpo/perfil.js` e `al/gasto.js`, só para ela); cada app tem o seu, com escopo na própria pasta.
+- O service worker da raiz só atende os arquivos da própria página inicial (incluindo os módulos que ela carrega, `corpo/perfil.js`, `agua/bebidas.js` e `al/gasto.js`, só para ela); cada app tem o seu, com escopo na própria pasta.
 - **Dados sobre mim num lugar só (app Corpo):** perfil (altura, nascimento, sexo, só no código) e o que sai dele (idade, taxa basal, calorias do treino) ficam em `corpo/perfil.js`; pesagem e barriga ficam na tabela `corpo_medida` e o registro do dia (sono, evacuações e xixis) em `corpo_dia`, que só o Corpo grava. App que usa carrega `<script src="../corpo/perfil.js">` antes dos próprios scripts e põe `../corpo/perfil.js` no próprio service worker (offline); lê as pesagens com `lerMedidas`/`medidasGuardadas`/`pesoNoDia`; nenhum app repete esses valores nem grava pesagens.
 
 ## Hábitos (página inicial)
 
-- Hábitos: **Treino** (quarta e quinta, `ROTINA.treino`; segunda não conta, nem treinando), **Déficit** (comido ≤ meta do dia = gasto − 500, pela mesma conta do al), **Peso e sono** (um hábito só, do Corpo, todo dia: feito com os dois lançados no dia; o 1º registro de qualquer um começa o hábito) e **Água** (1.000 ml, a meta da Água). Cada um abre o app dele.
+- Hábitos: **Treino** (quarta e quinta, `ROTINA.treino`; segunda não conta, nem treinando), **Déficit** (comido ≤ meta do dia = gasto − 500, pela mesma conta do al; comido inclui as bebidas da Água com calorias), **Peso e sono** (um hábito só, do Corpo, todo dia: feito com os dois lançados no dia; o 1º registro de qualquer um começa o hábito) e **Água** (1.000 ml, a meta da Água). Cada um abre o app dele.
 - **Lançado no dia:** a partir de 27/10/2026, só conta o que foi lançado no próprio dia. Peso e sono pelo instante gravado pelo Corpo (`peso_em`, `sono_em`); comida e caminhada do al pela hora (o al grava sem hora o que é lançado em outro dia): dia com comida lançada depois falha, e caminhada lançada depois não sobe a meta. Água só se lança no dia. Antes de 27/10, tudo conta como lançado no dia.
 - **Déficit:** hoje conta como feito enquanto o comido couber na meta (com pelo menos um registro); passou da meta, volta a pendente (treino ou caminhada ainda podem subir a meta) e à meia-noite o dia fecha. Sem nenhum registro de comida no dia, falha.
 - Estados de cada dia: feito, falhou, protegido, pendente (hoje), folga (dia sem o hábito) e antes (antes do 1º registro do hábito).
@@ -78,7 +79,7 @@
 
 - Os apps usam o mesmo projeto Supabase (`fin`, tabelas `tr_*`, `al_*`, `corpo_*`, `agua_*` e `push_*`), pelo cliente do navegador e com a chave publicável. Nunca coloque chave de serviço nem segredo no repositório, que é público.
 - Edge Functions (código versionado, publicado por deploy pelo mantenedor): `fin/supabase/functions/captura-nubank` `al/supabase/functions/al-estimar` (IA do al; a chave da Anthropic fica só no secret `ANTHROPIC_API_KEY`) e `agua/supabase/functions/agua-lembrete` (notificações da Água, chamada de hora em hora pelo pg_cron; chaves VAPID só na tabela `push_chave`).
-- O al só lê `tr_treino` e `corpo_medida` (treinos e peso para o gasto do dia); o tr só lê `corpo_medida`; o Corpo só lê `agua_dia` (água do dia, para a bexiga). `tr_medida` (onde o tr gravava as pesagens) foi copiada para `corpo_medida` pela migration `corpo/00` e depois apagada pelo mantenedor (por isso a `corpo/00` não roda de novo).
+- O al só lê `tr_treino` e `corpo_medida` (treinos e peso para o gasto do dia); o tr só lê `corpo_medida`; o Corpo só lê `agua_dia` (água do dia, para a bexiga); o al também lê `agua_dia` (bebidas com calorias, que contam como comido). `tr_medida` (onde o tr gravava as pesagens) foi copiada para `corpo_medida` pela migration `corpo/00` e depois apagada pelo mantenedor (por isso a `corpo/00` não roda de novo).
 - Conta `DONO` recriada em 24/10/2026 (id novo em `hub.js` e `tr/js/config.js`; policies trocadas pelas migrations `fin/40` e `tr/04`). Apagar a conta apaga as linhas `tr_*` (on delete cascade): para trocar senha, use a troca de senha, nunca recrie a conta.
 - Migration nova não segura o push: faça o push junto com ela e informe o que aplicar; o mantenedor roda a migration logo depois.
 - Qualquer operação remota que mude estado no Supabase (dados, esquema, RLS, Auth) exige confirmação explícita do mantenedor, com alvo e efeito informados. Consultas só de leitura podem apoiar diagnóstico (`.mcp.json` já é somente leitura).

@@ -4,7 +4,7 @@
 const CACHE_ESTATICO = 'agua-estatico';
 const ARQUIVOS_ESTATICOS = [
   './js/config.js', './js/util.js', './js/banco.js', './js/conta.js', './js/notificacoes.js', './js/telas.js', './js/bootstrap.js',
-  './css/agua.css', './', './index.html', '../supabase.js', '../corpo/perfil.js', './manifest.webmanifest', './icons/agua-192.png', './icons/agua-512.png', './icons/agua-badge.png'];
+  './css/agua.css', './', './index.html', '../supabase.js', '../corpo/perfil.js', './bebidas.js', './manifest.webmanifest', './icons/agua-192.png', './icons/agua-512.png', './icons/agua-badge.png'];
 
 self.addEventListener('install', evento => {
   evento.waitUntil(caches.open(CACHE_ESTATICO).then(cache => Promise.all(

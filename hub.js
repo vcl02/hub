@@ -43,7 +43,7 @@ function entrou(usuario) {
 // Cada tabela que falhar (sem internet, tabela ainda não criada) fica com a cópia; as pesagens vêm por corpo/perfil.js.
 const K_HABITOS = id => 'hub-habitos.' + id;
 let dados = null;
-const dadosVazios = () => ({ treinos: [], comidas: {}, trechos: {}, medidas: [], sonos: {}, aguas: {} });
+const dadosVazios = () => ({ treinos: [], comidas: {}, bebidas: {}, trechos: {}, medidas: [], sonos: {}, aguas: {} });
 const dataOk = d => /^\d{4}-\d{2}-\d{2}$/.test(d);
 const horaOk = h => /^\d{2}:\d{2}$/.test(h) ? h : '';
 async function todas(tabela) {
@@ -71,7 +71,12 @@ const FONTES = {
     ...(+t?.minutos > 0 && +t.minutos <= 600 && { minutos: +t.minutos }), ...(+t?.km > 0 && +t.km <= 60 && { km: +t.km }) })).slice(0, 30) : null),
   medidas: () => lerMedidas(sb, conta),
   sonos: async () => porDia(await todas('corpo_dia'), x => x.sono == null || isNaN(+x.sono) ? null : { sono: +x.sono, ...(x.sono_em && { sonoEm: x.sono_em }) }),
-  aguas: async () => porDia(await todas('agua_dia'), x => Array.isArray(x.aguas) ? x.aguas.reduce((s, a) => s + (+a.ml || 0), 0) : null)
+  aguas: async () => porDia(await todas('agua_dia'), x => Array.isArray(x.aguas) ? x.aguas.reduce((s, a) => s + (+a.ml || 0), 0) : null),
+  // Bebidas da Água (suco, refri…): kcal por agua/bebidas.js, contam como comido no déficit (lançadas sempre no dia, com hora)
+  bebidas: async () => porDia(await todas('agua_dia'), x => {
+    const L = (Array.isArray(x.aguas) ? x.aguas : []).map(a => ({ hora: horaOk(a?.hora), n: nutrientesBebida(a) })).filter(b => b.n);
+    return L.length ? L.map(b => ({ hora: b.hora, kcal: b.n.kcal })) : null;
+  })
 };
 function abrirHabitos() {
   try { dados = { ...dadosVazios(), ...JSON.parse(localStorage.getItem(K_HABITOS(conta))) }; } catch (e) { dados = dadosVazios(); }

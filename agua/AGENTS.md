@@ -18,7 +18,8 @@
 - Cópia local primeiro, envio por diferença (`js/banco.js`). As listas da base são cópias: editar o dia não pode mexer na base.
 - Notificações: Edge Function `supabase/functions/agua-lembrete` (deploy com `verify_jwt` desligado: o agendamento chama sem sessão) e migration `01` (`push_inscricao`, `push_chave`, pg_cron de hora em hora no minuto 1). Push sem conteúdo (o texto fica no `sw.js`), sem biblioteca de criptografia: só a assinatura VAPID (ES256, WebCrypto).
 - As chaves VAPID e o token do agendamento nascem na função e ficam só em `push_chave` (sem policy: só a chave de serviço e o banco leem). Nunca no código, no repositório nem no chat. A função repete `PRESENCIAL`, `INICIO`/`FIM` e `DONO` (Deno não carrega `../corpo/perfil.js`); os testes conferem que batem com o app.
-- O futuro módulo Hábitos pode ler `agua_dia` (só leitura).
+- **Outras bebidas** (`bebidas.js`, módulo compartilhado, carregado depois de `../corpo/perfil.js`): cada lançamento de suco, refri, cappuccino ou leite com Toddy grava `bebida` e `volume`, e `ml` é só a parte que é água (o que soma para a meta). As kcal saem de `volume` × a tabela, na hora: o al e o hábito do déficit leem `agua_dia` e contam como comido. Mudou a tabela, muda o histórico também.
+- Quem lê `agua_dia` (só leitura): a página inicial (hábitos), o Corpo (bexiga) e o al (bebidas com calorias).
 
 ## Como concluir uma mudança
 
