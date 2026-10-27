@@ -2,6 +2,8 @@
 // Banco: Supabase + cópia local, sincronização por diferença (corpo_medida e corpo_dia) e a cópia que os outros apps leem.
 // Cada mudança grava a cópia local na hora e, 0,8 s depois, envia ao Supabase só as linhas que mudaram
 // (diferença para "base", a última versão confirmada pelo servidor). Sem internet, fica pendente e envia ao reconectar.
+// corpo_dia é enviado MESCLANDO: lê o dia como está na nuvem agora e aplica só o que este aparelho acrescentou ou tirou nas
+// evacuações e nos xixis (e o sono, se mudou aqui) desde a base; o que outro aparelho lançou nunca some por causa deste.
 // Também atualiza corpo.medidas.<conta> (guardarMedidas, de ../corpo/perfil.js): Treino e Alimentação veem na hora.
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const K_LOCAL = id => 'corpo.db.' + id, K_BASE = id => 'corpo.base.' + id, K_AGUAS = id => 'corpo.aguas.' + id;
@@ -39,6 +41,21 @@ function diferenca(a, b) {   // o que enviar para sair de a e chegar em b; null 
   return n ? { up, del } : null;
 }
 const temPendente = () => { const d = db && usuario && diferenca(base, linhas(db)); return !!d && (!semCorpoDia || Object.keys(TABELAS).some(t => t !== 'corpo_dia' && (d.up[t].length || d.del[t].length))); };
+// Lista mesclada (multiconjunto): a da nuvem, mais o que entrou aqui desde a base, menos o que saiu daqui
+function mesclar(nuvem, base, local) {
+  const conta = L => L.reduce((m, x) => m.set(x, (m.get(x) || 0) + 1), new Map());
+  const b = conta(base), l = conta(local), R = [...nuvem];
+  for (const [c, n] of l) for (let i = b.get(c) || 0; i < n; i++) R.push(c);
+  for (const [c, n] of b) for (let i = l.get(c) || 0; i < n; i++) { const j = R.indexOf(c); if (j >= 0) R.splice(j, 1); }
+  return R;
+}
+// Linha de corpo_dia (formato de linhas) do dia d depois da mescla: nuvem N, base B e aparelho L (qualquer um pode faltar)
+function diaMesclado(d, N, B, L) {
+  const v = (x, k) => x?.[k] || [], mudouSono = (L?.sono ?? null) !== (B?.sono ?? null), S = mudouSono ? L : N;
+  const dia = preparar({ dias: [{ data: d, evacuacoes: mesclar(v(N, 'evacuacoes'), v(B, 'evacuacoes'), v(L, 'evacuacoes')),
+    xixis: mesclar(v(N, 'xixis'), v(B, 'xixis'), v(L, 'xixis')), sono: S?.sono ?? null, sono_em: S?.sono_em }] }).dias[0];
+  return dia ? linhas({ medidas: [], dias: [dia] }).corpo_dia[d] : null;
+}
 async function enviar() {
   clearTimeout(tEnvio);
   if (enviando || !usuario || !db) return;
@@ -46,8 +63,20 @@ async function enviar() {
   if (!mud) { erroSync = ''; pintarSync(); return; }
   enviando = true;
   try {
+    // corpo_dia: dia a dia, mesclado com o que está na nuvem agora
+    const diasMudados = semCorpoDia ? [] : [...mud.up.corpo_dia.map(l => l.data), ...mud.del.corpo_dia];
+    const finais = {};
+    if (diasMudados.length) {
+      const { data: N, error } = await sb.from('corpo_dia').select('*').in('data', diasMudados);
+      if (error) throw error;
+      const nuvem = linhas({ medidas: [], dias: preparar({ dias: N || [] }).dias }).corpo_dia;
+      for (const d of diasMudados) finais[d] = diaMesclado(d, nuvem[d], base?.corpo_dia?.[d], agora.corpo_dia[d]);
+      const sobe = diasMudados.filter(d => finais[d]), sai = diasMudados.filter(d => !finais[d] && nuvem[d]);
+      if (sobe.length) { const { error: e } = await sb.from('corpo_dia').upsert(sobe.map(d => ({ user_id: usuario.id, ...finais[d] })), { onConflict: 'user_id,data' }); if (e) throw e; }
+      for (const d of sai) { const { error: e } = await sb.from('corpo_dia').delete().eq('data', d); if (e) throw e; }
+    }
     for (const t in TABELAS) {
-      if (t === 'corpo_dia' && semCorpoDia) continue;
+      if (t === 'corpo_dia') continue;
       if (mud.up[t].length) {
         const { error } = await sb.from(t).upsert(mud.up[t].map(l => ({ user_id: usuario.id, ...l })), { onConflict: 'user_id,' + TABELAS[t] });
         if (error) throw error;
@@ -55,6 +84,20 @@ async function enviar() {
       for (const k of mud.del[t]) { const { error } = await sb.from(t).delete().eq(TABELAS[t], k); if (error) throw error; }
     }
     base = semCorpoDia ? { ...agora, corpo_dia: base?.corpo_dia || {} } : agora;
+    if (diasMudados.length) {
+      // O aparelho fica com o resultado da mescla (mais o que mudou aqui enquanto enviava); a base, com o que a nuvem tem agora
+      const atual = linhas(db).corpo_dia;
+      base = { ...base, corpo_dia: { ...base.corpo_dia } };
+      for (const d of diasMudados) {
+        if (finais[d]) base.corpo_dia[d] = finais[d]; else delete base.corpo_dia[d];
+        const aqui = diaMesclado(d, finais[d], agora.corpo_dia[d], atual[d]);
+        db.dias = db.dias.filter(x => x.data !== d);
+        if (aqui) db.dias.push({ data: d, evacuacoes: aqui.evacuacoes, xixis: aqui.xixis, ...(aqui.sono != null && { sono: aqui.sono }), ...(aqui.sono_em && { sonoEm: aqui.sono_em }) });
+      }
+      db = preparar(db);
+      store.set(K_LOCAL(usuario.id), JSON.stringify(db));
+      if (typeof desenhar === 'function' && !$('v-corpo').hidden) desenhar();
+    }
     store.set(K_BASE(usuario.id), JSON.stringify(base)); erroSync = '';
   } catch (e) { erroSync = e.message || String(e); }
   finally { enviando = false; }

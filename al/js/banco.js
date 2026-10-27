@@ -40,6 +40,16 @@ function diferenca(a, b) {   // o que enviar para o servidor sair de a e chegar 
   return n ? { up, del } : null;
 }
 const temPendente = () => !!(db && usuario && diferenca(base, linhas(db)));
+// Caminhada (al_dia) é enviada MESCLANDO: lê o dia como está na nuvem agora e aplica só os trechos que este aparelho
+// acrescentou ou tirou desde a base (multiconjunto); o que outro aparelho lançou nunca some por causa deste.
+function mesclar(nuvem, base, local) {
+  const k = x => JSON.stringify(x), conta = L => L.reduce((m, x) => m.set(k(x), (m.get(k(x)) || 0) + 1), new Map());
+  const b = conta(base), l = conta(local), R = [...nuvem];
+  for (const [c, n] of l) for (let i = b.get(c) || 0; i < n; i++) R.push(JSON.parse(c));
+  for (const [c, n] of b) for (let i = l.get(c) || 0; i < n; i++) { const j = R.findIndex(x => k(x) === c); if (j >= 0) R.splice(j, 1); }
+  return R;
+}
+const trechosDe = (L, data) => preparar({ itens: [], registros: [], dias: [{ data, caminhadas: L }] }).dias[0]?.caminhadas || [];
 async function enviar() {
   clearTimeout(tEnvio);
   if (enviando || !usuario || !db) return;
@@ -47,15 +57,40 @@ async function enviar() {
   if (!mud) { erroSync = ''; pintarSync(); return; }
   enviando = true;
   try {
-    for (const t of ORDEM) if (mud.up[t].length) {
+    const porId = ORDEM.filter(t => t !== 'al_dia');
+    for (const t of porId) if (mud.up[t].length) {
       const { error } = await sb.from(t).upsert(mud.up[t].map(l => ({ user_id: usuario.id, ...l })), { onConflict: ['user_id', ...TABELAS[t]].join(',') });
       if (error) throw error;
     }
-    for (const t of ORDEM) for (const l of mud.del[t]) {
+    for (const t of porId) for (const l of mud.del[t]) {
       let q = sb.from(t).delete(); for (const k of TABELAS[t]) q = q.eq(k, l[k]);
       const { error } = await q; if (error) throw error;
     }
-    base = agora; store.set(K_BASE(usuario.id), JSON.stringify(base)); erroSync = '';
+    // Caminhada: dia a dia, mesclada com o que está na nuvem agora
+    const dias = [...mud.up.al_dia.map(l => l.data), ...mud.del.al_dia.map(l => l.data)], final = {};
+    if (dias.length) {
+      const { data: N, error } = await sb.from('al_dia').select('data,caminhadas').in('data', dias);
+      if (error) throw error;
+      const nuvem = Object.fromEntries((N || []).map(x => [x.data, trechosDe(x.caminhadas, x.data)]));
+      for (const d of dias) final[d] = trechosDe(mesclar(nuvem[d] || [], base?.al_dia?.[d]?.caminhadas || [], agora.al_dia[d]?.caminhadas || []), d);
+      const sobe = dias.filter(d => final[d].length), sai = dias.filter(d => !final[d].length && nuvem[d]);
+      if (sobe.length) { const { error: e } = await sb.from('al_dia').upsert(sobe.map(d => ({ user_id: usuario.id, data: d, caminhadas: final[d] })), { onConflict: 'user_id,data' }); if (e) throw e; }
+      for (const d of sai) { const { error: e } = await sb.from('al_dia').delete().eq('data', d); if (e) throw e; }
+    }
+    base = { ...agora, al_dia: { ...agora.al_dia } };
+    if (dias.length) {
+      // O aparelho fica com o resultado (mais o que mudou aqui enquanto enviava); a base, com o que a nuvem tem agora
+      for (const d of dias) {
+        if (final[d].length) base.al_dia[d] = { data: d, caminhadas: final[d] }; else delete base.al_dia[d];
+        const atual = db.dias.find(x => x.data === d)?.caminhadas || [], aqui = trechosDe(mesclar(final[d], agora.al_dia[d]?.caminhadas || [], atual), d);
+        db.dias = db.dias.filter(x => x.data !== d);
+        if (aqui.length) db.dias.push({ data: d, caminhadas: aqui });
+      }
+      db = preparar(db);
+      store.set(K_LOCAL(usuario.id), JSON.stringify(db));
+      if (typeof desenhar === 'function' && !$('v-dia').hidden) desenhar();
+    }
+    store.set(K_BASE(usuario.id), JSON.stringify(base)); erroSync = '';
   } catch (e) { erroSync = e.message || String(e); }
   finally { enviando = false; }
   pintarSync();

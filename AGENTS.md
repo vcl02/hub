@@ -22,6 +22,7 @@
 | `corpo/perfil.js` | Dados sobre mim para todos os apps: perfil (altura, nascimento, sexo), rotina da semana (`ROTINA`: dias de treino e presenciais), `idadeEm`/`tmb`, calorias do treino e da esteira (`kcalTreino`, `kcalEsteira`) e a leitura das pesagens (`lerMedidas`, `medidasGuardadas`, `pesoNoDia`); tr, al e agua carregam com `../corpo/perfil.js` |
 | `tests/` | Estrutura do hub (`hub.test.mjs`), regras dos hábitos (`habitos.test.mjs`) e, no Chromium com o Supabase falso do tr, login no hub, os hábitos com os dados dos apps e os apps abrindo com a mesma sessão (`navegacao.test.mjs`) |
 | `scripts/check.mjs` | Validação completa: raiz, `fin/`, `tr/`, `al/`, `corpo/` e `agua/` |
+| `migrations/` | Migrations do hub inteiro (não de um app só): `00` histórico de mudanças das tabelas dos apps (`hub_historico`) |
 | `.github/workflows/` | Validação em todo push e e-mail de publicação do Pages (só funcionam na raiz) |
 | `.claude/settings.json` · `.claude/hooks/session-start.sh` | Sessões do Claude Code na nuvem: instalam o Playwright do tr ao começar, pra validação completa rodar sempre |
 
@@ -81,5 +82,10 @@
 - Edge Functions (código versionado, publicado por deploy pelo mantenedor): `fin/supabase/functions/captura-nubank` `al/supabase/functions/al-estimar` (IA do al; a chave da Anthropic fica só no secret `ANTHROPIC_API_KEY`) e `agua/supabase/functions/agua-lembrete` (notificações da Água, chamada de hora em hora pelo pg_cron; chaves VAPID só na tabela `push_chave`).
 - O al só lê `tr_treino` e `corpo_medida` (treinos e peso para o gasto do dia); o tr só lê `corpo_medida`; o Corpo só lê `agua_dia` (água do dia, para a bexiga); o al também lê `agua_dia` (bebidas com calorias, que contam como comido). `tr_medida` (onde o tr gravava as pesagens) foi copiada para `corpo_medida` pela migration `corpo/00` e depois apagada pelo mantenedor (por isso a `corpo/00` não roda de novo).
 - Conta `DONO` recriada em 24/10/2026 (id novo em `hub.js` e `tr/js/config.js`; policies trocadas pelas migrations `fin/40` e `tr/04`). Apagar a conta apaga as linhas `tr_*` (on delete cascade): para trocar senha, use a troca de senha, nunca recrie a conta.
+- **Nunca perder dado (desde 27/10/2026, quando uma cópia velha do celular apagou a água do dia):**
+  - **Envio que mescla:** app com cópia local envia por diferença para a base e, nas listas do dia (água, evacuações, xixis, caminhada), **mescla** com o que está na nuvem agora (o que este aparelho acrescentou ou tirou desde a base), nunca sobrescreve o dia inteiro nem apaga o dia só por não conhecê-lo. App novo com lista no dia nasce assim.
+  - **Base normalizada:** a base guardada no aparelho passa pela mesma limpeza do db antes de comparar; mudança só de formato nunca vira "pendente".
+  - **Mudou o formato de uma tabela ou do db?** Teste com cópia e base do formato antigo no aparelho e outro aparelho mexendo no mesmo dia (os testes "dois aparelhos" e "formato antigo" de cada app).
+  - **Histórico:** `hub_historico` (migration da raiz `migrations/00`) guarda antes e depois de toda linha alterada ou apagada nas tabelas da Água, do Corpo, do al e do Treino; o Fin tem o `fin_historico`. Recuperar dado é ler dali.
 - Migration nova não segura o push: faça o push junto com ela e informe o que aplicar; o mantenedor roda a migration logo depois.
 - Qualquer operação remota que mude estado no Supabase (dados, esquema, RLS, Auth) exige confirmação explícita do mantenedor, com alvo e efeito informados. Consultas só de leitura podem apoiar diagnóstico (`.mcp.json` já é somente leitura).

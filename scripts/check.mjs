@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 
 const arquivos = ['index.html', 'hub.css', 'hub.js', 'habitos.js', 'sw.js', 'manifest.webmanifest', 'AGENTS.md', 'README.md', '.editorconfig', '.gitignore', '.mcp.json',
   '.claude/settings.json', '.claude/hooks/session-start.sh',
-  ...readdirSync('tests').map(n => `tests/${n}`), ...readdirSync('scripts').map(n => `scripts/${n}`),
+  ...readdirSync('tests').map(n => `tests/${n}`), ...readdirSync('scripts').map(n => `scripts/${n}`), ...readdirSync('migrations').map(n => `migrations/${n}`),
   ...readdirSync('.github/workflows').map(n => `.github/workflows/${n}`)];
 const erros = [];
 for (const arquivo of arquivos) {

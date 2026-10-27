@@ -93,6 +93,23 @@ test('lembretes: presencial (qua e qui) e fim de semana de 2 em 2 horas; antes d
   await ctx.close();
 });
 
+test('dois aparelhos no mesmo dia: o envio mescla com a nuvem (nada do outro aparelho some)', async () => {
+  const { ctx, pg, nuvem, erros } = await abrirApp();                     // segunda 19/10, 09:00
+  await beber(pg, 300);
+  await sincronizado(pg);
+  // Outro aparelho (o computador) lança 500 ml no mesmo dia; este não sabe
+  nuvem.tabelas.agua_dia[0].aguas = [...nuvem.tabelas.agua_dia[0].aguas, { hora: '09:00', ml: 500 }];
+  await beber(pg, 200);                                                    // este aparelho envia o dia: mescla, não sobrescreve
+  await sincronizado(pg);
+  const nuvemMl = () => nuvem.tabelas.agua_dia[0].aguas.map(a => a.ml).sort((a, b) => a - b);
+  assert.deepEqual(nuvemMl(), [200, 300, 500]);
+  assert.equal(await texto(pg, '#t-ml'), '1.000');                         // e a tela já mostra o do outro aparelho
+  await pg.click('[data-tirar-agua="0"]'); await pg.click('[data-tirar-agua="0"]');   // tirar aqui tira só o que foi tirado
+  await sincronizado(pg);
+  assert.equal(nuvem.tabelas.agua_dia[0].aguas.length, 2);
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
 test('cópia do aparelho num formato antigo (com xixis) não sobe por cima da nuvem nem apaga o dia', async () => {
   // O que aconteceu em 27/10/2026: o celular tinha a base e a cópia da versão com xixi; hoje só com xixi (sem água).
   // A nuvem já tinha a água de hoje (lançada em outro aparelho) e uma bebida em ontem que a cópia não conhecia.

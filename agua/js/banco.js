@@ -2,6 +2,8 @@
 // Banco: Supabase + cópia local e sincronização por diferença (agua_dia, 1 linha por dia).
 // Cada mudança grava a cópia local na hora e, 0,8 s depois, envia ao Supabase só os dias que mudaram
 // (diferença para "base", a última versão confirmada pelo servidor). Sem internet, fica pendente e envia ao reconectar.
+// O envio MESCLA, não sobrescreve: lê o dia como está na nuvem agora e aplica só o que este aparelho acrescentou ou tirou
+// desde a base. O que outro aparelho lançou nunca some por causa de uma cópia velha ou atrasada deste.
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const K_LOCAL = id => 'agua.db.' + id, K_BASE = id => 'agua.base.' + id;
 let db = null, usuario = null, base = null, enviando = false, tEnvio = null, erroSync = '';
@@ -19,6 +21,16 @@ function diferenca(a, b) {   // o que enviar para sair de a e chegar em b; null 
   return up.length || del.length ? { up, del } : null;
 }
 const temPendente = () => !!(db && usuario && diferenca(base, linhas(db)));
+// Lista mesclada (multiconjunto: dois copos iguais no mesmo minuto são dois): a da nuvem, mais o que está no aparelho e não
+// estava na base (acrescentado aqui), menos o que estava na base e saiu do aparelho (tirado aqui).
+function mesclar(nuvem, base, local) {
+  const k = x => JSON.stringify(x), conta = L => L.reduce((m, x) => m.set(k(x), (m.get(k(x)) || 0) + 1), new Map());
+  const b = conta(base), l = conta(local), R = [...nuvem];
+  for (const [c, n] of l) for (let i = b.get(c) || 0; i < n; i++) R.push(JSON.parse(c));
+  for (const [c, n] of b) for (let i = l.get(c) || 0; i < n; i++) { const j = R.findIndex(x => k(x) === c); if (j >= 0) R.splice(j, 1); }
+  return R;
+}
+const aguasDe = (L, data) => preparar({ dias: [{ data, aguas: L }] }).dias[0]?.aguas || [];
 async function enviar() {
   clearTimeout(tEnvio);
   if (enviando || !usuario || !db) return;
@@ -26,12 +38,29 @@ async function enviar() {
   if (!mud) { erroSync = ''; pintarSync(); return; }
   enviando = true;
   try {
-    if (mud.up.length) {
-      const { error } = await sb.from('agua_dia').upsert(mud.up.map(l => ({ user_id: usuario.id, ...l })), { onConflict: 'user_id,data' });
-      if (error) throw error;
+    // Os dias que mudaram aqui, como estão na nuvem agora (com a mesma limpeza), e o resultado da mescla de cada um
+    const dias = [...mud.up.map(l => l.data), ...mud.del];
+    const { data: N, error } = await sb.from('agua_dia').select('data,aguas').in('data', dias);
+    if (error) throw error;
+    const nuvem = Object.fromEntries((N || []).map(x => [x.data, aguasDe(x.aguas, x.data)]));
+    const final = Object.fromEntries(dias.map(d => [d, aguasDe(mesclar(nuvem[d] || [], base?.[d]?.aguas || [], agora[d]?.aguas || []), d)]));
+    const sobe = dias.filter(d => final[d].length), sai = dias.filter(d => !final[d].length && nuvem[d]);
+    if (sobe.length) {
+      const { error: e } = await sb.from('agua_dia').upsert(sobe.map(d => ({ user_id: usuario.id, data: d, aguas: final[d] })), { onConflict: 'user_id,data' });
+      if (e) throw e;
     }
-    for (const data of mud.del) { const { error } = await sb.from('agua_dia').delete().eq('data', data); if (error) throw error; }
-    base = agora; store.set(K_BASE(usuario.id), JSON.stringify(base)); erroSync = '';
+    for (const data of sai) { const { error: e } = await sb.from('agua_dia').delete().eq('data', data); if (e) throw e; }
+    // O aparelho fica com o resultado (mais o que mudou aqui enquanto enviava); a base, com o que a nuvem tem agora
+    for (const d of dias) {
+      const atual = db.dias.find(x => x.data === d)?.aguas || [], aqui = aguasDe(mesclar(final[d], agora[d]?.aguas || [], atual), d);
+      db.dias = db.dias.filter(x => x.data !== d);
+      if (aqui.length) db.dias.push({ data: d, aguas: aqui });
+    }
+    db = preparar(db);
+    base = { ...agora, ...Object.fromEntries(dias.map(d => [d, { data: d, aguas: final[d] }])) };
+    for (const d of dias) if (!final[d].length) delete base[d];
+    store.set(K_BASE(usuario.id), JSON.stringify(base)); store.set(K_LOCAL(usuario.id), JSON.stringify(db)); erroSync = '';
+    if (typeof desenhar === 'function' && !$('v-agua').hidden) desenhar();
   } catch (e) { erroSync = e.message || String(e); }
   finally { enviando = false; }
   pintarSync();

@@ -185,6 +185,20 @@ test('xixi: +1 com o horário de agora, tira com toque duplo; bexiga com xixis p
   await vazio.ctx.close();
 });
 
+test('dois aparelhos no mesmo dia: evacuações, xixis e sono mesclam com a nuvem (nada do outro aparelho some)', async () => {
+  const { ctx, pg, nuvem, erros } = await abrirApp();                    // 22/10, 08:00
+  await pg.click('#ev-mais');
+  await sincronizado(pg);
+  // Outro aparelho lança uma evacuação, um xixi e o sono no mesmo dia; este não sabe
+  Object.assign(nuvem.tabelas.corpo_dia[0], { evacuacoes: ['07:00', '08:00'], xixis: ['07:30'], sono: 7 });
+  await pg.click('#x-mais');                                             // este envia o dia: mescla, não sobrescreve
+  await sincronizado(pg);
+  const d = nuvem.tabelas.corpo_dia[0];
+  assert.deepEqual([d.evacuacoes, d.xixis, d.sono], [['07:00', '08:00'], ['07:30', '08:00'], 7]);
+  assert.equal(await texto(pg, '#ev-total'), '2');                       // a tela já mostra o do outro aparelho
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
 test('sono: horas do dia escolhido (vírgula aceita), vazio tira; dia sem sono nem evacuação some', async () => {
   const { ctx, pg, nuvem } = await abrirApp();
   await pg.fill('#d-sono', '7,5'); await pg.locator('#d-sono').blur();

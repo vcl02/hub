@@ -163,3 +163,14 @@ test('dados sobre mim num lugar só: corpo/perfil.js, carregado pelo tr, pelo al
   // Só o Corpo grava as pesagens: tr e al não escrevem em corpo_medida nem em tr_medida
   for (const f of ['tr/js/banco.js', 'al/js/banco.js']) assert.doesNotMatch(ler(f), /tr_medida|corpo_medida'?\s*[:\]]/, f);
 });
+
+test('histórico no banco: toda tabela dos apps (menos o Fin, que tem o dele) com gatilho para hub_historico, formato DataGrip', () => {
+  const sql = ler('migrations/00-historico-apps.sql');
+  assert.match(sql, /^begin;$/m); assert.match(sql, /^commit;$/m); assert.doesNotMatch(sql, /^do \$\$/m);
+  for (const linha of sql.split('\n').filter(l => l.trim().startsWith('--'))) assert.ok(!linha.includes(';'), `; em comentário: ${linha}`);
+  const comGatilho = [...sql.matchAll(/create trigger hub_historico after insert or update or delete on public\.(\w+) for each row execute function public\.registrar_historico_hub\(\);/g)].map(m => m[1]);
+  assert.deepEqual(comGatilho.sort(), ['agua_dia', 'al_dia', 'al_item', 'al_registro', 'corpo_dia', 'corpo_medida', 'tr_exercicio', 'tr_registro', 'tr_treino', 'tr_variacao']);
+  assert.match(sql, /security definer\nset search_path = ''/);
+  assert.match(sql, /revoke all on public\.hub_historico from anon, authenticated;/);
+  assert.match(sql, /create policy hub_historico_so_victor on public\.hub_historico for select to authenticated\n  using \(\(select auth\.uid\(\)\) = '32f70255-30a0-4e2b-ad76-31d7a1bf54f7'::uuid\);/);
+});
