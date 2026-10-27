@@ -2,7 +2,7 @@
 :root{
   --bg:#1B1E21; --surface:#24272B; --line:#3B4147; --fg:#E9ECEF; --muted:#AAB1B8;
   --teal:#3DD6B5; --teal-soft:#173A33; --on-teal:#0F2420;
-  --green:#4CCB78; --red:#F06A61;
+  --green:#4CCB78; --green-soft:#1E392A; --red:#F06A61; --red-soft:#402624;
   --display:'Barlow Condensed','Arial Narrow','Roboto Condensed',sans-serif;
   --body:'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   --r:14px;
@@ -70,6 +70,22 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 .ev-horas button{border:1px solid var(--line);border-radius:999px;background:transparent;padding:4px 10px;font-size:.875rem;color:var(--fg)}
 .ev-horas button.armado{border-color:var(--red);background:var(--red);color:var(--bg)}
 .evac-ultima{font-size:.875rem;color:var(--red);font-weight:600}   /* só aparece como aviso: 3+ dias sem evacuar */
+
+/* ---------- Sono: dormi e acordei, horas e BOM (verde), OK (neutro) ou RUIM (vermelho) ---------- */
+.sono-linha{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sono-linha>span{grid-column:1/-1}
+.hora-l{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--muted)}
+.hora-l input{width:100%;text-align:left;padding:6px 8px;border:1px solid var(--line);border-radius:10px;background:var(--bg);font-family:var(--display);font-weight:700;font-size:1.15rem;color:var(--fg)}
+.hora-l input::-webkit-calendar-picker-indicator{display:none}   /* tocar no campo já abre o seletor */
+.sono-res,.sono-media{display:flex;align-items:center;gap:8px;margin:0;font-size:.95rem}
+.sono-res b,.sono-media b{font-family:var(--display);font-size:1.35rem}
+.nivel{font-size:.75rem;font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.nivel.bom{border-color:var(--green);background:var(--green-soft);color:var(--green)}
+.nivel.ruim{border-color:var(--red);background:var(--red-soft);color:var(--red)}
+.noites{margin-top:8px}
+.noites li{padding:8px 0}
+.noites .h-v{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.noites .h-v b{font-family:var(--display);font-size:1.1rem}
 
 /* ---------- Bexiga ---------- */
 .numeros{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}

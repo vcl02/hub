@@ -20,7 +20,7 @@ function linhas(d) {   // db → { tabela: { data: linha } }
     // peso_em e sono_em (quando foram lançados, migration 03) só vão quando existem: linha antiga continua igual à da nuvem
     corpo_medida: Object.fromEntries(d.medidas.map(m => [m.data, { data: m.data, hora: m.hora || '', peso: m.peso ?? null, cintura: m.cintura ?? null, ...(m.pesoEm && { peso_em: m.pesoEm }) }])),
     // evacuacoes e xixis copiadas: a base não pode mudar junto quando o +1 mexe na lista do dia
-    corpo_dia: Object.fromEntries(d.dias.map(x => [x.data, { data: x.data, evacuou: null, evacuacoes: [...x.evacuacoes], xixis: [...x.xixis], sono: x.sono ?? null, ...(x.sonoEm && { sono_em: x.sonoEm }) }]))
+    corpo_dia: Object.fromEntries(d.dias.map(x => [x.data, { data: x.data, evacuou: null, evacuacoes: [...x.evacuacoes], xixis: [...x.xixis], sono: x.sono ?? null, dormiu: x.dormiu ?? null, acordou: x.acordou ?? null, ...(x.sonoEm && { sono_em: x.sonoEm }) }]))
   };
 }
 // base das versões antigas (só pesagens, { data: linha }) → formato com as duas tabelas
@@ -51,9 +51,10 @@ function mesclar(nuvem, base, local) {
 }
 // Linha de corpo_dia (formato de linhas) do dia d depois da mescla: nuvem N, base B e aparelho L (qualquer um pode faltar)
 function diaMesclado(d, N, B, L) {
-  const v = (x, k) => x?.[k] || [], mudouSono = (L?.sono ?? null) !== (B?.sono ?? null), S = mudouSono ? L : N;
+  // Sono (horários e horas) vai junto: mudou aqui, vale o daqui; senão, o da nuvem
+  const v = (x, k) => x?.[k] || [], mudouSono = ['sono', 'dormiu', 'acordou'].some(k => (L?.[k] ?? null) !== (B?.[k] ?? null)), S = mudouSono ? L : N;
   const dia = preparar({ dias: [{ data: d, evacuacoes: mesclar(v(N, 'evacuacoes'), v(B, 'evacuacoes'), v(L, 'evacuacoes')),
-    xixis: mesclar(v(N, 'xixis'), v(B, 'xixis'), v(L, 'xixis')), sono: S?.sono ?? null, sono_em: S?.sono_em }] }).dias[0];
+    xixis: mesclar(v(N, 'xixis'), v(B, 'xixis'), v(L, 'xixis')), sono: S?.sono ?? null, dormiu: S?.dormiu, acordou: S?.acordou, sono_em: S?.sono_em }] }).dias[0];
   return dia ? linhas({ medidas: [], dias: [dia] }).corpo_dia[d] : null;
 }
 async function enviar() {
@@ -92,7 +93,7 @@ async function enviar() {
         if (finais[d]) base.corpo_dia[d] = finais[d]; else delete base.corpo_dia[d];
         const aqui = diaMesclado(d, finais[d], agora.corpo_dia[d], atual[d]);
         db.dias = db.dias.filter(x => x.data !== d);
-        if (aqui) db.dias.push({ data: d, evacuacoes: aqui.evacuacoes, xixis: aqui.xixis, ...(aqui.sono != null && { sono: aqui.sono }), ...(aqui.sono_em && { sonoEm: aqui.sono_em }) });
+        if (aqui) db.dias.push({ data: d, evacuacoes: aqui.evacuacoes, xixis: aqui.xixis, sono: aqui.sono, dormiu: aqui.dormiu, acordou: aqui.acordou, sonoEm: aqui.sono_em });
       }
       db = preparar(db);
       store.set(K_LOCAL(usuario.id), JSON.stringify(db));
@@ -125,15 +126,20 @@ setInterval(() => { if (temPendente()) enviar(); }, 60000);
 // Valida e completa o db (cópia local ou linhas do servidor), com a mesma limpeza que os outros apps usam
 const preparar = d => ({
   medidas: ordenarMedidas(d?.medidas || []),
-  // Dia: evacuações (horários "HH:MM", "" = sem horário, em ordem), xixis ("HH:MM", em ordem), sono (h) e quando o sono foi
-  // lançado (sonoEm). Formato da migration 01 (evacuou sim ou não): sim vira 1 evacuação sem horário. Dia sem nada não fica guardado.
+  // Dia: evacuações (horários "HH:MM", "" = sem horário, em ordem), xixis ("HH:MM", em ordem), sono: a hora em que dormiu e a
+  // em que acordou ("HH:MM", a noite que terminou neste dia) e as horas (sono, calculado dos dois), e quando o sono foi lançado
+  // (sonoEm). Sono só em horas (antes da migration 05): dormiu às 23:00 e acordou 23:00 + as horas. Formato da migration 01
+  // (evacuou sim ou não): sim vira 1 evacuação sem horário. Dia sem nada não fica guardado.
   dias: (d?.dias || []).filter(x => x && dataOk(x.data)).map(x => {
     const ev = Array.isArray(x.evacuacoes) ? x.evacuacoes.map(h => /^\d{2}:\d{2}$/.test(h) ? h : '').slice(0, 20) : x.evacuou === true ? [''] : [];
-    const sono = num(x.sono), sonoEm = x.sonoEm || x.sono_em;
     const xixis = (Array.isArray(x.xixis) ? x.xixis : []).filter(h => /^\d{2}:\d{2}$/.test(h)).sort().slice(0, 50);
-    return { data: x.data, evacuacoes: ev.sort(), xixis, ...(sono >= 0 && sono <= 24 && { sono }),
-      ...(sono >= 0 && sono <= 24 && sonoEm && !isNaN(Date.parse(sonoEm)) && { sonoEm: new Date(sonoEm).toISOString() }) };
-  }).filter(x => x.evacuacoes.length || x.xixis.length || x.sono != null).sort((a, b) => a.data.localeCompare(b.data))
+    let dormiu = horaOk(x.dormiu) ? x.dormiu : null, acordou = horaOk(x.acordou) ? x.acordou : null;
+    const antigo = num(x.sono);
+    if (!dormiu && !acordou && antigo >= 0 && antigo <= 24) { dormiu = SONO_ANTIGO_DORMIU; acordou = maisMinutos(SONO_ANTIGO_DORMIU, Math.round(antigo * 60)); }
+    const sono = horasDeSono(dormiu, acordou), sonoEm = x.sonoEm || x.sono_em;
+    return { data: x.data, evacuacoes: ev.sort(), xixis, ...(dormiu && { dormiu }), ...(acordou && { acordou }), ...(sono != null && { sono }),
+      ...(sono != null && sonoEm && !isNaN(Date.parse(sonoEm)) && { sonoEm: new Date(sonoEm).toISOString() }) };
+  }).filter(x => x.evacuacoes.length || x.xixis.length || x.dormiu || x.acordou).sort((a, b) => a.data.localeCompare(b.data))
 });
 // Baixa uma tabela inteira (de 1000 em 1000)
 async function todas(tabela, colunas) {

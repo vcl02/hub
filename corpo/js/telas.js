@@ -45,7 +45,7 @@ function desenhar() {
   $('c-peso').placeholder = u ? virgula(u.peso) : '—';
   $('c-cintura').placeholder = C.length ? virgula(C[0].cintura) : '—';
   avisoHorario();
-  pintarEvacuacao(); pintarBexiga();
+  pintarEvacuacao(); pintarSono(); pintarBexiga();
   // Evolução: só os últimos 90 dias (até hoje)
   const desde = somaDias(hoje(), -(DIAS_GRAFICO - 1)), janela = L => L.filter(x => x.data >= desde).reverse();
   grafico($('c-grafico'), janela(P).map(x => ({ data: x.data, hora: x.hora, valor: x.peso })), 'kg', 'Evolução do peso');
@@ -53,14 +53,17 @@ function desenhar() {
   pintarHistorico();
 }
 
-// O dia do formulário: horas de sono e evacuações (quantas e os horários) e há quanto tempo foi a última evacuação.
+// O dia do formulário: sono (dormi e acordei, as horas e BOM, OK ou RUIM) e evacuações (quantas e os horários) e há quanto tempo foi a última evacuação.
 // 3 dias ou mais sem evacuar desde a última: em vermelho (prisão de ventre é comum em dieta: fibra e água).
 const SEM_EVACUAR_ALERTA = 3;
 const diaDoForm = () => db.dias.find(d => d.data === $('c-data').value);
 function pintarEvacuacao() {
   $('ev-cartao').hidden = semCorpoDia;
   const x = diaDoForm(), ev = x?.evacuacoes || [];
-  if (document.activeElement !== $('d-sono')) $('d-sono').value = x?.sono != null ? virgula(x.sono) : '';
+  if (document.activeElement !== $('d-dormiu')) $('d-dormiu').value = x?.dormiu || '';
+  if (document.activeElement !== $('d-acordou')) $('d-acordou').value = x?.acordou || '';
+  $('d-sono-res').hidden = x?.sono == null;
+  if (x?.sono != null) $('d-sono-res').innerHTML = sonoTxt(x.sono);
   $('ev-total').textContent = ev.length;
   $('ev-horas').innerHTML = ev.map((h, i) => `<li><button type="button" data-tirar-ev="${i}" title="Tirar (toque duplo)" aria-label="Tirar evacuação ${h || 'sem horário'}">${h || 'sem horário'} ×</button></li>`).join('');
   const xx = x?.xixis || [];
@@ -71,6 +74,17 @@ function pintarEvacuacao() {
   const n = ultima ? Math.round((deIso(hoje()) - deIso(ultima.data)) / 864e5) : 0;
   $('ev-ultima').hidden = !ultima || n < SEM_EVACUAR_ALERTA;
   if (!$('ev-ultima').hidden) $('ev-ultima').textContent = `${n} dias sem evacuar (última em ${dataCurta(ultima.data)})`;
+}
+// Sono: horas ("9 h 30") e a etiqueta BOM (8 h ou mais), OK (7 a 8) ou RUIM (menos de 7, vermelho)
+const sonoTxt = h => { const n = nivelSono(h); return `<b>${fmtMin(Math.round(h * 60))}</b> <span class="nivel ${n.classe}">${n.txt}</span>`; };
+// Cartão do sono: média das últimas 7 noites com sono (hoje entra se já tiver) e cada uma, da mais recente para a mais antiga
+function pintarSono() {
+  $('sono').hidden = $('sn-titulo').hidden = semCorpoDia;
+  const L = db.dias.filter(x => x.sono != null && x.data <= hoje()).slice(-DIAS_SONO).reverse();
+  if (!L.length) { $('sono').innerHTML = '<p class="bx-vazio">Registre o sono para ver aqui.</p>'; return; }
+  const media = L.reduce((s, x) => s + x.sono, 0) / L.length;
+  $('sono').innerHTML = `<p class="sono-media">Média de ${L.length === 1 ? '1 noite' : L.length + ' noites'}: ${sonoTxt(media)}</p>
+    <ul class="hist noites">${L.map(x => `<li><i class="h-d">${dataCurta(x.data)}</i><span class="h-sub">${x.dormiu} → ${x.acordou}</span><span class="h-v">${sonoTxt(x.sono)}</span></li>`).join('')}</ul>`;
 }
 // Bexiga: dos últimos 7 dias com xixi (hoje entra se já tiver xixi), xixis por dia, intervalo médio entre um xixi e o
 // seguinte no mesmo dia e quanto bebi por xixi (água do dia, da Água, ÷ xixis). Não é o volume da bexiga: é o que dá para
@@ -158,12 +172,15 @@ $('x-horas').addEventListener('click', ev => {
   const b = ev.target.closest('[data-tirar-xixi]');
   if (b && confirmar(b)) mudarDia(x => { x.xixis.splice(+b.dataset.tirarXixi, 1); });
 });
-// Sono: horas (0 a 24, vírgula aceita); vazio tira
-$('d-sono').addEventListener('change', () => {
-  const v = String($('d-sono').value).trim() ? num($('d-sono').value) : null;
-  if (v != null && !(v >= 0 && v <= 24)) { toast('Sono em horas, de 0 a 24', true); return; }
-  // sonoEm: quando o sono do dia foi lançado (corrigir as horas depois mantém o primeiro lançamento)
-  mudarDia(x => { if (v == null) { delete x.sono; delete x.sonoEm; } else { if (x.sono == null) x.sonoEm = new Date().toISOString(); x.sono = v; } });
+// Sono: a hora em que dormi e a em que acordei (a noite que terminou no dia escolhido); as horas saem dos dois. Vazio tira.
+// sonoEm: quando o sono do dia ficou completo (corrigir os horários depois mantém o primeiro lançamento); sem os dois, sai.
+for (const id of ['d-dormiu', 'd-acordou']) $(id).addEventListener('change', () => {
+  const dormiu = horaOk($('d-dormiu').value) ? $('d-dormiu').value : null, acordou = horaOk($('d-acordou').value) ? $('d-acordou').value : null;
+  mudarDia(x => {
+    for (const [k, v] of [['dormiu', dormiu], ['acordou', acordou]]) if (v) x[k] = v; else delete x[k];
+    const h = horasDeSono(dormiu, acordou);
+    if (h == null) { delete x.sono; delete x.sonoEm; } else { if (x.sono == null) x.sonoEm = new Date().toISOString(); x.sono = h; }
+  });
 });
 $('c-data').addEventListener('change', () => { $('c-peso').value = ''; $('c-cintura').value = ''; desenhar(); });
 document.querySelectorAll('[data-passo]').forEach(b => b.addEventListener('click', () => {   // − / +: peso de 0,1 em 0,1 kg, barriga de 0,5 cm

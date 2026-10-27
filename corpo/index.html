@@ -65,9 +65,14 @@
     <button class="btn primario" type="submit">Salvar</button>
   </form>
 
-  <!-- O dia escolhido acima: horas de sono, evacuações e xixis (+1 com o horário; tocar num horário tira) e quando foi a última evacuação -->
+  <!-- O dia escolhido acima: sono (a noite que terminou nele: dormi e acordei), evacuações e xixis (+1 com o horário; tocar num
+       horário tira) e quando foi a última evacuação -->
   <div class="cartao evac" id="ev-cartao">
-    <label class="dia-linha"><span>Sono</span><input id="d-sono" inputmode="decimal" placeholder="—" aria-label="Horas de sono"><small>h</small></label>
+    <div class="dia-linha sono-linha"><span>Sono</span>
+      <label class="hora-l">Dormi<input type="time" id="d-dormiu" aria-label="Dormi às"></label>
+      <label class="hora-l">Acordei<input type="time" id="d-acordou" aria-label="Acordei às"></label>
+    </div>
+    <p class="sono-res" id="d-sono-res" hidden></p>
     <div class="dia-linha">
       <span>Evacuação <b id="ev-total">0</b></span>
       <button type="button" class="chip-bt mais" id="ev-mais" title="Evacuei agora" aria-label="Evacuei agora">+1</button>
@@ -80,6 +85,10 @@
     </div>
     <ul class="ev-horas" id="x-horas"></ul>
   </div>
+
+  <!-- Sono: média e as últimas noites, com BOM (8 h ou mais), OK (7 a 8) e RUIM (menos de 7) -->
+  <h3 class="sec" id="sn-titulo">Sono</h3>
+  <div class="cartao" id="sono"></div>
 
   <!-- Bexiga: xixis por dia, intervalo e ml bebidos por xixi (a água vem da Água) -->
   <h3 class="sec" id="bx-titulo">Bexiga</h3>

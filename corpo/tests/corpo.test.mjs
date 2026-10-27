@@ -5,6 +5,11 @@ import { prepararApp, abrirApp, novaNuvem, sincronizado, texto, DONO } from './h
 
 prepararApp();
 
+// Sono do dia escolhido: dormi e acordei (vazio tira)
+const sono = async (pg, dormiu, acordou) => {
+  await pg.fill('#d-dormiu', dormiu); await pg.dispatchEvent('#d-dormiu', 'change');
+  await pg.fill('#d-acordou', acordou); await pg.dispatchEvent('#d-acordou', 'change');
+};
 const salvar = async (pg, { peso, cintura, hora, data } = {}) => {
   if (data) { await pg.fill('#c-data', data); await pg.dispatchEvent('#c-data', 'change'); }
   if (hora) await pg.fill('#c-hora', hora);
@@ -190,26 +195,46 @@ test('dois aparelhos no mesmo dia: evacuações, xixis e sono mesclam com a nuve
   await pg.click('#ev-mais');
   await sincronizado(pg);
   // Outro aparelho lança uma evacuação, um xixi e o sono no mesmo dia; este não sabe
-  Object.assign(nuvem.tabelas.corpo_dia[0], { evacuacoes: ['07:00', '08:00'], xixis: ['07:30'], sono: 7 });
+  Object.assign(nuvem.tabelas.corpo_dia[0], { evacuacoes: ['07:00', '08:00'], xixis: ['07:30'], sono: 7, dormiu: '00:00', acordou: '07:00' });
   await pg.click('#x-mais');                                             // este envia o dia: mescla, não sobrescreve
   await sincronizado(pg);
   const d = nuvem.tabelas.corpo_dia[0];
-  assert.deepEqual([d.evacuacoes, d.xixis, d.sono], [['07:00', '08:00'], ['07:30', '08:00'], 7]);
+  assert.deepEqual([d.evacuacoes, d.xixis, d.sono, d.dormiu, d.acordou], [['07:00', '08:00'], ['07:30', '08:00'], 7, '00:00', '07:00']);
   assert.equal(await texto(pg, '#ev-total'), '2');                       // a tela já mostra o do outro aparelho
   assert.deepEqual(erros, []); await ctx.close();
 });
 
-test('sono: horas do dia escolhido (vírgula aceita), vazio tira; dia sem sono nem evacuação some', async () => {
-  const { ctx, pg, nuvem } = await abrirApp();
-  await pg.fill('#d-sono', '7,5'); await pg.locator('#d-sono').blur();
+test('sono: dormi e acordei (passando da meia-noite), as horas e BOM, OK ou RUIM; vazio tira; dia sem nada some', async () => {
+  const { ctx, pg, nuvem, erros } = await abrirApp();                    // 22/10
+  assert.equal(await pg.isVisible('#d-sono-res'), false);
+  await pg.fill('#d-dormiu', '23:40'); await pg.dispatchEvent('#d-dormiu', 'change');   // só um dos dois: guarda, sem horas
+  assert.deepEqual(await pg.evaluate(() => db.dias.map(x => [x.dormiu, x.sono])), [['23:40', undefined]]);
+  await pg.fill('#d-acordou', '07:10'); await pg.dispatchEvent('#d-acordou', 'change');
+  assert.equal(await texto(pg, '#d-sono-res'), '7 h 30 OK');
   await sincronizado(pg);
-  assert.deepEqual(nuvem.tabelas.corpo_dia.map(x => [x.data, x.sono, x.evacuacoes, x.xixis]), [['2026-10-22', 7.5, [], []]]);
-  await pg.fill('#d-sono', '30'); await pg.locator('#d-sono').blur();
-  assert.equal(await texto(pg, '#toast'), 'Sono em horas, de 0 a 24');
-  await pg.fill('#d-sono', ''); await pg.locator('#d-sono').blur();
+  assert.deepEqual(nuvem.tabelas.corpo_dia.map(x => [x.data, x.dormiu, x.acordou, x.sono, x.evacuacoes, x.xixis]), [['2026-10-22', '23:40', '07:10', 7.5, [], []]]);
+  const nivel = async (d, a) => { await sono(pg, d, a); return [await texto(pg, '#d-sono-res'), await pg.getAttribute('#d-sono-res .nivel', 'class')]; };
+  assert.deepEqual(await nivel('22:30', '06:30'), ['8 h BOM', 'nivel bom']);              // 8 h já é BOM
+  assert.deepEqual(await nivel('00:15', '07:14'), ['6 h 59 RUIM', 'nivel ruim']);         // menos de 7: vermelho
+  assert.deepEqual(await nivel('01:00', '08:00'), ['7 h OK', 'nivel ok']);
+  await sono(pg, '', '');
   await sincronizado(pg);
   assert.deepEqual(nuvem.tabelas.corpo_dia, []);
-  await ctx.close();
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
+test('sono antigo (só as horas, antes dos horários) vira dormiu às 23:00 e acordou 23:00 + as horas; a lista e a média das noites', async () => {
+  const nuvem = novaNuvem();
+  nuvem.tabelas.corpo_dia.push({ user_id: DONO, data: '2026-10-20', evacuacoes: [], xixis: [], sono: 9 }, { user_id: DONO, data: '2026-10-21', evacuacoes: [], xixis: [], sono: 6.5 });
+  const { ctx, pg, erros } = await abrirApp({ nuvem });                  // 22/10
+  assert.deepEqual(await pg.evaluate(() => db.dias.map(x => [x.data, x.dormiu, x.acordou, x.sono])), [['2026-10-20', '23:00', '08:00', 9], ['2026-10-21', '23:00', '05:30', 6.5]]);
+  await sono(pg, '23:00', '07:30');                                       // hoje: 8 h 30
+  assert.equal(await texto(pg, '#sono .sono-media'), 'Média de 3 noites: 8 h BOM');     // (8,5 + 6,5 + 9) ÷ 3 = 8: BOM
+  assert.deepEqual(await pg.$$eval('#sono .noites li', L => L.map(li => [...li.children].map(c => c.textContent.replace(/\s+/g, ' ').trim()).join(' '))),
+    ['22/10 23:00 → 07:30 8 h 30 BOM', '21/10 23:00 → 05:30 6 h 30 RUIM', '20/10 23:00 → 08:00 9 h BOM']);
+  await pg.fill('#c-data', '2026-10-20'); await pg.dispatchEvent('#c-data', 'change');  // o dia antigo no formulário, com os horários
+  assert.deepEqual([await pg.inputValue('#d-dormiu'), await pg.inputValue('#d-acordou')], ['23:00', '08:00']);
+  assert.deepEqual(erros, []); await ctx.close();
 });
 
 test('sem a tabela corpo_dia (ou sem as colunas da migration 02): pesagens funcionam e o cartão do dia some, sem erro', async () => {
@@ -261,14 +286,14 @@ test('quando o peso e o sono foram lançados (peso_em, sono_em): o primeiro lan�
   await salvar(pg, { peso: '89,8' });                                                          // corrigir mantém o 1º lançamento
   await salvar(pg, { data: '2026-10-20', peso: '91' });                                        // dia passado lançado agora
   await pg.fill('#c-data', '2026-10-22'); await pg.dispatchEvent('#c-data', 'change');
-  await pg.fill('#d-sono', '7,5'); await pg.dispatchEvent('#d-sono', 'change');
-  await pg.fill('#d-sono', '8'); await pg.dispatchEvent('#d-sono', 'change');                // corrigir o sono também mantém
+  await sono(pg, '00:00', '07:30');
+  await sono(pg, '00:00', '08:00');                                                            // corrigir o sono também mantém
   await sincronizado(pg);
   const minuto = t => t?.slice(0, 16);   // o relógio do teste anda: compara até o minuto
   const M = Object.fromEntries(nuvem.tabelas.corpo_medida.map(m => [m.data, minuto(m.peso_em)]));
   assert.deepEqual(M, { '2026-10-20': '2026-10-22T13:00', '2026-10-22': '2026-10-22T11:00' });
   assert.deepEqual(nuvem.tabelas.corpo_dia.map(x => [x.data, x.sono, minuto(x.sono_em)]), [['2026-10-22', 8, '2026-10-22T13:00']]);
-  await pg.fill('#d-sono', ''); await pg.dispatchEvent('#d-sono', 'change');                 // tirar o sono tira o lançamento
+  await sono(pg, '', '');                                                                      // tirar o sono tira o lançamento
   assert.equal(await pg.evaluate(() => db.dias.length), 0);
   await pg.reload(); await pg.waitForSelector('#v-corpo:not([hidden])');                       // volta da nuvem com os lançamentos
   assert.deepEqual(await pg.evaluate(() => db.medidas.map(m => m.pesoEm?.slice(0, 16))), ['2026-10-22T13:00', '2026-10-22T11:00']);
