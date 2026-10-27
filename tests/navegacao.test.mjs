@@ -93,7 +93,7 @@ test('entrou no hub: os apps abrem direto com a mesma sessão, sem login própri
   const { ctx, pg, faltando, erros } = await abrir(base);
   await entrar(pg, 'eu@teste.com', 'senha123');
   await pg.waitForSelector('#v-apps:not([hidden])');
-  assert.deepEqual(await pg.$$eval('.app-nome', s => s.map(x => x.textContent)), ['Treino', 'Déficit', 'Peso e sono', 'Água', 'Besteira', 'Agenda', 'Anotações']);
+  assert.deepEqual(await pg.$$eval('.app-nome', s => s.map(x => x.textContent)), ['Treino', 'Déficit', 'Peso', 'Sono', 'Água', 'Besteira', 'Agenda', 'Anotações']);
   const larguras = await pg.$$eval('.doca .atalho', L => L.map(x => Math.round(x.getBoundingClientRect().width)));
   assert.equal(larguras.length, 2); assert.ok(Math.abs(larguras[0] - larguras[1]) <= 1, `atalhos dividem a doca ao meio: ${larguras}`);
   await pg.reload();                                                   // sessão salva: entra direto
@@ -130,8 +130,9 @@ test('hábitos com os dados dos apps: valor de hoje, ofensivas, dias perfeitos e
   await entrar(pg, 'eu@teste.com', 'senha123');
   await pg.waitForSelector('#v-apps:not([hidden])');
   const linha = id => pg.$eval(`[data-habito="${id}"]`, el => [el.querySelector('.hab-valor').textContent, el.querySelector('.hab-ofensiva b').textContent]);
-  await pg.waitForFunction(() => document.querySelector('[data-habito="corpo"] .hab-valor').textContent === '100,4 kg · 7,5 h');
-  assert.deepEqual(await linha('corpo'), ['100,4 kg · 7,5 h', '1']);           // 25/10 só teve sono: peso e sono feitos só hoje
+  await pg.waitForFunction(() => document.querySelector('[data-habito="peso"] .hab-valor').textContent === '100,4 kg');
+  assert.deepEqual(await linha('peso'), ['100,4 kg', '1']);                       // pesou só hoje
+  assert.deepEqual(await linha('sono'), ['7 h 30', '2']);                         // 25/10 (7 h) e hoje (7 h 30)
   assert.deepEqual(await linha('agua'), ['400 / 1.000 ml', '2']);                  // 25 e 23/10, com 24/10 protegido
   assert.deepEqual(await linha('treino'), ['Próximo: qua', '2']);
   assert.deepEqual(await linha('deficit'), [(await linha('deficit'))[0], '1']);   // 700 kcal cabem na meta: hoje já conta
@@ -142,7 +143,7 @@ test('hábitos com os dados dos apps: valor de hoje, ofensivas, dias perfeitos e
   assert.equal(await pg.$$eval('[data-habito="agua"] .hab-dias i', L => L.map(i => i.className).join(' ')), 'pendente hoje futuro futuro futuro futuro futuro futuro');
   assert.equal(await pg.$$eval('[data-habito="treino"] .hab-dias i', L => L.map(i => i.className).join(' ')), 'folga hoje futuro futuro futuro futuro futuro futuro');
   assert.equal(await pg.$$eval('#h-semana li', L => L.map(li => li.textContent + (li.className.trim() ? ':' + li.className.trim() : '')).join(' ')), 'S:hoje T:futuro Q:futuro Q:futuro S:futuro S:futuro D:futuro');
-  assert.equal(await pg.$eval('[data-habito="corpo"] .hab-ofensiva', el => el.classList.contains('acesa')), true);   // feito hoje: chama acesa
+  assert.equal(await pg.$eval('[data-habito="peso"] .hab-ofensiva', el => el.classList.contains('acesa')), true);   // feito hoje: chama acesa
   nuvem.online = false;                                                            // sem internet: a cópia do aparelho
   await pg.reload();
   await pg.waitForSelector('#v-apps:not([hidden])');
