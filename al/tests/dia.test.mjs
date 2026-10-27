@@ -121,6 +121,26 @@ test('IA: a frase vira itens na prévia (quantas × porção, com o total), dá 
   await ctx.close();
 });
 
+test('uma comida salva por nome: repetidas de antes viram uma só (a mais usada) e a IA atualiza a porção da mesma', async () => {
+  const nuvem = comTreino(novaNuvem());
+  const arroz = (id, porcao, kcal, usos) => ({ user_id: 'x', id, nome: 'Arroz branco', porcao, kcal, prot: 2, carb: 30, gord: 0, usos });
+  nuvem.tabelas.al_item.push(arroz('a1', '4,5 colheres de sopa (~112 g)', 140, 1), arroz('a2', '7 colheres de sopa (~175 g)', 220, 3));
+  nuvem.tabelas.al_registro.push({ user_id: 'x', id: 'r1', data: '2026-09-17', hora: '12:00', item_id: 'a1', nome: 'Arroz branco', porcao: '4,5 colheres de sopa (~112 g)', qtd: 1, kcal: 140, prot: 2, carb: 30, gord: 0 });
+  nuvem.ia = iaCom({ nome: 'arroz BRANCO', porcao: '1 colher de sopa (~25 g)', qtd: 4, kcal: 128, prot: 2.4, carb: 28, gord: 0.4 });
+  const { ctx, pg, erros } = await abrirApp({ nuvem });
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.al_item.map(i => [i.id, i.porcao, i.usos]), [['a2', '7 colheres de sopa (~175 g)', 4]]);   // a mais usada, usos somados
+  assert.deepEqual(nuvem.tabelas.al_registro.map(r => [r.item_id, r.kcal]), [['a2', 140]]);                               // o que foi comido não muda
+  await pg.fill('#f-texto', 'arroz');
+  assert.equal(await pg.locator('#f-sugestoes [data-item]').count(), 1);
+  await descrever(pg, '4 colheres de arroz branco');                    // a IA: a mesma comida salva, agora por 1 colher
+  await pg.click('#p-adicionar');
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.al_item.map(i => [i.id, i.porcao, i.kcal, i.usos]), [['a2', '1 colher de sopa (~25 g)', 32, 5]]);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
 test('hoje passou da meta: mostra quanto passou (vermelho), e os macros que passaram; dia passado mostra o saldo final', async () => {
   const nuvem = comTreino(novaNuvem());
   nuvem.ia = iaCom({ nome: 'Rodízio', porcao: '1 noite', kcal: 3000, prot: 150, carb: 300, gord: 120 });

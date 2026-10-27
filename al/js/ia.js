@@ -28,13 +28,28 @@ async function perguntarIA(texto) {
 // voltar ao total da tela
 const porQtd = (v, q) => Math.round(v / q * 100) / 100;
 const porPorcao = (x, q) => ({ nome: x.nome, porcao: x.porcao, kcal: porQtd(x.kcal, q), prot: porQtd(x.prot, q), carb: porQtd(x.carb, q), gord: porQtd(x.gord, q) });
-// Salva no cache (al_item): mesmo nome e porção atualiza os valores, senão cria. Devolve o item.
+// Salva no cache (al_item): uma comida salva por nome. Mesmo nome atualiza a porção e os valores (vale a última), senão cria.
+// Devolve o item.
 function salvarItem(x) {
-  const achado = db.itens.find(i => normal(i.nome) === normal(x.nome) && normal(i.porcao) === normal(x.porcao));
-  if (achado) { Object.assign(achado, macros(x)); return achado; }
+  const achado = db.itens.find(i => normal(i.nome) === normal(x.nome));
+  if (achado) { Object.assign(achado, { porcao: x.porcao }, macros(x)); return achado; }
   const novo = { id: novoId(), nome: x.nome, porcao: x.porcao, ...macros(x), usos: 0 };
   db.itens.push(novo);
   return novo;
+}
+// Uma comida salva por nome: as repetidas (de antes dessa regra, uma por porção) viram uma só, a mais usada, com os usos
+// somados; os registros que apontavam para as outras passam a apontar para ela (os valores do registro não mudam).
+// Devolve se mudou algo (aí é preciso gravar: as repetidas saem da nuvem também).
+function unirRepetidas() {
+  const ficou = {}, sai = new Set();
+  for (const i of [...db.itens].sort((a, b) => b.usos - a.usos)) {
+    const f = ficou[normal(i.nome)];
+    if (!f) { ficou[normal(i.nome)] = i; continue; }
+    f.usos += i.usos; sai.add(i.id);
+    db.registros.forEach(r => { if (r.item === i.id) r.item = f.id; });
+  }
+  if (sai.size) db.itens = db.itens.filter(i => !sai.has(i.id));
+  return sai.size > 0;
 }
 // Registra no dia: copia os valores da porção (mudar a comida salva depois não muda o que já foi comido).
 function comer(item, dia, qtd = 1) {
