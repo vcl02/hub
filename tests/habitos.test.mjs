@@ -21,8 +21,8 @@ const treino = dia => ({ inicio: as(dia, 18), fim: as(dia, 19) });
 // 2026-11: qua 4, qui 5; outubro: qua 21/28, qui 22/29
 const HOJE = '2026-11-05';
 
-test('lista de hábitos: treino, déficit, peso, sono e água, cada um com a pasta do app', () => {
-  assert.deepEqual(json(H.HABITOS.map(h => [h.id, h.pasta])), [['treino', 'tr/'], ['deficit', 'al/'], ['peso', 'corpo/'], ['sono', 'corpo/'], ['agua', 'agua/']]);
+test('lista de hábitos: treino, déficit, peso e sono (um só) e água, cada um com a pasta do app', () => {
+  assert.deepEqual(json(H.HABITOS.map(h => [h.id, h.pasta])), [['treino', 'tr/'], ['deficit', 'al/'], ['corpo', 'corpo/'], ['agua', 'agua/']]);
   assert.equal(H.META_AGUA_ML, +ler('agua/js/config.js').match(/const META_ML = (\d+);/)[1]);   // a mesma meta da Água
   assert.equal(H.PROTECOES_MAX, 2);
 });
@@ -42,7 +42,7 @@ test('treino: só quarta e quinta contam (segunda não); folga não quebra, falt
   assert.deepEqual([R2.hoje, R2.ofensiva], ['feito', 2]);
 });
 
-test('peso e sono: só contam lançados no próprio dia (a partir de 27/10); antes disso, qualquer registro conta', () => {
+test('peso e sono: um hábito só, feito com os dois lançados no próprio dia (a partir de 27/10); antes disso, qualquer registro conta', () => {
   const D = vazio();
   const iso = (dia, h) => new Date(as(dia, h)).toISOString();
   D.medidas = [
@@ -52,10 +52,17 @@ test('peso e sono: só contam lançados no próprio dia (a partir de 27/10); ant
     { data: '2026-10-29', hora: '07:00', peso: 100 },                                   // sem pesoEm depois da regra: falhou
     { data: '2026-10-30', hora: '07:00', cintura: 100 }                                 // só barriga: não é pesagem
   ];
-  D.sonos = { '2026-10-27': { sono: 7, sonoEm: iso('2026-10-27', 8) }, '2026-10-28': { sono: 7, sonoEm: iso('2026-10-29', 8) } };
-  const dia = (id, d) => H.estadoNoDia(id, d, D, HOJE);
-  assert.deepEqual(['2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29', '2026-10-30'].map(d => dia('peso', d)), ['feito', 'feito', 'falhou', 'falhou', 'falhou']);
-  assert.deepEqual([dia('sono', '2026-10-27'), dia('sono', '2026-10-28'), dia('sono', HOJE)], ['feito', 'falhou', 'pendente']);
+  const sono = (d, em) => ({ sono: 7, ...(em && { sonoEm: iso(em, 8) }) });
+  D.sonos = { '2026-10-26': sono('2026-10-26'), '2026-10-27': sono('2026-10-27', '2026-10-27'), '2026-10-28': sono('2026-10-28', '2026-10-28'),
+    '2026-10-29': sono('2026-10-29', '2026-10-29'), '2026-10-30': sono('2026-10-30', '2026-10-30'), '2026-10-31': sono('2026-10-31', '2026-11-01') };
+  D.medidas.push({ data: '2026-10-31', hora: '07:00', peso: 100, pesoEm: iso('2026-10-31', 7) });   // pesou no dia, sono lançado no dia seguinte
+  const dia = d => H.estadoNoDia('corpo', d, D, HOJE);
+  // 26: antes da regra · 27: os dois no dia · 28 e 29: peso fora do dia · 30: só barriga · 31: sono fora do dia
+  assert.deepEqual(['2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29', '2026-10-30', '2026-10-31'].map(dia), ['feito', 'feito', 'falhou', 'falhou', 'falhou', 'falhou']);
+  D.sonos[HOJE] = sono(HOJE, HOJE);                                   // hoje só o sono: falta pesar
+  assert.equal(dia(HOJE), 'pendente');
+  D.medidas.push({ data: HOJE, hora: '07:00', peso: 100, pesoEm: iso(HOJE, 7) });
+  assert.equal(dia(HOJE), 'feito');
   assert.equal(H.LANCADO_NO_DIA_DESDE, '2026-10-27');
 });
 
@@ -151,7 +158,8 @@ test('resumo de hoje: valor curto de cada hábito e o progresso das metas', () =
   const meta = H.metaKcal(H.gastoNoDia(D.medidas, [], [], HOJE));
   D.comidas = { [HOJE]: [{ hora: '12:00', kcal: meta - 400 }] };
   let r = json(H.resumoDeHoje(D, HOJE));
-  assert.deepEqual([r.treino.valor, r.peso.valor, r.sono.valor, r.agua.valor, r.agua.progresso], ['Dia de treino', '100,4 kg', '7,5 h', '650 / 1.000 ml', 0.65]);
+  assert.deepEqual([r.treino.valor, r.corpo.valor, r.agua.valor, r.agua.progresso], ['Dia de treino', '100,4 kg · 7,5 h', '650 / 1.000 ml', 0.65]);
+  assert.equal(json(H.resumoDeHoje({ ...D, sonos: {} }, HOJE)).corpo.valor, '100,4 kg · Registrar sono');
   assert.equal(r.deficit.valor, '400 kcal restantes');
   D.comidas[HOJE].push({ hora: '20:00', kcal: 1650 });
   r = json(H.resumoDeHoje(D, HOJE));

@@ -17,8 +17,7 @@ const PROTECOES_MAX = 2;                     // proteções guardadas, no máxim
 const HABITOS = Object.freeze([
   { id: 'treino', nome: 'Treino', pasta: 'tr/' },
   { id: 'deficit', nome: 'Déficit', pasta: 'al/' },
-  { id: 'peso', nome: 'Peso', pasta: 'corpo/' },
-  { id: 'sono', nome: 'Sono', pasta: 'corpo/' },
+  { id: 'corpo', nome: 'Peso e sono', pasta: 'corpo/' },   // os dois lançados no dia
   { id: 'agua', nome: 'Água', pasta: 'agua/' }
 ]);
 
@@ -43,21 +42,18 @@ function estadoNoDia(id, dia, D, hoje) {
     const c = contaDoDia(D, dia);
     return c.comidas.length && !c.tarde && c.meta != null && c.comido <= c.meta ? 'feito' : aindaDa;
   }
-  if (id === 'peso') {
-    const m = D.medidas.find(x => x.data === dia && x.peso);
-    return m && lancadoNoDia(m.pesoEm, dia) ? 'feito' : aindaDa;
-  }
-  if (id === 'sono') {
-    const s = D.sonos[dia];
-    return s && s.sono != null && lancadoNoDia(s.sonoEm, dia) ? 'feito' : aindaDa;
+  if (id === 'corpo') {   // peso e sono: feito só com os dois lançados no próprio dia
+    const m = D.medidas.find(x => x.data === dia && x.peso), s = D.sonos[dia];
+    const pesou = !!m && lancadoNoDia(m.pesoEm, dia), dormiu = !!s && s.sono != null && lancadoNoDia(s.sonoEm, dia);
+    return pesou && dormiu ? 'feito' : aindaDa;
   }
   return (D.aguas[dia] || 0) >= META_AGUA_ML ? 'feito' : aindaDa;
 }
 
-// Primeiro dia com registro de cada hábito (sem nenhum, hoje): antes dele o hábito não existia
+// Primeiro dia com registro de cada hábito (sem nenhum, hoje): antes dele o hábito não existia. Peso e sono: o 1º de qualquer um
 function primeiroDia(id, D, hoje) {
   const L = id === 'treino' ? D.treinos.map(t => diaDoInstante(t.inicio)) : id === 'deficit' ? Object.keys(D.comidas)
-    : id === 'peso' ? D.medidas.filter(m => m.peso).map(m => m.data) : id === 'sono' ? Object.keys(D.sonos).filter(d => D.sonos[d].sono != null)
+    : id === 'corpo' ? [...D.medidas.filter(m => m.peso).map(m => m.data), ...Object.keys(D.sonos).filter(d => D.sonos[d].sono != null)]
     : Object.keys(D.aguas).filter(d => D.aguas[d] > 0);
   return L.reduce((a, b) => b < a ? b : a, hoje);
 }
@@ -123,8 +119,7 @@ function resumoDeHoje(D, hoje) {
     deficit: resta == null ? { valor: 'Sem pesagem' } : resta >= 0
       ? { valor: `${milhar(resta)} kcal restantes`, progresso: c.meta ? c.comido / c.meta : 0 }
       : { valor: `${milhar(-resta)} kcal acima`, progresso: 1, acima: true },
-    peso: { valor: m ? `${decimal(m.peso)} kg` : 'Pesar hoje' },
-    sono: { valor: s && s.sono != null ? `${decimal(s.sono)} h` : 'Registrar sono' },
+    corpo: { valor: `${m ? `${decimal(m.peso)} kg` : 'Pesar hoje'} · ${s && s.sono != null ? `${decimal(s.sono)} h` : 'Registrar sono'}` },
     agua: { valor: `${milhar(ml)} / ${milhar(META_AGUA_ML)} ml`, progresso: Math.min(1, ml / META_AGUA_ML) }
   };
 }

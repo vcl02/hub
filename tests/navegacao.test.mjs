@@ -93,7 +93,7 @@ test('entrou no hub: os apps abrem direto com a mesma sessão, sem login própri
   const { ctx, pg, faltando, erros } = await abrir(base);
   await entrar(pg, 'eu@teste.com', 'senha123');
   await pg.waitForSelector('#v-apps:not([hidden])');
-  assert.deepEqual(await pg.$$eval('.app-nome', s => s.map(x => x.textContent)), ['Treino', 'Déficit', 'Peso', 'Sono', 'Água', 'Fin', 'Agenda', 'Anotações']);
+  assert.deepEqual(await pg.$$eval('.app-nome', s => s.map(x => x.textContent)), ['Treino', 'Déficit', 'Peso e sono', 'Água', 'Fin', 'Agenda', 'Anotações']);
   await pg.reload();                                                   // sessão salva: entra direto
   await pg.waitForSelector('#v-apps:not([hidden])');
   assert.equal(await pg.isVisible('#v-login'), false);
@@ -128,9 +128,8 @@ test('hábitos com os dados dos apps: valor de hoje, ofensivas, dias perfeitos e
   await entrar(pg, 'eu@teste.com', 'senha123');
   await pg.waitForSelector('#v-apps:not([hidden])');
   const linha = id => pg.$eval(`[data-habito="${id}"]`, el => [el.querySelector('.hab-valor').textContent, el.querySelector('.hab-ofensiva b').textContent]);
-  await pg.waitForFunction(() => document.querySelector('[data-habito="peso"] .hab-valor').textContent === '100,4 kg');
-  assert.deepEqual(await linha('peso'), ['100,4 kg', '1']);
-  assert.deepEqual(await linha('sono'), ['7,5 h', '2']);
+  await pg.waitForFunction(() => document.querySelector('[data-habito="corpo"] .hab-valor').textContent === '100,4 kg · 7,5 h');
+  assert.deepEqual(await linha('corpo'), ['100,4 kg · 7,5 h', '1']);           // 25/10 só teve sono: peso e sono feitos só hoje
   assert.deepEqual(await linha('agua'), ['400 / 1.000 ml', '2']);                  // 25 e 23/10, com 24/10 protegido
   assert.deepEqual(await linha('treino'), ['Próximo: qua', '2']);
   assert.deepEqual(await linha('deficit'), [(await linha('deficit'))[0], '1']);   // 700 kcal cabem na meta: hoje já conta
@@ -138,7 +137,7 @@ test('hábitos com os dados dos apps: valor de hoje, ofensivas, dias perfeitos e
   assert.equal(await pg.$eval('[data-habito="treino"] .hab-ofensiva', el => el.classList.contains('acesa')), true);   // segunda (folga) com qua e qui feitos
   assert.equal(await pg.textContent('#h-protecoes b'), '0');                      // ganhou 1 e gastou em 24/10
   assert.equal(await pg.$$eval('[data-habito="agua"] .hab-dias i', L => L.map(i => i.className).join(' ')), 'antes antes antes feito protegido feito pendente hoje');
-  assert.equal(await pg.$eval('[data-habito="peso"] .hab-ofensiva', el => el.classList.contains('acesa')), true);   // feito hoje: chama acesa
+  assert.equal(await pg.$eval('[data-habito="corpo"] .hab-ofensiva', el => el.classList.contains('acesa')), true);   // feito hoje: chama acesa
   assert.equal(await pg.$$eval('#h-semana li', L => L.length), 7);
   nuvem.online = false;                                                            // sem internet: a cópia do aparelho
   await pg.reload();

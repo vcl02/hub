@@ -44,7 +44,7 @@
 
 ## Hábitos (página inicial)
 
-- Hábitos: **Treino** (quarta e quinta, `ROTINA.treino`; segunda não conta, nem treinando), **Déficit** (comido ≤ meta do dia = gasto − 500, pela mesma conta do al), **Peso** e **Sono** (registrados no Corpo, todo dia) e **Água** (1.000 ml, a meta da Água). Cada um abre o app dele.
+- Hábitos: **Treino** (quarta e quinta, `ROTINA.treino`; segunda não conta, nem treinando), **Déficit** (comido ≤ meta do dia = gasto − 500, pela mesma conta do al), **Peso e sono** (um hábito só, do Corpo, todo dia: feito com os dois lançados no dia; o 1º registro de qualquer um começa o hábito) e **Água** (1.000 ml, a meta da Água). Cada um abre o app dele.
 - **Lançado no dia:** a partir de 27/10/2026, só conta o que foi lançado no próprio dia. Peso e sono pelo instante gravado pelo Corpo (`peso_em`, `sono_em`); comida e caminhada do al pela hora (o al grava sem hora o que é lançado em outro dia): dia com comida lançada depois falha, e caminhada lançada depois não sobe a meta. Água só se lança no dia. Antes de 27/10, tudo conta como lançado no dia.
 - **Déficit:** hoje conta como feito enquanto o comido couber na meta (com pelo menos um registro); passou da meta, volta a pendente (treino ou caminhada ainda podem subir a meta) e à meia-noite o dia fecha. Sem nenhum registro de comida no dia, falha.
 - Estados de cada dia: feito, falhou, protegido, pendente (hoje), folga (dia sem o hábito) e antes (antes do 1º registro do hábito).
