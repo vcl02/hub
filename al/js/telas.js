@@ -14,9 +14,15 @@ function desenhar() {
   pintarSaldo(); pintarMacros(); pintarSugestoes(); pintarPrevia(); pintarLista(); pintarSemana();
 }
 
+// Gastei: no dia fechado, o gasto do dia inteiro; hoje, o que já foi até agora (a rotina na proporção das horas já passadas,
+// mais o treino e a caminhada já lançados)
+function gastoAteAgora(g) {
+  const d = new Date(), passado = (d.getHours() * 60 + d.getMinutes()) / 1440;
+  return Math.round(g.rotina * passado + g.treino + (g.caminhada?.kcal || 0));
+}
 // Hoje: quanto ainda cabe até a meta ("kcal restantes") ou quanto passou dela; o gasto só fecha no fim do dia.
 // Dias passados: o saldo final (comido − gasto), de déficit ou de superávit.
-// Embaixo, uma informação por linha: meta (com o déficit planejado, pequeno), comido e, nos dias passados, o gasto.
+// Embaixo, uma informação por linha, sempre na mesma ordem: meta (com o déficit planejado, pequeno), comido e gasto (hoje, até agora).
 function pintarSaldo() {
   const { gasto: g, comido: c, saldo } = saldoDoDia(diaVisto), meta = metaDoDia(diaVisto), aberto = diaVisto === hoje();
   const resto = meta ? meta.kcal - c.kcal : null;
@@ -27,7 +33,7 @@ function pintarSaldo() {
   $('s-valor').textContent = !g ? '—' : inteiro(Math.abs(aberto ? resto : saldo));
   $('s-rotulo').textContent = !g ? 'kcal' : aberto ? (resto >= 0 ? 'kcal restantes' : 'kcal acima da meta') : saldo <= 0 ? 'kcal de déficit' : 'kcal de superávit';
   $('s-conta').innerHTML = !g ? `${linha('Comi', c.kcal)}<span>Sem pesagem no Corpo para calcular o gasto</span>`
-    : aberto ? linhaMeta() + linha('Comi', c.kcal) : linha('Comi', c.kcal) + linha('Gastei', g.total) + linhaMeta();
+    : linhaMeta() + linha('Comi', c.kcal) + linha('Gastei', aberto ? gastoAteAgora(g) : g.total);
   // Hoje é dia de treino e ainda não treinou: quanto a mais dá para comer depois do treino
   // Dia de treino opcional (extra) em que já passou da meta e ainda não treinou: o treino vira obrigatório. Alerta urgente
   // com o quanto o treino ajuda (volta para a meta ou só diminui o excesso), o risco de fechar em superávit e o botão do Treino.

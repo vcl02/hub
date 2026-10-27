@@ -18,7 +18,8 @@ test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei +" soma cada 
   assert.equal(await texto(pg, '#s-valor'), '2.106');
   assert.equal(await texto(pg, '#s-rotulo'), 'kcal restantes');        // hoje: quanto ainda cabe, não o déficit do dia inteiro
   assert.match(await pg.getAttribute('#saldo', 'class'), /deficit/);
-  assert.deepEqual(await linhasDe(pg, '#s-conta'), ['Meta 500 kcal déficit 2.106 kcal', 'Comi 0 kcal']);   // uma por linha, déficit pequeno na da meta
+  // uma por linha, déficit pequeno na da meta · gastei hoje = até agora: 2398 × 15h30/24h = 1549 + treino 208 = 1757
+  assert.deepEqual(await linhasDe(pg, '#s-conta'), ['Meta 500 kcal déficit 2.106 kcal', 'Comi 0 kcal', 'Gastei 1.757 kcal']);
   assert.equal(await pg.locator('#s-gasto').count(), 0);                 // sem a conta do gasto
   assert.equal(await pg.isVisible('#andei'), true);
   assert.equal(await texto(pg, '#c-kcal'), '');                          // sem trecho, sem caminhada
@@ -304,10 +305,10 @@ test('dias anteriores: ‹ e os últimos 7 dias mostram o dia, com saldo e médi
   assert.match(await texto(pg, '#lista li'), /^20:00 Pizza/);
   assert.equal(await texto(pg, '#s-valor'), '1.298');                  // dia fechado: saldo final, sem sinal (o rótulo diz)
   assert.equal(await texto(pg, '#s-rotulo'), 'kcal de déficit');
-  assert.deepEqual(await linhasDe(pg, '#s-conta'), ['Comi 1.100 kcal', 'Gastei 2.398 kcal', 'Meta 500 kcal déficit 1.898 kcal']);
+  assert.deepEqual(await linhasDe(pg, '#s-conta'), ['Meta 500 kcal déficit 1.898 kcal', 'Comi 1.100 kcal', 'Gastei 2.398 kcal']);
   await pg.click('#c-mais');                                           // caminhada lançada depois, no dia passado: sem horário
   assert.deepEqual(await trechos(pg), ['20 min ×']);
-  assert.deepEqual(await linhasDe(pg, '#s-conta'), ['Comi 1.100 kcal', 'Gastei 2.464 kcal', 'Meta 500 kcal déficit 1.964 kcal']);
+  assert.deepEqual(await linhasDe(pg, '#s-conta'), ['Meta 500 kcal déficit 1.964 kcal', 'Comi 1.100 kcal', 'Gastei 2.464 kcal']);
   await pg.click('#semana [data-dia="2026-09-18"]');
   assert.equal(await texto(pg, '#d-nome'), 'Hoje');
   await ctx.close();
