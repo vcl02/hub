@@ -108,13 +108,25 @@ test('IA: a frase vira itens na prévia (quantas × porção, com o total), dá 
   assert.ok(nuvem.tabelas.al_registro.every(r => r.data === DIA && r.hora === '15:30'));
   assert.deepEqual(nuvem.tabelas.al_registro.map(r => [r.nome, r.qtd, r.kcal]).sort(), [['Ovo mexido', 2, 90], ['Pão francês', 1, 140]]);
 
-  // Da próxima vez: sugestão ao digitar e nome igual adicionam direto, sem chamar a IA
+  // Da próxima vez: sugestão ao digitar e nome igual abrem a prévia com 1 porção (pede quantas), sem chamar a IA
   await pg.fill('#f-texto', 'ovo');
   await pg.click('#f-sugestoes [data-item]');
+  await pg.waitForSelector('#previa:not([hidden])');
+  assert.deepEqual([await pg.inputValue('#p-lista [data-campo="qtd"]'), await pg.inputValue('#p-lista [data-campo="porcao"]'), await pg.inputValue('#p-lista [data-campo="kcal"]')],
+    ['1', '1 unidade (~50 g)', '90']);
+  assert.equal(await pg.evaluate(() => document.activeElement.dataset.campo), 'qtd');    // já no campo de quantas
+  await pg.fill('#p-lista [data-campo="qtd"]', '3');                                     // 3 ovos: o total acompanha
+  assert.deepEqual([await pg.inputValue('#p-lista [data-campo="kcal"]'), await pg.inputValue('#p-lista [data-campo="prot"]')], ['270', '18,8']);
+  assert.equal(await pg.locator('#lista li').count(), 2);                                // ainda não entrou
+  await pg.click('#p-adicionar');
   await descrever(pg, 'pão FRANCES');
+  await pg.waitForSelector('#previa:not([hidden])');
+  await pg.click('#p-adicionar');
   assert.equal(await pg.locator('#lista li').count(), 4);
   assert.equal(nuvem.chamadasIA, 1);
-  assert.equal(await texto(pg, '#s-valor'), '1.556');   // 2106 − 320 − 1 ovo (90) − 1 pão (140)
+  assert.equal(await texto(pg, '#s-valor'), '1.376');   // 2106 − 320 − 3 ovos (270) − 1 pão (140)
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.al_item.map(i => [i.nome, i.kcal, i.usos]).sort(), [['Ovo mexido', 90, 2], ['Pão francês', 140, 2]]);   // a salva continua por 1 porção
   // Campo vazio: as mais usadas
   assert.deepEqual(await pg.$$eval('#f-sugestoes b', bs => bs.map(b => b.textContent)), ['Ovo mexido', 'Pão francês']);
   assert.deepEqual(erros, []);
@@ -313,6 +325,7 @@ test('sem internet: abre com a cópia do aparelho e envia o que ficou pendente a
   await pg.waitForSelector('#v-dia:not([hidden])');
   assert.equal(await pg.locator('#lista li').count(), 1);
   await pg.click('#f-sugestoes [data-item]');   // mais um ovo, offline
+  await pg.click('#p-adicionar');
   await pg.waitForSelector('#sync:not([hidden])');
   assert.match(await texto(pg, '#sync'), /Sem internet/);
   nuvem.online = true;

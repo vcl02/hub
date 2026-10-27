@@ -75,6 +75,11 @@ function pintarSugestoes() {
 
 // Prévia editável: nome, quantas porções × a porção, e o total comido (kcal e gramas) de cada item antes de adicionar
 const CAMPOS = [['kcal', 'kcal'], ['prot', 'P (g)'], ['carb', 'C (g)'], ['gord', 'G (g)']];
+// Item da prévia: o total e, em unid, os valores de 1 porção (o total ÷ qtd), para o total acompanhar quando a qtd muda
+function itemDaPrevia(x) {
+  const qtd = x.qtd > 0 ? x.qtd : 1;
+  return { nome: x.nome, porcao: x.porcao, qtd, ...macros(x), unid: Object.fromEntries(CAMPOS.map(([k]) => [k, x[k] / qtd])) };
+}
 function pintarPrevia() {
   $('previa').hidden = !previa;
   if (!previa) { $('p-lista').innerHTML = ''; return; }
@@ -151,12 +156,16 @@ $('c-lista').addEventListener('click', ev => {
 });
 
 $('f-texto').addEventListener('input', pintarSugestoes);
+// Comida salva (sugestão ou nome igual ao digitado): abre a prévia com 1 porção, para dizer quantas antes de adicionar
+function preverSalva(item) {
+  previa = [itemDaPrevia({ ...item, qtd: 1 })];
+  desenhar();
+  const q = $('p-lista').querySelector('[data-campo="qtd"]');
+  q?.focus(); q?.select();
+}
 $('f-sugestoes').addEventListener('click', ev => {
   const b = ev.target.closest('[data-item]'), item = b && db.itens.find(i => i.id === b.dataset.item);
-  if (!item) return;
-  mudar(() => comer(item, diaVisto));
-  $('f-texto').value = ''; pintarSugestoes();
-  toast(`${item.nome} adicionado`);
+  if (item) preverSalva(item);
 });
 
 let perguntando = false;
@@ -165,10 +174,10 @@ $('f-comer').addEventListener('submit', async ev => {
   const texto = $('f-texto').value.trim();
   if (!texto || perguntando) return;
   const igual = itemIgual(texto);
-  if (igual) { mudar(() => comer(igual, diaVisto)); $('f-texto').value = ''; pintarSugestoes(); toast(`${igual.nome} adicionado`); return; }
+  if (igual) { preverSalva(igual); return; }
   perguntando = true; $('f-carregando').hidden = false; $('f-enviar').disabled = true;
-  try { previa = (await perguntarIA(texto)).map(x => ({ ...x })); }
-  catch (e) { toast(e.message, true); previa = [{ nome: texto.slice(0, 60), porcao: '', qtd: 1, kcal: 0, prot: 0, carb: 0, gord: 0 }]; }
+  try { previa = (await perguntarIA(texto)).map(itemDaPrevia); }
+  catch (e) { toast(e.message, true); previa = [itemDaPrevia({ nome: texto.slice(0, 60), porcao: '', qtd: 1, kcal: 0, prot: 0, carb: 0, gord: 0 })]; }
   finally { perguntando = false; $('f-carregando').hidden = true; $('f-enviar').disabled = false; }
   desenhar();
   $('p-lista').querySelector('input')?.focus();
@@ -180,6 +189,15 @@ $('p-lista').addEventListener('click', ev => {
   lerPrevia(); previa.splice(+b.dataset.tirar, 1);
   if (!previa.length) previa = null;
   desenhar();
+});
+// Mudou quantas porções: o total vira porção × qtd. Total corrigido à mão muda a porção (total ÷ qtd).
+$('p-lista').addEventListener('input', ev => {
+  const li = ev.target.closest('li'), k = ev.target.dataset.campo;
+  if (!li || !k) return;
+  const x = previa[+li.dataset.i], campo = c => li.querySelector(`[data-campo="${c}"]`), q = num(campo('qtd').value);
+  if (!(q > 0)) return;
+  if (k === 'qtd') CAMPOS.forEach(([c]) => { campo(c).value = String(Math.round(x.unid[c] * q * (c === 'kcal' ? 1 : 10)) / (c === 'kcal' ? 1 : 10)).replace('.', ','); });
+  else if (k in x.unid) x.unid[k] = (num(ev.target.value) || 0) / q;
 });
 $('p-cancelar').addEventListener('click', () => { previa = null; desenhar(); });
 $('p-adicionar').addEventListener('click', () => {
