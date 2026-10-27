@@ -55,7 +55,12 @@
     </div>
   </div>
 
-  <!-- Beber: digite os ml (vira botão para as próximas vezes) ou toque num botão -->
+  <!-- Beber: a bebida (água, suco ou refri: só a parte que é água conta), os ml (vira botão para as próximas vezes) ou um botão -->
+  <div class="tipos" id="b-tipos" role="group" aria-label="Bebida">
+    <button type="button" class="tipo" data-bebida="agua" aria-pressed="true">Água</button>
+    <button type="button" class="tipo" data-bebida="suco" aria-pressed="false">Suco</button>
+    <button type="button" class="tipo" data-bebida="refri" aria-pressed="false">Refri</button>
+  </div>
   <form id="b-form" class="beber" autocomplete="off">
     <input id="b-ml" inputmode="numeric" placeholder="ml" aria-label="Quantos ml">
     <button type="submit" class="bt-mais" title="Bebi" aria-label="Bebi"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>

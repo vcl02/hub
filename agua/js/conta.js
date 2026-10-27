@@ -27,9 +27,9 @@ function lembreteAgora(dia) {
   return atual && atual.estado === 'atrasado' ? atual : null;
 }
 
-// Botões de ml: as quantidades que já digitei, das mais usadas para as menos (empate: a menor primeiro)
+// Botões de ml: as quantidades que já digitei (o volume bebido), das mais usadas para as menos (empate: a menor primeiro)
 function botoesMl() {
   const conta = {};
-  db.dias.forEach(x => x.aguas.forEach(a => { conta[a.ml] = (conta[a.ml] || 0) + 1; }));
+  db.dias.forEach(x => x.aguas.forEach(a => { const v = a.volume || a.ml; conta[v] = (conta[v] || 0) + 1; }));   // o volume do copo, de qualquer bebida
   return Object.entries(conta).sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, BOTOES_ML).map(([ml]) => +ml).sort((a, b) => a - b);
 }

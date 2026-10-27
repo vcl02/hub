@@ -9,7 +9,8 @@
 
 - **Total:** ml bebidos hoje contra a meta de **1.000 ml** (mínimo, começando), com barra. Bateu a meta: "Meta batida" no canto e a barra fica verde.
 - **Beber:** digite os ml e toque em + (ou Enter): entra com o horário de agora (o do celular, fuso de São Paulo). De 1 a 3.000 ml por vez.
-- **Botões de ml:** não há quantidade fixa. Cada quantidade já digitada vira botão; aparecem as 6 mais usadas (em ordem de ml). Tocar num botão bebe aquela quantidade agora.
+- **Suco e refri:** acima do campo, **Água · Suco · Refri** (começa em Água). Escolhido suco ou refri, o próximo lançamento (campo ou botão) conta só a parte que é água: suco 88%, refri 89% (estimativa de tabelas de composição). Na lista aparece marcado, com contorno tracejado: "09:00 · suco 300 ml (264 ml de água)". Depois de cada suco ou refri, a escolha volta para Água. O que conta para a meta, os lembretes e a página inicial é a água (264 ml no exemplo).
+- **Botões de ml:** não há quantidade fixa. Cada quantidade já digitada (o volume do copo, de qualquer bebida) vira botão; aparecem as 6 mais usadas (em ordem de ml). Tocar num botão bebe aquela quantidade agora.
 - Embaixo, o que foi bebido hoje ("10:00 · 300 ml ×"); tocar duas vezes tira.
 - Xixi e bexiga ficam no Corpo (`../corpo/`), que lê a água daqui para os ml por xixi.
 

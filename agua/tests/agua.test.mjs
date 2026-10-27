@@ -32,6 +32,27 @@ test('beber: ml digitado entra com o horário de agora e vira botão; botões pe
   assert.deepEqual(erros, []); await ctx.close();
 });
 
+test('suco e refri: só a parte que é água conta para a meta, marcados na lista; a escolha volta para água', async () => {
+  const { ctx, pg, nuvem, erros } = await abrirApp();                     // segunda 19/10, 09:00
+  assert.equal(await pg.getAttribute('[data-bebida="agua"]', 'aria-pressed'), 'true');
+  await pg.click('[data-bebida="suco"]');
+  assert.equal(await pg.getAttribute('[data-bebida="suco"]', 'aria-pressed'), 'true');
+  await beber(pg, 300);                                                    // suco: 300 × 88% = 264 ml de água
+  assert.equal(await texto(pg, '#t-ml'), '264');
+  assert.equal(await texto(pg, '#toast'), 'Suco 300 ml: 264 ml de água às 09:00');
+  assert.equal(await pg.getAttribute('[data-bebida="agua"]', 'aria-pressed'), 'true');   // volta para água
+  await pg.click('[data-bebida="refri"]');
+  await beber(pg, 350);                                                    // refri: 350 × 89% = 312
+  await pg.click('[data-ml="300"]');                                       // o botão é o volume do copo; agora, água pura
+  assert.deepEqual(await pg.$$eval('#b-lista button', B => B.map(b => b.textContent)),
+    ['09:00 · suco 300 ml (264 ml de água) ×', '09:00 · refri 350 ml (312 ml de água) ×', '09:00 · 300 ml ×']);
+  assert.equal(await texto(pg, '#t-ml'), '876');                           // 264 + 312 + 300
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.agua_dia[0].aguas, [
+    { hora: '09:00', ml: 264, bebida: 'suco', volume: 300 }, { hora: '09:00', ml: 312, bebida: 'refri', volume: 350 }, { hora: '09:00', ml: 300 }]);
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
 test('lembretes: em casa de hora em hora das 10 às 16; o atrasado da vez vira "Hora de beber água" e some ao beber', async () => {
   const { ctx, pg } = await abrirApp({ relogio: new Date('2026-10-19T11:20:00-03:00') });   // segunda (casa)
   assert.deepEqual(await etiquetas(pg, '#l-horas'), ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00']);

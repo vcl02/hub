@@ -1,5 +1,9 @@
 'use strict';
-// Tela de hoje: total e meta, lembretes, beber (campo de ml e botões das quantidades já usadas) e 7 dias.
+// Tela de hoje: total e meta, lembretes, beber (bebida, campo de ml e botões das quantidades já usadas) e 7 dias.
+let bebida = 'agua';   // a bebida do próximo lançamento; volta para água depois de cada suco ou refri
+const nomeBebida = a => BEBIDAS[a.bebida]?.nome.toLowerCase() || '';
+// "10:00 · 300 ml" ou "10:00 · suco 300 ml (264 ml de água)"
+const textoAgua = a => a.bebida ? `${a.hora} · ${nomeBebida(a)} ${inteiro(a.volume)} ml (${inteiro(a.ml)} ml de água)` : `${a.hora} · ${inteiro(a.ml)} ml`;
 
 function desenhar() {
   const dia = hoje(), x = doDia(dia), total = totalMl(dia);
@@ -16,7 +20,8 @@ function desenhar() {
   $('l-horas').innerHTML = L.map(l => `<li class="${l.estado}${vez && l.hora === vez.hora ? ' vez' : ''}" title="${l.estado === 'feito' ? 'Bebeu' : l.estado === 'atrasado' ? 'Não bebeu' : 'Ainda não chegou'}">${l.hora}${l.estado === 'feito' ? ' ✓' : ''}</li>`).join('');
   // Beber: botões das quantidades já usadas e a lista de hoje
   $('b-botoes').innerHTML = botoesMl().map(ml => `<li><button type="button" class="ml-bt" data-ml="${ml}">${inteiro(ml)} ml</button></li>`).join('');
-  $('b-lista').innerHTML = x.aguas.map((a, i) => `<li><button type="button" data-tirar-agua="${i}" title="Tirar (toque duplo)" aria-label="Tirar ${a.ml} ml das ${a.hora}">${a.hora} · ${inteiro(a.ml)} ml ×</button></li>`).join('');
+  $('b-tipos').querySelectorAll('[data-bebida]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.bebida === bebida)));
+  $('b-lista').innerHTML = x.aguas.map((a, i) => `<li><button type="button" class="${a.bebida ? 'outra' : ''}" data-tirar-agua="${i}" title="Tirar (toque duplo)" aria-label="Tirar ${textoAgua(a)}">${textoAgua(a)} ×</button></li>`).join('');
   pintarSemana();
 }
 
@@ -34,12 +39,18 @@ function mudarHoje(acao) {
   if (!x) { x = { data: hoje(), aguas: [] }; db.dias.push(x); }
   acao(x); db = preparar(db); gravar(); desenhar();
 }
+// Bebe ml da bebida escolhida: água conta inteira; suco e refri, só a parte que é água (e ficam marcados na lista)
 function beber(ml) {
   if (!(ml > 0 && ml <= ML_MAX)) { toast(`De 1 a ${inteiro(ML_MAX)} ml`, true); return; }
-  const hora = agoraHHMM();
-  mudarHoje(x => { x.aguas.push({ hora, ml }); });
-  toast(`${inteiro(ml)} ml às ${hora}`);
+  const hora = agoraHHMM(), a = bebida === 'agua' ? { hora, ml } : { hora, ml: Math.round(ml * BEBIDAS[bebida].agua), bebida, volume: ml };
+  bebida = 'agua';
+  mudarHoje(x => { x.aguas.push(a); });
+  toast(a.bebida ? `${BEBIDAS[a.bebida].nome} ${inteiro(ml)} ml: ${inteiro(a.ml)} ml de água às ${hora}` : `${inteiro(ml)} ml às ${hora}`);
 }
+$('b-tipos').addEventListener('click', ev => {
+  const b = ev.target.closest('[data-bebida]');
+  if (b) { bebida = b.dataset.bebida; desenhar(); $('b-ml').focus(); }
+});
 $('b-form').addEventListener('submit', ev => {
   ev.preventDefault();
   const ml = Math.round(num($('b-ml').value));
