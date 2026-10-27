@@ -97,6 +97,9 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 .comer input:focus{outline:none;border-color:var(--yellow)}
 .bt-enviar{width:52px;border:0;border-radius:12px;background:var(--yellow);color:var(--on-yellow);display:grid;place-items:center;flex:none}
 .bt-enviar:disabled{opacity:.5}
+/* Dia passado (só leitura): campos e botões desativados */
+#f-texto:disabled,.andei input:disabled,#c-mais:disabled,.lista select:disabled{opacity:.45}
+.trechos button:disabled{cursor:default;color:var(--muted)}
 .sugestoes{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
 .sugestoes:empty{display:none}
 .sug{display:flex;gap:6px;align-items:baseline;border:1px solid var(--line);border-radius:999px;background:var(--surface);padding:6px 12px;font-size:.875rem;max-width:100%}

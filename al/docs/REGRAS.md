@@ -11,7 +11,7 @@
 - **Basal:** Mifflin-St Jeor com o perfil do Corpo (`../corpo/perfil.js`) e a idade no dia.
 - **Rotina:** basal × 1,2 (fator de atividade sedentário).
 - **Treino:** treinos do dia no Treino. Soma só o que passa da basal: calorias do treino (`kcalTreino`, 3,5 MET × basal/hora × horas, a mesma conta do Treino) − basal/hora × horas = (3,5 − 1) × basal ÷ 24 × horas. O cardio na esteira feito depois do treino (no Treino, `tr_treino.cardio`) entra aqui também, pela mesma regra: `kcalEsteira` − basal/hora × horas na esteira.
-- **Caminhada (cumulativa):** linha "Andei" com minutos, km e **+**. Cada caminhada do dia (ida, volta, mercado…) é um **trecho**: toque em + (ou Enter num campo) e ele entra com o horário de agora (em dia passado, sem horário), com os min e/ou km digitados; vazios = padrão de 20 min. Os campos limpam para o próximo. Até 600 min e 60 km por trecho, até 30 trechos por dia. Os trechos aparecem embaixo ("12:10 · 20 min ×"); toque duplo tira. O gasto soma todos. Nenhum dia vem marcado sozinho (nem quarta e quinta): sem trecho = não andou, e o dia sai de `al_dia`. Só dias com trecho contam como 1º dia do app. Gravado em `al_dia.caminhadas`; o total antigo do dia (antes da migration 02) virou 1 trecho sem horário.
+- **Caminhada (cumulativa):** linha "Andei" com minutos, km e **+**. Cada caminhada do dia (ida, volta, mercado…) é um **trecho**: toque em + (ou Enter num campo) e ele entra com o horário de agora, com os min e/ou km digitados; vazios = padrão de 20 min. Os campos limpam para o próximo. Até 600 min e 60 km por trecho, até 30 trechos por dia. Os trechos aparecem embaixo ("12:10 · 20 min ×"); toque duplo tira. O gasto soma todos. Nenhum dia vem marcado sozinho (nem quarta e quinta): sem trecho = não andou, e o dia sai de `al_dia`. Só dias com trecho contam como 1º dia do app. Gravado em `al_dia.caminhadas`; o total antigo do dia (antes da migration 02) virou 1 trecho sem horário.
   - Conta por trecho (equação de caminhada do ACSM, terreno plano): MET = (0,1 × velocidade em m/min + 3,5) ÷ 3,5; soma (MET − 1) × basal ÷ 24 × horas.
   - Com minutos e km, a velocidade é a real (limitada a 2–7 km/h); só minutos ou só km, 5 km/h (só km: tempo = km ÷ 5). Ex.: 20 min sem km = 66 kcal; 3 km = 119 kcal (com basal 1.998).
   - Ao lado do +, o efeito de todos os trechos no saldo ("−66 kcal"). Esteira dentro do horário de um treino do Treino, ou marcada como cardio no Treino, já conta no treino: lance só a caminhada fora dele.
@@ -35,7 +35,7 @@
 - **IA:** texto novo vai para a IA (Edge Function `al-estimar`, Claude Haiku), que separa em itens com **1 porção** (com gramas aproximados), **quantas porções** foram comidas e os valores estimados de tabelas brasileiras **do total comido**. Abre a **prévia**: cada item com nome, quantas × porção ("2 × 1 unidade (~50 g)") e kcal, P, C e G do total, todos editáveis (mudar quantas recalcula o total; corrigir o total muda o valor da porção), e × para tirar. "Adicionar" registra; "Cancelar" descarta.
 - **Sem IA** (sem internet, IA fora do ar, limite do dia, nada reconhecido): aviso curto e a prévia abre com um item com o texto como nome, para digitar os valores.
 - Ao adicionar, **hoje entra o total comido** (a porção com a quantidade: "2 × 1 unidade", 180 kcal) e cada item vira comida salva (`al_item`) **por 1 porção**: o total ÷ quantas (2 ovos de 180 kcal salvam "1 unidade" com 90 kcal). **Uma comida salva por nome:** mesmo nome atualiza a porção e os valores (vale a última, inclusive a correção), senão cria. Repetidas de antes dessa regra ("Arroz branco" com duas porções) viram uma só ao abrir o app: fica a mais usada, com os usos somados, e as outras saem da nuvem. Usar a comida salva depois abre a prévia com 1 porção para dizer quantas. O registro do dia copia os valores da porção: corrigir a comida salva depois não muda o que já foi comido.
-- Registro de hoje leva a hora; de outro dia, fica sem hora.
+- Registro leva a hora de agora (só se lança no dia de hoje). Registros antigos sem hora são de quando dava para lançar em outro dia.
 
 ## Lista do dia
 
@@ -45,7 +45,8 @@
 
 ## Dias
 
-- O app começa no 1º dia com algo registrado (comida ou "Andei"); sem nada, hoje. ‹ › trocam o dia mostrado: ‹ para no 1º dia, › para em hoje. Tudo (saldo, macros, lista, "Andei") é do dia mostrado, e o que for adicionado entra nele.
+- O app começa no 1º dia com algo registrado (comida ou "Andei"); sem nada, hoje. ‹ › trocam o dia mostrado: ‹ para no 1º dia, › para em hoje. Tudo (saldo, macros, lista, "Andei") é do dia mostrado.
+- **Dia passado é só leitura:** o campo de comida, as sugestões, as porções, apagar e a caminhada (campos, + e tirar trecho) ficam desativados; o campo diz "Dia fechado: só leitura". Só hoje aceita mudanças.
 - **Últimos 7 dias** (até hoje, sem dias antes do 1º dia do app): dia, kcal comidas e saldo final de cada dia fechado (verde déficit, vermelho superávit; sem comida, sem saldo). Hoje não tem saldo nem entra na média, porque ainda não fechou. Tocar abre o dia. Embaixo, a média do saldo dos dias fechados com comida registrada ("Média de 3 dias fechados: −480 kcal/dia").
 - Com o app aberto na virada do dia, ao voltar para ele "Hoje" passa a ser o dia novo.
 

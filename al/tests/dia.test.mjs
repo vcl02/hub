@@ -179,7 +179,7 @@ test('quarta e quinta sem caminhada automática; dia no formato antigo (total do
   antiga.tabelas.al_dia.push({ user_id: 'x', data: '2026-09-17', andou: true, minutos: '40', km: null });
   const b = await abrirApp({ nuvem: antiga });
   await b.pg.click('#d-ant');
-  assert.deepEqual(await trechos(b.pg), ['40 min ×']);
+  assert.deepEqual(await trechos(b.pg), ['40 min']);                    // dia passado: só leitura, sem ×
   assert.equal(await texto(b.pg, '#c-kcal'), '−132 kcal');
   await b.ctx.close();
 });
@@ -288,7 +288,7 @@ test('app novo começa hoje: sem dia anterior para ver e só hoje nos últimos 7
   await ctx.close();
 });
 
-test('dias anteriores: ‹ e os últimos 7 dias mostram o dia, com saldo e média dos dias com comida', async () => {
+test('dias anteriores: ‹ e os últimos 7 dias mostram o dia, com saldo e média dos dias com comida; dia passado é só leitura', async () => {
   const nuvem = comTreino(novaNuvem());
   nuvem.tabelas.al_registro.push({ user_id: 'x', id: 'r1', data: '2026-09-17', hora: '20:00', item_id: null, nome: 'Pizza', porcao: '4 fatias', qtd: '1', kcal: '1100', prot: '44', carb: '120', gord: '48' });
   const { ctx, pg } = await abrirApp({ nuvem });
@@ -306,9 +306,12 @@ test('dias anteriores: ‹ e os últimos 7 dias mostram o dia, com saldo e médi
   assert.equal(await texto(pg, '#s-valor'), '1.298');                  // dia fechado: saldo final, sem sinal (o rótulo diz)
   assert.equal(await texto(pg, '#s-rotulo'), 'kcal de déficit');
   assert.deepEqual(await linhasDe(pg, '#s-conta'), ['Meta 500 kcal déficit 1.898 kcal', 'Comi 1.100 kcal', 'Gastei 2.398 kcal']);
-  await pg.click('#c-mais');                                           // caminhada lançada depois, no dia passado: sem horário
-  assert.deepEqual(await trechos(pg), ['20 min ×']);
-  assert.deepEqual(await linhasDe(pg, '#s-conta'), ['Meta 500 kcal déficit 1.964 kcal', 'Comi 1.100 kcal', 'Gastei 2.464 kcal']);
+  // Só leitura: campo de comida, sugestões, porções, apagar e a caminhada desativados; nada muda
+  for (const sel of ['#f-texto', '#f-enviar', '#c-min', '#c-km', '#c-mais', '#lista select', '#lista [data-apagar]']) assert.equal(await pg.isDisabled(sel), true, sel);
+  assert.equal(await pg.locator('#f-sugestoes li').count(), 0);
+  assert.equal(await pg.getAttribute('#f-texto', 'placeholder'), 'Dia fechado: só leitura');
+  await pg.evaluate(() => mudar(() => { db.registros = []; }));          // nem por código
+  assert.equal(await pg.locator('#lista li').count(), 1);
   await pg.click('#semana [data-dia="2026-09-18"]');
   assert.equal(await texto(pg, '#d-nome'), 'Hoje');
   await ctx.close();

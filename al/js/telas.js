@@ -4,13 +4,17 @@ let diaVisto = hoje(), previa = null;
 // 1º dia do app: o mais antigo com comida ou caminhada registrada (sem nada, hoje). Antes dele não há o que ver.
 const inicio = () => [hoje(), ...db.registros.map(r => r.data), ...db.dias.map(x => x.data)].reduce((a, b) => b < a ? b : a);
 
+// Dia passado é só leitura: nada da tela muda o que já fechou (comida, porções, apagar, caminhada)
+const passado = () => diaVisto !== hoje();
 function desenhar() {
   if (diaVisto > hoje()) diaVisto = hoje();
   if (diaVisto < inicio()) diaVisto = inicio();
+  if (passado()) previa = null;
+  ['f-texto', 'f-enviar', 'c-min', 'c-km', 'c-mais'].forEach(id => { $(id).disabled = passado(); });
   $('d-nome').textContent = nomeDoDia(diaVisto);
   $('d-ant').disabled = diaVisto <= inicio();
   $('d-prox').disabled = diaVisto >= hoje();
-  $('f-texto').placeholder = diaVisto === hoje() ? 'O que você comeu?' : 'O que você comeu neste dia?';
+  $('f-texto').placeholder = passado() ? 'Dia fechado: só leitura' : 'O que você comeu?';
   pintarSaldo(); pintarMacros(); pintarSugestoes(); pintarPrevia(); pintarLista(); pintarSemana();
 }
 
@@ -56,7 +60,7 @@ function pintarSaldo() {
   $('c-kcal').textContent = cam ? `−${inteiro(cam.kcal)} kcal` : '';
   $('c-lista').innerHTML = (cam?.trechos || []).map((t, i) => {
     const quanto = [t.minutos && `${valor(t.minutos)} min`, t.km && `${valor(t.km)} km`].filter(Boolean).join(' · ') || `${CAMINHADA_MIN_PADRAO} min`;
-    return `<li><button type="button" data-tirar-trecho="${i}" aria-label="Tirar trecho">${t.hora ? `${t.hora} · ` : ''}${quanto} ×</button></li>`;
+    return `<li><button type="button" data-tirar-trecho="${i}" aria-label="Tirar trecho"${passado() ? ' disabled' : ''}>${t.hora ? `${t.hora} · ` : ''}${quanto}${passado() ? '' : ' ×'}</button></li>`;
   }).join('');
 }
 
@@ -75,7 +79,7 @@ function pintarMacros() {
 
 // Sugestões enquanto digita (comidas salvas parecidas); com o campo vazio, as mais usadas.
 function pintarSugestoes() {
-  const t = $('f-texto').value.trim(), L = previa ? [] : t ? sugestoes(t) : frequentes();
+  const t = $('f-texto').value.trim(), L = previa || passado() ? [] : t ? sugestoes(t) : frequentes();
   $('f-sugestoes').innerHTML = L.map(i => `<li><button type="button" class="sug" data-item="${i.id}"><b>${esc(i.nome)}</b> <span>${esc(i.porcao)}</span> <i>${inteiro(i.kcal)} kcal</i></button></li>`).join('');
 }
 
@@ -112,7 +116,7 @@ function pintarLista() {
     <span class="l-hora">${r.hora || ''}</span>
     <span class="l-txt"><b>${esc(r.nome)}</b> <small>${r.qtd !== 1 ? fmtQtd(r.qtd) + ' × ' : ''}${esc(r.porcao)}</small> <small class="l-mac">P ${umaCasa(r.prot * r.qtd)} · C ${umaCasa(r.carb * r.qtd)} · G ${umaCasa(r.gord * r.qtd)}</small></span>
     <span class="l-kcal">${inteiro(r.kcal * r.qtd)} <small>kcal</small></span>
-    <span class="l-acoes"><select data-qtd="${r.id}" title="Porções" aria-label="Porções">${[...new Set([...QTDS, r.qtd])].sort((a, b) => a - b).map(q => `<option value="${q}"${q === r.qtd ? ' selected' : ''}>${fmtQtd(q)}×</option>`).join('')}</select>${btIcone('lixo', 'Apagar', `data-apagar="${r.id}"`, 'perigo')}</span>
+    <span class="l-acoes"><select data-qtd="${r.id}" title="Porções" aria-label="Porções"${passado() ? ' disabled' : ''}>${[...new Set([...QTDS, r.qtd])].sort((a, b) => a - b).map(q => `<option value="${q}"${q === r.qtd ? ' selected' : ''}>${fmtQtd(q)}×</option>`).join('')}</select>${btIcone('lixo', 'Apagar', `data-apagar="${r.id}"${passado() ? ' disabled' : ''}`, 'perigo')}</span>
   </li>`).join('');
 }
 
@@ -129,7 +133,7 @@ function pintarSemana() {
 }
 
 // ===== Interações =====
-function mudar(acao) { acao(); gravar(); desenhar(); }
+function mudar(acao) { if (passado()) return; acao(); gravar(); desenhar(); }   // dia passado: só leitura
 
 $('d-ant').addEventListener('click', () => { if (diaVisto > inicio()) { diaVisto = somaDias(diaVisto, -1); previa = null; desenhar(); } });
 $('d-prox').addEventListener('click', () => { if (diaVisto < hoje()) { diaVisto = somaDias(diaVisto, 1); previa = null; desenhar(); } });
