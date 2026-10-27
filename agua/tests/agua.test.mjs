@@ -93,6 +93,28 @@ test('lembretes: presencial (qua e qui) e fim de semana de 2 em 2 horas; antes d
   await ctx.close();
 });
 
+test('cópia do aparelho num formato antigo (com xixis) não sobe por cima da nuvem nem apaga o dia', async () => {
+  // O que aconteceu em 27/10/2026: o celular tinha a base e a cópia da versão com xixi; hoje só com xixi (sem água).
+  // A nuvem já tinha a água de hoje (lançada em outro aparelho) e uma bebida em ontem que a cópia não conhecia.
+  const nuvem = novaNuvem();
+  nuvem.tabelas.agua_dia.push(
+    { user_id: DONO, data: '2026-10-18', aguas: [{ hora: '10:00', ml: 300 }, { hora: '12:27', ml: 132, bebida: 'suco', volume: 150 }] },
+    { user_id: DONO, data: '2026-10-19', aguas: [{ hora: '08:30', ml: 500 }] });
+  const antigo = ([dono, base, local]) => {
+    if (sessionStorage.getItem('semeado')) return;
+    sessionStorage.setItem('semeado', '1');
+    localStorage.setItem('agua.base.' + dono, JSON.stringify(base)); localStorage.setItem('agua.db.' + dono, JSON.stringify(local));
+  };
+  const dias = [{ data: '2026-10-18', aguas: [{ hora: '10:00', ml: 300 }], xixis: [] }, { data: '2026-10-19', aguas: [], xixis: ['08:00'] }];
+  const base = Object.fromEntries(dias.map(d => [d.data, d]));
+  const { ctx, pg, erros } = await abrirApp({ nuvem, iniciar: [antigo, [DONO, base, { dias }]] });
+  await sincronizado(pg);
+  assert.equal(await texto(pg, '#t-ml'), '500');                           // a água de hoje, da nuvem
+  assert.deepEqual(nuvem.tabelas.agua_dia.map(x => [x.data, x.aguas.length]).sort(), [['2026-10-18', 2], ['2026-10-19', 1]]);   // nada apagado
+  assert.equal(nuvem.tabelas.agua_dia.find(x => x.data === '2026-10-18').aguas[1].bebida, 'suco');   // nem sobrescrito
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
 test('últimos 7 dias, sem internet e tabela ainda não criada', async () => {
   const nuvem = novaNuvem();
   nuvem.tabelas.agua_dia.push({ user_id: DONO, data: '2026-10-18', aguas: [{ hora: '10:00', ml: 1200 }] });

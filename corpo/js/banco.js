@@ -23,6 +23,12 @@ function linhas(d) {   // db → { tabela: { data: linha } }
 }
 // base das versões antigas (só pesagens, { data: linha }) → formato com as duas tabelas
 const baseCompat = b => !b ? null : b.corpo_medida ? b : { corpo_medida: b, corpo_dia: {} };
+// Base guardada no aparelho passa pela mesma limpeza do db antes de comparar: depois de uma mudança de formato (ex.: xixis
+// que entraram), a base antiga não pode parecer "diferente" do db e fazer a cópia velha do aparelho subir por cima da nuvem.
+function baseNormal(b) {
+  b = baseCompat(b);
+  return b ? linhas(preparar({ medidas: Object.values(b.corpo_medida || {}), dias: Object.values(b.corpo_dia || {}) })) : null;
+}
 function diferenca(a, b) {   // o que enviar para sair de a e chegar em b; null = nada
   let n = 0; const up = {}, del = {};
   for (const t in TABELAS) {

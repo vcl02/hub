@@ -27,6 +27,9 @@ function deLinhas(R) {   // linhas do servidor → db (numeric chega como texto 
     dias: R.al_dia
   });
 }
+// Base guardada no aparelho passa pela mesma limpeza do db antes de comparar: depois de uma mudança de formato, a base
+// antiga não pode parecer "diferente" do db e fazer a cópia velha do aparelho subir por cima da nuvem (nem apagar nada lá).
+const baseNormal = b => b && typeof b === 'object' ? linhas(deLinhas(Object.fromEntries(ORDEM.map(t => [t, Object.values(b[t] || {})])))) : null;
 function diferenca(a, b) {   // o que enviar para o servidor sair de a e chegar em b; null = nada
   let n = 0; const up = {}, del = {};
   for (const t of ORDEM) {

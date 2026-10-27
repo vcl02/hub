@@ -12,7 +12,7 @@ async function carregar(u) {
   if (u.id !== DONO) { try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {} telaLogin('Esta conta não tem acesso.'); return; }
   usuario = u;
   let local = null;
-  try { local = JSON.parse(store.get(K_LOCAL(u.id))); base = JSON.parse(store.get(K_BASE(u.id))); tr = JSON.parse(store.get(K_TR(u.id))) || tr; } catch (e) { local = null; }
+  try { local = JSON.parse(store.get(K_LOCAL(u.id))); base = baseNormal(JSON.parse(store.get(K_BASE(u.id)))); tr = JSON.parse(store.get(K_TR(u.id))) || tr; } catch (e) { local = null; }
   try { bebidas = JSON.parse(store.get(K_BEBIDAS(u.id))) || {}; } catch (e) { bebidas = {}; }
   medidas = medidasGuardadas(u.id);
   if (local) { db = preparar(local); abrirDia(); }

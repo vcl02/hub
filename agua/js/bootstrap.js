@@ -12,7 +12,7 @@ async function carregar(u) {
   if (u.id !== DONO) { try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {} telaLogin('Esta conta não tem acesso.'); return; }
   usuario = u;
   let local = null;
-  try { local = JSON.parse(store.get(K_LOCAL(u.id))); base = JSON.parse(store.get(K_BASE(u.id))); } catch (e) { local = null; }
+  try { local = JSON.parse(store.get(K_LOCAL(u.id))); base = baseNormal(JSON.parse(store.get(K_BASE(u.id)))); } catch (e) { local = null; }
   if (local) { db = preparar(local); abrirAgua(); }
   if (local && temPendente()) await enviar();
   try {

@@ -17,7 +17,7 @@ async function carregar(u) {
   if (u.id !== DONO) { try { await sb.auth.signOut({ scope: 'local' }); } catch (e) {} telaLogin('Esta conta não tem acesso.'); return; }
   usuario = u;
   let local = null;
-  try { local = JSON.parse(store.get(K_LOCAL(u.id))); base = baseCompat(JSON.parse(store.get(K_BASE(u.id)))); } catch (e) { local = null; }
+  try { local = JSON.parse(store.get(K_LOCAL(u.id))); base = baseNormal(JSON.parse(store.get(K_BASE(u.id)))); } catch (e) { local = null; }
   try { aguas = JSON.parse(store.get(K_AGUAS(u.id))) || {}; } catch (e) { aguas = {}; }
   if (local) { db = preparar(local); abrirCorpo(); }
   if (local && temPendente()) await enviar();

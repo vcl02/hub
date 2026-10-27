@@ -9,6 +9,10 @@ let db = null, usuario = null, base = null, enviando = false, tEnvio = null, err
 function linhas(d) {   // db → { data: linha }; listas copiadas: a base não pode mudar junto quando o dia muda
   return Object.fromEntries(d.dias.map(x => [x.data, { data: x.data, aguas: x.aguas.map(a => ({ ...a })) }]));
 }
+// Base guardada no aparelho passa pela mesma limpeza do db antes de comparar: depois de uma mudança de formato (ex.: xixis
+// que saíram), a base antiga não pode parecer "diferente" do db e fazer a cópia velha do aparelho subir por cima da nuvem
+// (nem apagar na nuvem um dia que só a limpeza tirou do db).
+const baseNormal = b => b && typeof b === 'object' ? linhas(preparar({ dias: Object.values(b) })) : null;
 function diferenca(a, b) {   // o que enviar para sair de a e chegar em b; null = nada
   const up = Object.entries(b).filter(([k, l]) => JSON.stringify(a?.[k]) !== JSON.stringify(l)).map(([, l]) => l);
   const del = Object.keys(a || {}).filter(k => !(k in b));
