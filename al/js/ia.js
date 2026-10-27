@@ -24,6 +24,10 @@ async function perguntarIA(texto) {
   return itens;
 }
 
+// Total comido ÷ quantas porções = os valores de 1 porção (o que fica salvo para reusar), com 2 casas para porção × qtd
+// voltar ao total da tela
+const porQtd = (v, q) => Math.round(v / q * 100) / 100;
+const porPorcao = (x, q) => ({ nome: x.nome, porcao: x.porcao, kcal: porQtd(x.kcal, q), prot: porQtd(x.prot, q), carb: porQtd(x.carb, q), gord: porQtd(x.gord, q) });
 // Salva no cache (al_item): mesmo nome e porção atualiza os valores, senão cria. Devolve o item.
 function salvarItem(x) {
   const achado = db.itens.find(i => normal(i.nome) === normal(x.nome) && normal(i.porcao) === normal(x.porcao));

@@ -5,7 +5,7 @@ import { prepararApp, abrirApp, novaNuvem, comTreino, sincronizado, texto, app, 
 
 prepararApp();
 
-const OVO = { nome: 'Ovo mexido', porcao: '2 unidades (~100 g)', kcal: 180, prot: 12.5, carb: 1.2, gord: 14 };
+const OVO = { nome: 'Ovo mexido', porcao: '1 unidade (~50 g)', qtd: 2, kcal: 180, prot: 12.5, carb: 1.2, gord: 14 };   // 2 ovos: total
 const PAO = { nome: 'Pão francês', porcao: '1 unidade (~50 g)', kcal: 150, prot: 4.7, carb: 29.3, gord: 1.5 };
 const iaCom = (...itens) => () => ({ status: 200, corpo: { itens } });
 const linhasDe = (pg, sel) => pg.$$eval(`${sel} > span`, L => L.map(x => x.textContent.replace(/\s+/g, ' ').trim()));
@@ -76,7 +76,7 @@ test('sem pesagem no Corpo não há gasto nem saldo, só o que foi comido', asyn
   await ctx.close();
 });
 
-test('IA: a frase vira itens na prévia, dá pra corrigir antes de adicionar e o corrigido fica salvo para a próxima vez', async () => {
+test('IA: a frase vira itens na prévia (quantas × porção, com o total), dá pra corrigir; hoje entra o total e fica salva 1 porção', async () => {
   const nuvem = comTreino(novaNuvem());
   nuvem.ia = iaCom(OVO, PAO);
   const { ctx, pg, erros } = await abrirApp({ nuvem });
@@ -84,12 +84,14 @@ test('IA: a frase vira itens na prévia, dá pra corrigir antes de adicionar e o
   await pg.waitForSelector('#previa:not([hidden])');
   assert.equal(nuvem.chamadasIA, 1);
   assert.equal(await pg.locator('#p-lista li').count(), 2);
+  assert.deepEqual([await pg.inputValue('#p-lista li:first-child [data-campo="qtd"]'), await pg.inputValue('#p-lista li:first-child [data-campo="porcao"]'),
+    await pg.inputValue('#p-lista li:first-child [data-campo="kcal"]')], ['2', '1 unidade (~50 g)', '180']);   // o total dos 2
   await pg.fill('#p-lista li:nth-child(2) [data-campo="kcal"]', '140');   // corrige o pão
   await pg.click('#p-adicionar');
   await pg.waitForSelector('#previa', { state: 'hidden' });
   assert.equal(await pg.inputValue('#f-texto'), '');
   assert.equal(await pg.locator('#lista li').count(), 2);
-  assert.match(await texto(pg, '#lista li:first-child'), /^15:30 Ovo mexido 2 unidades \(~100 g\) P 12,5 · C 1,2 · G 14 180 kcal/);
+  assert.match(await texto(pg, '#lista li:first-child'), /^15:30 Ovo mexido 2 × 1 unidade \(~50 g\) P 12,5 · C 1,2 · G 14 180 kcal/);
   // 180 + 140 = 320 comidos · meta 2106 − 320 = 1786 restam
   assert.equal(await texto(pg, '#s-valor'), '1.786');
   // Metas: proteína 1,6 × 100 kg = 160 g · gordura 25% de 2106 ÷ 9 = 59 g · carboidrato (2106 − 640 − 531) ÷ 4 = 234 g
@@ -100,9 +102,11 @@ test('IA: a frase vira itens na prévia, dá pra corrigir antes de adicionar e o
   const larg = await pg.$$eval('#macros .m-barra', B => B.map(b => Math.round(b.firstElementChild.getBoundingClientRect().width / b.getBoundingClientRect().width * 100)));
   assert.deepEqual(larg, [11, 13, 27]);
   await sincronizado(pg);
-  assert.deepEqual(nuvem.tabelas.al_item.map(i => [i.nome, i.kcal, i.usos]).sort(), [['Ovo mexido', 180, 1], ['Pão francês', 140, 1]]);
+  // Salvas por 1 porção: o ovo fica com 90 kcal (180 ÷ 2); o registro de hoje tem qtd 2
+  assert.deepEqual(nuvem.tabelas.al_item.map(i => [i.nome, i.porcao, i.kcal, i.prot, i.usos]).sort(), [['Ovo mexido', '1 unidade (~50 g)', 90, 6.25, 1], ['Pão francês', '1 unidade (~50 g)', 140, 4.7, 1]]);
   assert.equal(nuvem.tabelas.al_registro.length, 2);
-  assert.ok(nuvem.tabelas.al_registro.every(r => r.data === DIA && r.hora === '15:30' && r.qtd === 1));
+  assert.ok(nuvem.tabelas.al_registro.every(r => r.data === DIA && r.hora === '15:30'));
+  assert.deepEqual(nuvem.tabelas.al_registro.map(r => [r.nome, r.qtd, r.kcal]).sort(), [['Ovo mexido', 2, 90], ['Pão francês', 1, 140]]);
 
   // Da próxima vez: sugestão ao digitar e nome igual adicionam direto, sem chamar a IA
   await pg.fill('#f-texto', 'ovo');
@@ -110,7 +114,7 @@ test('IA: a frase vira itens na prévia, dá pra corrigir antes de adicionar e o
   await descrever(pg, 'pão FRANCES');
   assert.equal(await pg.locator('#lista li').count(), 4);
   assert.equal(nuvem.chamadasIA, 1);
-  assert.equal(await texto(pg, '#s-valor'), '1.466');   // 2106 − 320 × 2
+  assert.equal(await texto(pg, '#s-valor'), '1.556');   // 2106 − 320 − 1 ovo (90) − 1 pão (140)
   // Campo vazio: as mais usadas
   assert.deepEqual(await pg.$$eval('#f-sugestoes b', bs => bs.map(b => b.textContent)), ['Ovo mexido', 'Pão francês']);
   assert.deepEqual(erros, []);

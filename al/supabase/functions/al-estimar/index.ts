@@ -3,7 +3,7 @@
 // repositório, que é público. Sem o secret, recusa tudo (503).
 // Só a conta do Victor usa: a sessão do Supabase (Authorization: Bearer) é conferida no Auth antes de qualquer coisa.
 // Limite de chamadas por dia em public.al_uso, gravado com a própria sessão (o RLS só libera o Victor).
-// POST { texto } -> { itens: [{ nome, porcao, kcal, prot, carb, gord }] }
+// POST { texto } -> { itens: [{ nome, porcao, qtd, kcal, prot, carb, gord }] }   porcao = 1 porção, qtd = quantas, valores = total comido
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import Anthropic from "npm:@anthropic-ai/sdk@0.133.0";
 
@@ -26,8 +26,9 @@ const INSTRUCOES = `Você estima calorias e macronutrientes do que uma pessoa co
 Separe a descrição em itens, um por alimento ou preparo (ex.: "2 ovos mexidos e um pão francês" = 2 itens).
 Para cada item:
 - nome: curto, sem a quantidade (ex.: "Ovo mexido", "Pão francês").
-- porcao: a quantidade descrita com o peso aproximado em gramas ou ml (ex.: "2 unidades (~100 g)", "1 concha (~140 g)"). Se a quantidade não foi dita, assuma a porção comum de um adulto no Brasil e escreva qual foi.
-- kcal, prot, carb, gord: totais da porção inteira (kcal, e gramas de proteína, carboidrato e gordura), com valores típicos de tabelas brasileiras de composição de alimentos (como a TACO) e de rótulos comuns. Considere o preparo (frito, com óleo, com açúcar) quando ele for dito.
+- porcao: UMA porção do alimento, com o peso aproximado em gramas ou ml (ex.: "1 unidade (~50 g)", "1 concha (~140 g)", "1 fatia (~30 g)", "100 g").
+- qtd: quantas dessas porções a pessoa comeu (ex.: "2 ovos" = porcao "1 unidade (~50 g)" e qtd 2; "200 g de arroz" = porcao "100 g" e qtd 2; "meia pizza" de 8 fatias = porcao "1 fatia (~100 g)" e qtd 4). Se a quantidade não foi dita, assuma a porção comum de um adulto no Brasil, com qtd 1.
+- kcal, prot, carb, gord: totais do que foi comido, ou seja, qtd porções (kcal, e gramas de proteína, carboidrato e gordura), com valores típicos de tabelas brasileiras de composição de alimentos (como a TACO) e de rótulos comuns. Considere o preparo (frito, com óleo, com açúcar) quando ele for dito.
 Arredonde kcal para inteiro e os gramas para uma casa decimal. As kcal devem bater, aproximadamente, com 4 × proteína + 4 × carboidrato + 9 × gordura.
 Se a descrição não for comida nem bebida, devolva a lista vazia.`;
 
@@ -41,12 +42,13 @@ const ESQUEMA = {
         properties: {
           nome: { type: "string" },
           porcao: { type: "string" },
+          qtd: { type: "number" },
           kcal: { type: "number" },
           prot: { type: "number" },
           carb: { type: "number" },
           gord: { type: "number" },
         },
-        required: ["nome", "porcao", "kcal", "prot", "carb", "gord"],
+        required: ["nome", "porcao", "qtd", "kcal", "prot", "carb", "gord"],
         additionalProperties: false,
       },
     },
@@ -75,6 +77,7 @@ function limpar(bruto: unknown) {
     return {
       nome: texto(x.nome, 60),
       porcao: texto(x.porcao, 60),
+      qtd: numero(x.qtd, 20, 2) || 1,   // quantas porções (sem ou zero = 1), no limite do al_registro
       kcal: numero(x.kcal, 5000, 0),
       prot: numero(x.prot, 500, 1),
       carb: numero(x.carb, 500, 1),

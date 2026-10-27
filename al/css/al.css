@@ -113,7 +113,10 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 .previa li{display:flex;flex-direction:column;gap:6px;padding-bottom:12px;border-bottom:1px solid var(--line)}
 .previa input{width:100%;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
 .p-nome{display:grid;grid-template-columns:1fr auto;gap:6px}
-.p-nome [data-campo="porcao"]{grid-column:1/-1;grid-row:2}   /* porção numa linha só dela: "2 unidades (~100 g)" inteira */
+.p-porcao{grid-column:1/-1;display:flex;align-items:center;gap:6px}   /* "2 × 1 unidade (~50 g)": quantas porções e a porção */
+.p-porcao [data-campo="qtd"]{width:3.5em;flex:none;text-align:right}
+.p-porcao [data-campo="porcao"]{flex:1;min-width:0}
+.p-porcao small{color:var(--muted)}
 .p-num{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .p-num label{display:flex;flex-direction:column;gap:2px;font-size:.75rem;color:var(--muted)}
 

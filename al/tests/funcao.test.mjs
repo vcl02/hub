@@ -94,23 +94,23 @@ test('limite do dia: na 40ª chamada já feita devolve 429 sem chamar a IA; ante
 
 test('pede ao Haiku com saída em JSON e devolve os itens limpos e arredondados', async () => {
   const bruto = { itens: [
-    { nome: '  Ovo   mexido ', porcao: '2 unidades (~100 g)', kcal: 180.4, prot: 12.46, carb: 1.23, gord: 14 },
+    { nome: '  Ovo   mexido ', porcao: '1 unidade (~50 g)', qtd: 2, kcal: 180.4, prot: 12.46, carb: 1.23, gord: 14 },
     { nome: '', porcao: 'x', kcal: 1, prot: 1, carb: 1, gord: 1 },
-    { nome: 'Feijoada', porcao: 'prato', kcal: 99999, prot: -3, carb: 'abc', gord: 30 },
+    { nome: 'Feijoada', porcao: 'prato', qtd: 0, kcal: 99999, prot: -3, carb: 'abc', gord: 30 },
   ] };
   const { handler, sdk } = carregar({ resposta: () => ({ stop_reason: 'end_turn', content: [{ type: 'thinking', thinking: '' }, { type: 'text', text: JSON.stringify(bruto) }] }) });
   const r = await ler(await handler(pedido({ texto: '2 ovos mexidos e feijoada' })));
   assert.equal(r.status, 200);
   assert.deepEqual(r.corpo.itens, [
-    { nome: 'Ovo mexido', porcao: '2 unidades (~100 g)', kcal: 180, prot: 12.5, carb: 1.2, gord: 14 },
-    { nome: 'Feijoada', porcao: 'prato', kcal: 5000, prot: 0, carb: 0, gord: 30 },
+    { nome: 'Ovo mexido', porcao: '1 unidade (~50 g)', qtd: 2, kcal: 180, prot: 12.5, carb: 1.2, gord: 14 },
+    { nome: 'Feijoada', porcao: 'prato', qtd: 1, kcal: 5000, prot: 0, carb: 0, gord: 30 },   // qtd ausente ou zero = 1
   ]);
   const p = sdk.pedidos[0];
   assert.equal(sdk.opcoes.apiKey, 'chave-teste');
   assert.equal(p.model, 'claude-haiku-5-5');
   assert.equal(p.output_config.effort, 'low');
   assert.equal(p.output_config.format.type, 'json_schema');
-  assert.deepEqual(daqui(p.output_config.format.schema.properties.itens.items.required), ['nome', 'porcao', 'kcal', 'prot', 'carb', 'gord']);
+  assert.deepEqual(daqui(p.output_config.format.schema.properties.itens.items.required), ['nome', 'porcao', 'qtd', 'kcal', 'prot', 'carb', 'gord']);
   assert.deepEqual(daqui(p.messages), [{ role: 'user', content: '2 ovos mexidos e feijoada' }]);
   assert.equal(p.temperature, undefined);   // o Haiku 5.5 recusa parâmetros de amostragem
 });

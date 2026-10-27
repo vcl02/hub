@@ -32,9 +32,9 @@
 
 - Um campo: "O que você comeu?". Enter (ou +) envia.
 - **Comida salva primeiro:** enquanto digita, aparecem as comidas salvas que têm todas as palavras digitadas (sem acento e maiúsculas), as mais usadas primeiro; tocar adiciona 1 porção. Com o campo vazio, aparecem as 8 mais usadas. Texto igual ao nome de uma comida salva adiciona direto. Nada disso chama a IA.
-- **IA:** texto novo vai para a IA (Edge Function `al-estimar`, Claude Haiku), que separa em itens com porção (com gramas aproximados) e valores estimados de tabelas brasileiras. Abre a **prévia**: cada item com nome, porção, kcal, P, C e G editáveis, e × para tirar. "Adicionar" registra; "Cancelar" descarta.
+- **IA:** texto novo vai para a IA (Edge Function `al-estimar`, Claude Haiku), que separa em itens com **1 porção** (com gramas aproximados), **quantas porções** foram comidas e os valores estimados de tabelas brasileiras **do total comido**. Abre a **prévia**: cada item com nome, quantas × porção ("2 × 1 unidade (~50 g)") e kcal, P, C e G do total, todos editáveis, e × para tirar. "Adicionar" registra; "Cancelar" descarta.
 - **Sem IA** (sem internet, IA fora do ar, limite do dia, nada reconhecido): aviso curto e a prévia abre com um item com o texto como nome, para digitar os valores.
-- Ao adicionar, cada item vira comida salva (`al_item`): mesmo nome e porção atualiza os valores (vale a correção), senão cria. O registro do dia copia os valores da porção: corrigir a comida salva depois não muda o que já foi comido.
+- Ao adicionar, **hoje entra o total comido** (a porção com a quantidade: "2 × 1 unidade", 180 kcal) e cada item vira comida salva (`al_item`) **por 1 porção**: o total ÷ quantas (2 ovos de 180 kcal salvam "1 unidade" com 90 kcal). Mesmo nome e porção atualiza os valores (vale a correção), senão cria. Usar a comida salva depois adiciona 1 porção (a quantidade muda na lista). O registro do dia copia os valores da porção: corrigir a comida salva depois não muda o que já foi comido.
 - Registro de hoje leva a hora; de outro dia, fica sem hora.
 
 ## Lista do dia

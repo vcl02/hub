@@ -73,13 +73,13 @@ function pintarSugestoes() {
   $('f-sugestoes').innerHTML = L.map(i => `<li><button type="button" class="sug" data-item="${i.id}"><b>${esc(i.nome)}</b> <span>${esc(i.porcao)}</span> <i>${inteiro(i.kcal)} kcal</i></button></li>`).join('');
 }
 
-// Prévia editável: nome, porção, kcal e gramas de cada item antes de adicionar
+// Prévia editável: nome, quantas porções × a porção, e o total comido (kcal e gramas) de cada item antes de adicionar
 const CAMPOS = [['kcal', 'kcal'], ['prot', 'P (g)'], ['carb', 'C (g)'], ['gord', 'G (g)']];
 function pintarPrevia() {
   $('previa').hidden = !previa;
   if (!previa) { $('p-lista').innerHTML = ''; return; }
   $('p-lista').innerHTML = previa.map((x, i) => `<li data-i="${i}">
-    <div class="p-nome"><input data-campo="nome" value="${esc(x.nome)}" maxlength="60" placeholder="Comida" aria-label="Comida"><input data-campo="porcao" value="${esc(x.porcao)}" maxlength="60" placeholder="Porção" aria-label="Porção">${btIcone('x', 'Tirar', `data-tirar="${i}"`)}</div>
+    <div class="p-nome"><input data-campo="nome" value="${esc(x.nome)}" maxlength="60" placeholder="Comida" aria-label="Comida">${btIcone('x', 'Tirar', `data-tirar="${i}"`)}<span class="p-porcao"><input data-campo="qtd" inputmode="decimal" value="${String(x.qtd ?? 1).replace('.', ',')}" aria-label="Quantas porções"><small>×</small><input data-campo="porcao" value="${esc(x.porcao)}" maxlength="60" placeholder="1 porção" aria-label="Uma porção"></span></div>
     <div class="p-num">${CAMPOS.map(([k, r]) => `<label><span>${r}</span><input data-campo="${k}" inputmode="decimal" value="${String(x[k]).replace('.', ',')}" aria-label="${r}"></label>`).join('')}</div>
   </li>`).join('');
 }
@@ -89,6 +89,7 @@ function lerPrevia() {
     li.querySelectorAll('input').forEach(inp => {
       const k = inp.dataset.campo;
       x[k] = k === 'nome' || k === 'porcao' ? inp.value.trim().slice(0, 60) : Math.max(0, num(inp.value) || 0);
+      if (k === 'qtd') x.qtd = x.qtd > 0 ? Math.min(x.qtd, 20) : 1;   // quantas porções: vazio ou zero = 1, até 20 (o limite do al_registro)
     });
   });
 }
@@ -167,7 +168,7 @@ $('f-comer').addEventListener('submit', async ev => {
   if (igual) { mudar(() => comer(igual, diaVisto)); $('f-texto').value = ''; pintarSugestoes(); toast(`${igual.nome} adicionado`); return; }
   perguntando = true; $('f-carregando').hidden = false; $('f-enviar').disabled = true;
   try { previa = (await perguntarIA(texto)).map(x => ({ ...x })); }
-  catch (e) { toast(e.message, true); previa = [{ nome: texto.slice(0, 60), porcao: '', kcal: 0, prot: 0, carb: 0, gord: 0 }]; }
+  catch (e) { toast(e.message, true); previa = [{ nome: texto.slice(0, 60), porcao: '', qtd: 1, kcal: 0, prot: 0, carb: 0, gord: 0 }]; }
   finally { perguntando = false; $('f-carregando').hidden = true; $('f-enviar').disabled = false; }
   desenhar();
   $('p-lista').querySelector('input')?.focus();
@@ -185,7 +186,8 @@ $('p-adicionar').addEventListener('click', () => {
   lerPrevia();
   const validos = previa.filter(x => x.nome);
   if (!validos.length) { toast('Dê um nome à comida.', true); return; }
-  mudar(() => { for (const x of validos) comer(salvarItem(x), diaVisto); previa = null; });
+  // Hoje entra o total comido (porção × qtd); a comida salva para as próximas vezes fica por 1 porção (o total ÷ qtd)
+  mudar(() => { for (const x of validos) { const q = x.qtd > 0 ? x.qtd : 1; comer(salvarItem(porPorcao(x, q)), diaVisto, q); } previa = null; });
   $('f-texto').value = ''; pintarSugestoes();
   toast(validos.length === 1 ? `${validos[0].nome} adicionado` : `${validos.length} itens adicionados`);
 });
