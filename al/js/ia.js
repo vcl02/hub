@@ -8,7 +8,8 @@ function sugestoes(texto, max = 6) {
     .sort((a, b) => b.usos - a.usos || a.nome.localeCompare(b.nome)).slice(0, max);
 }
 const frequentes = (max = 8) => [...db.itens].filter(i => i.usos > 0).sort((a, b) => b.usos - a.usos || a.nome.localeCompare(b.nome)).slice(0, max);
-const itemIgual = texto => db.itens.find(i => normal(i.nome) === normal(texto));
+// Comidas salvas com o nome igual ao digitado (uma por medida: "Feijão · 1 concha pequena" e "Feijão · 1 concha normal")
+const itensIguais = texto => db.itens.filter(i => normal(i.nome) === normal(texto)).sort((a, b) => b.usos - a.usos);
 
 // Pergunta à IA. Devolve os itens ou lança um erro com a mensagem para a tela.
 async function perguntarIA(texto) {
@@ -28,23 +29,24 @@ async function perguntarIA(texto) {
 // voltar ao total da tela
 const porQtd = (v, q) => Math.round(v / q * 100) / 100;
 const porPorcao = (x, q) => ({ nome: x.nome, porcao: x.porcao, kcal: porQtd(x.kcal, q), prot: porQtd(x.prot, q), carb: porQtd(x.carb, q), gord: porQtd(x.gord, q) });
-// Salva no cache (al_item): uma comida salva por nome. Mesmo nome atualiza a porção e os valores (vale a última), senão cria.
-// Devolve o item.
+// Salva no cache (al_item): uma comida salva por nome + medida (1 unidade dela). Mesmo nome e mesma medida atualiza os valores
+// (vale a correção); medida nova cria outra ("1 concha pequena" e "1 concha normal" de feijão ficam separadas). Devolve o item.
+const mesmaComida = (a, b) => normal(a.nome) === normal(b.nome) && normal(a.porcao) === normal(b.porcao);
 function salvarItem(x) {
-  const achado = db.itens.find(i => normal(i.nome) === normal(x.nome));
-  if (achado) { Object.assign(achado, { porcao: x.porcao }, macros(x)); return achado; }
+  const achado = db.itens.find(i => mesmaComida(i, x));
+  if (achado) { Object.assign(achado, macros(x)); return achado; }
   const novo = { id: novoId(), nome: x.nome, porcao: x.porcao, ...macros(x), usos: 0 };
   db.itens.push(novo);
   return novo;
 }
-// Uma comida salva por nome: as repetidas (de antes dessa regra, uma por porção) viram uma só, a mais usada, com os usos
-// somados; os registros que apontavam para as outras passam a apontar para ela (os valores do registro não mudam).
+// Repetidas de verdade (mesmo nome e mesma medida) viram uma só, a mais usada, com os usos somados; os registros que apontavam
+// para as outras passam a apontar para ela (os valores do registro não mudam). Medidas diferentes ficam separadas.
 // Devolve se mudou algo (aí é preciso gravar: as repetidas saem da nuvem também).
 function unirRepetidas() {
   const ficou = {}, sai = new Set();
   for (const i of [...db.itens].sort((a, b) => b.usos - a.usos)) {
-    const f = ficou[normal(i.nome)];
-    if (!f) { ficou[normal(i.nome)] = i; continue; }
+    const k = normal(i.nome) + '|' + normal(i.porcao), f = ficou[k];
+    if (!f) { ficou[k] = i; continue; }
     f.usos += i.usos; sai.add(i.id);
     db.registros.forEach(r => { if (r.item === i.id) r.item = f.id; });
   }

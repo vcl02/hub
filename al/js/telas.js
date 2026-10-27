@@ -195,8 +195,10 @@ $('f-comer').addEventListener('submit', async ev => {
   ev.preventDefault();
   const texto = $('f-texto').value.trim();
   if (!texto || perguntando) return;
-  const igual = itemIgual(texto);
-  if (igual) { preverSalva(igual); return; }
+  // Nome igual a uma comida salva: uma medida só abre a prévia; mais de uma, escolhe nas sugestões (que já mostram as medidas)
+  const iguais = itensIguais(texto);
+  if (iguais.length === 1) { preverSalva(iguais[0]); return; }
+  if (iguais.length > 1) { toast('Escolha a medida nas sugestões'); return; }
   perguntando = true; $('f-carregando').hidden = false; $('f-enviar').disabled = true;
   try { previa = (await perguntarIA(texto)).map(itemDaPrevia); }
   catch (e) { toast(e.message, true); previa = [itemDaPrevia({ nome: texto.slice(0, 60), porcao: '', qtd: 1, kcal: 0, prot: 0, carb: 0, gord: 0 })]; }

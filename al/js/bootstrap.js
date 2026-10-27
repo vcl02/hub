@@ -27,7 +27,7 @@ async function carregar(u) {
     erroSync = e.message || String(e);
     if (!local) { telaLogin('Sem conexão com a nuvem. Tente de novo.'); return; }
   }
-  if (unirRepetidas()) gravar();   // comidas salvas repetidas (uma por porção, de antes): ficam uma por nome
+  if (unirRepetidas()) gravar();   // comidas salvas repetidas (mesmo nome e mesma medida): ficam uma só
   abrirDia(); pintarSync();
 }
 

@@ -134,22 +134,26 @@ test('IA: a frase vira itens na prévia (quantas × porção, com o total), dá 
   await ctx.close();
 });
 
-test('uma comida salva por nome: repetidas de antes viram uma só (a mais usada) e a IA atualiza a porção da mesma', async () => {
+test('comida salva por nome + medida: medidas diferentes ficam separadas; repetidas iguais viram uma só', async () => {
   const nuvem = comTreino(novaNuvem());
-  const arroz = (id, porcao, kcal, usos) => ({ user_id: 'x', id, nome: 'Arroz branco', porcao, kcal, prot: 2, carb: 30, gord: 0, usos });
-  nuvem.tabelas.al_item.push(arroz('a1', '4,5 colheres de sopa (~112 g)', 140, 1), arroz('a2', '7 colheres de sopa (~175 g)', 220, 3));
-  nuvem.tabelas.al_registro.push({ user_id: 'x', id: 'r1', data: '2026-09-17', hora: '12:00', item_id: 'a1', nome: 'Arroz branco', porcao: '4,5 colheres de sopa (~112 g)', qtd: 1, kcal: 140, prot: 2, carb: 30, gord: 0 });
-  nuvem.ia = iaCom({ nome: 'arroz BRANCO', porcao: '1 colher de sopa (~25 g)', qtd: 4, kcal: 128, prot: 2.4, carb: 28, gord: 0.4 });
+  const feijao = (id, porcao, kcal, usos) => ({ user_id: 'x', id, nome: 'Feijão', porcao, kcal, prot: 3, carb: 9, gord: 0.3, usos });
+  nuvem.tabelas.al_item.push(feijao('f1', '1 concha pequena (~70 g)', 53, 2), feijao('f2', '1 concha pequena (~70 g)', 53, 1));
+  nuvem.tabelas.al_registro.push({ user_id: 'x', id: 'r1', data: '2026-09-17', hora: '12:00', item_id: 'f2', nome: 'Feijão', porcao: '1 concha pequena (~70 g)', qtd: 1, kcal: 53, prot: 3, carb: 9, gord: 0.3 });
+  nuvem.ia = iaCom({ nome: 'feijão', porcao: '1 concha normal (~100 g)', qtd: 1, kcal: 76, prot: 4.8, carb: 13.6, gord: 0.5 });
   const { ctx, pg, erros } = await abrirApp({ nuvem });
   await sincronizado(pg);
-  assert.deepEqual(nuvem.tabelas.al_item.map(i => [i.id, i.porcao, i.usos]), [['a2', '7 colheres de sopa (~175 g)', 4]]);   // a mais usada, usos somados
-  assert.deepEqual(nuvem.tabelas.al_registro.map(r => [r.item_id, r.kcal]), [['a2', 140]]);                               // o que foi comido não muda
-  await pg.fill('#f-texto', 'arroz');
-  assert.equal(await pg.locator('#f-sugestoes [data-item]').count(), 1);
-  await descrever(pg, '4 colheres de arroz branco');                    // a IA: a mesma comida salva, agora por 1 colher
+  assert.deepEqual(nuvem.tabelas.al_item.map(i => [i.id, i.usos]), [['f1', 3]]);                // mesma medida: uma só, usos somados
+  assert.deepEqual(nuvem.tabelas.al_registro.map(r => [r.item_id, r.kcal]), [['f1', 53]]);      // o que foi comido não muda
+  await descrever(pg, '1 concha normal de feijão');                    // medida nova: outra comida salva
   await pg.click('#p-adicionar');
   await sincronizado(pg);
-  assert.deepEqual(nuvem.tabelas.al_item.map(i => [i.id, i.porcao, i.kcal, i.usos]), [['a2', '1 colher de sopa (~25 g)', 32, 5]]);
+  assert.deepEqual(nuvem.tabelas.al_item.map(i => [i.nome, i.porcao, i.kcal]).sort(), [['Feijão', '1 concha pequena (~70 g)', 53], ['feijão', '1 concha normal (~100 g)', 76]]);
+  await pg.fill('#f-texto', 'feijao');
+  assert.equal(await pg.locator('#f-sugestoes [data-item]').count(), 2);   // as duas medidas
+  await pg.press('#f-texto', 'Enter');                                     // nome igual com 2 medidas: escolhe na sugestão
+  assert.equal(await texto(pg, '#toast'), 'Escolha a medida nas sugestões');
+  assert.equal(await pg.isVisible('#previa'), false);
+  assert.equal(nuvem.chamadasIA, 1);
   assert.deepEqual(erros, []);
   await ctx.close();
 });
