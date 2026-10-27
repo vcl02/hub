@@ -47,8 +47,8 @@ function desenhar() {
   pintarEvacuacao();
   // Evolução: só os últimos 90 dias (até hoje)
   const desde = somaDias(hoje(), -(DIAS_GRAFICO - 1)), janela = L => L.filter(x => x.data >= desde).reverse();
-  grafico($('c-grafico'), janela(P).map(x => ({ data: x.data, valor: x.peso })), 'kg', 'Evolução do peso');
-  grafico($('c-grafico-cint'), janela(C).map(x => ({ data: x.data, valor: x.cintura })), 'cm', 'Evolução da barriga');
+  grafico($('c-grafico'), janela(P).map(x => ({ data: x.data, hora: x.hora, valor: x.peso })), 'kg', 'Evolução do peso');
+  grafico($('c-grafico-cint'), janela(C).map(x => ({ data: x.data, hora: x.hora, valor: x.cintura })), 'cm', 'Evolução da barriga');
   pintarHistorico();
 }
 

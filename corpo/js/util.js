@@ -46,7 +46,7 @@ function confirmar(btn) {   // toque duplo: o 1º só deixa o botão vermelho (3
 // ===== Gráfico de linha (peso ou barriga) =====
 // Eixo horizontal pela data (a distância entre os pontos é a distância entre os dias), com 3 datas marcadas: a 1ª, a do
 // meio e a última. Eixo vertical com 3 valores: o menor, o do meio e o maior, cada um com sua linha tracejada.
-function grafico(box, P, unidade, rotulo) {   // P = [{ data, valor }] em ordem cronológica
+function grafico(box, P, unidade, rotulo) {   // P = [{ data, valor, hora? }] em ordem cronológica
   // Com menos de 2 pontos não há linha: some o gráfico e o título dele (h3 logo antes), sem caixa vazia
   const titulo = box.previousElementSibling?.matches('h3.sec') ? box.previousElementSibling : null;
   box.hidden = P.length < 2; if (titulo) titulo.hidden = box.hidden;
@@ -76,12 +76,13 @@ function grafico(box, P, unidade, rotulo) {   // P = [{ data, valor }] em ordem 
       <text font-size="11" fill="var(--fg)" text-anchor="middle"></text>
     </g>
   </svg>`;
-  // Mouse em cima (ou dedo encostado/arrastando, no celular): data e valor do ponto mais perto, com uma linha até ele
+  // Mouse em cima (ou dedo encostado/arrastando, no celular): data, horário (se houver) e valor do ponto mais perto, com uma
+  // linha até ele
   const svg = box.querySelector('svg'), dica = svg.querySelector('.dica');
   const mostrar = ev => {
     const caixa = svg.getBoundingClientRect(), vx = (ev.clientX - caixa.left) * W / caixa.width;
     const i = P.reduce((m, p, k) => Math.abs(x(p.data) - vx) < Math.abs(x(P[m].data) - vx) ? k : m, 0), px = x(P[i].data), py = y(P[i].valor);
-    const txt = `${dataCurta(P[i].data)} · ${fmt(P[i].valor)} ${unidade}`, larg = txt.length * 6 + 14;
+    const txt = `${dataCurta(P[i].data)}${P[i].hora ? ' ' + P[i].hora : ''} · ${fmt(P[i].valor)} ${unidade}`, larg = txt.length * 6 + 14;
     const cx = Math.min(W - r - larg / 2, Math.max(l + larg / 2, px)), ty = py - 30 < 0 ? py + 12 : py - 30;
     dica.querySelector('line').setAttribute('x1', px); dica.querySelector('line').setAttribute('x2', px);
     dica.querySelector('circle').setAttribute('cx', px); dica.querySelector('circle').setAttribute('cy', py);
