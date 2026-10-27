@@ -12,11 +12,11 @@ const html = ler('index.html');
 const habitos = [...html.matchAll(/<a class="app habito" href="([^"]+)" data-habito="([a-z]+)" style="--cor:#[0-9A-F]{6}">\s*<img class="app-icone" src="([^"]+)"/g)].map(m => ({ href: m[1], id: m[2], icone: m[3] }));
 const atalhos = [...html.matchAll(/<a class="app atalho" href="([^"]+)" style="--cor:#[0-9A-F]{6}">\s*<img class="app-icone" src="([^"]+)"/g)].map(m => ({ href: m[1], icone: m[2] }));
 
-test('um hábito por linha (os de habitos.js) e o Fin como atalho; cada um aponta para uma pasta com index.html e um ícone que existe', () => {
-  assert.deepEqual(habitos.map(h => [h.id, h.href]), [['treino', 'tr/'], ['deficit', 'al/'], ['corpo', 'corpo/'], ['agua', 'agua/']]);
+test('um hábito por linha (os de habitos.js, o Fin pela Besteira); cada um aponta para uma pasta com index.html e um ícone que existe', () => {
+  assert.deepEqual(habitos.map(h => [h.id, h.href]), [['treino', 'tr/'], ['deficit', 'al/'], ['corpo', 'corpo/'], ['agua', 'agua/'], ['besteira', 'fin/']]);
   const lista = [...ler('habitos.js').matchAll(/\{ id: '([a-z]+)', nome: '[^']+', pasta: '([^']+)' \}/g)].map(m => [m[1], m[2]]);
   assert.deepEqual(lista, habitos.map(h => [h.id, h.href]));            // mesma lista e ordem do habitos.js
-  assert.deepEqual(atalhos.map(a => a.href), ['fin/']);                 // os externos (class externo) à parte
+  assert.deepEqual(atalhos.map(a => a.href), []);                       // o Fin virou o hábito Besteira; os externos (class externo) à parte
   for (const { href, icone } of [...habitos, ...atalhos]) {
     assert.ok(existe(`${href}index.html`), href);
     assert.ok(existe(icone), icone);

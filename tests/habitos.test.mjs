@@ -11,18 +11,18 @@ const RAIZ = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ler = arquivo => readFileSync(path.join(RAIZ, arquivo), 'utf8');
 const ctx = vm.createContext({});
 for (const f of ['corpo/perfil.js', 'al/gasto.js', 'habitos.js']) vm.runInContext(ler(f), ctx, { filename: f });
-const H = vm.runInContext('({ calcularHabitos, resumoDeHoje, estadoNoDia, HABITOS, META_AGUA_ML, PROTECOES_MAX, LANCADO_NO_DIA_DESDE, gastoNoDia, metaKcal })', ctx);
+const H = vm.runInContext('({ calcularHabitos, resumoDeHoje, estadoNoDia, HABITOS, META_AGUA_ML, PROTECOES_MAX, LANCADO_NO_DIA_DESDE, LIMITE_BESTEIRA_DIA, gastoNoDia, metaKcal })', ctx);
 const json = x => JSON.parse(JSON.stringify(x));
 
 // Instante local (o hub usa o relógio do celular): dia AAAA-MM-DD e hora
 const as = (dia, h = 12) => { const [a, m, d] = dia.split('-').map(Number); return new Date(a, m - 1, d, h).getTime(); };
-const vazio = () => ({ treinos: [], comidas: {}, trechos: {}, medidas: [], sonos: {}, aguas: {} });
+const vazio = () => ({ treinos: [], comidas: {}, trechos: {}, medidas: [], sonos: {}, aguas: {}, besteiras: {} });
 const treino = dia => ({ inicio: as(dia, 18), fim: as(dia, 19) });
 // 2026-11: qua 4, qui 5; outubro: qua 21/28, qui 22/29
 const HOJE = '2026-11-05';
 
-test('lista de hábitos: treino, déficit, peso e sono (um só) e água, cada um com a pasta do app', () => {
-  assert.deepEqual(json(H.HABITOS.map(h => [h.id, h.pasta])), [['treino', 'tr/'], ['deficit', 'al/'], ['corpo', 'corpo/'], ['agua', 'agua/']]);
+test('lista de hábitos: treino, déficit, peso e sono (um só), água e besteira (Fin), cada um com a pasta do app', () => {
+  assert.deepEqual(json(H.HABITOS.map(h => [h.id, h.pasta])), [['treino', 'tr/'], ['deficit', 'al/'], ['corpo', 'corpo/'], ['agua', 'agua/'], ['besteira', 'fin/']]);
   assert.equal(H.META_AGUA_ML, +ler('agua/js/config.js').match(/const META_ML = (\d+);/)[1]);   // a mesma meta da Água
   assert.equal(H.PROTECOES_MAX, 2);
 });
@@ -64,6 +64,23 @@ test('peso e sono: um hábito só, feito com os dois lançados no próprio dia (
   D.medidas.push({ data: HOJE, hora: '07:00', peso: 100, pesoEm: iso(HOJE, 7) });
   assert.equal(dia(HOJE), 'feito');
   assert.equal(H.LANCADO_NO_DIA_DESDE, '2026-10-27');
+});
+
+test('besteira (Fin): qua e qui no máximo R$ 22 por dia; os outros dias são folga; antes de 27/10 não conta', () => {
+  const D = vazio();
+  const dia = (d, hoje = HOJE) => H.estadoNoDia('besteira', d, D, hoje);
+  D.besteiras = { '2026-11-04': 22, '2026-11-05': 22.01, '2026-11-02': 80 };
+  // 4/11 qua no limite: feito · 5/11 qui 1 centavo acima: falhou · 2/11 seg: folga, gaste o que for
+  assert.deepEqual([dia('2026-11-04'), dia('2026-11-05'), dia('2026-11-02')], ['feito', 'falhou', 'folga']);
+  assert.equal(dia('2026-11-11', '2026-11-11'), 'feito');                 // qua sem nada ainda: feito enquanto couber
+  const R = H.calcularHabitos({ ...D, aguas: { '2026-10-20': 1000 }, besteiras: { '2026-10-22': 50 } }, '2026-10-29');   // água desde 20/10
+  assert.equal(R.habitos.besteira.dias['2026-10-22'], 'antes');            // a meta começou em 27/10
+  assert.equal(R.habitos.besteira.dias['2026-10-28'], 'feito');
+  assert.equal(H.LIMITE_BESTEIRA_DIA, 22);
+  const r = json(H.resumoDeHoje({ ...D, besteiras: { '2026-11-04': 12.5 } }, '2026-11-04'));
+  assert.deepEqual([r.besteira.valor, r.besteira.progresso], ['R$\u00a012,50 / R$\u00a022', 12.5 / 22]);
+  assert.equal(json(H.resumoDeHoje({ ...D, besteiras: { '2026-11-04': 30 } }, '2026-11-04')).besteira.acima, true);
+  assert.equal(json(H.resumoDeHoje(D, '2026-11-02')).besteira.valor, 'Próximo: qua');
 });
 
 test('déficit: comido ≤ meta (gasto − 500); dia sem registro, com comida lançada depois ou acima da meta falha; hoje é feito enquanto couber', () => {

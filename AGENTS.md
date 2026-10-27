@@ -12,7 +12,7 @@
 
 | Caminho | O que é |
 |---|---|
-| `index.html` · `hub.css` · `hub.js` | Página inicial: login, os hábitos (uma linha por hábito, que abre o app) e os atalhos fixos embaixo (Fin, Agenda, Anotações). `hub.js` baixa os dados dos apps (só leitura) e desenha |
+| `index.html` · `hub.css` · `hub.js` | Página inicial: login, os hábitos (uma linha por hábito, que abre o app; o Fin pela Besteira) e os atalhos fixos embaixo (Agenda, Anotações). `hub.js` baixa os dados dos apps (só leitura) e desenha |
 | `habitos.js` | Regras dos hábitos, só funções puras: estado de cada dia, ofensivas, dias perfeitos, proteções e o resumo de hoje (testes em `tests/habitos.test.mjs`) |
 | `al/gasto.js` | Gasto e meta do dia (módulo do al), o mesmo no al e no hábito do déficit |
 | `agua/bebidas.js` | Bebidas da Água além da água (suco, refri, cappuccino, leite com Toddy): quanto é água e kcal/macros por 100 ml; a Água, o al e a página inicial carregam |
@@ -45,7 +45,7 @@
 
 ## Hábitos (página inicial)
 
-- Hábitos: **Treino** (quarta e quinta, `ROTINA.treino`; segunda não conta, nem treinando), **Déficit** (comido ≤ meta do dia = gasto − 500, pela mesma conta do al; comido inclui as bebidas da Água com calorias), **Peso e sono** (um hábito só, do Corpo, todo dia: feito com os dois lançados no dia; o 1º registro de qualquer um começa o hábito) e **Água** (1.000 ml, a meta da Água). Cada um abre o app dele.
+- Hábitos: **Treino** (quarta e quinta, `ROTINA.treino`; segunda não conta, nem treinando), **Déficit** (comido ≤ meta do dia = gasto − 500, pela mesma conta do al; comido inclui as bebidas da Água com calorias), **Peso e sono** (um hábito só, do Corpo, todo dia: feito com os dois lançados no dia; o 1º registro de qualquer um começa o hábito) **Água** (1.000 ml, a meta da Água) e **Besteira** (Fin: nos dias presenciais, qua e qui, `ROTINA.presencial`, no máximo R$ 22 por dia na categoria Besteira, pela data da compra e pela mesma regra do teto de Besteira do Fin; o gasto só sobe, então hoje é feito enquanto couber e falha na hora em que passa; os outros dias são folga; começou em 27/10/2026). Cada um abre o app dele.
 - **Lançado no dia:** a partir de 27/10/2026, só conta o que foi lançado no próprio dia. Peso e sono pelo instante gravado pelo Corpo (`peso_em`, `sono_em`); comida e caminhada do al pela hora (o al grava sem hora o que é lançado em outro dia): dia com comida lançada depois falha, e caminhada lançada depois não sobe a meta. Água só se lança no dia. Antes de 27/10, tudo conta como lançado no dia.
 - **Déficit:** hoje conta como feito enquanto o comido couber na meta (com pelo menos um registro); passou da meta, volta a pendente (treino ou caminhada ainda podem subir a meta) e à meia-noite o dia fecha. Sem nenhum registro de comida no dia, falha.
 - Estados de cada dia: feito, falhou, protegido, pendente (hoje), folga (dia sem o hábito) e antes (antes do 1º registro do hábito).
@@ -53,8 +53,8 @@
 - Faixa de 7 dias em cada hábito (de 6 dias atrás até hoje): verde = feito, vermelho = falhou, azul = protegido, as mesmas em todos os hábitos (a cor do app fica só no ícone), contorno = hoje pendente, fina = folga, apagada = antes do 1º registro.
 - **Dia perfeito:** todos os hábitos feitos (treino pode ser folga), sem proteção; o de hoje conta quando tudo já está feito. No topo, os dias perfeitos seguidos e os últimos 7 dias.
 - **Proteções:** +1 a cada semana de treino perfeita (quarta e quinta feitas, contada na quinta), no máximo 2 guardadas. Dia que falha gasta uma automaticamente, na ordem dos hábitos, e fica protegido. Tudo é recalculado dos dados a cada abertura, sem tabela própria.
-- Dados: o hub só lê (`tr_treino`, `al_registro`, `al_dia`, `corpo_medida` por `lerMedidas`, `corpo_dia`, `agua_dia`), com cópia em `hub-habitos.<conta>` para abrir sem internet; tabela que falha fica com a cópia. Busca de novo ao voltar para a página. O que um app ainda não enviou à nuvem (sem internet, ou a página fechada antes do envio de 0,8 s) só aparece aqui depois de enviado.
-- Atalhos sem hábito, fixos embaixo: Fin (o gráfico dele vem na fase de gráficos), Agenda e Anotações.
+- Dados: o hub só lê (`tr_treino`, `al_registro`, `al_dia`, `corpo_medida` por `lerMedidas`, `corpo_dia`, `agua_dia`, `fin` só a categoria Besteira), com cópia em `hub-habitos.<conta>` para abrir sem internet; tabela que falha fica com a cópia. Busca de novo ao voltar para a página. O que um app ainda não enviou à nuvem (sem internet, ou a página fechada antes do envio de 0,8 s) só aparece aqui depois de enviado.
+- Atalhos sem hábito, fixos embaixo: Agenda e Anotações. O Fin abre pelo hábito Besteira (o gráfico dele vem na fase de gráficos).
 
 ## Atalho externo
 

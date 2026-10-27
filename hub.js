@@ -43,7 +43,7 @@ function entrou(usuario) {
 // Cada tabela que falhar (sem internet, tabela ainda não criada) fica com a cópia; as pesagens vêm por corpo/perfil.js.
 const K_HABITOS = id => 'hub-habitos.' + id;
 let dados = null;
-const dadosVazios = () => ({ treinos: [], comidas: {}, bebidas: {}, trechos: {}, medidas: [], sonos: {}, aguas: {} });
+const dadosVazios = () => ({ treinos: [], comidas: {}, bebidas: {}, trechos: {}, medidas: [], sonos: {}, aguas: {}, besteiras: {} });
 const dataOk = d => /^\d{4}-\d{2}-\d{2}$/.test(d);
 const horaOk = h => /^\d{2}:\d{2}$/.test(h) ? h : '';
 async function todas(tabela) {
@@ -72,6 +72,21 @@ const FONTES = {
   medidas: () => lerMedidas(sb, conta),
   sonos: async () => porDia(await todas('corpo_dia'), x => x.sono == null || isNaN(+x.sono) ? null : { sono: +x.sono, ...(x.sono_em && { sonoEm: x.sono_em }) }),
   aguas: async () => porDia(await todas('agua_dia'), x => Array.isArray(x.aguas) ? x.aguas.reduce((s, a) => s + (+a.ml || 0), 0) : null),
+  // Besteira do Fin: soma por dia (data da compra) dos gastos com a categoria Besteira, pela mesma regra do teto de Besteira
+  // do Fin (contaNoTeto em fin/js/charts.js): valor negativo, categoria "Besteira" como item inteiro da lista separada por
+  // vírgula (sem acento), fora a antecipação de fatura
+  besteiras: async () => {
+    const R = [];
+    for (let i = 0; ; i += 1000) {
+      const { data, error } = await sb.from('fin').select('data,valor,categ,nome,cred').ilike('categ', '%besteira%').range(i, i + 999);
+      if (error) throw error;
+      R.push(...data); if (data.length < 1000) break;
+    }
+    const sem = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    const antecipacao = s => sem(s).includes('antecipacao') && sem(s).includes('fatura');
+    return R.filter(r => dataOk(r.data) && +r.valor < 0 && String(r.categ ?? '').split(',').some(c => sem(c) === 'besteira') && !(!r.cred && (antecipacao(r.categ) || antecipacao(r.nome))))
+      .reduce((o, r) => { o[r.data] = Math.round(((o[r.data] || 0) - +r.valor) * 100) / 100; return o; }, {});
+  },
   // Bebidas da Água (suco, refri…): kcal por agua/bebidas.js, contam como comido no déficit (lançadas sempre no dia, com hora)
   bebidas: async () => porDia(await todas('agua_dia'), x => {
     const L = (Array.isArray(x.aguas) ? x.aguas : []).map(a => ({ hora: horaOk(a?.hora), n: nutrientesBebida(a) })).filter(b => b.n);

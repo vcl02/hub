@@ -8,18 +8,24 @@
 //         trechos:  { dia: [{ hora, minutos?, km? }] }      al_dia.caminhadas (hora '' = lançado depois do dia)
 //         medidas:  [{ data, hora, peso?, cintura?, pesoEm? }]   corpo_medida, por ordenarMedidas (corpo/perfil.js)
 //         sonos:    { dia: { sono, sonoEm? } }               corpo_dia
-//         aguas:    { dia: ml } }                           agua_dia (soma do dia)
+//         aguas:    { dia: ml }                             agua_dia (soma do dia)
+//         besteiras:{ dia: reais } }                        fin: gastos com a categoria Besteira, pela data da compra
 // Estados de um hábito num dia: feito, falhou, protegido (falhou, mas uma proteção segurou a ofensiva), pendente (hoje, ainda
 // dá tempo), folga (dia sem o hábito, como terça no treino) e antes (antes do primeiro registro do hábito).
 const LANCADO_NO_DIA_DESDE = '2026-10-27';   // antes disso não se sabia quando cada coisa foi lançada: tudo conta como no dia
 const META_AGUA_ML = 1000;                   // a mesma META_ML de agua/js/config.js (o teste confere)
 const PROTECOES_MAX = 2;                     // proteções guardadas, no máximo
+// Besteira (Fin): nos dias presenciais (qua e qui, ROTINA.presencial), no máximo R$ 22 na categoria Besteira por dia.
+// A meta começou em 27/10/2026: antes disso, nada conta.
+const LIMITE_BESTEIRA_DIA = 22;
+const BESTEIRA_DESDE = '2026-10-27';
 
 const HABITOS = Object.freeze([
   { id: 'treino', nome: 'Treino', pasta: 'tr/' },
   { id: 'deficit', nome: 'Déficit', pasta: 'al/' },
   { id: 'corpo', nome: 'Peso e sono', pasta: 'corpo/' },   // os dois lançados no dia
-  { id: 'agua', nome: 'Água', pasta: 'agua/' }
+  { id: 'agua', nome: 'Água', pasta: 'agua/' },
+  { id: 'besteira', nome: 'Besteira', pasta: 'fin/' }   // qua e qui: até R$ 22 em besteira
 ]);
 
 const diaMais = (dia, n) => { const [a, m, d] = dia.split('-').map(Number); return diaDoInstante(new Date(a, m - 1, d + n, 12).getTime()); };
@@ -48,11 +54,16 @@ function estadoNoDia(id, dia, D, hoje) {
     const pesou = !!m && lancadoNoDia(m.pesoEm, dia), dormiu = !!s && s.sono != null && lancadoNoDia(s.sonoEm, dia);
     return pesou && dormiu ? 'feito' : aindaDa;
   }
+  if (id === 'besteira') {   // só qua e qui; o gasto só sobe: hoje é feito enquanto couber, passou do limite já falhou
+    if (!ROTINA.presencial.includes(semanaDoDia(dia))) return 'folga';
+    return (D.besteiras?.[dia] || 0) <= LIMITE_BESTEIRA_DIA ? 'feito' : 'falhou';
+  }
   return (D.aguas[dia] || 0) >= META_AGUA_ML ? 'feito' : aindaDa;
 }
 
 // Primeiro dia com registro de cada hábito (sem nenhum, hoje): antes dele o hábito não existia. Peso e sono: o 1º de qualquer um
 function primeiroDia(id, D, hoje) {
+  if (id === 'besteira') return BESTEIRA_DESDE < hoje ? BESTEIRA_DESDE : hoje;
   const L = id === 'treino' ? D.treinos.map(t => diaDoInstante(t.inicio)) : id === 'deficit' ? Object.keys(D.comidas)
     : id === 'corpo' ? [...D.medidas.filter(m => m.peso).map(m => m.data), ...Object.keys(D.sonos).filter(d => D.sonos[d].sono != null)]
     : Object.keys(D.aguas).filter(d => D.aguas[d] > 0);
@@ -115,12 +126,17 @@ function resumoDeHoje(D, hoje) {
   const treinou = D.treinos.some(t => diaDoInstante(t.inicio) === hoje);
   const c = contaDoDia(D, hoje), resta = c.meta == null ? null : c.meta - c.comido;
   const m = D.medidas.find(x => x.data === hoje && x.peso), s = D.sonos[hoje], ml = D.aguas[hoje] || 0;
+  const presencial = ROTINA.presencial.includes(wd), gastou = D.besteiras?.[hoje] || 0;
+  const proximoPresencial = [1, 2, 3, 4, 5, 6, 7].map(n => (wd + n) % 7).find(x => ROTINA.presencial.includes(x));
+  const reais = v => 'R$\u00a0' + v.toLocaleString('pt-BR', { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 });
   return {
     treino: { valor: treinou ? 'Treinou' : ROTINA.treino.includes(wd) ? 'Dia de treino' : `Próximo: ${NOMES_SEMANA[proximo]}` },
     deficit: resta == null ? { valor: 'Sem pesagem' } : resta >= 0
       ? { valor: `${milhar(resta)} kcal restantes`, progresso: c.meta ? c.comido / c.meta : 0 }
       : { valor: `${milhar(-resta)} kcal acima`, progresso: 1, acima: true },
     corpo: { valor: `${m ? `${decimal(m.peso)} kg` : 'Pesar hoje'} · ${s && s.sono != null ? `${decimal(s.sono)} h` : 'Registrar sono'}` },
-    agua: { valor: `${milhar(ml)} / ${milhar(META_AGUA_ML)} ml`, progresso: Math.min(1, ml / META_AGUA_ML) }
+    agua: { valor: `${milhar(ml)} / ${milhar(META_AGUA_ML)} ml`, progresso: Math.min(1, ml / META_AGUA_ML) },
+    besteira: !presencial ? { valor: `Próximo: ${NOMES_SEMANA[proximoPresencial]}` }
+      : { valor: `${reais(gastou)} / ${reais(LIMITE_BESTEIRA_DIA)}`, progresso: Math.min(1, gastou / LIMITE_BESTEIRA_DIA), ...(gastou > LIMITE_BESTEIRA_DIA && { acima: true }) }
   };
 }
