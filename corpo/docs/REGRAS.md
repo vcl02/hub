@@ -18,12 +18,21 @@
 - **Quando o peso foi lançado** (`peso_em`, migration 03): o instante em que o dia ganhou um peso, pelo relógio do celular (no formulário ou no lápis do histórico). Corrigir o peso do mesmo dia mantém o primeiro lançamento; mudar a medida de dia pelo lápis é lançamento novo no dia de destino; só barriga não tem. Os hábitos da página inicial do hub só contam pesagem lançada no próprio dia (a partir de 27/10/2026).
 - **Horário de sempre:** o da pesagem mais recente com horário. Mais de 1 h longe dele: aviso (só recomenda, salva igual).
 
-## Sono e evacuações
+## Sono, evacuações e xixi
 
-- Cartão logo abaixo do formulário, para o mesmo dia escolhido nele, gravado em `corpo_dia` (1 linha por dia; dia sem sono nem evacuação não fica guardado).
+- Cartão logo abaixo do formulário, para o mesmo dia escolhido nele, gravado em `corpo_dia` (1 linha por dia; dia sem sono, evacuação nem xixi não fica guardado).
 - **Sono:** horas (de 0 a 24, vírgula aceita), salvas ao sair do campo; vazio tira. Guarda quando foi lançado (`sono_em`, migration 03): o primeiro lançamento do dia fica (corrigir as horas não muda), e tirar o sono tira junto. O hábito do sono no hub só conta sono lançado no próprio dia.
 - **Evacuação:** quantas no dia e um **+1**, que grava com o horário de agora (o do celular, fuso de São Paulo). Cada horário aparece como etiqueta; tocar duas vezes tira. O "sim" antigo (migration 01) aparece como "sem horário".
 - Sem linha da última evacuação. Só com 3 dias ou mais desde a última aparece, em vermelho, "3 dias sem evacuar (última em 19/10)" (prisão de ventre é comum em dieta: fibra e água).
+- **Xixi:** quantos no dia e um **+1** com o horário de agora, como a evacuação; tocar duas vezes tira. Veio da Água (migration 04 copiou os xixis de `agua_dia` para `corpo_dia.xixis`).
+
+## Bexiga
+
+- Só contando (sem medir cada xixi) não dá para saber o volume da bexiga. O cartão mostra o que dá para tirar disso, dos últimos 7 dias com xixi registrado (hoje entra se já tiver xixi):
+  - **xixis por dia** (média);
+  - **intervalo** médio entre um xixi e o seguinte no mesmo dia ("2 h 53");
+  - **ml bebidos por xixi** (água desses dias, lida da Água em `agua_dia`, ÷ xixis; sem água registrada, "—").
+- Sem nenhum xixi: "Registre os xixis para ver aqui." Sem a tabela `corpo_dia`, o cartão some junto com o do dia.
 - Sem a tabela `corpo_dia` ou sem as colunas da migration 02 no banco, o cartão some e o resto do Corpo funciona normal.
 
 ## Peso atual

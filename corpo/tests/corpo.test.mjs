@@ -83,6 +83,7 @@ test('gráficos: com o mouse em cima (ou o dedo) mostram a data, o horário e o 
   [['2026-10-15', 104, ''], ['2026-10-18', 103.1, '07:40'], ['2026-10-21', 102.3, '']].forEach(([data, peso, hora]) => nuvem.tabelas.corpo_medida.push({ user_id: DONO, data, hora, peso, cintura: null }));
   const { ctx, pg } = await abrirApp({ nuvem });
   assert.equal(await pg.getAttribute('#c-grafico .dica', 'visibility'), 'hidden');
+  await pg.locator('#c-grafico svg').scrollIntoViewIfNeeded();             // o mouse só alcança o que está na tela
   const caixa = await pg.locator('#c-grafico svg').boundingBox();
   await pg.mouse.move(caixa.x + caixa.width * 0.55, caixa.y + caixa.height / 2);   // perto do ponto do meio
   assert.equal(await pg.getAttribute('#c-grafico .dica', 'visibility'), 'visible');
@@ -157,11 +158,38 @@ test('evacuação: +1 grava com o horário de agora, conta, tira com toque duplo
   assert.deepEqual(erros, []); await ctx.close();
 });
 
+test('xixi: +1 com o horário de agora, tira com toque duplo; bexiga com xixis por dia, intervalo e ml por xixi (água da Água)', async () => {
+  const nuvem = novaNuvem();
+  nuvem.tabelas.corpo_dia.push({ user_id: DONO, data: '2026-10-18', evacuacoes: [], xixis: ['09:00', '12:00', '15:00', '18:00'], sono: null });
+  nuvem.tabelas.agua_dia.push({ user_id: DONO, data: '2026-10-18', aguas: [{ hora: '10:00', ml: 500 }, { hora: '14:00', ml: 300 }] });
+  const { ctx, pg, erros } = await abrirApp({ nuvem });                 // 22/10, 08:00
+  const numeros = () => pg.$$eval('#bexiga .numeros li', L => L.map(x => x.textContent.replace(/\s+/g, ' ').trim()));
+  // só o dia 18: 4 xixis, 3 h entre um e outro, 800 ml ÷ 4 = 200 ml por xixi
+  assert.deepEqual(await numeros(), ['4 xixis por dia', '3 h entre um e outro', '200 ml bebidos por xixi']);
+  await pg.click('#x-mais');
+  await sincronizado(pg);
+  await pg.clock.fastForward('02:30:00'); await pg.click('#x-mais');   // 10:30
+  assert.equal(await texto(pg, '#x-total'), '2');
+  assert.deepEqual(await pg.$$eval('#x-horas button', B => B.map(b => b.textContent)), ['08:00 ×', '10:30 ×']);
+  // 18 e 22: (4 + 2) ÷ 2 = 3 por dia · intervalos 180, 180, 180, 150 → 173 min · 800 ÷ 6 = 133 ml
+  assert.deepEqual(await numeros(), ['3 xixis por dia', '2 h 53 entre um e outro', '133 ml bebidos por xixi']);
+  assert.equal(await texto(pg, '#bexiga .bx-nota'), 'Média de 2 dias com xixi registrado.');
+  await pg.click('[data-tirar-xixi="0"]'); await pg.click('[data-tirar-xixi="0"]');
+  assert.equal(await texto(pg, '#x-total'), '1');
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.corpo_dia.find(x => x.data === '2026-10-22').xixis, ['10:30']);
+  assert.equal(nuvem.tabelas.agua_dia.length, 1);                         // a água só é lida
+  assert.deepEqual(erros, []); await ctx.close();
+  const vazio = await abrirApp();
+  assert.equal(await texto(vazio.pg, '#bexiga'), 'Registre os xixis para ver aqui.');
+  await vazio.ctx.close();
+});
+
 test('sono: horas do dia escolhido (vírgula aceita), vazio tira; dia sem sono nem evacuação some', async () => {
   const { ctx, pg, nuvem } = await abrirApp();
   await pg.fill('#d-sono', '7,5'); await pg.locator('#d-sono').blur();
   await sincronizado(pg);
-  assert.deepEqual(nuvem.tabelas.corpo_dia.map(x => [x.data, x.sono, x.evacuacoes]), [['2026-10-22', 7.5, []]]);
+  assert.deepEqual(nuvem.tabelas.corpo_dia.map(x => [x.data, x.sono, x.evacuacoes, x.xixis]), [['2026-10-22', 7.5, [], []]]);
   await pg.fill('#d-sono', '30'); await pg.locator('#d-sono').blur();
   assert.equal(await texto(pg, '#toast'), 'Sono em horas, de 0 a 24');
   await pg.fill('#d-sono', ''); await pg.locator('#d-sono').blur();
@@ -175,6 +203,7 @@ test('sem a tabela corpo_dia (ou sem as colunas da migration 02): pesagens funci
   delete nuvem.tabelas.corpo_dia;                                          // o falso responde 404, como o PostgREST sem a tabela
   const { ctx, pg, erros } = await abrirApp({ nuvem });
   assert.equal(await pg.isVisible('#ev-cartao'), false);
+  assert.equal(await pg.isVisible('#bexiga'), false);
   await pg.fill('#c-peso', '90'); await pg.click('#c-form button[type=submit]');
   await sincronizado(pg);
   assert.equal(nuvem.tabelas.corpo_medida.length, 1);

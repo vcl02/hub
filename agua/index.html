@@ -27,7 +27,7 @@
   </form>
 </section>
 
-<!-- Hoje: total contra a meta, lembretes, beber (ml digitado ou botões das quantidades já usadas), xixi e a bexiga. Tudo por js/telas.js. -->
+<!-- Hoje: total contra a meta, lembretes, beber (ml digitado ou botões das quantidades já usadas) e 7 dias. Tudo por js/telas.js. -->
 <section id="v-agua" class="view" hidden>
   <header class="topo">
     <h1>Água</h1>
@@ -62,15 +62,6 @@
   </form>
   <ul class="botoes" id="b-botoes" aria-label="Quantidades já usadas"></ul>
   <ul class="eventos" id="b-lista" aria-label="Água de hoje"></ul>
-
-  <!-- Xixi: +1 com o horário de agora; tocar duas vezes num horário tira -->
-  <div class="cartao xixi">
-    <div class="linha"><span>Xixi <b id="x-total">0</b></span><button type="button" class="chip-bt" id="x-mais" title="Fiz xixi agora" aria-label="Fiz xixi agora">+1</button></div>
-    <ul class="eventos" id="x-lista" aria-label="Xixis de hoje"></ul>
-  </div>
-
-  <h3 class="sec">Bexiga</h3>
-  <div class="cartao" id="bexiga"></div>
 
   <h3 class="sec">Últimos 7 dias</h3>
   <div class="cartao" id="semana"></div>

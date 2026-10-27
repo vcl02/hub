@@ -11,7 +11,7 @@
 - **Beber:** digite os ml e toque em + (ou Enter): entra com o horário de agora (o do celular, fuso de São Paulo). De 1 a 3.000 ml por vez.
 - **Botões de ml:** não há quantidade fixa. Cada quantidade já digitada vira botão; aparecem as 6 mais usadas (em ordem de ml). Tocar num botão bebe aquela quantidade agora.
 - Embaixo, o que foi bebido hoje ("10:00 · 300 ml ×"); tocar duas vezes tira.
-- **Xixi:** contador e **+1** (horário de agora). Cada horário aparece como etiqueta; tocar duas vezes tira.
+- Xixi e bexiga ficam no Corpo (`../corpo/`), que lê a água daqui para os ml por xixi.
 
 ## Lembretes
 
@@ -27,14 +27,6 @@
 - Embaixo dos lembretes: **Ativar notificações** (pede a permissão e inscreve este aparelho). Ligadas: "Notificações ligadas". Permissão negada: "Notificações bloqueadas nas configurações do celular". Navegador sem notificação (iPhone fora da tela de início): a linha não aparece.
 - Cada aparelho ativado recebe; aparelho que o navegador desinscreveu sai sozinho da lista.
 
-## Bexiga
-
-- Só contando (sem medir cada xixi) não dá para saber o volume da bexiga. O app mostra o que dá para tirar disso, dos últimos 7 dias com xixi registrado (hoje entra se já tiver xixi):
-  - **xixis por dia** (média);
-  - **intervalo** médio entre um xixi e o seguinte no mesmo dia ("2 h 53");
-  - **ml bebidos por xixi** (água dos dias ÷ xixis).
-- Com esses números dá para ver quanto é possível beber por dia sem ir ao banheiro toda hora.
-
 ## Últimos 7 dias
 
-- Dia, ml (verde quando bateu a meta) e xixis.
+- Dia e ml (verde quando bateu a meta).

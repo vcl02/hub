@@ -3,7 +3,9 @@
   Corpo — pesagem e barriga dia a dia, IMC, evolução e o perfil (idade, altura, basal).
   Dados no Supabase (projeto fin, tabela corpo_medida), com cópia local para funcionar sem internet (js/banco.js):
     db = { medidas: [{ data, hora, peso?, cintura? }],   // corpo_medida: 1 por dia; peso em kg, cintura = barriga na linha do umbigo (cm)
-           dias:    [{ data, evacuacoes, sono? }] }      // corpo_dia: horários das evacuações ("HH:MM", "" = sem horário) e horas de sono
+           dias:    [{ data, evacuacoes, xixis, sono? }] }   // corpo_dia: horários das evacuações ("HH:MM", "" = sem horário),
+                                                         // dos xixis ("HH:MM") e horas de sono
+  Só leitura: a água do dia (agua_dia, do app Água), para a bexiga (ml bebidos por xixi), guardada no aparelho.
   Só este app grava corpo_medida. Treino e Alimentação leem pelo módulo compartilhado ../corpo/perfil.js (lerMedidas,
   medidasGuardadas, pesoNoDia), junto com PERFIL, idadeEm, tmb e kcalTreino.
 */
@@ -20,3 +22,4 @@ const emailDoLogin = texto => { const t = String(texto || '').trim(); return t.i
 const PESO_MIN = 30, PESO_MAX = 300;   // kg
 const CINTURA_MAX = 400;               // cm (sem trava baixa: qualquer medida > 0)
 const DIAS_GRAFICO = 90;              // evolução do peso e da barriga: os últimos 90 dias
+const DIAS_BEXIGA = 7;                // bexiga: média dos últimos 7 dias com xixi

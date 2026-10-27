@@ -65,7 +65,7 @@
     <button class="btn primario" type="submit">Salvar</button>
   </form>
 
-  <!-- O dia escolhido acima: horas de sono e evacuações (+1 com o horário; tocar num horário tira) e quando foi a última -->
+  <!-- O dia escolhido acima: horas de sono, evacuações e xixis (+1 com o horário; tocar num horário tira) e quando foi a última evacuação -->
   <div class="cartao evac" id="ev-cartao">
     <label class="dia-linha"><span>Sono</span><input id="d-sono" inputmode="decimal" placeholder="—" aria-label="Horas de sono"><small>h</small></label>
     <div class="dia-linha">
@@ -74,7 +74,16 @@
     </div>
     <ul class="ev-horas" id="ev-horas"></ul>
     <p class="evac-ultima" id="ev-ultima" hidden></p>
+    <div class="dia-linha">
+      <span>Xixi <b id="x-total">0</b></span>
+      <button type="button" class="chip-bt mais" id="x-mais" title="Fiz xixi agora" aria-label="Fiz xixi agora">+1</button>
+    </div>
+    <ul class="ev-horas" id="x-horas"></ul>
   </div>
+
+  <!-- Bexiga: xixis por dia, intervalo e ml bebidos por xixi (a água vem da Água) -->
+  <h3 class="sec" id="bx-titulo">Bexiga</h3>
+  <div class="cartao" id="bexiga"></div>
 
   <h3 class="sec">Evolução do peso</h3>
   <div id="c-grafico" class="cartao chart"></div>

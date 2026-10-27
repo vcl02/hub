@@ -18,13 +18,20 @@ async function carregar(u) {
   usuario = u;
   let local = null;
   try { local = JSON.parse(store.get(K_LOCAL(u.id))); base = baseCompat(JSON.parse(store.get(K_BASE(u.id)))); } catch (e) { local = null; }
+  try { aguas = JSON.parse(store.get(K_AGUAS(u.id))) || {}; } catch (e) { aguas = {}; }
   if (local) { db = preparar(local); abrirCorpo(); }
   if (local && temPendente()) await enviar();
   try {
     // corpo_dia que não existe (migration 01 não aplicada) não derruba o app: só as pesagens seguem.
     // '*': com ou sem as colunas peso_em e sono_em (migration 03), a leitura funciona
-    const [M, D] = await Promise.all([todas('corpo_medida', '*'), todas('corpo_dia', '*').then(L => { semCorpoDia = false; return L; }, () => { semCorpoDia = true; return []; })]);
+    // agua_dia (só leitura, para a bexiga): se falhar, fica a cópia do aparelho
+    const [M, D, A] = await Promise.all([todas('corpo_medida', '*'), todas('corpo_dia', '*').then(L => { semCorpoDia = false; return L; }, () => { semCorpoDia = true; return []; }),
+      todas('agua_dia', 'data,aguas').catch(() => null)]);
     if (usuario !== u) return;
+    if (A) {
+      aguas = Object.fromEntries(A.map(x => [x.data, (Array.isArray(x.aguas) ? x.aguas : []).reduce((s, a) => s + (+a?.ml > 0 ? +a.ml : 0), 0)]));
+      store.set(K_AGUAS(u.id), JSON.stringify(aguas));
+    }
     // Pendente que não subiu (sem internet) continua valendo: a nuvem só entra quando não há nada a enviar.
     if (!local || !temPendente()) {
       db = preparar({ medidas: M, dias: D }); base = linhas(db);

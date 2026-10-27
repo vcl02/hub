@@ -2,7 +2,7 @@
 
 ## Propósito e fontes de verdade
 
-- App estático (HTML/CSS/JavaScript clássico, sem build): água bebida (ml, com horário) e idas ao banheiro (xixi), para entender quanto dá para beber por dia sem ficar insustentável. Lembretes dentro do app e por notificação de verdade (Web Push), com as mesmas regras.
+- App estático (HTML/CSS/JavaScript clássico, sem build): água bebida (ml, com horário) contra a meta do dia. Xixi e bexiga ficam no Corpo, que lê `agua_dia` (só leitura) para os ml por xixi. Lembretes dentro do app e por notificação de verdade (Web Push), com as mesmas regras.
 - `docs/REGRAS.md` é a fonte de verdade das regras e do comportamento visível; `README.md` tem a implantação. Guia geral do hub em `../AGENTS.md`.
 
 ## Arquitetura
@@ -14,7 +14,7 @@
 
 ## Dados e segurança
 
-- Tabela `agua_dia` (1 linha por dia: `aguas` e `xixis` em listas), só a conta `DONO` (RLS `somente_dono` + restritiva `somente_victor`), `anon` sem acesso. Migration nova e numerada em `migrations/`, formato do DataGrip; o mantenedor aplica.
+- Tabela `agua_dia` (1 linha por dia: `aguas` em lista; `xixis` saiu para `corpo_dia` na migration `corpo/04`), só a conta `DONO` (RLS `somente_dono` + restritiva `somente_victor`), `anon` sem acesso. Migration nova e numerada em `migrations/`, formato do DataGrip; o mantenedor aplica.
 - Cópia local primeiro, envio por diferença (`js/banco.js`). As listas da base são cópias: editar o dia não pode mexer na base.
 - Notificações: Edge Function `supabase/functions/agua-lembrete` (deploy com `verify_jwt` desligado: o agendamento chama sem sessão) e migration `01` (`push_inscricao`, `push_chave`, pg_cron de hora em hora no minuto 1). Push sem conteúdo (o texto fica no `sw.js`), sem biblioteca de criptografia: só a assinatura VAPID (ES256, WebCrypto).
 - As chaves VAPID e o token do agendamento nascem na função e ficam só em `push_chave` (sem policy: só a chave de serviço e o banco leem). Nunca no código, no repositório nem no chat. A função repete `PRESENCIAL`, `INICIO`/`FIM` e `DONO` (Deno não carrega `../corpo/perfil.js`); os testes conferem que batem com o app.

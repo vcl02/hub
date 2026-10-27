@@ -1,6 +1,6 @@
 # Água (`agua`)
 
-Água bebida e xixis do dia, meta de 1 L, lembretes das 10 às 16 (no app e por notificação) e o que dá para entender da bexiga. Regras em `docs/REGRAS.md`; guia em `AGENTS.md`.
+Água bebida no dia, meta de 1 L e lembretes das 10 às 16 (no app e por notificação). Xixi e bexiga ficam no Corpo. Regras em `docs/REGRAS.md`; guia em `AGENTS.md`.
 
 ## Implantação (uma vez, feita pelo mantenedor)
 

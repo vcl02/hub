@@ -1,5 +1,6 @@
 'use strict';
-// Tela do corpo: peso atual (IMC, faixa, quanto falta, variação, barriga), perfil, nova medida, sono e evacuações, gráficos e histórico.
+// Tela do corpo: peso atual (IMC, faixa, quanto falta, variação, barriga), perfil, nova medida, sono, evacuações e xixis, bexiga,
+// gráficos e histórico.
 // IMC = peso / altura² · faixas da OMS para adultos, com os graus de magreza e de obesidade: [limite de cima (exclusivo), nome]
 const imc = peso => Math.round(peso / PERFIL.altura ** 2 * 10) / 10;
 const FAIXAS_IMC = [[16, 'Magreza III'], [17, 'Magreza II'], [18.5, 'Magreza I'], [25, 'Normal'], [30, 'Sobrepeso'],
@@ -44,7 +45,7 @@ function desenhar() {
   $('c-peso').placeholder = u ? virgula(u.peso) : '—';
   $('c-cintura').placeholder = C.length ? virgula(C[0].cintura) : '—';
   avisoHorario();
-  pintarEvacuacao();
+  pintarEvacuacao(); pintarBexiga();
   // Evolução: só os últimos 90 dias (até hoje)
   const desde = somaDias(hoje(), -(DIAS_GRAFICO - 1)), janela = L => L.filter(x => x.data >= desde).reverse();
   grafico($('c-grafico'), janela(P).map(x => ({ data: x.data, hora: x.hora, valor: x.peso })), 'kg', 'Evolução do peso');
@@ -62,19 +63,46 @@ function pintarEvacuacao() {
   if (document.activeElement !== $('d-sono')) $('d-sono').value = x?.sono != null ? virgula(x.sono) : '';
   $('ev-total').textContent = ev.length;
   $('ev-horas').innerHTML = ev.map((h, i) => `<li><button type="button" data-tirar-ev="${i}" title="Tirar (toque duplo)" aria-label="Tirar evacuação ${h || 'sem horário'}">${h || 'sem horário'} ×</button></li>`).join('');
+  const xx = x?.xixis || [];
+  $('x-total').textContent = xx.length;
+  $('x-horas').innerHTML = xx.map((h, i) => `<li><button type="button" data-tirar-xixi="${i}" title="Tirar (toque duplo)" aria-label="Tirar xixi das ${h}">${h} ×</button></li>`).join('');
   const ultima = [...db.dias].reverse().find(d => d.evacuacoes.length && d.data <= hoje());
   // Só avisa quando faz 3 dias ou mais desde a última evacuação (prisão de ventre é comum em dieta: fibra e água)
   const n = ultima ? Math.round((deIso(hoje()) - deIso(ultima.data)) / 864e5) : 0;
   $('ev-ultima').hidden = !ultima || n < SEM_EVACUAR_ALERTA;
   if (!$('ev-ultima').hidden) $('ev-ultima').textContent = `${n} dias sem evacuar (última em ${dataCurta(ultima.data)})`;
 }
-// Muda o registro do dia do formulário; dia que fica sem evacuação nem sono sai (preparar)
+// Bexiga: dos últimos 7 dias com xixi (hoje entra se já tiver xixi), xixis por dia, intervalo médio entre um xixi e o
+// seguinte no mesmo dia e quanto bebi por xixi (água do dia, da Água, ÷ xixis). Não é o volume da bexiga: é o que dá para
+// tirar só contando, sem medir. Com esses números dá para ver quanto é possível beber por dia sem ir ao banheiro toda hora.
+function bexiga() {
+  const D = db.dias.filter(x => x.xixis.length && x.data <= hoje()).slice(-DIAS_BEXIGA);
+  if (!D.length) return null;
+  const n = D.reduce((s, x) => s + x.xixis.length, 0), ml = D.reduce((s, x) => s + (aguas[x.data] || 0), 0);
+  const intervalos = D.flatMap(x => x.xixis.slice(1).map((h, i) => minutos(h) - minutos(x.xixis[i])));
+  return {
+    dias: D.length, porDia: n / D.length,
+    intervalo: intervalos.length ? Math.round(intervalos.reduce((s, v) => s + v, 0) / intervalos.length) : null,
+    mlPorXixi: ml ? Math.round(ml / n) : null
+  };
+}
+const fmtMin = m => m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ' ' + pad(m % 60) : ''}` : `${m} min`;
+function pintarBexiga() {
+  $('bexiga').hidden = $('bx-titulo').hidden = semCorpoDia;
+  const b = bexiga();
+  $('bexiga').innerHTML = !b ? '<p class="bx-vazio">Registre os xixis para ver aqui.</p>' : `<ul class="numeros">
+    <li><b>${b.porDia.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</b> <span>xixis por dia</span></li>
+    <li><b>${b.intervalo != null ? fmtMin(b.intervalo) : '—'}</b> <span>entre um e outro</span></li>
+    <li><b>${b.mlPorXixi != null ? b.mlPorXixi.toLocaleString('pt-BR') + ' ml' : '—'}</b> <span>bebidos por xixi</span></li>
+  </ul><p class="bx-nota">Média de ${b.dias === 1 ? '1 dia' : b.dias + ' dias'} com xixi registrado.</p>`;
+}
+// Muda o registro do dia do formulário; dia que fica sem evacuação, xixi nem sono sai (preparar)
 function mudarDia(acao) {
   const dia = $('c-data').value;
   if (!dataOk(dia) || dia > hoje()) { toast('Data inválida', true); return; }
   mudar(() => {
     let x = db.dias.find(d => d.data === dia);
-    if (!x) { x = { data: dia, evacuacoes: [] }; db.dias.push(x); }
+    if (!x) { x = { data: dia, evacuacoes: [], xixis: [] }; db.dias.push(x); }
     acao(x); db = preparar(db);
   });
 }
@@ -119,6 +147,16 @@ $('ev-mais').addEventListener('click', () => {
 $('ev-horas').addEventListener('click', ev => {
   const b = ev.target.closest('[data-tirar-ev]');
   if (b && confirmar(b)) mudarDia(x => { x.evacuacoes.splice(+b.dataset.tirarEv, 1); });
+});
+// +1: xixi com o horário de agora; tocar num horário (duas vezes) tira
+$('x-mais').addEventListener('click', () => {
+  const h = agoraHHMM();
+  mudarDia(x => { x.xixis.push(h); });
+  toast(`Xixi às ${h}`);
+});
+$('x-horas').addEventListener('click', ev => {
+  const b = ev.target.closest('[data-tirar-xixi]');
+  if (b && confirmar(b)) mudarDia(x => { x.xixis.splice(+b.dataset.tirarXixi, 1); });
 });
 // Sono: horas (0 a 24, vírgula aceita); vazio tira
 $('d-sono').addEventListener('change', () => {

@@ -1,4 +1,4 @@
-// Tela da Água no navegador: beber (ml digitado vira botão), meta, lembretes por tipo de dia, xixi, bexiga, 7 dias e nuvem.
+// Tela da Água no navegador: beber (ml digitado vira botão), meta, lembretes por tipo de dia, 7 dias e nuvem.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { prepararApp, abrirApp, novaNuvem, sincronizado, texto, DONO } from './helpers/app.mjs';
@@ -67,31 +67,11 @@ test('lembretes: presencial (qua e qui) e fim de semana de 2 em 2 horas; antes d
   await ctx.close();
 });
 
-test('xixi: +1 com o horário de agora, tira com toque duplo; bexiga com xixis por dia, intervalo e ml por xixi', async () => {
-  const nuvem = novaNuvem();
-  nuvem.tabelas.agua_dia.push({ user_id: DONO, data: '2026-10-18', aguas: [{ hora: '10:00', ml: 800 }], xixis: ['09:00', '12:00', '15:00', '18:00'] });
-  const { ctx, pg } = await abrirApp({ nuvem });
-  // só o dia 18: 4 xixis, 3 h entre um e outro, 800 ml ÷ 4 = 200 ml por xixi
-  assert.deepEqual(await pg.$$eval('#bexiga .numeros li', L => L.map(x => x.textContent.replace(/\s+/g, ' ').trim())), ['4 xixis por dia', '3 h entre um e outro', '200 ml bebidos por xixi']);
-  await pg.click('#x-mais');
-  await pg.clock.fastForward('02:30:00'); await pg.click('#x-mais');
-  assert.equal(await texto(pg, '#x-total'), '2');
-  assert.deepEqual(await pg.$$eval('#x-lista button', B => B.map(b => b.textContent)), ['09:00 ×', '11:30 ×']);
-  // 18 e 19: (4 + 2) ÷ 2 = 3 por dia · intervalos 180, 180, 180, 150 → 173 min · 800 ÷ 6 = 133 ml
-  assert.deepEqual(await pg.$$eval('#bexiga .numeros li', L => L.map(x => x.textContent.replace(/\s+/g, ' ').trim())), ['3 xixis por dia', '2 h 53 entre um e outro', '133 ml bebidos por xixi']);
-  assert.equal(await texto(pg, '#bexiga .nota'), 'Média de 2 dias com xixi registrado.');
-  await pg.click('[data-tirar-xixi="0"]'); await pg.click('[data-tirar-xixi="0"]');
-  assert.equal(await texto(pg, '#x-total'), '1');
-  await sincronizado(pg);
-  assert.deepEqual(nuvem.tabelas.agua_dia.find(x => x.data === '2026-10-19').xixis, ['11:30']);
-  await ctx.close();
-});
-
 test('últimos 7 dias, sem internet e tabela ainda não criada', async () => {
   const nuvem = novaNuvem();
-  nuvem.tabelas.agua_dia.push({ user_id: DONO, data: '2026-10-18', aguas: [{ hora: '10:00', ml: 1200 }], xixis: ['11:00'] });
+  nuvem.tabelas.agua_dia.push({ user_id: DONO, data: '2026-10-18', aguas: [{ hora: '10:00', ml: 1200 }] });
   const { ctx, pg } = await abrirApp({ nuvem });
-  assert.match(await texto(pg, '#semana li:nth-child(2)'), /^Ontem 1\.200 ml 1 xixi$/);
+  assert.match(await texto(pg, '#semana li:nth-child(2)'), /^Ontem 1\.200 ml$/);
   await beber(pg, 300);
   await sincronizado(pg);
   nuvem.online = false;

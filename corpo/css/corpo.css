@@ -57,7 +57,7 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 .mid:focus-within{outline:3px solid var(--teal);outline-offset:1px}
 .unit{color:var(--muted);flex:none;min-width:2.2em;font-size:.875rem}
 
-/* ---------- Dia: sono e evacuações ---------- */
+/* ---------- Dia: sono, evacuações e xixis ---------- */
 .evac{display:flex;flex-direction:column;gap:10px}
 .dia-linha{display:flex;align-items:center;gap:8px}
 .dia-linha>span{margin-right:auto;font-size:.95rem}
@@ -70,6 +70,14 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 .ev-horas button{border:1px solid var(--line);border-radius:999px;background:transparent;padding:4px 10px;font-size:.875rem;color:var(--fg)}
 .ev-horas button.armado{border-color:var(--red);background:var(--red);color:var(--bg)}
 .evac-ultima{font-size:.875rem;color:var(--red);font-weight:600}   /* só aparece como aviso: 3+ dias sem evacuar */
+
+/* ---------- Bexiga ---------- */
+.numeros{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.numeros li{display:flex;flex-direction:column}
+.numeros b{font-family:var(--display);font-size:1.5rem;line-height:1.1;color:var(--teal)}
+.numeros span{font-size:.8rem;color:var(--muted)}
+.bx-nota,.bx-vazio{margin:8px 0 0;font-size:.8rem;color:var(--muted)}
+.bx-vazio{margin:0;font-style:italic}
 
 /* ---------- Gráficos ---------- */
 .chart{padding:10px}

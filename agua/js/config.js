@@ -1,9 +1,9 @@
 'use strict';
 /*
-  Água — o que bebi (ml, com horário) e as idas ao banheiro (xixi), para entender quanto dá para beber por dia sem ficar
-  insustentável. Lembretes só dentro do app (sem notificação), das 10 às 16.
+  Água — o que bebi (ml, com horário), contra a meta do dia. Lembretes das 10 às 16, no app e por notificação. Os xixis e a
+  bexiga ficam no Corpo (que lê agua_dia para os ml por xixi).
   Dados no Supabase (projeto fin, tabela agua_dia), com cópia local para funcionar sem internet (js/banco.js):
-    db = { dias: [{ data, aguas: [{ hora, ml }], xixis: ["HH:MM"] }] }   // 1 por dia; dia sem nada não fica guardado
+    db = { dias: [{ data, aguas: [{ hora, ml }] }] }   // 1 por dia; dia sem nada não fica guardado
   Os botões de ml são as quantidades que já digitei (as mais usadas primeiro): não há quantidade fixa.
   Dias presenciais e a rotina da semana vêm de ../corpo/perfil.js (ROTINA).
 */

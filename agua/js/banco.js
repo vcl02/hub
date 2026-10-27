@@ -7,7 +7,7 @@ const K_LOCAL = id => 'agua.db.' + id, K_BASE = id => 'agua.base.' + id;
 let db = null, usuario = null, base = null, enviando = false, tEnvio = null, erroSync = '';
 
 function linhas(d) {   // db → { data: linha }; listas copiadas: a base não pode mudar junto quando o dia muda
-  return Object.fromEntries(d.dias.map(x => [x.data, { data: x.data, aguas: x.aguas.map(a => ({ hora: a.hora, ml: a.ml })), xixis: [...x.xixis] }]));
+  return Object.fromEntries(d.dias.map(x => [x.data, { data: x.data, aguas: x.aguas.map(a => ({ hora: a.hora, ml: a.ml })) }]));
 }
 function diferenca(a, b) {   // o que enviar para sair de a e chegar em b; null = nada
   const up = Object.entries(b).filter(([k, l]) => JSON.stringify(a?.[k]) !== JSON.stringify(l)).map(([, l]) => l);
@@ -36,7 +36,7 @@ async function enviar() {
 async function baixar() {
   const R = [];
   for (let i = 0; ; i += 1000) {
-    const { data, error } = await sb.from('agua_dia').select('data,aguas,xixis').range(i, i + 999); if (error) throw error;
+    const { data, error } = await sb.from('agua_dia').select('data,aguas').range(i, i + 999); if (error) throw error;
     R.push(...data); if (data.length < 1000) return R;
   }
 }
@@ -63,7 +63,6 @@ const preparar = d => ({
   dias: (d?.dias || []).filter(x => x && dataOk(x.data)).map(x => ({
     data: x.data,
     aguas: (Array.isArray(x.aguas) ? x.aguas : []).map(a => ({ hora: a?.hora, ml: Math.round(num(a?.ml)) })).filter(a => hhmmOk(a.hora) && a.ml > 0 && a.ml <= ML_MAX)
-      .sort((a, b) => a.hora.localeCompare(b.hora)).slice(0, 100),
-    xixis: (Array.isArray(x.xixis) ? x.xixis : []).filter(hhmmOk).sort().slice(0, 50)
-  })).filter(x => x.aguas.length || x.xixis.length).sort((a, b) => a.data.localeCompare(b.data))
+      .sort((a, b) => a.hora.localeCompare(b.hora)).slice(0, 100)
+  })).filter(x => x.aguas.length).sort((a, b) => a.data.localeCompare(b.data))
 });

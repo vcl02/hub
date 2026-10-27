@@ -1,6 +1,6 @@
 'use strict';
-// Contas: total do dia, lembretes (horários e se foram cumpridos), botões de ml (das quantidades já usadas) e a bexiga.
-const doDia = dia => db.dias.find(x => x.data === dia) || { data: dia, aguas: [], xixis: [] };
+// Contas: total do dia, lembretes (horários e se foram cumpridos), e botões de ml (das quantidades já usadas).
+const doDia = dia => db.dias.find(x => x.data === dia) || { data: dia, aguas: [] };
 const totalMl = dia => doDia(dia).aguas.reduce((s, a) => s + a.ml, 0);
 
 // Lembretes, das 10 às 16: em casa (dia útil não presencial), de hora em hora; presencial (ROTINA.presencial, em
@@ -32,20 +32,4 @@ function botoesMl() {
   const conta = {};
   db.dias.forEach(x => x.aguas.forEach(a => { conta[a.ml] = (conta[a.ml] || 0) + 1; }));
   return Object.entries(conta).sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, BOTOES_ML).map(([ml]) => +ml).sort((a, b) => a - b);
-}
-
-// Bexiga: dos dias com xixi registrado (até 7, contando hoje só se ele já tiver xixi), xixis por dia, intervalo médio entre
-// um xixi e o seguinte no mesmo dia e quanto bebi por xixi (total do dia ÷ xixis). Não é o volume da bexiga: é o que
-// dá para tirar só contando, sem medir.
-function bexiga() {
-  const D = [...db.dias].filter(x => x.xixis.length && x.data <= hoje()).slice(-7);
-  if (!D.length) return null;
-  const xixis = D.reduce((s, x) => s + x.xixis.length, 0), ml = D.reduce((s, x) => s + totalMl(x.data), 0);
-  const intervalos = D.flatMap(x => x.xixis.slice(1).map((h, i) => minutos(h) - minutos(x.xixis[i])));
-  return {
-    dias: D.length,
-    porDia: xixis / D.length,
-    intervalo: intervalos.length ? Math.round(intervalos.reduce((s, x) => s + x, 0) / intervalos.length) : null,
-    mlPorXixi: Math.round(ml / xixis)
-  };
 }

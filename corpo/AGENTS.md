@@ -15,7 +15,8 @@
 
 ## Dados e segurança
 
-- **Só o Corpo grava `corpo_medida` e `corpo_dia`** (sono e evacuações com horário, migrations 01 e 02; quando o peso e o sono foram lançados, `peso_em` e `sono_em`, migration 03, usados pelos hábitos da página inicial do hub). Treino e Alimentação só leem, por `perfil.js`. A cópia que eles leem sem internet (`corpo.medidas.<conta>`) é atualizada pelo Corpo a cada mudança e por `lerMedidas`.
+- **Só o Corpo grava `corpo_medida` e `corpo_dia`** (sono, evacuações e xixis com horário, migrations 01, 02 e 04; quando o peso e o sono foram lançados, `peso_em` e `sono_em`, migration 03, usados pelos hábitos da página inicial do hub). Treino e Alimentação só leem, por `perfil.js`. A cópia que eles leem sem internet (`corpo.medidas.<conta>`) é atualizada pelo Corpo a cada mudança e por `lerMedidas`.
+- Lê `agua_dia` (da Água, só leitura: `data, aguas`) para a bexiga (ml bebidos por xixi), com cópia em `corpo.aguas.<conta>` para abrir sem internet.
 - `tr_medida` (onde o Treino gravava) foi copiada para `corpo_medida` pela migration 00 e depois apagada pelo mantenedor: a 00 não roda de novo (ela lê `tr_medida`).
 - Só a conta `DONO`; RLS de `corpo_medida` com `somente_dono` + restritiva `somente_victor`; `anon` sem acesso. Chave do Supabase no código é a publicável; nunca segredo no repositório.
 - Mudança de esquema: migration nova e numerada em `migrations/`, formato do DataGrip. Operações remotas que mudam estado exigem confirmação explícita do mantenedor.

@@ -4,19 +4,21 @@
 // (diferença para "base", a última versão confirmada pelo servidor). Sem internet, fica pendente e envia ao reconectar.
 // Também atualiza corpo.medidas.<conta> (guardarMedidas, de ../corpo/perfil.js): Treino e Alimentação veem na hora.
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const K_LOCAL = id => 'corpo.db.' + id, K_BASE = id => 'corpo.base.' + id;
+const K_LOCAL = id => 'corpo.db.' + id, K_BASE = id => 'corpo.base.' + id, K_AGUAS = id => 'corpo.aguas.' + id;
+// aguas = { dia: ml } da Água (agua_dia, só leitura), para a bexiga
+let aguas = {};
 let db = null, usuario = null, base = null, enviando = false, tEnvio = null, erroSync = '';
 // corpo_dia ainda não criada no banco (migration 01 não aplicada): o app segue só com as pesagens e esconde "Evacuou"
 let semCorpoDia = false;
 
-// Tabelas e a chave de cada linha (além de user_id): corpo_medida (pesagem e barriga) e corpo_dia (evacuações com horário e sono)
+// Tabelas e a chave de cada linha (além de user_id): corpo_medida (pesagem e barriga) e corpo_dia (evacuações e xixis com horário e sono)
 const TABELAS = { corpo_medida: 'data', corpo_dia: 'data' };
 function linhas(d) {   // db → { tabela: { data: linha } }
   return {
     // peso_em e sono_em (quando foram lançados, migration 03) só vão quando existem: linha antiga continua igual à da nuvem
     corpo_medida: Object.fromEntries(d.medidas.map(m => [m.data, { data: m.data, hora: m.hora || '', peso: m.peso ?? null, cintura: m.cintura ?? null, ...(m.pesoEm && { peso_em: m.pesoEm }) }])),
-    // evacuacoes copiada: a base não pode mudar junto quando o +1 mexe na lista do dia
-    corpo_dia: Object.fromEntries(d.dias.map(x => [x.data, { data: x.data, evacuou: null, evacuacoes: [...x.evacuacoes], sono: x.sono ?? null, ...(x.sonoEm && { sono_em: x.sonoEm }) }]))
+    // evacuacoes e xixis copiadas: a base não pode mudar junto quando o +1 mexe na lista do dia
+    corpo_dia: Object.fromEntries(d.dias.map(x => [x.data, { data: x.data, evacuou: null, evacuacoes: [...x.evacuacoes], xixis: [...x.xixis], sono: x.sono ?? null, ...(x.sonoEm && { sono_em: x.sonoEm }) }]))
   };
 }
 // base das versões antigas (só pesagens, { data: linha }) → formato com as duas tabelas
@@ -74,14 +76,15 @@ setInterval(() => { if (temPendente()) enviar(); }, 60000);
 // Valida e completa o db (cópia local ou linhas do servidor), com a mesma limpeza que os outros apps usam
 const preparar = d => ({
   medidas: ordenarMedidas(d?.medidas || []),
-  // Dia: evacuações (horários "HH:MM", "" = sem horário, em ordem), sono (h) e quando o sono foi lançado (sonoEm). Formato da migration 01 (evacuou sim ou não):
-  // sim vira 1 evacuação sem horário. Dia sem evacuação nem sono não fica guardado.
+  // Dia: evacuações (horários "HH:MM", "" = sem horário, em ordem), xixis ("HH:MM", em ordem), sono (h) e quando o sono foi
+  // lançado (sonoEm). Formato da migration 01 (evacuou sim ou não): sim vira 1 evacuação sem horário. Dia sem nada não fica guardado.
   dias: (d?.dias || []).filter(x => x && dataOk(x.data)).map(x => {
     const ev = Array.isArray(x.evacuacoes) ? x.evacuacoes.map(h => /^\d{2}:\d{2}$/.test(h) ? h : '').slice(0, 20) : x.evacuou === true ? [''] : [];
     const sono = num(x.sono), sonoEm = x.sonoEm || x.sono_em;
-    return { data: x.data, evacuacoes: ev.sort(), ...(sono >= 0 && sono <= 24 && { sono }),
+    const xixis = (Array.isArray(x.xixis) ? x.xixis : []).filter(h => /^\d{2}:\d{2}$/.test(h)).sort().slice(0, 50);
+    return { data: x.data, evacuacoes: ev.sort(), xixis, ...(sono >= 0 && sono <= 24 && { sono }),
       ...(sono >= 0 && sono <= 24 && sonoEm && !isNaN(Date.parse(sonoEm)) && { sonoEm: new Date(sonoEm).toISOString() }) };
-  }).filter(x => x.evacuacoes.length || x.sono != null).sort((a, b) => a.data.localeCompare(b.data))
+  }).filter(x => x.evacuacoes.length || x.xixis.length || x.sono != null).sort((a, b) => a.data.localeCompare(b.data))
 });
 // Baixa uma tabela inteira (de 1000 em 1000)
 async function todas(tabela, colunas) {
