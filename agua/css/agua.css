@@ -57,10 +57,10 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 .notif #n-ligadas{color:var(--cyan);font-weight:600}
 
 /* ---------- Beber ---------- */
-.tipos{display:flex;gap:6px}
-.tipo{flex:1;border:1px solid var(--line);border-radius:999px;background:transparent;padding:8px 10px;font-weight:600;color:var(--muted)}
+.tipos{display:flex;flex-wrap:wrap;gap:6px}
+.tipo{flex:1 1 auto;border:1px solid var(--line);border-radius:999px;background:transparent;padding:8px 10px;font-weight:600;color:var(--muted)}
 .tipo[aria-pressed="true"]{border-color:var(--cyan);background:var(--cyan-soft);color:var(--cyan)}
-.eventos button.outra{border-style:dashed}   /* suco ou refri: só a parte que é água conta */
+.eventos button.outra{border-style:dashed}   /* outra bebida: só a parte que é água conta */
 .beber{display:flex;gap:8px}
 .beber input{flex:1;min-width:0;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font-family:var(--display);font-weight:700;font-size:1.3rem}
 .beber input:focus{outline:none;border-color:var(--cyan)}

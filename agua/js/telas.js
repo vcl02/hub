@@ -1,6 +1,6 @@
 'use strict';
 // Tela de hoje: total e meta, lembretes, beber (bebida, campo de ml e botões das quantidades já usadas) e 7 dias.
-let bebida = 'agua';   // a bebida do próximo lançamento; volta para água depois de cada suco ou refri
+let bebida = 'agua';   // a bebida do próximo lançamento; volta para água depois de cada outra bebida
 const nomeBebida = a => BEBIDAS[a.bebida]?.nome.toLowerCase() || '';
 // "10:00 · 300 ml" ou "10:00 · suco 300 ml (264 ml de água)"
 const textoAgua = a => a.bebida ? `${a.hora} · ${nomeBebida(a)} ${inteiro(a.volume)} ml (${inteiro(a.ml)} ml de água)` : `${a.hora} · ${inteiro(a.ml)} ml`;
@@ -39,7 +39,7 @@ function mudarHoje(acao) {
   if (!x) { x = { data: hoje(), aguas: [] }; db.dias.push(x); }
   acao(x); db = preparar(db); gravar(); desenhar();
 }
-// Bebe ml da bebida escolhida: água conta inteira; suco e refri, só a parte que é água (e ficam marcados na lista)
+// Bebe ml da bebida escolhida: água conta inteira; as outras, só a parte que é água (e ficam marcadas na lista)
 function beber(ml) {
   if (!(ml > 0 && ml <= ML_MAX)) { toast(`De 1 a ${inteiro(ML_MAX)} ml`, true); return; }
   const hora = agoraHHMM(), a = bebida === 'agua' ? { hora, ml } : { hora, ml: Math.round(ml * BEBIDAS[bebida].agua), bebida, volume: ml };

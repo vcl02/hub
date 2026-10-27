@@ -24,9 +24,11 @@ const LEMBRETE_INICIO = 10, LEMBRETE_FIM = 16;   // horas: nada antes nem depois
 const ML_MAX = 3000;               // por vez
 const BOTOES_ML = 6;               // quantos botões de ml (das quantidades já usadas)
 // Bebidas além da água e quanto delas é água (estimativa de tabelas de composição de alimentos: suco ~88%, refrigerante
-// ~89%). Só a parte que é água conta para a meta.
+// ~89%, cappuccino com leite ~88%, leite com achocolatado ~82%). Só a parte que é água conta para a meta.
 const BEBIDAS = Object.freeze({
   agua: { nome: 'Água', agua: 1 },
   suco: { nome: 'Suco', agua: 0.88 },
-  refri: { nome: 'Refri', agua: 0.89 }
+  refri: { nome: 'Refri', agua: 0.89 },
+  cappuccino: { nome: 'Cappuccino', agua: 0.88 },
+  toddy: { nome: 'Leite com Toddy', agua: 0.82 }
 });

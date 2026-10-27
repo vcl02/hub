@@ -32,7 +32,7 @@ test('beber: ml digitado entra com o horário de agora e vira botão; botões pe
   assert.deepEqual(erros, []); await ctx.close();
 });
 
-test('suco e refri: só a parte que é água conta para a meta, marcados na lista; a escolha volta para água', async () => {
+test('outras bebidas (suco, refri, cappuccino, leite com Toddy): só a parte que é água conta para a meta, marcados na lista; a escolha volta para água', async () => {
   const { ctx, pg, nuvem, erros } = await abrirApp();                     // segunda 19/10, 09:00
   assert.equal(await pg.getAttribute('[data-bebida="agua"]', 'aria-pressed'), 'true');
   await pg.click('[data-bebida="suco"]');
@@ -47,9 +47,14 @@ test('suco e refri: só a parte que é água conta para a meta, marcados na list
   assert.deepEqual(await pg.$$eval('#b-lista button', B => B.map(b => b.textContent)),
     ['09:00 · suco 300 ml (264 ml de água) ×', '09:00 · refri 350 ml (312 ml de água) ×', '09:00 · 300 ml ×']);
   assert.equal(await texto(pg, '#t-ml'), '876');                           // 264 + 312 + 300
+  await pg.click('[data-bebida="toddy"]'); await beber(pg, 200);           // leite com Toddy: 200 × 82% = 164
+  await pg.click('[data-bebida="cappuccino"]'); await beber(pg, 150);      // cappuccino: 150 × 88% = 132
+  assert.deepEqual((await pg.$$eval('#b-lista button', B => B.map(b => b.textContent))).slice(3), ['09:00 · leite com toddy 200 ml (164 ml de água) ×', '09:00 · cappuccino 150 ml (132 ml de água) ×']);
+  assert.equal(await texto(pg, '#t-ml'), '1.172');
   await sincronizado(pg);
   assert.deepEqual(nuvem.tabelas.agua_dia[0].aguas, [
-    { hora: '09:00', ml: 264, bebida: 'suco', volume: 300 }, { hora: '09:00', ml: 312, bebida: 'refri', volume: 350 }, { hora: '09:00', ml: 300 }]);
+    { hora: '09:00', ml: 264, bebida: 'suco', volume: 300 }, { hora: '09:00', ml: 312, bebida: 'refri', volume: 350 }, { hora: '09:00', ml: 300 },
+    { hora: '09:00', ml: 164, bebida: 'toddy', volume: 200 }, { hora: '09:00', ml: 132, bebida: 'cappuccino', volume: 150 }]);
   assert.deepEqual(erros, []); await ctx.close();
 });
 
