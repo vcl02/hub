@@ -138,9 +138,11 @@ test('hábitos com os dados dos apps: valor de hoje, ofensivas, dias perfeitos e
   assert.match((await linha('deficit'))[0], /kcal restantes$/);
   assert.equal(await pg.$eval('[data-habito="treino"] .hab-ofensiva', el => el.classList.contains('acesa')), true);   // segunda (folga) com qua e qui feitos
   assert.equal(await pg.textContent('#h-protecoes b'), '0');                      // ganhou 1 e gastou em 24/10
-  assert.equal(await pg.$$eval('[data-habito="agua"] .hab-dias i', L => L.map(i => i.className).join(' ')), 'antes antes antes feito protegido feito pendente hoje');
+  // A semana de hoje, de segunda a domingo: hoje é segunda, o resto ainda não chegou (o 22/10, quinta passada, não aparece)
+  assert.equal(await pg.$$eval('[data-habito="agua"] .hab-dias i', L => L.map(i => i.className).join(' ')), 'pendente hoje futuro futuro futuro futuro futuro futuro');
+  assert.equal(await pg.$$eval('[data-habito="treino"] .hab-dias i', L => L.map(i => i.className).join(' ')), 'folga hoje futuro futuro futuro futuro futuro futuro');
+  assert.equal(await pg.$$eval('#h-semana li', L => L.map(li => li.textContent + (li.className.trim() ? ':' + li.className.trim() : '')).join(' ')), 'S:hoje T:futuro Q:futuro Q:futuro S:futuro S:futuro D:futuro');
   assert.equal(await pg.$eval('[data-habito="corpo"] .hab-ofensiva', el => el.classList.contains('acesa')), true);   // feito hoje: chama acesa
-  assert.equal(await pg.$$eval('#h-semana li', L => L.length), 7);
   nuvem.online = false;                                                            // sem internet: a cópia do aparelho
   await pg.reload();
   await pg.waitForSelector('#v-apps:not([hidden])');

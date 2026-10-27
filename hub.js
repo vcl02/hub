@@ -118,7 +118,8 @@ let diaDesenhado = '';
 function desenhar() {
   if (!dados || $('v-apps').hidden) return;
   const hoje = diaDoInstante(Date.now()), R = calcularHabitos(dados, hoje), H = resumoDeHoje(dados, hoje);
-  const semana = [6, 5, 4, 3, 2, 1, 0].map(n => diaMais(hoje, -n));
+  // A semana de hoje, de segunda a domingo (como no Treino): os dias que ainda não chegaram ficam vazios (.futuro)
+  const segunda = diaMais(hoje, -((semanaDoDia(hoje) + 6) % 7)), semana = [0, 1, 2, 3, 4, 5, 6].map(n => diaMais(segunda, n));
   diaDesenhado = hoje;
   const [a, m, d] = hoje.split('-').map(Number);
   $('h-data').textContent = new Date(a, m - 1, d).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -128,7 +129,7 @@ function desenhar() {
   $('h-protecoes').querySelector('b').textContent = R.protecoes;
   $('h-protecoes').setAttribute('aria-label', `${R.protecoes} de ${PROTECOES_MAX} proteções`);
   $('h-protecoes').classList.toggle('apagada', !R.protecoes);
-  $('h-semana').innerHTML = semana.map(x => `<li class="${R.perfeito[x] ? 'sim' : ''}${x === hoje ? ' hoje' : ''}"><span>${LETRAS[semanaDoDia(x)]}</span><i></i></li>`).join('');
+  $('h-semana').innerHTML = semana.map(x => `<li class="${x > hoje ? 'futuro' : R.perfeito[x] ? 'sim' : ''}${x === hoje ? ' hoje' : ''}"><span>${LETRAS[semanaDoDia(x)]}</span><i></i></li>`).join('');
   for (const el of document.querySelectorAll('[data-habito]')) {
     const id = el.dataset.habito, h = R.habitos[id], r = H[id];
     el.querySelector('.hab-valor').textContent = r.valor;
@@ -143,7 +144,7 @@ function desenhar() {
     of.classList.toggle('apagada', !h.ofensiva);
     of.setAttribute('aria-label', `Ofensiva: ${h.ofensiva}`);
     el.classList.toggle('feito', h.hoje === 'feito');
-    el.querySelector('.hab-dias').innerHTML = semana.map(x => `<i class="${h.dias[x] || 'antes'}${x === hoje ? ' hoje' : ''}"></i>`).join('');
+    el.querySelector('.hab-dias').innerHTML = semana.map(x => `<i class="${x > hoje ? 'futuro' : h.dias[x] || 'antes'}${x === hoje ? ' hoje' : ''}"></i>`).join('');
   }
 }
 // Voltou de um app: busca de novo. Passou da meia-noite com a tela aberta: redesenha o dia novo.

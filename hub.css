@@ -259,6 +259,16 @@ h1 span {
   color: var(--fg);
 }
 
+/* Dia da semana que ainda não chegou: só a letra, apagada, e o círculo vazio */
+.perfeito-semana .futuro {
+  opacity: .45;
+}
+
+.perfeito-semana .futuro i {
+  background: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12);
+}
+
 .perfeito-semana .hoje i {
   outline: 2px solid rgba(255, 255, 255, .35);
   outline-offset: 2px;
@@ -377,7 +387,7 @@ h1 span {
   color: var(--muted);
 }
 
-/* Últimos 7 dias do hábito, de 6 dias atrás até hoje. Mesmas cores em todos: verde feito, vermelho falhou, azul protegido;
+/* A semana de hoje no hábito, de segunda a domingo (os dias que ainda não chegaram vazios). Mesmas cores em todos: verde feito, vermelho falhou, azul protegido;
    a cor do app fica só no ícone. */
 .hab-dias {
   display: grid;
@@ -407,6 +417,11 @@ h1 span {
 .hab-dias .folga {
   background: rgba(255, 255, 255, .1);
   transform: scaleY(.5);
+}
+
+.hab-dias .futuro {
+  background: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08);
 }
 
 .hab-dias .pendente {
