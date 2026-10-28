@@ -498,3 +498,17 @@
           z-index: 2;
       }
   }
+
+  /* Ciclo trocado arrastando para o lado: entra pelo lado do gesto (ver o arrastar em
+     interactions.js). Nenhum movimento com movimento reduzido no sistema. */
+  #out.entraDaDireita { animation: cicloEntra .18s ease-out; --de: 2.5rem; }
+  #out.entraDaEsquerda { animation: cicloEntra .18s ease-out; --de: -2.5rem; }
+
+  @keyframes cicloEntra {
+      from { transform: translateX(var(--de)); opacity: .4; }
+      to { transform: none; opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+      #out.entraDaDireita, #out.entraDaEsquerda { animation: none; }
+  }

@@ -1438,6 +1438,48 @@ function atualizaBtsNavCiclo() {
 el('cicloAnterior').onclick = () => navegaCiclo(-1);
 el('cicloProximo').onclick = () => navegaCiclo(1);
 
+// Arrastar a tela para o lado troca de ciclo, como as setas — para a esquerda o próximo (›),
+// para a direita o anterior (‹) —, com o mesmo limiar do Treino: 80 px, ou 40 px num gesto
+// rápido. Tabela que rola de lado só troca de ciclo quando já está na ponta daquele lado (senão
+// o gesto é rolar a tabela). Campo, barra de seleção, menu, toast e modal aberto não trocam;
+// seta desativada (fim da lista) também não.
+(() => {
+    let x0 = 0, y0 = 0, t0 = 0, ativo = false, eixo = null, bordas = null;
+    document.addEventListener('touchstart', ev => {
+        ativo = false;
+        if (ev.touches.length !== 1 || el('app').style.display === 'none' || document.querySelector('dialog[open]')) return;
+        if (ev.target.closest('input, textarea, select, #selbar, .menuIcone, #toasts')) return;
+        const rolavel = ev.target.closest('.wrap, .wx');
+        bordas = rolavel && rolavel.scrollWidth > rolavel.clientWidth + 1
+            ? { inicio: rolavel.scrollLeft <= 1, fim: rolavel.scrollLeft + rolavel.clientWidth >= rolavel.scrollWidth - 1 }
+            : null;
+        ativo = true; x0 = ev.touches[0].clientX; y0 = ev.touches[0].clientY; t0 = Date.now(); eixo = null;
+    }, { passive: true });
+    document.addEventListener('touchmove', ev => {
+        if (!ativo || eixo) return;
+        const dx = ev.touches[0].clientX - x0, dy = ev.touches[0].clientY - y0;
+        if (Math.abs(dx) > 10 || Math.abs(dy) > 10) eixo = Math.abs(dx) > Math.abs(dy) * 1.3 ? 'x' : 'y';
+    }, { passive: true });
+    document.addEventListener('touchend', ev => {
+        if (!ativo) return;
+        ativo = false;
+        const dx = ev.changedTouches[0].clientX - x0, rapido = Date.now() - t0 < 300;
+        if (eixo !== 'x' || !(Math.abs(dx) > 80 || (rapido && Math.abs(dx) > 40))) return;
+        const direcao = dx < 0 ? 1 : -1;
+        if (bordas && !(direcao > 0 ? bordas.fim : bordas.inicio)) return;
+        const seta = el(direcao > 0 ? 'cicloProximo' : 'cicloAnterior');
+        if (seta.disabled) return;
+        seta.click();
+        // O ciclo novo entra pelo lado de onde veio o gesto (sem animação com movimento reduzido).
+        const saida = el('out');
+        saida.classList.remove('entraDaDireita', 'entraDaEsquerda');
+        void saida.offsetWidth;
+        saida.classList.add(direcao > 0 ? 'entraDaDireita' : 'entraDaEsquerda');
+    });
+    document.addEventListener('touchcancel', () => { ativo = false; });
+    el('out').addEventListener('animationend', () => el('out').classList.remove('entraDaDireita', 'entraDaEsquerda'));
+})();
+
 // qualquer select/checkbox da barra de ferramentas redesenha a tela ao mudar
 // O erro de redesenho acontece fora do try de load(); é um problema operacional passageiro,
 // então vai para toast, enquanto inconsistências recebidas do banco ficam no modal.
