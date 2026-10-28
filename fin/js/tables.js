@@ -359,13 +359,17 @@ const celFlag = (r, chave) => {
         : (marcado ? `<span class=${COR_FLAG[chave]}>${texto}</span>` : texto);
 };
 
-// Parcela: "2 de 3 (até Out/26)" em toda linha com ciclo (ver parcelaDaLinha); linha calculada
-// fica vazia. Só leitura; tocar (ou o hover) mostra o trecho e as próximas (handler data-parcela).
+// Parcela: "2 de 3 (até Out/26)" em toda linha com ciclo (ver parcelaDaLinha); "—" quando é
+// 1 de 1 (sozinho); linha calculada fica vazia. Cor pelo andamento (posição ÷ total): até 1/3
+// vermelho, até 2/3 amarelo, depois verde — 1 de 3 vermelho, 1 de 2 amarelo, 2 de 3 e 3 de 3
+// verdes. Só leitura; tocar (ou o hover) mostra o trecho e as próximas (handler data-parcela).
+const corDaParcela = p => (p.posicao * 3 <= p.total ? 'vm' : p.posicao * 3 < p.total * 2 ? 'am' : 'vd');
 const celParcela = r => {
     const p = parcelaDaLinha(r);
     if (!p) return '';
     const detalhe = escapeHtml(detalheDaParcela(r));
-    return `<span class=togParcela data-parcela="${detalhe}" title="${detalhe}">${p.posicao} de ${p.total} (até ${nomePeriodoAbrev(p.ultimo)})</span>`;
+    if (p.total == 1) return `<span class=togParcela data-parcela="${detalhe}" title="${detalhe}">—</span>`;
+    return `<span class="togParcela ${corDaParcela(p)}" data-parcela="${detalhe}" title="${detalhe}">${p.posicao} de ${p.total} (até ${nomePeriodoAbrev(p.ultimo)})</span>`;
 };
 
 // monta as celulas <td> de uma linha, conforme o tipo de cada coluna. A edição por toque/

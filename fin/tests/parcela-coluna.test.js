@@ -28,8 +28,8 @@ function carrega(linhas) {
     vm.runInContext('const ehVazioTextual = v => v == null || !String(v).trim(); const textoOuTraco = v => ehVazioTextual(v) ? "—" : v;', contexto);
     vm.runInContext(visoes.slice(visoes.indexOf('function categoriaDaComparacao('), visoes.indexOf('function vComp()')), contexto);
     vm.runInContext(visoes.slice(visoes.indexOf('function chaveDaRecorrencia('), visoes.indexOf('function gruposComRecorrenciaDuplicadaEntreMeses(')), contexto);
-    const inicio = tabelas.indexOf('const celParcela = r =>');
-    vm.runInContext(tabelas.slice(inicio, tabelas.indexOf('\n};\n', inicio) + 4) +
+    const inicio = tabelas.indexOf('const corDaParcela = p =>');
+    vm.runInContext(tabelas.slice(inicio, tabelas.indexOf('\n};\n', tabelas.indexOf('const celParcela = r =>')) + 4) +
         'globalThis.f = { parcela: parcelaDaLinha, detalhe: detalheDaParcela, cel: celParcela };', contexto);
     return contexto.f;
 }
@@ -42,9 +42,9 @@ test('Renegociação de Ago, Set e Out (acaba na fatura de Nov): 1, 2 e 3 de 3, 
     const set = linha(2, 'Renegociação Nu', 3, { cred: true, data: '2026-09-05', fatura: '2026-10-12' });
     const out = linha(3, 'Renegociação Nu', 4, { cred: true, data: '2026-10-05', fatura: '2026-11-12' });
     const f = carrega([ago, set, out]);
-    assert.match(f.cel(ago), /class=togParcela[^>]*>1 de 3 \(até Out\/26\)</);
-    assert.match(f.cel(set), />2 de 3 \(até Out\/26\)</);
-    assert.match(f.cel(out), />3 de 3 \(até Out\/26\)</);
+    assert.match(f.cel(ago), /class="togParcela vm"[^>]*>1 de 3 \(até Out\/26\)</);   // até 1/3: vermelho
+    assert.match(f.cel(set), /class="togParcela vd"[^>]*>2 de 3 \(até Out\/26\)</);   // depois de 2/3: verde
+    assert.match(f.cel(out), /class="togParcela vd"[^>]*>3 de 3 \(até Out\/26\)</);
     assert.equal(f.detalhe(ago), 'Parcela 1 de 3: de Ago/26 a Out/26. Próximas: 05/09 fat. 12/10 · 05/10 fat. 12/11');
 });
 
@@ -54,10 +54,13 @@ test('sequência inteira, sem janela de 3; ciclo sem ele recomeça; sozinho é 1
     const sozinho = linha(4, 'Tênis', 2);
     const f = carrega([...serie, ...gas, sozinho, linha(5, 'Gás', 0)]);           // dois gás em Jul: mesma parcela
     assert.equal(resumo(f.parcela(serie[2])), '3/8 falta 5');
-    assert.match(f.cel(serie[2]), />3 de 8 \(até Fev\/27\)</);
+    assert.match(f.cel(serie[2]), /class="togParcela am"[^>]*>3 de 8 \(até Fev\/27\)</);   // 37,5%: amarelo
+    assert.match(f.cel(serie[1]), /class="togParcela vm"[^>]*>2 de 8/);                   // 25%: vermelho
+    assert.match(f.cel(serie[5]), /class="togParcela vd"[^>]*>6 de 8/);                   // 75%: verde
+    assert.match(f.cel(gas[0]), /class="togParcela am"[^>]*>1 de 2/);                     // 50%: amarelo
     assert.equal(resumo(f.parcela(gas[1])), '2/2 falta 0');
     assert.equal(resumo(f.parcela(gas[2])), '1/1 falta 0');
-    assert.match(f.cel(sozinho), />1 de 1 \(até Set\/26\)</);
+    assert.match(f.cel(sozinho), /class=togParcela [^>]*>—</);   // 1 de 1: traço, sem cor
     assert.equal(f.detalhe(sozinho), 'Parcela 1 de 1: só em Set/26. Próximas: nenhuma');
 });
 
@@ -78,7 +81,7 @@ test('linha calculada e sem ciclo ficam vazias (sem traço)', () => {
     assert.equal(f.cel(linha(1, 'X', 0, { cred: true })), '');   // fatura de Jul: compra antes dos ciclos
 });
 
-test('coluna depois de Frequência, fora do Backlog, sem cor; ordena por quantas faltam; filtro Última/Continua; toque', () => {
+test('coluna depois de Frequência, fora do Backlog; ordena por quantas faltam; filtro Última/Continua; toque', () => {
     assert.match(estado, /\['freq', 'Frequência', 't'\], \['parcela', 'Parcela', 's'\]/);
     assert.match(estado, /chave !== 'prio' && chave !== 'parcela'/);
     assert.doesNotMatch(tabelas, /Repete|'some'/);
@@ -92,6 +95,8 @@ test('coluna depois de Frequência, fora do Backlog, sem cor; ordena por quantas
 test('regra documentada', () => {
     assert.match(regras, /### Coluna Parcela/);
     assert.match(regras, /Um ciclo sem o compromisso encerra a sequência/);
+    assert.match(regras, /até 1\/3 \*\*vermelho\*\*, até 2\/3 \*\*amarelo\*\*, depois \*\*verde\*\*/);
+    assert.match(regras, /Lançamento sozinho \(`1 de 1`\) mostra só "—"/);
     assert.match(regras, /ignorando o número de parcela no fim do nome/);
     assert.match(regras, /Linha calculada .* fica com a célula vazia/);
 });
