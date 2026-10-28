@@ -26,7 +26,7 @@
 
 Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para todos fica lá).
 
-- **Migrations:** `migrations/` 00 a 02, formato DataGrip, RLS só do Victor em `agua_dia`; tabelas `push_*` sem policy. A 02 tem função de gatilho em `plpgsql` (exceção das diretrizes): vai pelo SQL Editor do Supabase, não pelo DataGrip, e estava pendente em 28/10/2026. Conferido em `tests/estrutura.test.mjs`, numeração em `../tests/documentacao.test.mjs`.
+- **Migrations:** `migrations/` 00 a 02, formato DataGrip, RLS só do Victor em `agua_dia`; tabelas `push_*` sem policy. A 02 tem função de gatilho em `plpgsql` (exceção das diretrizes): vai pelo SQL Editor do Supabase, não pelo DataGrip; aplicada em 28/10/2026. Conferido em `tests/estrutura.test.mjs`, numeração em `../tests/documentacao.test.mjs`.
 - **Testes:** navegador em `tests/agua.test.mjs` e `tests/notificacoes.test.mjs` (Playwright do `tr/`, Supabase falso em `tests/helpers/app.mjs`); a Edge Function em `tests/funcao.test.mjs` (rede falsa); estrutura em `tests/estrutura.test.mjs`.
 - **Pacotes:** sem `package.json`. `../supabase.js` da raiz e o Playwright do `tr/`; a função não usa pacote (WebCrypto do Deno), só os tipos `jsr:@supabase/functions-js@2.118.0`.
 - **Backups:** cópia no aparelho (`agua.db.<conta>`, base em `agua.base.<conta>`) e `hub_historico` com `agua_dia`. As tabelas `push_*` ficam fora: perdida `push_chave`, a função gera chaves novas e cada aparelho precisa reativar as notificações.

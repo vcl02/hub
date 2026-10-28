@@ -19,7 +19,7 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md`; o jeito de trabalha
 ## Lembrete de escovar os dentes (28/10/2026)
 
 - 20 min depois de lançar comida no al, pelo mesmo push: gatilho em `al_registro` agenda em `push_agendado`, e o pg_cron de minuto em minuto chama a função.
-- Como o push vai sem conteúdo, a função grava o tipo em `push_ultimo` e o `sw.js` pergunta qual texto mostrar; sem resposta, mostra o de água. Sem a tabela `push_ultimo` (migration 02 ainda não aplicada em 28/10/2026), o lembrete de água segue normal.
+- Como o push vai sem conteúdo, a função grava o tipo em `push_ultimo` e o `sw.js` pergunta qual texto mostrar; sem resposta, mostra o de água. Sem a tabela `push_ultimo` (antes da migration 02, aplicada em 28/10/2026), o lembrete de água seguia normal.
 
 ## Outras bebidas (27/10/2026)
 

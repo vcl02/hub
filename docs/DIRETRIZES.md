@@ -163,8 +163,9 @@ Nenhum app, workflow ou script faz backup automático; mudar isso é decisão no
 
 ## 7. Pendências
 
-1. **Migrations com função de gatilho ainda não conferidas:** a `00` da raiz e a `agua/02` (pendente em 28/10/2026) têm corpo `plpgsql`.
-   Conferir se já foram aplicadas e, se não, aplicar pelo SQL Editor (ver Migrations, "Exceção: função de gatilho").
-2. **`fin/41`** (histórico das metas) entregue em 28/10/2026, a aplicar no DataGrip.
+Nenhuma em aberto.
+
+Aplicadas em 28/10/2026 pelo mantenedor, num script só pelo SQL Editor do Supabase: `fin/41`, `00` da raiz e `agua/02` (rodar de novo não muda nada, então a `00` já aplicada antes não teria mudado).
+Conferidas pelo `SELECT` do fim do script: gatilho `fin_meta_historico`, `hub_historico` com os 10 gatilhos, `push_agendado`, `push_ultimo`, gatilho `agendar_dentes` e o agendamento `dentes-lembrete`.
 
 Resolvidas em 28/10/2026, a pedido do mantenedor: commit e push sempre na `main`; histórico de `fin_meta` (`fin/41`); `supabase-js` 2.118.0 também no Fin; tipos das Edge Functions com versão fixa; sem backup fora do Supabase por enquanto; o plano atual do Supabase não faz backup.

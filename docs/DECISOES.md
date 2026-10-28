@@ -60,3 +60,4 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md` (página inicial), `
 - **Backup:** nenhuma cópia fora do Supabase por enquanto; só o que o mantenedor exportar pelo DataGrip. O plano atual do Supabase não faz backup, segundo ele. Os históricos no banco (`hub_historico`, `fin_historico`) seguem como a forma de recuperar dado.
 - **Histórico das metas:** `fin_meta` entra no `fin_historico` (`fin/41`).
 - **Versões:** o Fin passou a usar o `supabase-js` 2.118.0, o mesmo dos outros apps, e os tipos das Edge Functions ganharam versão fixa (`jsr:@supabase/functions-js@2.118.0`), a mesma do `supabase-js`.
+- **Aplicação (28/10/2026):** `fin/41`, `00` da raiz e `agua/02` foram rodadas juntas, num script só, pelo SQL Editor do Supabase, e conferidas por `SELECT` (tudo presente, 10 gatilhos de `hub_historico`).
