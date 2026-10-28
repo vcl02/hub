@@ -179,31 +179,37 @@ function ciclosSeguintesDaLinha(r) {
     return Array.from({ length: CICLOS_SEGUINTES }, (_, k) => {
         const idx = p + 1 + k;
         const daTela = Estado.ciclos[r.cred ? idx - 1 : idx];
-        return { idx, daTela, tem: !!(ciclos?.has(idx) || doLote?.has(idx)), aberto: !daTela || dataISO(daTela.fat) >= hoje };
+        return {
+            idx, daTela, tem: !!(ciclos?.has(idx) || doLote?.has(idx)),
+            aberto: !daTela || dataISO(daTela.fat) >= hoje, comecou: !!daTela && dataISO(daTela.ini) <= hoje,
+        };
     });
 }
-// Contagem real: Repete só com o compromisso nos 3 ciclos seguintes; Some só sem ele em
-// nenhum e os 3 já terminados; senão, parcial ("n de 3"). null ("—") quando nada foi achado
-// e nenhum dos 3 terminou (não há dado pra dizer nada). sim ordena: 0 … 3.
+// Pelo que está nos dados: 'repete' com o compromisso nos 3 ciclos seguintes; 'some' sem ele
+// em nenhum e os 3 já terminados; 'ate' quando aparece em parte deles (ultimo = o último ciclo
+// da tela em que aparece: "até Out/26"); 'aindaNao' quando não voltou nos que já terminaram e
+// o resto ainda não terminou. null ("—") sem nada achado e nenhum terminado. sim ordena: 0 … 3.
+// Nada de "n de 3": lido como número de parcela, "2 de 3" em Ago e "1 de 3" em Set pareciam
+// dizer que agosto estava mais adiantado que setembro.
 function situacaoNosSeguintes(r) {
     const seguintes = ciclosSeguintesDaLinha(r);
     if (!seguintes) return null;
-    const sim = seguintes.filter(c => c.tem).length;
+    const comElas = seguintes.filter(c => c.tem);
+    const sim = comElas.length;
     const terminados = seguintes.filter(c => !c.aberto).length;
     if (!sim && !terminados) return null;
-    return { sim, tipo: sim == CICLOS_SEGUINTES ? 'repete' : !sim && terminados == CICLOS_SEGUINTES ? 'some' : 'parcial' };
+    const tipo = sim == CICLOS_SEGUINTES ? 'repete' : sim ? 'ate' : terminados == CICLOS_SEGUINTES ? 'some' : 'aindaNao';
+    return { sim, tipo, ultimo: comElas.at(-1)?.daTela ?? null };
 }
-// "Out/26 sim · Nov/26 ainda não · Dez/26 ainda não"; no Crédito, pelo mês da fatura, que é
-// como a parcela é lida ("fat. Nov/26 sim": a compra de 05/10, que vence na fatura de novembro).
-// Depois, as próximas ocorrências com data (e fatura, no Crédito; "sem ciclo" se não caem em
-// nenhum), pra conferir de onde vem um "não": no Crédito o que conta é a fatura, não a data.
+// "Set/26 sim · Out/26 sim · Nov/26 não começou", pelo ciclo da tela (o mesmo da célula; no
+// Crédito, o das compras): sim, não (terminou sem ele), em andamento (o de hoje, sem ele ainda)
+// ou não começou — nunca uma lista que pareça "vai até Nov". Depois, as próximas ocorrências
+// com data (e fatura, no Crédito; "sem ciclo" se não caem em nenhum).
 function detalheDosSeguintes(r) {
     const seguintes = ciclosSeguintesDaLinha(r);
     if (!seguintes) return '';
-    const ciclos = seguintes.map(({ idx, daTela, tem, aberto }) => {
-        const rotulo = r.cred ? `fat. ${nomePeriodoAbrev(Estado.ciclos[idx])}` : daTela ? nomePeriodoAbrev(daTela) : '?';
-        return `${rotulo} ${tem ? 'sim' : aberto ? 'ainda não' : 'não'}`;
-    }).join(' · ');
+    const ciclos = seguintes.map(({ daTela, tem, aberto, comecou }) =>
+        `${daTela ? nomePeriodoAbrev(daTela) : '?'} ${tem ? 'sim' : !aberto ? 'não' : comecou ? 'em andamento' : 'não começou'}`).join(' · ');
     const curta = d => dataBR(d).slice(0, 5);
     const proximas = (_presencas.linhasPorChave.get(chaveDoCompromisso(r)) || [])
         .filter(l => l !== r && l.data && dataISO(l.data) > dataISO(r.data || ''))

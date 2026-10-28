@@ -638,7 +638,7 @@
   .col-seguintes { width: 6.25rem; }
 
   /* Próx. 3: tocar mostra os ciclos (só lê). */
-  .togSeguintes { cursor: pointer; }
+  .togSeguintes { cursor: pointer; white-space: nowrap; }
   .col-prio { width: 4.5rem; }
   .col-id { width: 4rem; }
 

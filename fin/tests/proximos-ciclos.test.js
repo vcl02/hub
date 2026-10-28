@@ -1,6 +1,6 @@
-// Regressão: coluna Próx. 3 nas tabelas do ciclo — contagem real nos 3 ciclos seguintes, sem
-// supor o futuro: Repete só nos 3, Some só em nenhum com os 3 terminados, "n de 3" no meio,
-// "—" sem dado; ciclo não terminado sem o compromisso é "ainda não"; cor só nas saídas; parcelas "(2/12)" são o mesmo compromisso; tocar mostra os ciclos e as próximas.
+// Regressão: coluna Próx. 3 nas tabelas do ciclo — pelos dados dos 3 ciclos seguintes, sem
+// supor o futuro: Repete só nos 3, Some só em nenhum com os 3 terminados, "até Out/26" no
+// meio, "Ainda não" sem volta nos terminados, "—" sem dado; nunca "n de 3"; ciclo não terminado sem o compromisso é "ainda não"; cor só nas saídas; parcelas "(2/12)" são o mesmo compromisso; tocar mostra os ciclos e as próximas.
 // Roda o código real de domain/shared/finance e a célula de tables.js, com hoje fixo.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -42,19 +42,22 @@ test('ciclos que já terminaram: Repete, Some e o meio; mesmo nome + categoria, 
         uber, gas, linha(7, 'Gás', 2), linha(8, 'Condomínio', 1, { categ: 'Outra' })]);
     assert.equal(tipo(f.situacao(condominio)), 'repete 3');
     assert.equal(tipo(f.situacao(uber)), 'some 0');
-    assert.equal(tipo(f.situacao(gas)), 'parcial 1');
+    assert.equal(tipo(f.situacao(gas)), 'ate 1');
+    assert.match(f.cel(gas), /class="togSeguintes"[^>]*>até Set\/26</);
+    assert.doesNotMatch(f.cel(gas), / de 3</);
 });
 
 test('sem supor o futuro: ciclo não terminado sem o compromisso não faz Some nem completa Repete', () => {
     // Hoje 20/09: Ago terminou, Set (o de hoje) e Out não.
     const cafe = linha(1, 'Café', 0), ia = linha(3, 'IA Crédito', 0), tudoDepois = linha(4, 'Novo', 2);
     const f = carrega([cafe, linha(2, 'Café', 1), ia, tudoDepois], '2026-09-20');
-    assert.equal(tipo(f.situacao(cafe)), 'parcial 1');       // Ago sim; Set e Out ainda não: 1 de 3
-    assert.equal(tipo(f.situacao(ia)), 'parcial 0');         // Ago não; o resto ainda não: 0 de 3, não Some
+    assert.equal(tipo(f.situacao(cafe)), 'ate 1');           // Ago sim; Set em andamento, Out não começou
+    assert.equal(tipo(f.situacao(ia)), 'aindaNao 0');        // Ago não; o resto não terminou: não é Some
     assert.equal(f.situacao(tudoDepois), null);              // Out, Nov e Dez: nada diz nada ainda
-    assert.equal(f.detalhe(cafe), 'Ago/26 sim · Set/26 ainda não · Out/26 ainda não. Próximas: nenhuma');
+    assert.equal(f.detalhe(cafe), 'Ago/26 sim · Set/26 em andamento · Out/26 não começou. Próximas: nenhuma');
     assert.match(f.cel(tudoDepois), />—</);
-    assert.match(f.cel(cafe), /class="togSeguintes"[^>]*>1 de 3</);
+    assert.match(f.cel(cafe), /class="togSeguintes"[^>]*>até Ago\/26</);
+    assert.match(f.cel(ia), /class="togSeguintes"[^>]*>Ainda não</);
     // Série cadastrada pra frente diz "sim" mesmo no futuro.
     const serie = linha(10, 'Renegociação Nu', 0);
     const g = carrega([serie, linha(11, 'Renegociação Nu', 1), linha(12, 'Renegociação Nu', 2), linha(13, 'Renegociação Nu', 3)], '2026-09-20');
@@ -65,10 +68,10 @@ test('no Crédito, o ciclo que importa é o das compras (o anterior ao da fatura
     // Compra na fatura do ciclo 1 (aparece na tela no ciclo 0); hoje 20/09 (ciclo 2).
     const compra = linha(1, 'Netflix', 1, { cred: true });
     const f = carrega([compra, linha(2, 'Netflix', 2, { cred: true })], '2026-09-20');
-    // Seguintes pela fatura: 2, 3, 4 (Set, Out, Nov); as compras delas, na tela: Ago (terminou),
-    // Set (hoje), Out. O aviso fala pela fatura, como a parcela é lida.
-    assert.equal(f.detalhe(compra), 'fat. Set/26 sim · fat. Out/26 ainda não · fat. Nov/26 ainda não. Próximas: nenhuma');
-    assert.equal(tipo(f.situacao(compra)), 'parcial 1');
+    // Seguintes pela fatura: 2, 3, 4; as compras delas, na tela: Ago (terminou), Set (hoje), Out.
+    assert.equal(f.detalhe(compra), 'Ago/26 sim · Set/26 em andamento · Out/26 não começou. Próximas: nenhuma');
+    assert.equal(tipo(f.situacao(compra)), 'ate 1');
+    assert.match(f.cel(compra), />até Ago\/26</);
 });
 
 test('mesmo lote e parcelas "(n/m)" sem lote são o mesmo compromisso', () => {
@@ -76,7 +79,7 @@ test('mesmo lote e parcelas "(n/m)" sem lote são o mesmo compromisso', () => {
     const t1 = linha(4, 'Renegociação Itaú (1/12)', 0);
     const f = carrega([p1, linha(2, 'TV (2/3)', 1, { recorrencia_id: 9 }), linha(3, 'TV (3/3)', 2, { recorrencia_id: 9 }),
         t1, linha(5, 'Renegociação Itaú (2/12)', 1), linha(6, 'Renegociação Itaú (3/12)', 2), linha(7, 'Renegociação Itaú (4/12)', 3)]);
-    assert.equal(tipo(f.situacao(p1)), 'parcial 2');
+    assert.equal(tipo(f.situacao(p1)), 'ate 2');
     assert.equal(tipo(f.situacao(t1)), 'repete 3');
 });
 
@@ -111,10 +114,28 @@ test('coluna depois de Frequência, fora do Backlog, ordenação, filtro e toque
     assert.match(ler('js/interactions.js'), /const celula = e\.target\.closest\('\[data-seguintes\]'\);[\s\S]{0,80}e\.stopImmediatePropagation\(\);\s*\n\s*mostrarToast\('Próx\. 3', celula\.dataset\.seguintes\);/);
 });
 
+test('Renegociação de Ago e de Set (série que acaba na fatura de Nov) dizem o mesmo: até Out/26', () => {
+    // Hoje 28/10 (ciclo Out). Compras dia 05, fatura dia 12 do mês seguinte (ciclo da fatura =
+    // o seguinte ao da compra): 05/08 → 1 (Ago na tela), 05/09 → 2, 05/10 → 3, e acabou.
+    const ago = linha(1, 'Renegociação Nu', 2, { cred: true, data: '2026-08-05', fatura: '2026-09-12' });
+    const set = linha(2, 'Renegociação Nu', 3, { cred: true, data: '2026-09-05', fatura: '2026-10-12' });
+    const out = linha(3, 'Renegociação Nu', 4, { cred: true, data: '2026-10-05', fatura: '2026-11-12' });
+    const f = carrega([linha(0, 'Renegociação Nu', 1, { cred: true, data: '2026-07-05', fatura: '2026-08-12' }), ago, set, out], '2026-10-28');
+    assert.match(f.cel(ago), />até Out\/26</);
+    assert.equal(f.cel(set), '—');   // só 2 ciclos depois do 3 nos ciclos do teste
+    const g = carrega([linha(0, 'Renegociação Nu', 0, { cred: true, data: '2026-06-05', fatura: '2026-07-12' }),
+        linha(1, 'Renegociação Nu', 1, { cred: true, data: '2026-07-05', fatura: '2026-08-12' }),
+        linha(2, 'Renegociação Nu', 2, { cred: true, data: '2026-08-05', fatura: '2026-09-12' })], '2026-08-20');
+    const primeira = { ...linha(0, 'Renegociação Nu', 0, { cred: true, data: '2026-06-05', fatura: '2026-07-12' }) };
+    assert.match(g.cel(primeira), />até Ago\/26</);
+    assert.equal(g.detalhe(primeira), 'Jul/26 sim · Ago/26 sim · Set/26 não começou. Próximas: 05/07 fat. 12/08 · 05/08 fat. 12/09');
+});
+
 test('regra documentada', () => {
     assert.match(regras, /### Coluna Próx\. 3/);
     assert.match(regras, /Cor só nas saídas: \*\*Repete\*\* em vermelho, \*\*Some\*\* em verde/);
     assert.match(regras, /ignorando o número de parcela no fim do nome/);
     assert.match(regras, /ainda não terminou/);
     assert.match(regras, /sem supor o futuro/);
+    assert.match(regras, /Nunca "2 de 3"/);
 });

@@ -80,14 +80,15 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ### Coluna Próx. 3
 
-- As tabelas Débito e Crédito do ciclo têm a coluna **Próx. 3**, logo depois de Frequência: em quantos dos **3 ciclos seguintes** ao da linha o mesmo compromisso aparece, só pelo que está nos dados, sem supor o futuro.
-  **Repete** quando aparece nos 3; **Some** quando não aparece em nenhum e os 3 já terminaram; senão, a contagem real `0 de 3`…`2 de 3`.
-  Ciclo que **ainda não terminou** (o de hoje e os seguintes) e não tem o compromisso é "ainda não": não prova que some nem que repete, então nunca vira Some e não completa um Repete. Série cadastrada pra frente (Frequência, parcelas, pra sempre) conta como está. Sem nada achado e com nenhum dos 3 terminado, "—".
-  O ciclo que importa é o em que a ocorrência aparece na tela: no Crédito, o anterior ao da fatura (o das compras).
-  Cor só nas saídas: **Repete** em vermelho, **Some** em verde; entrada (valor positivo) e o meio ficam sem cor.
+- As tabelas Débito e Crédito do ciclo têm a coluna **Próx. 3**, logo depois de Frequência: se o mesmo compromisso volta nos **3 ciclos seguintes** ao da linha, só pelo que está nos dados, sem supor o futuro.
+  **Repete** quando aparece nos 3; **Some** quando não aparece em nenhum e os 3 já terminaram; **até Out/26** quando aparece em parte deles (o último ciclo em que aparece); **Ainda não** quando não voltou nos que já terminaram e o resto ainda não terminou; "—" sem nada achado e nenhum dos 3 terminado.
+  Nunca "2 de 3": lido como número de parcela, parecia dizer que agosto estava mais adiantado que setembro.
+  Ciclo que **ainda não terminou** (o de hoje e os seguintes) e não tem o compromisso não prova que some nem que repete: nunca vira Some e não completa um Repete. Série cadastrada pra frente (Frequência, parcelas, pra sempre) conta como está.
+  O ciclo é o da tela, em que a ocorrência aparece: no Crédito, o das compras (o anterior ao da fatura) — a Renegociação de 05/10, na fatura de novembro, aparece em Out/26, então as linhas de Ago e de Set mostram as duas "até Out/26".
+  Cor só nas saídas: **Repete** em vermelho, **Some** em verde; entrada (valor positivo) e os demais ficam sem cor.
   O mesmo compromisso é o mesmo nome + categoria (a regra da recorrência duplicada, `chaveDaRecorrencia`), ignorando o número de parcela no fim do nome (`(2/12)`, que o Tasker grava em cada parcela, sem lote), ou o mesmo lote (`recorrencia_id`).
   Contam lançamentos reais, simulados e previstos (Besteira/Isabella, metas), pago ou aberto.
-  Tocar na célula (ou passar o mouse) mostra cada um dos 3 ciclos (`sim`, `não` ou `ainda não`) — no Crédito, pelo mês da fatura (`fat. Nov/26 sim`), como a parcela é lida — e as próximas ocorrências com data e, no Crédito, a fatura (que é o que decide o ciclo): `Out/26 sim · Nov/26 ainda não · Dez/26 ainda não. Próximas: 05/11 fat. 12/12` ("sem ciclo" quando a ocorrência não cai em nenhum); o toque não seleciona a linha.
+  Tocar na célula (ou passar o mouse) mostra cada um dos 3 ciclos — `sim`, `não` (terminou sem ele), `em andamento` (o de hoje, sem ele ainda) ou `não começou` — e as próximas ocorrências com data e, no Crédito, a fatura: `Set/26 sim · Out/26 sim · Nov/26 não começou. Próximas: 05/09 fat. 12/10 · 05/10 fat. 12/11` ("sem ciclo" quando a ocorrência não cai em nenhum); o toque não seleciona a linha.
 - Mostra "—" também em linha calculada (fatura, Saldo do mês anterior, Aporte sugerido/Resgate necessário), em linha sem ciclo e quando ainda não há 3 ciclos cadastrados depois do da linha. O Backlog não tem a coluna.
 - É só leitura, ordena pela contagem (0 → 3, "—" sempre por último) e filtra por clique: **Todos** → **Repete** → **Some**.
 
