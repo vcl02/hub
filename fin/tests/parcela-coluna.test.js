@@ -63,6 +63,8 @@ test('sequência inteira, sem janela de 3; ciclo sem ele recomeça; sozinho é 1
     assert.equal(resumo(f.parcela(gas[1])), '2/2 falta 0');
     assert.equal(resumo(f.parcela(gas[2])), '1/1 falta 0');
     assert.match(f.cel(sozinho), /class=togParcela [^>]*>—</);   // 1 de 1: traço, sem cor
+    const condominio = [0, 1, 2].map(c => linha(40 + c, 'Condomínio', c, { pra_sempre: true }));
+    assert.match(carrega(condominio).cel(condominio[1]), /class=togParcela [^>]*>—</);   // pra sempre: traço
     assert.equal(f.detalhe(sozinho), 'Parcela 1 de 1: só em Set/26. Próximas: nenhuma');
 });
 
@@ -88,7 +90,7 @@ test('coluna depois de Frequência, fora do Backlog; ordena por quantas faltam; 
     assert.match(estado, /chave !== 'prio' && chave !== 'parcela'/);
     assert.doesNotMatch(tabelas, /Repete|'some'/);
     assert.match(tabelas, /parcela: \[\['vm', '0–33%'[^\]]+'vm'\], \['am', '33–66%'[^\]]+'am'\], \['vd', '66–100%'[^\]]+'vd'\]\]/);
-    assert.match(tabelas, /return !!p && p\.total > 1 && \(r\.v \|\| 0\) <= 0 && corDaParcela\(p\) === termo;/);
+    assert.match(tabelas, /return !!p && p\.total > 1 && !r\.pra_sempre && \(r\.v \|\| 0\) <= 0 && corDaParcela\(p\) === termo;/);
     assert.match(tabelas, /const valor = r => coluna == 'parcela' \? parcelaDaLinha\(r\)\?\.falta \?\? null : r\[coluna\];/);
     assert.match(ler('css/dashboard.css'), /\.col-parcela \{ width: 11\.5rem; \}/);
     assert.match(ler('js/interactions.js'), /const celula = e\.target\.closest\('\[data-parcela\]'\);[\s\S]{0,80}e\.stopImmediatePropagation\(\);\s*\n\s*mostrarToast\('Parcela', celula\.dataset\.parcela\);/);
@@ -100,7 +102,7 @@ test('regra documentada', () => {
     assert.match(regras, /até 1\/3 \*\*vermelho\*\*, até 2\/3 \*\*amarelo\*\*, depois \*\*verde\*\*/);
     assert.match(regras, /entrada \(valor positivo\) e o "—" ficam sem cor/);
     assert.match(regras, /filtra por clique pela faixa da cor/);
-    assert.match(regras, /Lançamento sozinho \(`1 de 1`\) mostra só "—"/);
+    assert.match(regras, /Lançamento sozinho \(`1 de 1`\) e o que é \*\*pra sempre\*\*/);
     assert.match(regras, /ignorando o número de parcela no fim do nome/);
     assert.match(regras, /Linha calculada .* fica com a célula vazia/);
 });

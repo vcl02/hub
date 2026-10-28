@@ -162,10 +162,11 @@ function passaFiltroTexto(r, idTabela) {
         }
         if (coluna == 'pago') return termo == 'S' ? r.pago === true : r.pago === false;
         if (coluna == 'reserva' || coluna == 'comprometido' || coluna == 'pra_sempre') return termo == 'S' ? !!r[coluna] : !r[coluna];
-        // Parcela: pela faixa da cor (corDaParcela), só onde há cor — saída com sequência de 2+.
+        // Parcela: pela faixa da cor (corDaParcela), só onde há cor — saída com sequência de 2+,
+        // fora o pra sempre.
         if (coluna == 'parcela') {
             const p = parcelaDaLinha(r);
-            return !!p && p.total > 1 && (r.v || 0) <= 0 && corDaParcela(p) === termo;
+            return !!p && p.total > 1 && !r.pra_sempre && (r.v || 0) <= 0 && corDaParcela(p) === termo;
         }
         // ID é exato (não "contém"): "4" acha só o lançamento 4, nunca 14 ou 40. "|" aceita
         // vários; linhas calculadas também têm id (-3, -4…) e podem ser achadas.
@@ -361,7 +362,8 @@ const celFlag = (r, chave) => {
 };
 
 // Parcela: "2 de 3 (até Out/26)" em toda linha com ciclo (ver parcelaDaLinha); "—" quando é
-// 1 de 1 (sozinho); linha calculada fica vazia. Cor pelo andamento (posição ÷ total): até 1/3
+// 1 de 1 (sozinho) ou pra sempre (sem fim, não há "de N": o total seria só até onde o app gerou
+// a série, 2032); linha calculada fica vazia. Cor pelo andamento (posição ÷ total): até 1/3
 // vermelho, até 2/3 amarelo, depois verde — 1 de 3 vermelho, 1 de 2 amarelo, 2 de 3 e 3 de 3
 // verdes. Entrada (valor positivo) fica sem cor. Só leitura; tocar (ou o hover) mostra o trecho
 // e as próximas (handler data-parcela).
@@ -370,7 +372,7 @@ const celParcela = r => {
     const p = parcelaDaLinha(r);
     if (!p) return '';
     const detalhe = escapeHtml(detalheDaParcela(r));
-    if (p.total == 1) return `<span class=togParcela data-parcela="${detalhe}" title="${detalhe}">—</span>`;
+    if (p.total == 1 || r.pra_sempre) return `<span class=togParcela data-parcela="${detalhe}" title="${detalhe}">—</span>`;
     const cor = (r.v || 0) > 0 ? '' : ' ' + corDaParcela(p);
     return `<span class="togParcela${cor}" data-parcela="${detalhe}" title="${detalhe}">${p.posicao} de ${p.total} (até ${nomePeriodoAbrev(p.ultimo)})</span>`;
 };
