@@ -29,6 +29,16 @@
 - Segredos (ex.: o token da captura do Nubank) ficam só em secret do Supabase e no celular, nunca em arquivo do repositório, que é público. A Edge Function `captura-nubank` é a única exceção ao RLS; ver `docs/DECISOES.md`, "Captura do Nubank".
 - Não exponha chaves de serviço nem contorne RLS. Toda atualização por nome deve usar a igualdade exata e `encodeURIComponent` no filtro PostgREST.
 
+## Infraestrutura
+
+Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para todos fica lá).
+
+- **Migrations:** `migrations/` 00 a 40. Formato DataGrip desde a 28; a 27 (`fin_historico`) é a exceção de gatilho, aplicada pelo MCP em duas partes. Migration de dados: prévia só de leitura e teste num PostgreSQL local (PGlite) com o script partido em `;` (ver Regras de dados e segurança). Formato conferido em `tests/recorrencia-id-lote.test.js`, `tests/pra-sempre.test.js` e `tests/migrations-2032.test.js`; numeração em `../tests/documentacao.test.mjs`.
+- **Testes:** funções e estrutura com `node:test`, sem navegador, em `tests/*.test.js` (carga das funções em `tests/helpers/carregar-funcoes.js`); a Edge Function em `tests/captura-nubank.test.js`. No navegador, o Fin é aberto pelo `../tests/navegacao.test.mjs` da raiz (Chromium, sessão do hub, `?ciclo`). `node scripts/check.mjs` dentro de `fin/` não precisa de nenhuma instalação.
+- **Pacotes:** sem `package.json`. `supabase-js` 2.117.2 e `chart.js` 4.4.1 pelo jsDelivr com versão exata e `integrity` (ver `docs/DECISOES.md`, "Dependências externas fixadas"). A Edge Function `captura-nubank` não usa pacote além dos tipos `jsr:`.
+- **Backups:** `fin_historico` guarda antes e depois de cada linha de `fin` e `fin_ciclo` (migration 27); `fin_meta` ainda não tem histórico (pendência nas diretrizes). O download do Fin exporta o recorte filtrado. Migration destrutiva guarda as linhas afetadas antes (ex.: a 07 não se reaplica sem isso).
+- **Domínio:** `/hub/fin/`. Externos: o Supabase (inclusive `functions/v1/captura-nubank`, chamada pelo Tasker do celular) e `cdn.jsdelivr.net`.
+
 ## Como concluir uma mudança
 
 1. Mapeie a regra afetada em `docs/REGRAS.md` e atualize-a na mesma alteração.

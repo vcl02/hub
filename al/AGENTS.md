@@ -29,6 +29,16 @@
 - Mudança de esquema: migration nova e numerada em `migrations/`, no formato do DataGrip (sem `do $$`, sem `;` em comentário, entre `begin;` e `commit;`). O mantenedor aplica; operações remotas que mudam estado (migration, secret, deploy) exigem confirmação explícita dele.
 - Cópia local primeiro, envio por diferença (`linhas()`/`deLinhas()` em `js/banco.js`): mudanças no formato do `db` precisam continuar compatíveis com a cópia já gravada nos aparelhos.
 
+## Infraestrutura
+
+Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para todos fica lá).
+
+- **Migrations:** `migrations/` 00 a 02, formato DataGrip, RLS só do Victor em todas as `al_*`; conferido em `tests/estrutura.test.mjs`, numeração em `../tests/documentacao.test.mjs`.
+- **Testes:** navegador em `tests/dia.test.mjs` (Playwright do `tr/`, Supabase e IA falsos em `tests/helpers/app.mjs`); a Edge Function em `tests/funcao.test.mjs` (SDK e rede simulados); estrutura em `tests/estrutura.test.mjs`. As contas de `gasto.js` também são conferidas pelos hábitos da raiz.
+- **Pacotes:** sem `package.json`. `../supabase.js` da raiz; a função usa `npm:@anthropic-ai/sdk@0.133.0` (versão exata, conferida em `tests/funcao.test.mjs`); Playwright do `tr/`.
+- **Backups:** cópia no aparelho (`al.db.<conta>`, base em `al.base.<conta>`) e `hub_historico` com `al_dia`, `al_item` e `al_registro`. `al_uso` (contador de consultas à IA) fica fora: não é dado a recuperar.
+- **Domínio:** `/hub/al/`. Externos: o Supabase (inclusive `functions/v1/al-estimar`); a função chama a API da Anthropic.
+
 ## Como concluir uma mudança
 
 1. Atualize `docs/REGRAS.md`.

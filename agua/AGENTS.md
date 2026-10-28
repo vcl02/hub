@@ -22,6 +22,16 @@
 - **Outras bebidas** (`bebidas.js`, módulo compartilhado, carregado depois de `../corpo/perfil.js`): cada lançamento de suco, refri, cappuccino ou leite com Toddy grava `bebida` e `volume`, e `ml` é só a parte que é água (o que soma para a meta). As kcal saem de `volume` × a tabela, na hora: o al e o hábito do déficit leem `agua_dia` e contam como comido. Mudou a tabela, muda o histórico também.
 - Quem lê `agua_dia` (só leitura): a página inicial (hábitos), o Corpo (bexiga) e o al (bebidas com calorias).
 
+## Infraestrutura
+
+Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para todos fica lá).
+
+- **Migrations:** `migrations/` 00 a 02, formato DataGrip, RLS só do Victor em `agua_dia`; tabelas `push_*` sem policy. A 02 tem função de gatilho em `plpgsql` (exceção das diretrizes) e estava pendente em 28/10/2026. Conferido em `tests/estrutura.test.mjs`, numeração em `../tests/documentacao.test.mjs`.
+- **Testes:** navegador em `tests/agua.test.mjs` e `tests/notificacoes.test.mjs` (Playwright do `tr/`, Supabase falso em `tests/helpers/app.mjs`); a Edge Function em `tests/funcao.test.mjs` (rede falsa); estrutura em `tests/estrutura.test.mjs`.
+- **Pacotes:** sem `package.json`. `../supabase.js` da raiz e o Playwright do `tr/`; a função não usa pacote (WebCrypto do Deno), só os tipos `jsr:`.
+- **Backups:** cópia no aparelho (`agua.db.<conta>`, base em `agua.base.<conta>`) e `hub_historico` com `agua_dia`. As tabelas `push_*` ficam fora: perdida `push_chave`, a função gera chaves novas e cada aparelho precisa reativar as notificações.
+- **Domínio:** `/hub/agua/`. Externos: o Supabase (inclusive `functions/v1/agua-lembrete`, chamada pelo pg_cron e pelo `sw.js`) e o serviço de push de cada navegador inscrito. Os testes usam `https://vcl02.github.io/hub/agua/`: mudou o domínio, eles mudam.
+
 ## Como concluir uma mudança
 
 1. Atualize `docs/REGRAS.md`.

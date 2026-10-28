@@ -26,6 +26,16 @@
 - Migrations seguem o formato do DataGrip, que parte o script em **cada** `;`: nenhum bloco `do $$`, nenhum `;` em comentário, tudo entre `begin;` e `commit;`. Depois que o mantenedor aplicar, confira o resultado com `SELECT` antes de declarar aplicada.
 - O app grava primeiro a cópia local e envia ao Supabase só a diferença; mudanças no formato do `db` precisam continuar compatíveis com `linhas()`/`deLinhas()` e com a cópia local já gravada nos aparelhos.
 
+## Infraestrutura
+
+Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para todos fica lá).
+
+- **Migrations:** `migrations/` 00 a 07, formato DataGrip, RLS só do dono em todas as `tr_*`; conferido em `tests/estrutura.test.mjs`, numeração em `../tests/documentacao.test.mjs`.
+- **Testes:** Playwright + `node:test`, um arquivo por área (`treino`, `pontos`, `nuvem`, `ajustes`, `calistenia`, `cardio`), com servidor e Supabase falso em `tests/helpers/app.mjs` (o teste de navegação da raiz usa o mesmo Supabase falso); funções e estrutura em `tests/estrutura.test.mjs`.
+- **Pacotes:** o único `package.json` do hub: `playwright` 1.56.1 (com `package-lock.json`), que serve também à raiz, ao al, ao Corpo e à Água. Instalar: `npm ci` e `npx playwright install chromium` dentro de `tr/`. `supabase.js` é o `supabase-js` 2.118.0, igual byte a byte ao da raiz.
+- **Backups:** cópia no aparelho (`tr.db.<usuário>`, base em `tr.base.<usuário>`) e `hub_historico` com `tr_treino`, `tr_registro`, `tr_exercicio` e `tr_variacao` (migration `00` da raiz). Sem backup manual em `.json`. Fotos das máquinas ficam só no aparelho, sem cópia.
+- **Domínio:** `/hub/tr/`. Externo: só o Supabase.
+
 ## Como concluir uma mudança
 
 1. Mapeie a regra afetada em `docs/REGRAS.md` e atualize-a na mesma alteração.

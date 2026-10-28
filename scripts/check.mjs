@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 
 const arquivos = ['index.html', 'hub.css', 'hub.js', 'habitos.js', 'sw.js', 'manifest.webmanifest', 'AGENTS.md', 'README.md', '.editorconfig', '.gitignore', '.mcp.json',
   '.claude/settings.json', '.claude/hooks/session-start.sh',
-  ...readdirSync('tests').map(n => `tests/${n}`), ...readdirSync('scripts').map(n => `scripts/${n}`), ...readdirSync('migrations').map(n => `migrations/${n}`),
+  ...readdirSync('docs').map(n => `docs/${n}`), ...readdirSync('tests').map(n => `tests/${n}`), ...readdirSync('scripts').map(n => `scripts/${n}`), ...readdirSync('migrations').map(n => `migrations/${n}`),
   ...readdirSync('.github/workflows').map(n => `.github/workflows/${n}`)];
 const erros = [];
 for (const arquivo of arquivos) {
@@ -21,7 +21,7 @@ const comandos = [
   [process.execPath, ['--check', 'sw.js'], '.'],
   [process.execPath, ['--check', 'hub.js'], '.'],
   [process.execPath, ['--check', 'habitos.js'], '.'],
-  [process.execPath, ['--test', 'tests/hub.test.mjs', 'tests/habitos.test.mjs', 'tests/navegacao.test.mjs'], '.'],
+  [process.execPath, ['--test', 'tests/hub.test.mjs', 'tests/documentacao.test.mjs', 'tests/habitos.test.mjs', 'tests/navegacao.test.mjs'], '.'],
   [process.execPath, ['scripts/check.mjs'], 'fin'],
   [process.execPath, ['scripts/check.mjs'], 'tr'],
   [process.execPath, ['scripts/check.mjs'], 'al'],

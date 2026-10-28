@@ -21,6 +21,16 @@
 - Só a conta `DONO`; RLS de `corpo_medida` com `somente_dono` + restritiva `somente_victor`; `anon` sem acesso. Chave do Supabase no código é a publicável; nunca segredo no repositório.
 - Mudança de esquema: migration nova e numerada em `migrations/`, formato do DataGrip. Operações remotas que mudam estado exigem confirmação explícita do mantenedor.
 
+## Infraestrutura
+
+Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para todos fica lá).
+
+- **Migrations:** `migrations/` 00 a 05, formato DataGrip, RLS só do Victor; a 00 não roda de novo (lê `tr_medida`, já apagada). Conferido em `tests/estrutura.test.mjs`, numeração em `../tests/documentacao.test.mjs`.
+- **Testes:** navegador em `tests/corpo.test.mjs` (Playwright do `tr/`, Supabase falso em `tests/helpers/app.mjs`); estrutura em `tests/estrutura.test.mjs`. As funções de `perfil.js` (idade, basal, calorias, pesagens) são testadas em `../tests/hub.test.mjs`.
+- **Pacotes:** sem `package.json`. `../supabase.js` da raiz e o Playwright do `tr/`.
+- **Backups:** cópia no aparelho (`corpo.db.<conta>`, base em `corpo.base.<conta>`) e `hub_historico` com `corpo_medida` e `corpo_dia`. O perfil está no código (git).
+- **Domínio:** `/hub/corpo/`. Externo: só o Supabase.
+
 ## Como concluir uma mudança
 
 1. Atualize `docs/REGRAS.md`.

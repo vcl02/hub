@@ -17,4 +17,4 @@ cd tr && npm ci && npx playwright install chromium && cd ..
 node scripts/check.mjs
 ```
 
-Guia de manutenção em `AGENTS.md`.
+Guia de manutenção em `AGENTS.md`; diretrizes comuns a todos os projetos (documentação, migrations, testes, pacotes, backups e domínios) em `docs/DIRETRIZES.md`.
