@@ -9,7 +9,7 @@
 // POST com x-agua-token -> lembrete do horário (se for a hora e faltar água)
 // POST com x-agua-token e { tipo: "dentes" } -> escovar os dentes (o banco chama 20 min depois da última comida lançada no
 // Alimentação, migration agua/02), a qualquer hora
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import "jsr:@supabase/functions-js@2.118.0/edge-runtime.d.ts";
 
 const DONO = "32f70255-30a0-4e2b-ad76-31d7a1bf54f7";
 const PRESENCIAL = [3, 4]; // qua e qui: o mesmo ROTINA.presencial de corpo/perfil.js (o teste confere)

@@ -52,3 +52,11 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md` (página inicial), `
   O comportamento visível da página inicial saiu do `AGENTS.md` da raiz para `REGRAS.md`, como nos apps.
 - `tests/documentacao.test.mjs` confere os três documentos, a seção Infraestrutura e a numeração das migrations em todos os projetos, para a estrutura não se perder no próximo app.
 - Não foi criado `package.json` por app: o único pacote de desenvolvimento é o Playwright, e uma instalação em `tr/` serve a todos.
+
+## Respostas do mantenedor às pendências (28/10/2026)
+
+- **Sempre na `main`:** commit e push direto na `main`, inclusive quando a sessão do Claude Code sugerir outra branch.
+- **Gatilhos:** o mantenedor não sabe como o DataGrip trata função `plpgsql`. Regra adotada: reaproveitar função de gatilho que já existe (a `fin/41` faz isso) e, quando uma função nova for inevitável, aplicar pelo SQL Editor do Supabase, conferindo depois com `SELECT`.
+- **Backup:** nenhuma cópia fora do Supabase por enquanto; só o que o mantenedor exportar pelo DataGrip. O plano atual do Supabase não faz backup, segundo ele. Os históricos no banco (`hub_historico`, `fin_historico`) seguem como a forma de recuperar dado.
+- **Histórico das metas:** `fin_meta` entra no `fin_historico` (`fin/41`).
+- **Versões:** o Fin passou a usar o `supabase-js` 2.118.0, o mesmo dos outros apps, e os tipos das Edge Functions ganharam versão fixa (`jsr:@supabase/functions-js@2.118.0`), a mesma do `supabase-js`.

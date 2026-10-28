@@ -625,6 +625,9 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - `migrations/35-antecipacao-sem-frequencia.sql` tira a Frequência das antecipações/pagamentos de fatura e Ajustes sem lote (cinco "Antecipação Fatura (Final)" de 2026 estavam como Mensal) e remove o default `'Mensal'` de `fin.freq`, que dava Frequência a toda linha inserida pelo DataGrip sem preencher a coluna; o app sempre envia `freq`, então nada muda na tela.
 - `migrations/39-leitura-somente-dono.sql` restringe a leitura de `fin`, `fin_ciclo` e `fin_meta` ao mantenedor (antes valia para qualquer conta logada, por causa da conta da Isabella, que saiu): troca as três policies de leitura `*_leitura_autenticada` por `*_leitura_somente_dono`, sem mexer na escrita.
   Coberta por `node --test tests/leitura-somente-dono.test.js`.
+- `migrations/41-historico-metas.sql` liga o histórico também em `fin_meta`: todo `INSERT`, `UPDATE` e `DELETE` numa meta grava em `fin_historico` como a 27 faz com `fin` e `fin_ciclo` (mesma função `registrar_historico`, sem função nova).
+  Não altera nenhuma linha e não muda nada no app; rodar de novo não muda nada.
+  Coberta por `node --test tests/historico-mudancas.test.js`.
 
 ## Testes
 

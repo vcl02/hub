@@ -113,6 +113,7 @@ A fundação paralela `hub/Vcl.FinHub` (.NET, ABP, Angular, PostgreSQL local) fo
 
 - `supabase-js` e `Chart.js` vêm do jsDelivr com **versão exata** e `integrity` (sha384), nunca por faixa (`@2`). Sem isso, uma versão nova entraria sozinha (podendo quebrar o login) e um CDN comprometido rodaria código com acesso à sessão.
 - O jsDelivr serve o arquivo do pacote npm byte a byte, então o hash é calculado do próprio pacote: `npm pack <pacote>@<versão>`, extrair e rodar `openssl dgst -sha384 -binary <arquivo> | openssl base64 -A`. Atualize versão e hash juntos, de preferência para uma versão publicada há pelo menos duas semanas.
+- 28/10/2026: `supabase-js` passou de 2.117.2 para 2.118.0, a mesma versão da cópia local da raiz do hub, a pedido do mantenedor: todos os apps dividem a origem e a sessão, então rodam a mesma versão. Como o jsDelivr serve o arquivo do pacote byte a byte e a cópia da raiz é igual ao do pacote npm 2.118.0, o `integrity` é o hash de `../supabase.js`, e `tests/pwa.test.js` confere isso.
 
 ## Supabase: itens só do plano Pro
 

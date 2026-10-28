@@ -56,9 +56,15 @@ test('registra service worker que atualiza a interface pela rede e cacheia só a
 test('dependências externas com versão exata e integrity (sha384)', () => {
     const scripts = [...html.matchAll(/<script src="(https:[^"]+)"\s*\n?\s*integrity="(sha384-[A-Za-z0-9+/=]+)" crossorigin=anonymous><\/script>/g)];
     assert.deepEqual(scripts.map(([, url]) => url), [
-        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js',
+        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js',
         'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js',
     ]);
+    // Mesmo supabase-js dos outros apps (mesma origem, mesma sessão): o jsDelivr serve o arquivo do
+    // pacote byte a byte, igual à cópia da raiz do hub, então o integrity é o hash dessa cópia.
+    const copiaDoHub = fs.readFileSync('../supabase.js');
+    assert.match(copiaDoHub.toString('utf8'), /supabase-js\/2\.118\.0/);
+    const hash = `sha384-${require('node:crypto').createHash('sha384').update(copiaDoHub).digest('base64')}`;
+    assert.equal(scripts[0][2], hash);
     // Nenhum script externo sem integrity nem com faixa de versão (ex.: "@2").
     const externos = [...html.matchAll(/<script src="(https:[^"]+)"/g)].map(([, url]) => url);
     assert.equal(externos.length, scripts.length);

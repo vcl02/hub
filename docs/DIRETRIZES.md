@@ -11,7 +11,7 @@ Pedido explícito do mantenedor vence tudo.
 | Projeto | Pasta | Endereço | Tabelas próprias | Migrations | Edge Function |
 |---|---|---|---|---|---|
 | Hub (página inicial) | raiz | `/hub/` | `hub_historico` (as dos apps, só lê) | `migrations/` 00 | — |
-| Fin | `fin/` | `/hub/fin/` | `fin`, `fin_ciclo`, `fin_meta`, `fin_historico` | 00 a 40 | `captura-nubank` |
+| Fin | `fin/` | `/hub/fin/` | `fin`, `fin_ciclo`, `fin_meta`, `fin_historico` | 00 a 41 | `captura-nubank` |
 | Treino | `tr/` | `/hub/tr/` | `tr_exercicio`, `tr_variacao`, `tr_registro`, `tr_treino` | 00 a 07 | — |
 | Alimentação | `al/` | `/hub/al/` | `al_item`, `al_registro`, `al_dia`, `al_uso` | 00 a 02 | `al-estimar` |
 | Corpo | `corpo/` | `/hub/corpo/` | `corpo_medida`, `corpo_dia` | 00 a 05 | — |
@@ -49,8 +49,11 @@ Todo projeto tem os três (o teste `tests/documentacao.test.mjs` confere):
   Motivo e histórico em `fin/docs/DECISOES.md`, "Migrations no DataGrip".
 - **Exceção: função de gatilho.** Gatilho exige `plpgsql`, com `;` dentro de `$$`.
   Hoje são três: `fin/migrations/27` (aplicada pelo MCP em duas partes, ver `fin/docs/DECISOES.md`), `migrations/00` (raiz) e `agua/migrations/02`.
-  Migration com gatilho diz no cabeçalho que tem corpo `plpgsql` e é aplicada como um script só, sem ser partida em `;`.
-  Como o mantenedor faz isso no DataGrip (ou fora dele) está em aberto: ver Pendências.
+  1. Primeiro, reaproveitar uma função de gatilho que já existe: o gatilho novo é só `create trigger … execute function …`, sem `plpgsql` (ex.: `fin/41` usa a `registrar_historico` da 27; tabela nova da Água, do Corpo, do al ou do Treino usa a `registrar_historico_hub` da `00` da raiz).
+  2. Função nova inevitável: o cabeçalho avisa que tem corpo `plpgsql` e que não vai pelo DataGrip.
+     Aplicar pelo **SQL Editor do painel do Supabase**, colando o arquivo inteiro e rodando de uma vez.
+     Recomendação: o SQL Editor manda o script inteiro, sem partir em `;`; não testei isso a partir deste repositório.
+  3. Saber se já foi aplicada (só leitura, no DataGrip ou no SQL Editor): `select to_regclass('public.hub_historico');` para a `00` da raiz e `select to_regclass('public.push_ultimo');` para a `agua/02`. Vazio = não aplicada.
 - Idempotente: rodar de novo não muda nada (`if not exists`, `drop … if exists` antes de `create trigger`/`create policy`, filtros).
 - Pré-requisito que falha sozinho: `select 'public.x'::regclass;`, nunca `if` procedural.
 - Tabela nova: RLS ligado, `revoke all … from anon`, policy só da conta `DONO` (`somente_dono` + restritiva `somente_victor` nos apps novos).
@@ -91,12 +94,13 @@ Todo projeto tem os três (o teste `tests/documentacao.test.mjs` confere):
 |---|---|---|---|
 | `playwright` | 1.56.1 | `tr/package.json` + `tr/package-lock.json` | Só testes (raiz, tr, al, corpo, agua) |
 | `@supabase/supabase-js` | 2.118.0 | `supabase.js` (raiz) e `tr/supabase.js`, iguais byte a byte | Cópia UMD, abre sem internet; raiz, tr, al, corpo, agua |
-| `@supabase/supabase-js` | 2.117.2 | `fin/index.html` | jsDelivr com `integrity` |
+| `@supabase/supabase-js` | 2.118.0 | `fin/index.html` | jsDelivr com `integrity` igual ao hash da cópia da raiz (`fin/tests/pwa.test.js` confere) |
 | `chart.js` | 4.4.1 | `fin/index.html` | jsDelivr com `integrity` |
 | `@anthropic-ai/sdk` | 0.133.0 | `al/supabase/functions/al-estimar/index.ts` | `npm:` no Deno |
-| `@supabase/functions-js` (tipos) | sem versão | as três Edge Functions | `jsr:`, só os tipos do editor |
+| `@supabase/functions-js` (tipos) | 2.118.0 | as três Edge Functions | `jsr:@supabase/functions-js@2.118.0/edge-runtime.d.ts`, só os tipos do editor |
 
-- Versão exata sempre (nunca `@2`, `^`, `~`), de preferência publicada há pelo menos duas semanas.
+- Versão exata sempre (nunca `@2`, `^`, `~`, nem import sem versão), de preferência publicada há pelo menos duas semanas.
+- `supabase-js` na mesma versão em todos os apps (mesma origem, mesma sessão), e os tipos `jsr:@supabase/functions-js` das Edge Functions na mesma versão dele: atualizar tudo junto (`tests/documentacao.test.mjs` confere).
 - CDN só com `integrity` (sha384); atualizar versão, arquivo e hash juntos (como fazer em `fin/docs/DECISOES.md`, "Dependências externas fixadas").
 - App que precisa abrir sem internet usa cópia local, não CDN.
 - `supabase.js` da raiz e do tr mudam juntos (o teste confere que são iguais).
@@ -111,10 +115,10 @@ O que existe hoje (conferido no repositório):
 | Camada | Cobre | Onde |
 |---|---|---|
 | Código | Todo o repositório, com histórico | GitHub `vcl02/hub` e os clones |
-| Histórico no banco | Antes e depois de cada linha inserida, alterada ou apagada | `fin_historico` (`fin` e `fin_ciclo`, migration `fin/27`) e `hub_historico` (Água, Corpo, al e Treino, migration `00` da raiz) |
+| Histórico no banco | Antes e depois de cada linha inserida, alterada ou apagada | `fin_historico` (`fin` e `fin_ciclo` pela migration `fin/27`, `fin_meta` pela `fin/41`) e `hub_historico` (Água, Corpo, al e Treino, migration `00` da raiz) |
 | Cópia no aparelho | O banco do app naquele aparelho (`localStorage`) | Uma chave por app e conta (ex.: `tr.db.<conta>`) |
 | Exportação do Fin | O recorte filtrado | Download no próprio Fin |
-| Backup do Supabase | Não verificado: depende do plano (os guias dizem plano gratuito) | Painel do Supabase |
+| Backup do Supabase | Não tem: o plano atual (gratuito) não faz backup, segundo o mantenedor em 28/10/2026 | — |
 
 Diretriz:
 
@@ -125,9 +129,10 @@ Diretriz:
 - Envio que mescla e base normalizada (ver "Nunca perder dado" em `../AGENTS.md`) valem para todo app com cópia local.
 - Dump do banco nunca entra no repositório (público) nem em artefato do GitHub Actions sem criptografia: tem dados pessoais e financeiros.
 
-Lacuna: **nenhuma cópia fora do projeto Supabase.**
+**Nenhuma cópia fora do projeto Supabase** (decisão do mantenedor, 28/10/2026: por enquanto, sem backup além do DataGrip).
 Se o projeto for perdido, os dois históricos vão junto.
-Resolução proposta, aguardando decisão do mantenedor (ver Pendências): exportação periódica feita por ele (DataGrip ou `pg_dump`), guardada fora do repositório.
+O único caminho de cópia é o mantenedor exportar as tabelas pelo DataGrip quando quiser, guardando o arquivo fora do repositório.
+Nenhum app, workflow ou script faz backup automático; mudar isso é decisão nova, registrada no `docs/DECISOES.md` da raiz.
 
 ## 6. Domínios e endereços
 
@@ -156,14 +161,10 @@ Resolução proposta, aguardando decisão do mantenedor (ver Pendências): expor
      O CORS das funções é `*` e não muda.
   5. Atualizar esta seção, os testes da Água e o `docs/DECISOES.md` da raiz.
 
-## 7. Pendências (28/10/2026)
+## 7. Pendências
 
-1. **Gatilhos e o DataGrip:** `migrations/00` (raiz) e `agua/migrations/02` têm função `plpgsql` com `;` dentro de `$$`, o que o DataGrip parte.
-   O commit de 28/10/2026 diz que a `agua/02` ainda não foi aplicada; da `00` da raiz não sei.
-   Decidir como aplicar migration com gatilho e registrar aqui.
-2. **Cópia fora do Supabase:** decidir entre exportação manual periódica e workflow agendado com dump criptografado (segredo da conexão só em secret do repositório).
-3. **Histórico do Fin:** `fin_meta` não tem gatilho para `fin_historico` (a `fin/27` cobre só `fin` e `fin_ciclo`).
-4. **Duas versões do `supabase-js`** na mesma origem e na mesma sessão (2.118.0 e 2.117.2 no Fin).
-   Funciona hoje (o teste de navegação abre o Fin com a sessão do hub); alinhar na próxima atualização.
-5. **Tipos das Edge Functions** (`jsr:@supabase/functions-js/edge-runtime.d.ts`) sem versão fixa.
-6. **Backup do plano atual do Supabase:** não verificado.
+1. **Migrations com função de gatilho ainda não conferidas:** a `00` da raiz e a `agua/02` (pendente em 28/10/2026) têm corpo `plpgsql`.
+   Conferir se já foram aplicadas e, se não, aplicar pelo SQL Editor (ver Migrations, "Exceção: função de gatilho").
+2. **`fin/41`** (histórico das metas) entregue em 28/10/2026, a aplicar no DataGrip.
+
+Resolvidas em 28/10/2026, a pedido do mantenedor: commit e push sempre na `main`; histórico de `fin_meta` (`fin/41`); `supabase-js` 2.118.0 também no Fin; tipos das Edge Functions com versão fixa; sem backup fora do Supabase por enquanto; o plano atual do Supabase não faz backup.

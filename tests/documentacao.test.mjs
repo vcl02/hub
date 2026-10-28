@@ -82,3 +82,15 @@ test('sem domínio próprio: nenhum CNAME e nenhum arquivo publicado com o domí
   })];
   for (const arquivo of publicados) assert.doesNotMatch(ler(arquivo), /github\.io/, arquivo);
 });
+
+test('Edge Functions com os tipos jsr em versão fixa, a mesma do supabase-js', () => {
+  const versao = ler('supabase.js').match(/supabase-js\/(\d+\.\d+\.\d+)/)[1];
+  assert.match(ler('fin/index.html'), new RegExp(`@supabase/supabase-js@${versao.replaceAll('.', '\\.')}/`));
+  for (const funcao of ['fin/supabase/functions/captura-nubank/index.ts', 'al/supabase/functions/al-estimar/index.ts', 'agua/supabase/functions/agua-lembrete/index.ts']) {
+    const fonte = ler(funcao);
+    assert.ok(fonte.includes(`import "jsr:@supabase/functions-js@${versao}/edge-runtime.d.ts";`), funcao);
+    const especificadores = [...fonte.matchAll(/(?:from|import) "((?:npm|jsr):[^"]+)"/g)].map(m => m[1]);
+    assert.ok(especificadores.length > 0, funcao);
+    for (const e of especificadores) assert.match(e, /^(npm|jsr):@[\w-]+\/[\w-]+@\d+\.\d+\.\d+(\/|$)/, `${funcao}: ${e}`);
+  }
+});

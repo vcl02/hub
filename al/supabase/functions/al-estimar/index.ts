@@ -4,7 +4,7 @@
 // Só a conta do Victor usa: a sessão do Supabase (Authorization: Bearer) é conferida no Auth antes de qualquer coisa.
 // Limite de chamadas por dia em public.al_uso, gravado com a própria sessão (o RLS só libera o Victor).
 // POST { texto } -> { itens: [{ nome, porcao, qtd, kcal, prot, carb, gord }] }   porcao = 1 porção, qtd = quantas, valores = total comido
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import "jsr:@supabase/functions-js@2.118.0/edge-runtime.d.ts";
 import Anthropic from "npm:@anthropic-ai/sdk@0.133.0";
 
 const DONO = "32f70255-30a0-4e2b-ad76-31d7a1bf54f7";

@@ -39,3 +39,17 @@ test('não altera dados existentes e está documentada', () => {
     assert.match(sql, /^commit;$/m);
     assert.match(regras, /`migrations\/27-historico-de-mudancas\.sql` cria `public\.fin_historico`/);
 });
+
+test('migration 41: histórico também em fin_meta, com a função da 27 e no formato do DataGrip', () => {
+    const sql41 = fs.readFileSync('migrations/41-historico-metas.sql', 'utf8');
+    assert.match(sql41, /create trigger fin_meta_historico\s*\n\s*after insert or update or delete on public\.fin_meta\s*\n\s*for each row execute function public\.registrar_historico\(\);/);
+    assert.match(sql41, /drop trigger if exists fin_meta_historico on public\.fin_meta;/);
+    assert.match(sql41, /select 'public\.registrar_historico\(\)'::regprocedure;/);
+    // Reaproveita a função: nenhum corpo plpgsql, nenhum bloco anônimo, nenhum ; em comentário.
+    assert.doesNotMatch(sql41, /plpgsql|\$\$|create (or replace )?function/);
+    assert.match(sql41, /^begin;$/m);
+    assert.match(sql41, /^commit;$/m);
+    for (const linha of sql41.split('\n').filter(l => l.trim().startsWith('--'))) assert.ok(!linha.includes(';'), linha);
+    assert.doesNotMatch(sql41, /^\s*(update|delete from|insert into|alter table)/im);
+    assert.match(regras, /`migrations\/41-historico-metas\.sql` liga o histórico também em `fin_meta`/);
+});
