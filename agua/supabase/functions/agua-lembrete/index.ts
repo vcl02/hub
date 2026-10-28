@@ -98,9 +98,10 @@ async function bebeuNoIntervalo(data: string, hora: number, minuto: number) {
   return (L[0]?.aguas || []).some((a) => { const [h, m] = String(a.hora).split(":").map(Number); const x = h * 60 + m; return x >= de && x <= ate; });
 }
 
-// O último lembrete mandado (o push vai sem conteúdo: o service worker pergunta qual foi)
+// O último lembrete mandado (o push vai sem conteúdo: o service worker pergunta qual foi). Sem a tabela (migration agua/02
+// ainda não aplicada), segue sem marcar: o service worker cai no texto da água.
 async function marcarUltimo(tipo: string) {
-  await rest("push_ultimo?on_conflict=id", { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify({ id: 1, tipo, em: new Date().toISOString() }) });
+  await rest("push_ultimo?on_conflict=id", { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify({ id: 1, tipo, em: new Date().toISOString() }) }).catch(() => {});
 }
 
 // Comparação em tempo constante (o tempo da resposta não revela quantos caracteres do token acertaram)
@@ -117,7 +118,7 @@ Deno.serve(async (req: Request) => {
     const url = new URL(req.url);
     if (req.method === "GET" && url.searchParams.has("chave")) return json({ publica: (await chaves()).publica });
     if (req.method === "GET" && url.searchParams.has("ultimo")) {
-      const L = await rest("push_ultimo?select=tipo&id=eq.1") as Array<{ tipo: string }>;
+      const L = await rest("push_ultimo?select=tipo&id=eq.1").catch(() => []) as Array<{ tipo: string }>;
       return json({ tipo: L[0]?.tipo || "agua" });
     }
     if (req.method !== "POST") return json({ erro: "método" }, 405);

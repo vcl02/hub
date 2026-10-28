@@ -14,7 +14,7 @@ const DONO = '32f70255-30a0-4e2b-ad76-31d7a1bf54f7';
 const ENDPOINT = 'https://fcm.googleapis.com/fcm/send/abc';
 
 // banco: { chave, inscricoes, aguas }; push: status que o servidor de push devolve
-function carregar({ agora = '2026-10-19T11:01:00-03:00', aguas = [], inscricoes = [ENDPOINT], push = 201 } = {}) {
+function carregar({ agora = '2026-10-19T11:01:00-03:00', aguas = [], inscricoes = [ENDPOINT], push = 201, semUltimo = false } = {}) {
   let handler = null;
   const banco = { chave: null, inscricoes: [...inscricoes] }, rede = [], fixo = new Date(agora).getTime();
   class Relogio extends Date { constructor(...a) { super(...(a.length ? a : [fixo])); } static now() { return fixo; } }
@@ -26,6 +26,7 @@ function carregar({ agora = '2026-10-19T11:01:00-03:00', aguas = [], inscricoes 
       url = String(url); rede.push({ url, opcoes });
       if (url.includes('/rest/v1/push_chave?select')) return ok(banco.chave ? [banco.chave] : []);
       if (url.includes('/rest/v1/push_chave?on_conflict')) { banco.chave ||= JSON.parse(opcoes.body); return ok(null, 201); }
+      if (url.includes('/rest/v1/push_ultimo') && semUltimo) return ok({ message: 'relation does not exist' }, 404);
       if (url.includes('/rest/v1/push_ultimo?select')) return ok(banco.ultimo ? [banco.ultimo] : []);
       if (url.includes('/rest/v1/push_ultimo?on_conflict')) { banco.ultimo = JSON.parse(opcoes.body); return ok(null, 201); }
       if (url.includes('/rest/v1/push_inscricao?select')) return ok(banco.inscricoes.map(endpoint => ({ endpoint })));
@@ -164,4 +165,10 @@ test('dentes: com o token, manda a qualquer hora (sem olhar a água) e marca o �
   const g = carregar();                                                     // lembrete de água marca "agua"
   await agendado(g);
   assert.equal(g.banco.ultimo.tipo, 'agua');
+});
+
+test('sem a tabela push_ultimo (migration 02 ainda não aplicada): o lembrete de água segue e ?ultimo responde água', async () => {
+  const f = carregar({ semUltimo: true });
+  assert.deepEqual((await agendado(f)).corpo, { enviado: true, inscricoes: 1, enviados: 1 });
+  assert.deepEqual((await ler(await pedir(f.handler, { metodo: 'GET', busca: '?ultimo' }))).corpo, { tipo: 'agua' });
 });
