@@ -568,6 +568,15 @@ el('out').addEventListener('click', async e => {
     }
 });
 
+// Próx. 3: tocar mostra em quais dos 3 ciclos seguintes o compromisso aparece (no celular não
+// há hover). Só lê: não seleciona a linha nem grava nada.
+el('out').addEventListener('click', e => {
+    const celula = e.target.closest('[data-seguintes]');
+    if (!celula) return;
+    e.stopImmediatePropagation();
+    mostrarToast('Próx. 3', celula.dataset.seguintes);
+});
+
 // clique no badge Reserva/Comprometido/Pra sempre alterna o bit na hora — mesmo esquema do
 // togPago acima, só sem a lógica de data (nenhum tem relação com vencimento). Um único
 // handler cobre as três colunas: data-tog-flag="reserva:123", "comprometido:123" ou

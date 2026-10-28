@@ -143,15 +143,16 @@ function lancamentosComPrevistas() {
 // reais e precisa delas como compras de verdade.
 const previstasDosTetos = () => lancamentosComPrevistas().filter(r => String(r._sid || '').startsWith('prev:'));
 
-// Próx. 3: em quantos dos 3 ciclos seguintes ao da linha o mesmo compromisso aparece de novo
-// (0 a 3) — mesmo nome + categoria (chaveDaRecorrencia, a regra da recorrência duplicada) ou
-// mesmo lote (recorrencia_id: parcelas do Tasker têm "(2/12)" no nome). Conta lançamentos
-// reais, simulados e as previstas (Besteira/Isabella, metas), pago ou aberto. null: linha sem
-// ciclo, linha calculada (fatura, saldo, Aporte/Resgate, que não são um compromisso) ou ciclo
-// sem 3 ciclos cadastrados depois dele.
+// Próx. 3: em quais dos 3 ciclos seguintes ao da linha o mesmo compromisso aparece de novo —
+// mesmo nome + categoria (chaveDaRecorrencia, a regra da recorrência duplicada) sem o "(2/12)"
+// das parcelas (o Tasker grava cada parcela com o número no nome e sem lote), ou mesmo lote
+// (recorrencia_id). Conta lançamentos reais, simulados e as previstas (Besteira/Isabella,
+// metas), pago ou aberto. null: linha sem ciclo, linha calculada (fatura, saldo, Aporte/
+// Resgate, que não são um compromisso) ou ciclo sem 3 ciclos cadastrados depois dele.
 const CICLOS_SEGUINTES = 3;
+const chaveDoCompromisso = r => chaveDaRecorrencia({ ...r, nome: String(r.nome ?? '').replace(/\s*\(?\s*\d+\s*\/\s*\d+\s*\)?\s*$/, '') });
 let _presencas = null;
-function presencasNosSeguintes(r) {
+function ciclosSeguintesDaLinha(r) {
     const p = r.periodoIdx;
     if (p == null || r._fat || r._sal || r._res || r._sug != null) return null;
     if (p + CICLOS_SEGUINTES >= Estado.ciclos.length) return null;
@@ -161,16 +162,32 @@ function presencasNosSeguintes(r) {
         const marca = (mapa, chave, ciclo) => { if (!mapa.has(chave)) mapa.set(chave, new Set()); mapa.get(chave).add(ciclo); };
         base.forEach(l => {
             if (l.periodoIdx == null) return;
-            marca(porChave, chaveDaRecorrencia(l), l.periodoIdx);
+            marca(porChave, chaveDoCompromisso(l), l.periodoIdx);
             if (l.recorrencia_id != null) marca(porLote, l.recorrencia_id, l.periodoIdx);
         });
         _presencas = { base, porChave, porLote };
     }
-    const ciclos = _presencas.porChave.get(chaveDaRecorrencia(r));
+    const ciclos = _presencas.porChave.get(chaveDoCompromisso(r));
     const doLote = r.recorrencia_id != null ? _presencas.porLote.get(r.recorrencia_id) : null;
-    let n = 0;
-    for (let j = p + 1; j <= p + CICLOS_SEGUINTES; j++) if (ciclos?.has(j) || doLote?.has(j)) n++;
-    return n;
+    return Array.from({ length: CICLOS_SEGUINTES }, (_, k) => {
+        const idx = p + 1 + k;
+        return { idx, tem: !!(ciclos?.has(idx) || doLote?.has(idx)) };
+    });
+}
+// Quantos dos 3 seguintes têm o compromisso (0 a 3), ou null.
+function presencasNosSeguintes(r) {
+    const seguintes = ciclosSeguintesDaLinha(r);
+    return seguintes ? seguintes.filter(c => c.tem).length : null;
+}
+// "Nov/26 sim · Dez/26 sim · Jan/27 não", pelo ciclo em que a linha aparece na tela: o Crédito
+// de um ciclo mostra a fatura do seguinte, então a compra aparece um ciclo antes do da fatura.
+function detalheDosSeguintes(r) {
+    const seguintes = ciclosSeguintesDaLinha(r);
+    if (!seguintes) return '';
+    return seguintes.map(({ idx, tem }) => {
+        const ciclo = Estado.ciclos[r.cred ? idx - 1 : idx];
+        return `${ciclo ? nomePeriodoAbrev(ciclo) : '?'} ${tem ? 'sim' : 'não'}`;
+    }).join(' · ');
 }
 
 // ===================================================================

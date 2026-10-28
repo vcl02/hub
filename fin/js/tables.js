@@ -355,14 +355,17 @@ const celFlag = (r, chave) => {
         : (marcado ? `<span class=${COR_FLAG[chave]}>${texto}</span>` : texto);
 };
 
-// Próx. 3: Repete em vermelho (aparece nos 3 ciclos seguintes), Some em verde (em nenhum),
-// "1 de 3"/"2 de 3" neutro no meio; "—" sem como saber. Só leitura, em qualquer linha.
+// Próx. 3: Repete (aparece nos 3 ciclos seguintes), Some (em nenhum), "1 de 3"/"2 de 3" no
+// meio; "—" sem como saber. Cor só nas saídas: Repete vermelho, Some verde; entrada sem cor.
+// Só leitura; tocar (ou o hover) mostra em quais ciclos aparece (handler data-seguintes).
 const celSeguintes = r => {
     const n = presencasNosSeguintes(r);
     if (n == null) return '—';
-    if (n == CICLOS_SEGUINTES) return '<span class=vm title="Aparece nos 3 ciclos seguintes">Repete</span>';
-    if (n == 0) return '<span class=vd title="Não aparece em nenhum dos 3 ciclos seguintes">Some</span>';
-    return `<span title="Aparece em ${n} dos 3 ciclos seguintes">${n} de 3</span>`;
+    const saida = (r.v || 0) < 0;
+    const [texto, cor] = n == CICLOS_SEGUINTES ? ['Repete', saida ? 'vm' : '']
+        : n == 0 ? ['Some', saida ? 'vd' : ''] : [`${n} de 3`, ''];
+    const detalhe = escapeHtml(detalheDosSeguintes(r));
+    return `<span class="togSeguintes${cor ? ' ' + cor : ''}" data-seguintes="${detalhe}" title="${detalhe}">${texto}</span>`;
 };
 
 // monta as celulas <td> de uma linha, conforme o tipo de cada coluna. A edição por toque/

@@ -1,6 +1,7 @@
-// Regressão: coluna Próx. 3 nas tabelas do ciclo — Repete (vermelho) quando o compromisso
-// aparece nos 3 ciclos seguintes, Some (verde) quando em nenhum, "n de 3" no meio, "—" sem
-// como saber. Roda o código real de domain/shared/finance.
+// Regressão: coluna Próx. 3 nas tabelas do ciclo — Repete quando o compromisso aparece nos 3
+// ciclos seguintes, Some quando em nenhum, "n de 3" no meio, "—" sem como saber; cor só nas
+// saídas; parcelas "(2/12)" são o mesmo compromisso; tocar mostra os ciclos. Roda o código
+// real de domain/shared/finance e a célula de tables.js.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
@@ -15,7 +16,7 @@ const regras = ler('docs/REGRAS.md');
 const CICLOS = ['2026-07-05', '2026-08-05', '2026-09-05', '2026-10-05', '2026-11-05']
     .map((ini, i) => ({ id: `c:${i}`, cicloId: i, ini, fat: '9999-12-31' }));
 function carrega(linhas) {
-    const contexto = { Estado: { ciclos: CICLOS, lancamentos: linhas, idxHoje: -1, limitesPorCiclo: new Map(), metas: [] }, SALDO_DESDE: '2026-01-01', MESES: [], document: { getElementById: () => ({}) }, setTimeout, clearTimeout };
+    const contexto = { Estado: { ciclos: CICLOS, lancamentos: linhas, idxHoje: -1, limitesPorCiclo: new Map(), metas: [] }, SALDO_DESDE: '2026-01-01', MESES: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'], document: { getElementById: () => ({}) }, setTimeout, clearTimeout };
     vm.createContext(contexto);
     ['js/domain.js', 'js/shared.js', 'js/finance.js'].forEach(arquivo => vm.runInContext(ler(arquivo), contexto));
     const visoes = ler('js/cycle-views.js');
@@ -23,7 +24,11 @@ function carrega(linhas) {
     vm.runInContext('const ehVazioTextual = v => v == null || !String(v).trim(); const textoOuTraco = v => ehVazioTextual(v) ? "—" : v;', contexto);
     vm.runInContext(visoes.slice(visoes.indexOf('function categoriaDaComparacao('), visoes.indexOf('function vComp()')), contexto);
     vm.runInContext(visoes.slice(visoes.indexOf('function chaveDaRecorrencia('), visoes.indexOf('function gruposComRecorrenciaDuplicadaEntreMeses(')), contexto);
-    vm.runInContext('globalThis.f = presencasNosSeguintes;', contexto);
+    vm.runInContext('globalThis.f = presencasNosSeguintes; globalThis.detalhe = detalheDosSeguintes;', contexto);
+    const tabelas = ler('js/tables.js');
+    vm.runInContext(tabelas.slice(tabelas.indexOf('const celSeguintes = r =>'), tabelas.indexOf('\n};\n', tabelas.indexOf('const celSeguintes = r =>')) + 4) + 'globalThis.cel = celSeguintes;', contexto);
+    contexto.f.detalhe = contexto.detalhe;
+    contexto.f.cel = contexto.cel;
     return contexto.f;
 }
 const linha = (id, nome, ciclo, extra = {}) => ({ id, nome, categ: 'Casa', v: -10, valor: -10, cred: false, pago: false, periodoIdx: ciclo, ...extra });
@@ -59,15 +64,37 @@ test('"—" sem ciclo, em linha calculada e sem 3 ciclos à frente', () => {
 test('coluna depois de Frequência, fora do Backlog, com cor, ordenação e filtro', () => {
     assert.match(estado, /\['freq', 'Frequência', 't'\], \['seguintes', 'Próx\. 3', 's'\]/);
     assert.match(estado, /chave !== 'prio' && chave !== 'seguintes'/);
-    assert.match(tabelas, /if \(n == CICLOS_SEGUINTES\) return '<span class=vm title="Aparece nos 3 ciclos seguintes">Repete<\/span>';/);
-    assert.match(tabelas, /if \(n == 0\) return '<span class=vd title="Não aparece em nenhum dos 3 ciclos seguintes">Some<\/span>';/);
     assert.match(tabelas, /seguintes: \[\['3', 'Repete'[^\]]+'vm'\], \['0', 'Some'[^\]]+'vd'\]\]/);
     assert.match(tabelas, /if \(coluna == 'seguintes'\) return presencasNosSeguintes\(r\) === \+termo;/);
     assert.match(tabelas, /if \(coluna == 'seguintes' && \(A == null\) != \(B == null\)\) return A == null \? 1 : -1;/);
     assert.match(ler('css/dashboard.css'), /\.col-seguintes \{ width: 6\.25rem; \}/);
 });
 
+test('parcelas do Tasker (nome com "(n/m)", sem lote) são o mesmo compromisso', () => {
+    const p1 = linha(1, 'Renegociação Itaú (1/12)', 0, { cred: true });
+    const f = carrega([p1, linha(2, 'Renegociação Itaú (2/12)', 1, { cred: true }), linha(3, 'Renegociação Itaú (3/12)', 2, { cred: true }),
+        linha(4, 'Renegociação Itaú (4/12)', 3, { cred: true })]);
+    assert.equal(f(p1), 3);
+});
+
+test('cor só nas saídas; entrada e o meio sem cor; tocar mostra os ciclos', () => {
+    const saida = linha(1, 'Aluguel', 0), entrada = linha(2, 'Salário', 0, { v: 100, valor: 100 }), avulsa = linha(5, 'Presente', 0);
+    const f = carrega([saida, linha(3, 'Aluguel', 1), linha(4, 'Aluguel', 2), linha(6, 'Aluguel', 3), entrada,
+        linha(7, 'Salário', 1), linha(8, 'Salário', 2), linha(9, 'Salário', 3), avulsa]);
+    assert.match(f.cel(saida), /class="togSeguintes vm"[^>]*>Repete</);
+    assert.match(f.cel(entrada), /class="togSeguintes"[^>]*>Repete</);
+    assert.match(f.cel(avulsa), /class="togSeguintes vd"[^>]*>Some</);
+    assert.equal(f.detalhe(saida), 'Ago/26 sim · Set/26 sim · Out/26 sim');
+    assert.equal(f.detalhe(avulsa), 'Ago/26 não · Set/26 não · Out/26 não');
+    // Crédito aparece na tela no ciclo anterior ao da fatura.
+    const compra = linha(10, 'Netflix', 0, { cred: true });
+    const g = carrega([compra, linha(11, 'Netflix', 1, { cred: true })]);
+    assert.equal(g.detalhe(compra), 'Jul/26 sim · Ago/26 não · Set/26 não');
+    assert.match(ler('js/interactions.js'), /const celula = e\.target\.closest\('\[data-seguintes\]'\);[\s\S]{0,80}e\.stopImmediatePropagation\(\);\s*\n\s*mostrarToast\('Próx\. 3', celula\.dataset\.seguintes\);/);
+});
+
 test('regra documentada', () => {
     assert.match(regras, /### Coluna Próx\. 3/);
-    assert.match(regras, /\*\*Repete\*\* em vermelho \(nos 3\), \*\*Some\*\* em verde \(em nenhum\)/);
+    assert.match(regras, /Cor só nas saídas: \*\*Repete\*\* em vermelho, \*\*Some\*\* em verde/);
+    assert.match(regras, /ignorando o número de parcela no fim do nome/);
 });

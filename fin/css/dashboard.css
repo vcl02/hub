@@ -636,6 +636,9 @@
   .col-comprometido { width: 8.25rem; }
   .col-pra_sempre { width: 7rem; }
   .col-seguintes { width: 6.25rem; }
+
+  /* Próx. 3: tocar mostra os ciclos (só lê). */
+  .togSeguintes { cursor: pointer; }
   .col-prio { width: 4.5rem; }
   .col-id { width: 4rem; }
 
