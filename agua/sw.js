@@ -26,20 +26,31 @@ self.addEventListener('fetch', evento => {
   }).catch(() => caches.match(evento.request, { ignoreSearch: true }).then(r => r || caches.match('./index.html'))));
 });
 
-// Notificação de verdade (Web Push sem conteúdo): a função agua-lembrete manda quando é hora e falta água.
+// Notificação de verdade (Web Push sem conteúdo): a função agua-lembrete manda quando é hora e falta água, ou 20 min depois
+// de lançar comida no Alimentação (escovar os dentes). Sem conteúdo no push, o texto sai do último lembrete mandado, que a
+// função responde em GET ?ultimo; sem resposta (sem internet), o de água.
 // badge = ícone pequeno da barra do Android, que só usa a transparência: gota branca em fundo transparente (icons/agua-badge.svg).
+const ULTIMO_LEMBRETE = 'https://yzmyncxoskvqzdczaill.supabase.co/functions/v1/agua-lembrete?ultimo';
+const LEMBRETES = {
+  agua: { titulo: 'Hora de beber água', corpo: 'Toque para registrar.', tag: 'agua-lembrete', icone: 'icons/agua-192.png', abre: './' },
+  dentes: { titulo: 'Escove os dentes', corpo: 'Você comeu há 20 minutos.', tag: 'dentes', icone: '../icons/hub-192.png', abre: '../' }
+};
 self.addEventListener('push', evento => {
   // Imagens com endereço completo (a partir do escopo da Água), sem depender de como o Android resolve caminho relativo
   const url = caminho => new URL(caminho, self.registration.scope).href;
-  evento.waitUntil(self.registration.showNotification('Hora de beber água', {
-    body: 'Toque para registrar.', icon: url('icons/agua-192.png'), badge: url('icons/agua-badge.png'), tag: 'agua-lembrete', renotify: true
+  evento.waitUntil(fetch(ULTIMO_LEMBRETE, { cache: 'no-store' }).then(r => r.json()).then(x => x.tipo, () => 'agua').then(tipo => {
+    const l = LEMBRETES[tipo] || LEMBRETES.agua;
+    return self.registration.showNotification(l.titulo, {
+      body: l.corpo, icon: url(l.icone), badge: url('icons/agua-badge.png'), tag: l.tag, renotify: true, data: { abre: l.abre }
+    });
   }));
 });
-// Tocar na notificação abre a Água (ou volta para ela, se já estiver aberta)
+// Tocar na notificação abre a Água (o de dentes, a página inicial), ou volta para ela se já estiver aberta
 self.addEventListener('notificationclick', evento => {
   evento.notification.close();
+  const alvo = new URL(evento.notification.data?.abre || './', self.registration.scope).pathname;
   evento.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(L => {
-    const aberta = L.find(c => new URL(c.url).pathname.startsWith(new URL('./', self.location).pathname));
-    return aberta ? aberta.focus() : self.clients.openWindow('./');
+    const aberta = L.find(c => new URL(c.url).pathname === alvo || (alvo.endsWith('/agua/') && new URL(c.url).pathname.startsWith(alvo)));
+    return aberta ? aberta.focus() : self.clients.openWindow(alvo);
   }));
 });

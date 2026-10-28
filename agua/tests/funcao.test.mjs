@@ -26,6 +26,8 @@ function carregar({ agora = '2026-10-19T11:01:00-03:00', aguas = [], inscricoes 
       url = String(url); rede.push({ url, opcoes });
       if (url.includes('/rest/v1/push_chave?select')) return ok(banco.chave ? [banco.chave] : []);
       if (url.includes('/rest/v1/push_chave?on_conflict')) { banco.chave ||= JSON.parse(opcoes.body); return ok(null, 201); }
+      if (url.includes('/rest/v1/push_ultimo?select')) return ok(banco.ultimo ? [banco.ultimo] : []);
+      if (url.includes('/rest/v1/push_ultimo?on_conflict')) { banco.ultimo = JSON.parse(opcoes.body); return ok(null, 201); }
       if (url.includes('/rest/v1/push_inscricao?select')) return ok(banco.inscricoes.map(endpoint => ({ endpoint })));
       if (url.includes('/rest/v1/push_inscricao?endpoint=eq.')) { const e = decodeURIComponent(url.split('endpoint=eq.')[1]); banco.inscricoes = banco.inscricoes.filter(x => x !== e); return ok(null, 204); }
       if (url.includes('/rest/v1/agua_dia?select')) return ok(aguas.length ? [{ aguas: aguas.map(hora => ({ hora, ml: 200 })) }] : []);
@@ -147,4 +149,19 @@ test('CORS para o app no GitHub Pages; outros métodos recusados', async () => {
   assert.equal(r.status, 204);
   assert.equal(r.headers.get('access-control-allow-origin'), '*');
   assert.equal((await pedir(f.handler, { metodo: 'GET' })).status, 405);
+});
+
+test('dentes: com o token, manda a qualquer hora (sem olhar a água) e marca o último lembrete; o service worker lê em GET ?ultimo', async () => {
+  const f = carregar({ agora: '2026-10-19T22:10:00-03:00', aguas: ['22:00'] });   // de noite e já bebeu: não importa
+  await pedir(f.handler, { metodo: 'GET', busca: '?chave' });
+  const ultimo = async () => (await ler(await pedir(f.handler, { metodo: 'GET', busca: '?ultimo' }))).corpo;
+  assert.deepEqual(await ultimo(), { tipo: 'agua' });                       // sem nada mandado ainda: água
+  const r = await ler(await pedir(f.handler, { headers: { 'x-agua-token': f.banco.chave.token }, corpo: { tipo: 'dentes' } }));
+  assert.deepEqual(r, { status: 200, corpo: { enviado: true, tipo: 'dentes', inscricoes: 1, enviados: 1 } });
+  assert.equal(enviados(f).length, 1);
+  assert.deepEqual(await ultimo(), { tipo: 'dentes' });
+  assert.equal((await pedir(f.handler, { corpo: { tipo: 'dentes' } })).status, 401);   // sem o token, nada
+  const g = carregar();                                                     // lembrete de água marca "agua"
+  await agendado(g);
+  assert.equal(g.banco.ultimo.tipo, 'agua');
 });

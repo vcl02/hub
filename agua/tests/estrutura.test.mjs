@@ -81,6 +81,21 @@ test('migration das notificações: inscrições só do Victor, chaves sem polic
   assert.match(agendado, /'x-agua-token', coalesce\(\(select token from public\.push_chave where id = 1\)/);
 });
 
+test('migration dos dentes: agenda 20 min depois de comida nova de hoje, fila sem policy, cron de minuto em minuto sem ; dentro', () => {
+  const sql = ler('migrations/02-lembrete-dentes.sql');
+  assert.match(sql, /create trigger agendar_dentes after insert on public\.al_registro for each row execute function public\.agendar_dentes\(\);/);
+  assert.match(sql, /if new\.data = \(now\(\) at time zone 'America\/Sao_Paulo'\)::date then/);
+  assert.match(sql, /now\(\) \+ interval '20 minutes'\)\n    on conflict \(user_id, tipo\) do update set enviar_em = excluded\.enviar_em;/);   // outra comida empurra
+  for (const t of ['push_agendado', 'push_ultimo']) {
+    assert.match(sql, new RegExp(`alter table public\\.${t} enable row level security;\\nrevoke all on public\\.${t} from anon, authenticated;`));
+    assert.doesNotMatch(sql, new RegExp(`create policy \\w+ on public\\.${t}`));
+  }
+  const agendado = sql.match(/select cron\.schedule\('dentes-lembrete', '\* \* \* \* \*', \$cron\$([^$]+)\$cron\$\)/)[1];
+  assert.ok(!agendado.includes(';'), 'ponto e vírgula dentro do comando agendado quebra no DataGrip');
+  assert.match(agendado, /delete from public\.push_agendado where tipo = 'dentes' and enviar_em <= now\(\)/);
+  assert.match(agendado, /body := '\{"tipo":"dentes"\}'::jsonb\) from \(select 1 from vencido limit 1\) v$/);
+});
+
 test('app e função falam a mesma língua: mesmo dono, mesmo nome e horários', () => {
   const funcao = ler(FUNCAO), config = ler('js/config.js');
   assert.equal(funcao.match(/const DONO = "([0-9a-f-]+)"/)[1], DONO);

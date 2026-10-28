@@ -5,7 +5,10 @@
 // As chaves VAPID e o token do cron nascem aqui na 1ª chamada e ficam em public.push_chave, que só o banco e esta função
 // (chave de serviço) leem: nunca no código, no repositório nem no chat.
 // GET ?chave -> { publica }   (a chave pública, para o app se inscrever)
+// GET ?ultimo -> { tipo }     (o último lembrete mandado: o service worker mostra o texto dele)
 // POST com x-agua-token -> lembrete do horário (se for a hora e faltar água)
+// POST com x-agua-token e { tipo: "dentes" } -> escovar os dentes (o banco chama 20 min depois da última comida lançada no
+// Alimentação, migration agua/02), a qualquer hora
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const DONO = "32f70255-30a0-4e2b-ad76-31d7a1bf54f7";
@@ -95,6 +98,11 @@ async function bebeuNoIntervalo(data: string, hora: number, minuto: number) {
   return (L[0]?.aguas || []).some((a) => { const [h, m] = String(a.hora).split(":").map(Number); const x = h * 60 + m; return x >= de && x <= ate; });
 }
 
+// O último lembrete mandado (o push vai sem conteúdo: o service worker pergunta qual foi)
+async function marcarUltimo(tipo: string) {
+  await rest("push_ultimo?on_conflict=id", { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify({ id: 1, tipo, em: new Date().toISOString() }) });
+}
+
 // Comparação em tempo constante (o tempo da resposta não revela quantos caracteres do token acertaram)
 function iguais(a: string, b: string) {
   const x = new TextEncoder().encode(a), y = new TextEncoder().encode(b);
@@ -108,13 +116,20 @@ Deno.serve(async (req: Request) => {
   try {
     const url = new URL(req.url);
     if (req.method === "GET" && url.searchParams.has("chave")) return json({ publica: (await chaves()).publica });
+    if (req.method === "GET" && url.searchParams.has("ultimo")) {
+      const L = await rest("push_ultimo?select=tipo&id=eq.1") as Array<{ tipo: string }>;
+      return json({ tipo: L[0]?.tipo || "agua" });
+    }
     if (req.method !== "POST") return json({ erro: "método" }, 405);
     // Só o agendamento, com o token da tabela
     const c = await chaves();
     if (!iguais(req.headers.get("x-agua-token") ?? "", c.token)) return json({ erro: "token" }, 401);
+    const corpo = await req.json().catch(() => ({})) as { tipo?: string };
+    if (corpo?.tipo === "dentes") { await marcarUltimo("dentes"); return json({ enviado: true, tipo: "dentes", ...(await enviarATodos(c)) }); }
     const agora = agoraSP();
     if (!horaDeLembrete(agora.hora, agora.semana)) return json({ enviado: false, motivo: "fora do horário" });
     if (await bebeuNoIntervalo(agora.data, agora.hora, agora.minuto)) return json({ enviado: false, motivo: "já bebeu" });
+    await marcarUltimo("agua");
     return json({ enviado: true, ...(await enviarATodos(c)) });
   } catch (e) {
     return json({ erro: String((e as Error)?.message || e) }, 502);
