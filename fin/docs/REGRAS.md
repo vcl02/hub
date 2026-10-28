@@ -82,7 +82,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 - As tabelas Débito e Crédito do ciclo têm a coluna **Parcela**, logo depois de Frequência: toda linha é numerada como parcela da sequência de ciclos seguidos em que o mesmo compromisso aparece — `2 de 3 (até Out/26)`: esta é a 2ª de 3, e a última aparece em Out/26.
   A posição é quantos ciclos seguidos ele vem aparecendo até esta linha (contando ela); o total é a sequência inteira, pra trás e pra frente, sem limite (uma série cadastrada até 2032 fica `3 de 77 (até Dez/32)`); o "até" é o último ciclo da sequência.
-  Um ciclo sem o compromisso encerra a sequência: se ele volta depois, recomeça em `1`. Lançamento sozinho (`1 de 1`), o que é **pra sempre** (sem fim, não há "de N": o total seria só até onde o app gerou a série, 2032) e o que tem a categoria **Besteira** (gasto avulso do teto, inclusive a Besteira prevista) mostram só "—".
+  Um ciclo sem o compromisso encerra a sequência: se ele volta depois, recomeça em `1`. Lançamento sozinho (`1 de 1`), o que é **pra sempre** (sem fim, não há "de N": o total seria só até onde o app gerou a série, 2032) e o que tem uma das categorias de gasto do dia a dia — **Besteira**, **Isabella**, **Transporte** ou **Alimentação** (item inteiro da lista de categorias, sem acento/caixa; `Lazer, Isabella` conta; inclusive as previstas) — mostram só "—".
   Cor pelo andamento da sequência (posição ÷ total): até 1/3 **vermelho**, até 2/3 **amarelo**, depois **verde** — `1 de 3` vermelho, `1 de 2` amarelo, `2 de 3` e `3 de 3` verdes; entrada (valor positivo) e o "—" ficam sem cor.
   Só o que está nos dados, sem supor o futuro: o fim é o último ciclo cadastrado com ele (série cadastrada pra frente — Frequência, parcelas, pra sempre — conta como está).
   A Renegociação Nu de Ago, Set e Out (acaba na fatura de novembro) mostra `1 de 3`, `2 de 3` e `3 de 3`, todas `(até Out/26)`.
@@ -91,7 +91,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Contam lançamentos reais, simulados e previstos (Besteira/Isabella, metas), pago ou aberto.
   Tocar na célula (ou passar o mouse) mostra o trecho e as próximas ocorrências com data e, no Crédito, a fatura: `Parcela 2 de 3: de Ago/26 a Out/26. Próximas: 05/10 fat. 12/11` ("sem ciclo" quando a ocorrência não cai em nenhum); o toque não seleciona a linha.
 - Linha calculada (Fatura, Saldo do mês anterior, Aporte sugerido/Resgate necessário) fica com a célula vazia: não é um compromisso do banco. O Backlog não tem a coluna (não tem ciclo).
-- É só leitura, ordena por quantas parcelas faltam (vazia sempre por último) e filtra por clique pela faixa da cor: **Todos** → **0–33%** (vermelho) → **33–66%** (amarelo) → **66–100%** (verde); como a cor, só pega saídas com sequência de 2 ou mais (recebimento e "—" — 1 de 1, pra sempre e Besteira — ficam fora).
+- É só leitura, ordena por quantas parcelas faltam (vazia sempre por último) e filtra por clique pela faixa da cor: **Todos** → **0–33%** (vermelho) → **33–66%** (amarelo) → **66–100%** (verde); como a cor, só pega saídas com sequência de 2 ou mais (recebimento e "—" — 1 de 1, pra sempre e as categorias do dia a dia — ficam fora).
 
 ### Simulação
 

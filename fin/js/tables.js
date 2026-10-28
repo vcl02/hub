@@ -163,7 +163,7 @@ function passaFiltroTexto(r, idTabela) {
         if (coluna == 'pago') return termo == 'S' ? r.pago === true : r.pago === false;
         if (coluna == 'reserva' || coluna == 'comprometido' || coluna == 'pra_sempre') return termo == 'S' ? !!r[coluna] : !r[coluna];
         // Parcela: pela faixa da cor (corDaParcela), só onde há cor — saída com número (fora o
-        // "—": 1 de 1, pra sempre e Besteira).
+        // "—": 1 de 1, pra sempre e CATEGORIAS_SEM_PARCELA).
         if (coluna == 'parcela') {
             const p = parcelaDaLinha(r);
             return !!p && !parcelaSemNumero(r, p) && (r.v || 0) <= 0 && corDaParcela(p) === termo;
@@ -363,13 +363,14 @@ const celFlag = (r, chave) => {
 
 // Parcela: "2 de 3 (até Out/26)" em toda linha com ciclo (ver parcelaDaLinha); "—" quando é
 // 1 de 1 (sozinho), pra sempre (sem fim, não há "de N": o total seria só até onde o app gerou
-// a série, 2032) ou Besteira (gasto avulso do teto, inclusive a prevista: numerar não diz nada);
-// linha calculada fica vazia. Cor pelo andamento (posição ÷ total): até 1/3
+// a série, 2032) ou gasto do dia a dia (Besteira, Isabella, Transporte, Alimentação, inclusive
+// as previstas: numerar não diz nada); linha calculada fica vazia. Cor pelo andamento (posição ÷ total): até 1/3
 // vermelho, até 2/3 amarelo, depois verde — 1 de 3 vermelho, 1 de 2 amarelo, 2 de 3 e 3 de 3
 // verdes. Entrada (valor positivo) fica sem cor. Só leitura; tocar (ou o hover) mostra o trecho
 // e as próximas (handler data-parcela).
 const corDaParcela = p => (p.posicao * 3 <= p.total ? 'vm' : p.posicao * 3 < p.total * 2 ? 'am' : 'vd');
-const parcelaSemNumero = (r, p) => p.total == 1 || !!r.pra_sempre || ehCategoria(r.categ, CATEGORIA_BESTEIRA);
+const CATEGORIAS_SEM_PARCELA = [CATEGORIA_BESTEIRA, 'Isabella', 'Transporte', 'Alimentação'];
+const parcelaSemNumero = (r, p) => p.total == 1 || !!r.pra_sempre || CATEGORIAS_SEM_PARCELA.some(c => ehCategoria(r.categ, c));
 const celParcela = r => {
     const p = parcelaDaLinha(r);
     if (!p) return '';
