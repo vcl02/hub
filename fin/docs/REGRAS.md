@@ -83,7 +83,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - As tabelas Débito e Crédito do ciclo têm a coluna **Parcela**, logo depois de Frequência: toda linha é numerada como parcela da sequência de ciclos seguidos em que o mesmo compromisso aparece — `2 de 3 (até Out/26)`: esta é a 2ª de 3, e a última aparece em Out/26.
   A posição é quantos ciclos seguidos ele vem aparecendo até esta linha (contando ela); o total é a sequência inteira, pra trás e pra frente, sem limite (uma série cadastrada até 2032 fica `3 de 77 (até Dez/32)`); o "até" é o último ciclo da sequência.
   Um ciclo sem o compromisso encerra a sequência: se ele volta depois, recomeça em `1`. Lançamento sozinho (`1 de 1`) mostra só "—".
-  Cor pelo andamento da sequência (posição ÷ total): até 1/3 **vermelho**, até 2/3 **amarelo**, depois **verde** — `1 de 3` vermelho, `1 de 2` amarelo, `2 de 3` e `3 de 3` verdes; o "—" fica sem cor.
+  Cor pelo andamento da sequência (posição ÷ total): até 1/3 **vermelho**, até 2/3 **amarelo**, depois **verde** — `1 de 3` vermelho, `1 de 2` amarelo, `2 de 3` e `3 de 3` verdes; entrada (valor positivo) e o "—" ficam sem cor.
   Só o que está nos dados, sem supor o futuro: o fim é o último ciclo cadastrado com ele (série cadastrada pra frente — Frequência, parcelas, pra sempre — conta como está).
   A Renegociação Nu de Ago, Set e Out (acaba na fatura de novembro) mostra `1 de 3`, `2 de 3` e `3 de 3`, todas `(até Out/26)`.
   O ciclo é o da tela, em que a ocorrência aparece: no Crédito, o das compras (o anterior ao da fatura). Várias ocorrências no mesmo ciclo (três cafés em Ago) são a mesma parcela.

@@ -58,6 +58,8 @@ test('sequência inteira, sem janela de 3; ciclo sem ele recomeça; sozinho é 1
     assert.match(f.cel(serie[1]), /class="togParcela vm"[^>]*>2 de 8/);                   // 25%: vermelho
     assert.match(f.cel(serie[5]), /class="togParcela vd"[^>]*>6 de 8/);                   // 75%: verde
     assert.match(f.cel(gas[0]), /class="togParcela am"[^>]*>1 de 2/);                     // 50%: amarelo
+    const salario = [0, 1, 2].map(c => linha(30 + c, 'Salário', c, { v: 100, valor: 100 }));
+    assert.match(carrega(salario).cel(salario[0]), /class="togParcela" [^>]*>1 de 3/);   // entrada: sem cor
     assert.equal(resumo(f.parcela(gas[1])), '2/2 falta 0');
     assert.equal(resumo(f.parcela(gas[2])), '1/1 falta 0');
     assert.match(f.cel(sozinho), /class=togParcela [^>]*>—</);   // 1 de 1: traço, sem cor
@@ -96,6 +98,7 @@ test('regra documentada', () => {
     assert.match(regras, /### Coluna Parcela/);
     assert.match(regras, /Um ciclo sem o compromisso encerra a sequência/);
     assert.match(regras, /até 1\/3 \*\*vermelho\*\*, até 2\/3 \*\*amarelo\*\*, depois \*\*verde\*\*/);
+    assert.match(regras, /entrada \(valor positivo\) e o "—" ficam sem cor/);
     assert.match(regras, /Lançamento sozinho \(`1 de 1`\) mostra só "—"/);
     assert.match(regras, /ignorando o número de parcela no fim do nome/);
     assert.match(regras, /Linha calculada .* fica com a célula vazia/);
