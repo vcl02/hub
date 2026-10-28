@@ -158,14 +158,17 @@ function ciclosSeguintesDaLinha(r) {
     if (p + CICLOS_SEGUINTES >= Estado.ciclos.length) return null;
     const base = lancamentosComPrevistas();
     if (_presencas?.base !== base) {
-        const porChave = new Map(), porLote = new Map();
+        const porChave = new Map(), porLote = new Map(), linhasPorChave = new Map();
         const marca = (mapa, chave, ciclo) => { if (!mapa.has(chave)) mapa.set(chave, new Set()); mapa.get(chave).add(ciclo); };
         base.forEach(l => {
+            const chave = chaveDoCompromisso(l);
+            if (!linhasPorChave.has(chave)) linhasPorChave.set(chave, []);
+            linhasPorChave.get(chave).push(l);
             if (l.periodoIdx == null) return;
-            marca(porChave, chaveDoCompromisso(l), l.periodoIdx);
+            marca(porChave, chave, l.periodoIdx);
             if (l.recorrencia_id != null) marca(porLote, l.recorrencia_id, l.periodoIdx);
         });
-        _presencas = { base, porChave, porLote };
+        _presencas = { base, porChave, porLote, linhasPorChave };
     }
     const ciclos = _presencas.porChave.get(chaveDoCompromisso(r));
     const doLote = r.recorrencia_id != null ? _presencas.porLote.get(r.recorrencia_id) : null;
@@ -181,13 +184,22 @@ function presencasNosSeguintes(r) {
 }
 // "Nov/26 sim · Dez/26 sim · Jan/27 não", pelo ciclo em que a linha aparece na tela: o Crédito
 // de um ciclo mostra a fatura do seguinte, então a compra aparece um ciclo antes do da fatura.
+// Depois, as próximas ocorrências com data (e fatura, no Crédito; "sem ciclo" se não caem em
+// nenhum), pra conferir de onde vem um "não": no Crédito o que conta é a fatura, não a data.
 function detalheDosSeguintes(r) {
     const seguintes = ciclosSeguintesDaLinha(r);
     if (!seguintes) return '';
-    return seguintes.map(({ idx, tem }) => {
+    const ciclos = seguintes.map(({ idx, tem }) => {
         const ciclo = Estado.ciclos[r.cred ? idx - 1 : idx];
         return `${ciclo ? nomePeriodoAbrev(ciclo) : '?'} ${tem ? 'sim' : 'não'}`;
     }).join(' · ');
+    const curta = d => dataBR(d).slice(0, 5);
+    const proximas = (_presencas.linhasPorChave.get(chaveDoCompromisso(r)) || [])
+        .filter(l => l !== r && l.data && dataISO(l.data) > dataISO(r.data || ''))
+        .sort((a, b) => timestamp(a.data) - timestamp(b.data))
+        .slice(0, 4)
+        .map(l => `${curta(l.data)}${l.cred ? ` fat. ${l.fatura ? curta(l.fatura) : 'nenhuma'}` : ''}${l.periodoIdx == null ? ' sem ciclo' : ''}`);
+    return `${ciclos}. Próximas: ${proximas.length ? proximas.join(' · ') : 'nenhuma'}`;
 }
 
 // ===================================================================

@@ -84,12 +84,17 @@ test('cor só nas saídas; entrada e o meio sem cor; tocar mostra os ciclos', ()
     assert.match(f.cel(saida), /class="togSeguintes vm"[^>]*>Repete</);
     assert.match(f.cel(entrada), /class="togSeguintes"[^>]*>Repete</);
     assert.match(f.cel(avulsa), /class="togSeguintes vd"[^>]*>Some</);
-    assert.equal(f.detalhe(saida), 'Ago/26 sim · Set/26 sim · Out/26 sim');
-    assert.equal(f.detalhe(avulsa), 'Ago/26 não · Set/26 não · Out/26 não');
+    assert.equal(f.detalhe(saida), 'Ago/26 sim · Set/26 sim · Out/26 sim. Próximas: nenhuma');   // linhas sem data
+    assert.equal(f.detalhe(avulsa), 'Ago/26 não · Set/26 não · Out/26 não. Próximas: nenhuma');
     // Crédito aparece na tela no ciclo anterior ao da fatura.
     const compra = linha(10, 'Netflix', 0, { cred: true });
     const g = carrega([compra, linha(11, 'Netflix', 1, { cred: true })]);
-    assert.equal(g.detalhe(compra), 'Jul/26 sim · Ago/26 não · Set/26 não');
+    assert.equal(g.detalhe(compra), 'Jul/26 sim · Ago/26 não · Set/26 não. Próximas: nenhuma');
+    // Próximas com data e fatura: mostra quando a fatura não anda junto com a data.
+    const p1 = linha(20, 'Renegociação Nu', 0, { cred: true, data: '2026-07-05', fatura: '2026-08-12' });
+    const h = carrega([p1, linha(21, 'Renegociação Nu', 1, { cred: true, data: '2026-08-05', fatura: '2026-08-12' }),
+        linha(22, 'Renegociação Nu', null, { cred: true, data: '2026-09-05', fatura: null })]);
+    assert.match(h.detalhe(p1), /Próximas: 05\/08 fat\. 12\/08 · 05\/09 fat\. nenhuma sem ciclo$/);
     assert.match(ler('js/interactions.js'), /const celula = e\.target\.closest\('\[data-seguintes\]'\);[\s\S]{0,80}e\.stopImmediatePropagation\(\);\s*\n\s*mostrarToast\('Próx\. 3', celula\.dataset\.seguintes\);/);
 });
 
