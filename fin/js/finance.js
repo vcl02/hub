@@ -116,11 +116,11 @@ function previstasDoCiclo(idx, base) {
         if (falta <= TOLERANCIA_FINANCEIRA) return null;
         const v = -Math.round(falta * 100) / 100;
         return {
-            // freq e comprometido só aparecem nas colunas (é uma previsão de todo ciclo); o
-            // indicador Comprometido lê só lançamentos reais. pago = false é regra: não ocupa
+            // freq só aparece na coluna (é uma previsão de todo ciclo). Sem Comprometido: é gasto
+            // variável, como uma compra real de Besteira. pago = false é regra: não ocupa
             // o limite de Hoje. Ids distintos na coluna ID: Besteira -6, Isabella -7.
             // pra_sempre também é só exibição: todo ciclo tem a sua prevista, sem fim.
-            data: dataDeFechamentoDoCiclo(ciclo), nome: c.nome, categ: c.categ, freq: 'Mensal', pago: false, comprometido: true, pra_sempre: true, cred: true, fatura,
+            data: dataDeFechamentoDoCiclo(ciclo), nome: c.nome, categ: c.categ, freq: 'Mensal', pago: false, comprometido: false, pra_sempre: true, cred: true, fatura,
             id: c.chave === 'besteira' ? -6 : -7, _sid: `prev:${c.chave}:${idx}`, _prev: 1, v, valor: v, periodoIdx: idx + 1,
         };
     }).filter(Boolean);

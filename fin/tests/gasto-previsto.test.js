@@ -151,11 +151,12 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /`migrations\/23-limites-categoria-por-ciclo\.sql`/);
 });
 
-test('previstas e faturas: Mensal, Aberto, Comprometido e Pra sempre só na exibição, somente leitura, ids distintos', () => {
+test('previstas e faturas: Mensal, Aberto e Pra sempre só na exibição (Comprometido só nas faturas), somente leitura, ids distintos', () => {
     const r = carrega([...linhasCiclo]);
     const [besteira, isabella] = r.previstasDoCiclo(1, [...linhasCiclo]);
     assert.deepEqual([besteira.freq, besteira.pago, besteira.comprometido, besteira.pra_sempre, besteira.id, isabella.id, isabella.pra_sempre],
-        ['Mensal', false, true, true, -6, -7, true]);
+        ['Mensal', false, false, true, -6, -7, true]);
+    assert.equal(isabella.comprometido, false);
     assert.match(visoes, /freq: 'Mensal', pago: false, comprometido: true, pra_sempre: true,\s*\n\s*id: f\.cartao === CARTAO_NUBANK \? -3 : -4,/);
     // Nenhum cálculo lê pra_sempre: só a coluna e o filtro por clique dela.
     for (const arquivo of ['js/finance.js', 'js/charts.js', 'js/shared.js', 'js/cycle-views.js']) {
@@ -168,7 +169,8 @@ test('previstas e faturas: Mensal, Aberto, Comprometido e Pra sempre só na exib
     // O indicador Comprometido continua lendo só lançamentos reais.
     // Comprometido: lançamentos reais e as linhas do plano das metas — nunca as previstas de Besteira/Isabella.
     assert.match(graficos, /const linhas = \[\.\.\.Estado\.lancamentos, \.\.\.linhasDasMetas\(\)\]\s*\n\s*\.filter\(r => r\.periodoIdx == idxPeriodo\)/);
-    assert.match(regras, /Mostram Frequência \*\*Mensal\*\*, Pago \*\*Aberto\*\*, \*\*Comprometido\*\* e \*\*Pra sempre\*\*/);
+    assert.match(regras, /Mostram Frequência \*\*Mensal\*\*, Pago \*\*Aberto\*\* e \*\*Pra sempre\*\*/);
+    assert.match(regras, /as previstas não são Comprometido/);
 });
 
 test('indicadores Gastos e Liberdade contam as previstas como compras de verdade (sem as metas)', () => {
