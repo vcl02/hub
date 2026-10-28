@@ -193,15 +193,17 @@ function situacaoNosSeguintes(r) {
     if (!sim && !terminados) return null;
     return { sim, tipo: sim == CICLOS_SEGUINTES ? 'repete' : !sim && terminados == CICLOS_SEGUINTES ? 'some' : 'parcial' };
 }
-// "Out/26 sim · Nov/26 ainda não · Dez/26 ainda não", pelo ciclo em que a linha aparece na tela: o Crédito
-// de um ciclo mostra a fatura do seguinte, então a compra aparece um ciclo antes do da fatura.
+// "Out/26 sim · Nov/26 ainda não · Dez/26 ainda não"; no Crédito, pelo mês da fatura, que é
+// como a parcela é lida ("fat. Nov/26 sim": a compra de 05/10, que vence na fatura de novembro).
 // Depois, as próximas ocorrências com data (e fatura, no Crédito; "sem ciclo" se não caem em
 // nenhum), pra conferir de onde vem um "não": no Crédito o que conta é a fatura, não a data.
 function detalheDosSeguintes(r) {
     const seguintes = ciclosSeguintesDaLinha(r);
     if (!seguintes) return '';
-    const ciclos = seguintes.map(({ daTela, tem, aberto }) =>
-        `${daTela ? nomePeriodoAbrev(daTela) : '?'} ${tem ? 'sim' : aberto ? 'ainda não' : 'não'}`).join(' · ');
+    const ciclos = seguintes.map(({ idx, daTela, tem, aberto }) => {
+        const rotulo = r.cred ? `fat. ${nomePeriodoAbrev(Estado.ciclos[idx])}` : daTela ? nomePeriodoAbrev(daTela) : '?';
+        return `${rotulo} ${tem ? 'sim' : aberto ? 'ainda não' : 'não'}`;
+    }).join(' · ');
     const curta = d => dataBR(d).slice(0, 5);
     const proximas = (_presencas.linhasPorChave.get(chaveDoCompromisso(r)) || [])
         .filter(l => l !== r && l.data && dataISO(l.data) > dataISO(r.data || ''))

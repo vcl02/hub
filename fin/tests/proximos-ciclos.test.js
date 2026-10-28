@@ -65,8 +65,9 @@ test('no Crédito, o ciclo que importa é o das compras (o anterior ao da fatura
     // Compra na fatura do ciclo 1 (aparece na tela no ciclo 0); hoje 20/09 (ciclo 2).
     const compra = linha(1, 'Netflix', 1, { cred: true });
     const f = carrega([compra, linha(2, 'Netflix', 2, { cred: true })], '2026-09-20');
-    // Seguintes pela fatura: 2, 3, 4 → na tela: Ago (terminou), Set (hoje), Out.
-    assert.equal(f.detalhe(compra), 'Ago/26 sim · Set/26 ainda não · Out/26 ainda não. Próximas: nenhuma');
+    // Seguintes pela fatura: 2, 3, 4 (Set, Out, Nov); as compras delas, na tela: Ago (terminou),
+    // Set (hoje), Out. O aviso fala pela fatura, como a parcela é lida.
+    assert.equal(f.detalhe(compra), 'fat. Set/26 sim · fat. Out/26 ainda não · fat. Nov/26 ainda não. Próximas: nenhuma');
     assert.equal(tipo(f.situacao(compra)), 'parcial 1');
 });
 

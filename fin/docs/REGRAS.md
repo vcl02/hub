@@ -87,7 +87,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Cor só nas saídas: **Repete** em vermelho, **Some** em verde; entrada (valor positivo) e o meio ficam sem cor.
   O mesmo compromisso é o mesmo nome + categoria (a regra da recorrência duplicada, `chaveDaRecorrencia`), ignorando o número de parcela no fim do nome (`(2/12)`, que o Tasker grava em cada parcela, sem lote), ou o mesmo lote (`recorrencia_id`).
   Contam lançamentos reais, simulados e previstos (Besteira/Isabella, metas), pago ou aberto.
-  Tocar na célula (ou passar o mouse) mostra cada um dos 3 ciclos (`sim`, `não` ou `ainda não`) e as próximas ocorrências com data e, no Crédito, a fatura (que é o que decide o ciclo): `Out/26 sim · Nov/26 ainda não · Dez/26 ainda não. Próximas: 05/11 fat. 12/12` ("sem ciclo" quando a ocorrência não cai em nenhum); o toque não seleciona a linha.
+  Tocar na célula (ou passar o mouse) mostra cada um dos 3 ciclos (`sim`, `não` ou `ainda não`) — no Crédito, pelo mês da fatura (`fat. Nov/26 sim`), como a parcela é lida — e as próximas ocorrências com data e, no Crédito, a fatura (que é o que decide o ciclo): `Out/26 sim · Nov/26 ainda não · Dez/26 ainda não. Próximas: 05/11 fat. 12/12` ("sem ciclo" quando a ocorrência não cai em nenhum); o toque não seleciona a linha.
 - Mostra "—" também em linha calculada (fatura, Saldo do mês anterior, Aporte sugerido/Resgate necessário), em linha sem ciclo e quando ainda não há 3 ciclos cadastrados depois do da linha. O Backlog não tem a coluna.
 - É só leitura, ordena pela contagem (0 → 3, "—" sempre por último) e filtra por clique: **Todos** → **Repete** → **Some**.
 
