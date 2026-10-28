@@ -38,7 +38,7 @@ const PERGUNTA_DA_COLUNA = {
     reserva: 'Se eu perder o emprego, preciso continuar pagando isso?',
     comprometido: 'Começou o mês, isso já é obrigatório pagar?',
     pra_sempre: 'Isso se repete sem data pra acabar?',
-    seguintes: 'Nos 3 ciclos seguintes: Repete aparece nos 3; Some em nenhum; senão, até qual ciclo aparece. Toque pra ver os ciclos',
+    seguintes: 'Nos 3 ciclos seguintes: Repete aparece nos 3; Some não aparece (2 ciclos já terminados sem ele); senão, em quantos e até qual aparece. Toque pra ver os ciclos',
 };
 // monta o <tr> de cabecalho de uma tabela, com a setinha de ordenacao na coluna ativa
 function cabecalhoTabela(idTabela) {
@@ -355,9 +355,9 @@ const celFlag = (r, chave) => {
         : (marcado ? `<span class=${COR_FLAG[chave]}>${texto}</span>` : texto);
 };
 
-// Próx. 3: Repete (nos 3 ciclos seguintes), Some (em nenhum, os 3 já terminados), "até Out/26"
-// (o último ciclo em que aparece), "Ainda não" (não voltou nos que terminaram; o resto ainda não
-// terminou), "—" sem dado nenhum (ver situacaoNosSeguintes). Cor só nas saídas: Repete
+// Próx. 3: Repete (nos 3 ciclos seguintes), Some (em nenhum, com pelo menos 2 já terminados),
+// "1 de 3 (até Out/26)" (em quantos aparece e o último), "Ainda não" (não voltou, mas só 1
+// ciclo terminou sem ele), "—" sem dado nenhum (ver situacaoNosSeguintes). Cor só nas saídas: Repete
 // vermelho, Some verde. Só leitura; tocar (ou o hover) mostra os ciclos e as próximas
 // ocorrências (handler data-seguintes).
 const celSeguintes = r => {
@@ -367,7 +367,7 @@ const celSeguintes = r => {
     const [texto, cor] = !situacao ? ['—', '']
         : situacao.tipo == 'repete' ? ['Repete', saida ? 'vm' : '']
             : situacao.tipo == 'some' ? ['Some', saida ? 'vd' : '']
-                : situacao.tipo == 'ate' ? [`até ${nomePeriodoAbrev(situacao.ultimo)}`, ''] : ['Ainda não', ''];
+                : situacao.tipo == 'ate' ? [`${situacao.sim} de ${CICLOS_SEGUINTES} (até ${nomePeriodoAbrev(situacao.ultimo)})`, ''] : ['Ainda não', ''];
     const detalhe = escapeHtml(detalheDosSeguintes(r));
     return `<span class="togSeguintes${cor ? ' ' + cor : ''}" data-seguintes="${detalhe}" title="${detalhe}">${texto}</span>`;
 };

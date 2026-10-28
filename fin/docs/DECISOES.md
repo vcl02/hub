@@ -122,7 +122,8 @@ O celular lê as notificações do Nubank no Tasker (`tasker/*.xml`) e envia cad
 - *1ª correção, desfeita:* "ainda não" saía da conta, e Repete passou a valer com uma confirmação só — a Renegociação de Ago virava Repete sem nenhuma parcela cadastrada depois de 05/10. Era supor o futuro.
 - *A regra:* contagem real. Repete só com os 3 ciclos tendo o compromisso; Some só sem ele e os 3 já terminados; senão "n de 3". "Ainda não" (ciclo não terminado, sem o compromisso) nunca vira Some nem completa Repete. Sem nada achado e nenhum ciclo terminado, "—".
 - *Crédito:* o ciclo que conta é o das compras (o anterior ao da fatura), o mesmo que a tela mostra; pela fatura, a compra de outubro seria julgada pelo ciclo de novembro.
-- *Sem "n de 3":* "2 de 3" (Ago) e "1 de 3" (Set) eram lidos como número de parcela — agosto parecia mais adiantado que setembro. A célula diz até quando aparece ("até Out/26", igual nas duas linhas) e o aviso diz o estado de cada ciclo ("não começou", "em andamento"), em vez de "ainda não", que numa lista Out · Nov · Dez parecia dizer "vai até Dez".
+- *"n de 3" sozinho, não:* "2 de 3" (Ago) e "1 de 3" (Set) eram lidos como número de parcela — agosto parecia mais adiantado que setembro. A célula leva o fim junto ("2 de 3 (até Out/26)" e "1 de 3 (até Out/26)", a pedido do mantenedor) e o aviso diz o estado de cada ciclo ("não começou", "em andamento"), em vez de "ainda não", que numa lista Out · Nov · Dez parecia dizer "vai até Dez".
+- *Some com 2:* pedido do mantenedor — 2 ciclos inteiros sem o compromisso já bastam pra Some; esperar os 3 terminarem demorava demais. Com 1 só, "Ainda não", e o aviso diz qual ciclo decide.
 
 ## Documentação de produto
 

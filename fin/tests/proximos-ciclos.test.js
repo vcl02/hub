@@ -1,6 +1,6 @@
 // Regressão: coluna Próx. 3 nas tabelas do ciclo — pelos dados dos 3 ciclos seguintes, sem
-// supor o futuro: Repete só nos 3, Some só em nenhum com os 3 terminados, "até Out/26" no
-// meio, "Ainda não" sem volta nos terminados, "—" sem dado; nunca "n de 3"; ciclo não terminado sem o compromisso é "ainda não"; cor só nas saídas; parcelas "(2/12)" são o mesmo compromisso; tocar mostra os ciclos e as próximas.
+// supor o futuro: Repete só nos 3, Some em nenhum com 2 ciclos terminados sem ele, "1 de 3
+// (até Out/26)" no meio, "Ainda não" com 1 só, "—" sem dado; ciclo não terminado sem o compromisso é "ainda não"; cor só nas saídas; parcelas "(2/12)" são o mesmo compromisso; tocar mostra os ciclos e as próximas.
 // Roda o código real de domain/shared/finance e a célula de tables.js, com hoje fixo.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -43,7 +43,7 @@ test('ciclos que já terminaram: Repete, Some e o meio; mesmo nome + categoria, 
     assert.equal(tipo(f.situacao(condominio)), 'repete 3');
     assert.equal(tipo(f.situacao(uber)), 'some 0');
     assert.equal(tipo(f.situacao(gas)), 'ate 1');
-    assert.match(f.cel(gas), /class="togSeguintes"[^>]*>até Set\/26</);
+    assert.match(f.cel(gas), /class="togSeguintes"[^>]*>1 de 3 \(até Set\/26\)</);
     assert.doesNotMatch(f.cel(gas), / de 3</);
 });
 
@@ -56,8 +56,13 @@ test('sem supor o futuro: ciclo não terminado sem o compromisso não faz Some n
     assert.equal(f.situacao(tudoDepois), null);              // Out, Nov e Dez: nada diz nada ainda
     assert.equal(f.detalhe(cafe), 'Ago/26 sim · Set/26 em andamento · Out/26 não começou. Próximas: nenhuma');
     assert.match(f.cel(tudoDepois), />—</);
-    assert.match(f.cel(cafe), /class="togSeguintes"[^>]*>até Ago\/26</);
+    assert.match(f.cel(cafe), /class="togSeguintes"[^>]*>1 de 3 \(até Ago\/26\)</);
     assert.match(f.cel(ia), /class="togSeguintes"[^>]*>Ainda não</);
+    assert.equal(f.detalhe(ia), 'Ago/26 não · Set/26 em andamento · Out/26 não começou. Vira Some se Set/26 terminar sem ele. Próximas: nenhuma');
+    // Um mês depois (hoje 20/10): Ago e Set terminaram sem ele — 2 bastam pra Some.
+    const depois = carrega([linha(3, 'IA Crédito', 0)], '2026-10-20');
+    assert.equal(tipo(depois.situacao(linha(3, 'IA Crédito', 0))), 'some 0');
+    assert.match(depois.cel(linha(3, 'IA Crédito', 0)), /class="togSeguintes vd"[^>]*>Some</);
     // Série cadastrada pra frente diz "sim" mesmo no futuro.
     const serie = linha(10, 'Renegociação Nu', 0);
     const g = carrega([serie, linha(11, 'Renegociação Nu', 1), linha(12, 'Renegociação Nu', 2), linha(13, 'Renegociação Nu', 3)], '2026-09-20');
@@ -71,7 +76,7 @@ test('no Crédito, o ciclo que importa é o das compras (o anterior ao da fatura
     // Seguintes pela fatura: 2, 3, 4; as compras delas, na tela: Ago (terminou), Set (hoje), Out.
     assert.equal(f.detalhe(compra), 'Ago/26 sim · Set/26 em andamento · Out/26 não começou. Próximas: nenhuma');
     assert.equal(tipo(f.situacao(compra)), 'ate 1');
-    assert.match(f.cel(compra), />até Ago\/26</);
+    assert.match(f.cel(compra), />1 de 3 \(até Ago\/26\)</);
 });
 
 test('mesmo lote e parcelas "(n/m)" sem lote são o mesmo compromisso', () => {
@@ -110,24 +115,24 @@ test('coluna depois de Frequência, fora do Backlog, ordenação, filtro e toque
     assert.match(tabelas, /seguintes: \[\['repete', 'Repete'[^\]]+'vm'\], \['some', 'Some'[^\]]+'vd'\]\]/);
     assert.match(tabelas, /if \(coluna == 'seguintes'\) return situacaoNosSeguintes\(r\)\?\.tipo === termo;/);
     assert.match(tabelas, /if \(coluna == 'seguintes' && \(A == null\) != \(B == null\)\) return A == null \? 1 : -1;/);
-    assert.match(ler('css/dashboard.css'), /\.col-seguintes \{ width: 6\.25rem; \}/);
+    assert.match(ler('css/dashboard.css'), /\.col-seguintes \{ width: 10\.5rem; \}/);
     assert.match(ler('js/interactions.js'), /const celula = e\.target\.closest\('\[data-seguintes\]'\);[\s\S]{0,80}e\.stopImmediatePropagation\(\);\s*\n\s*mostrarToast\('Próx\. 3', celula\.dataset\.seguintes\);/);
 });
 
-test('Renegociação de Ago e de Set (série que acaba na fatura de Nov) dizem o mesmo: até Out/26', () => {
+test('Renegociação (série que acaba na fatura de Nov): a de Ago diz 2 de 3 (até Out/26)', () => {
     // Hoje 28/10 (ciclo Out). Compras dia 05, fatura dia 12 do mês seguinte (ciclo da fatura =
     // o seguinte ao da compra): 05/08 → 1 (Ago na tela), 05/09 → 2, 05/10 → 3, e acabou.
     const ago = linha(1, 'Renegociação Nu', 2, { cred: true, data: '2026-08-05', fatura: '2026-09-12' });
     const set = linha(2, 'Renegociação Nu', 3, { cred: true, data: '2026-09-05', fatura: '2026-10-12' });
     const out = linha(3, 'Renegociação Nu', 4, { cred: true, data: '2026-10-05', fatura: '2026-11-12' });
     const f = carrega([linha(0, 'Renegociação Nu', 1, { cred: true, data: '2026-07-05', fatura: '2026-08-12' }), ago, set, out], '2026-10-28');
-    assert.match(f.cel(ago), />até Out\/26</);
+    assert.match(f.cel(ago), />2 de 3 \(até Out\/26\)</);
     assert.equal(f.cel(set), '—');   // só 2 ciclos depois do 3 nos ciclos do teste
     const g = carrega([linha(0, 'Renegociação Nu', 0, { cred: true, data: '2026-06-05', fatura: '2026-07-12' }),
         linha(1, 'Renegociação Nu', 1, { cred: true, data: '2026-07-05', fatura: '2026-08-12' }),
         linha(2, 'Renegociação Nu', 2, { cred: true, data: '2026-08-05', fatura: '2026-09-12' })], '2026-08-20');
     const primeira = { ...linha(0, 'Renegociação Nu', 0, { cred: true, data: '2026-06-05', fatura: '2026-07-12' }) };
-    assert.match(g.cel(primeira), />até Ago\/26</);
+    assert.match(g.cel(primeira), />2 de 3 \(até Ago\/26\)</);
     assert.equal(g.detalhe(primeira), 'Jul/26 sim · Ago/26 sim · Set/26 não começou. Próximas: 05/07 fat. 12/08 · 05/08 fat. 12/09');
 });
 
@@ -137,5 +142,7 @@ test('regra documentada', () => {
     assert.match(regras, /ignorando o número de parcela no fim do nome/);
     assert.match(regras, /ainda não terminou/);
     assert.match(regras, /sem supor o futuro/);
-    assert.match(regras, /Nunca "2 de 3"/);
+    assert.match(regras, /Nunca só "2 de 3"/);
+    assert.match(regras, /pelo menos \*\*2\*\* deles já terminaram/);
+    assert.match(regras, /Exemplo de \*\*Ainda não\*\*/);
 });
