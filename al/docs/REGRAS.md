@@ -4,6 +4,7 @@
 
 - Só a conta do Victor (a mesma do hub e do Treino). Dentro do hub, sem sessão vai para o login do hub (`../?volta=al/`) e volta depois de entrar. A tela de login própria (usuário e senha) só aparece com o app servido fora do hub (testes). Outra conta: "Esta conta não tem acesso." Sem botão de sair (Sair fica no hub).
 - Abre na hora com a cópia do aparelho, inclusive sem internet; depois envia o que estava pendente e traz a nuvem e o Treino.
+- **Rede ruim (metrô):** cada pedido ao Supabase tem limite de 15 s (a IA, 40 s); estourou, conta como sem internet (fica salvo no aparelho e envia na próxima tentativa), e o envio nunca fica preso. Envio que chegou à nuvem mas cuja resposta se perdeu não é somado de novo na tentativa seguinte (o mesmo trecho de caminhada não entra duas vezes; comida vai por id e repetir não duplica).
 
 ## Gasto do dia
 
@@ -12,6 +13,7 @@
 - **Rotina:** basal × 1,2 (fator de atividade sedentário).
 - **Treino:** treinos do dia no Treino. Soma só o que passa da basal: calorias do treino (`kcalTreino`, 3,5 MET × basal/hora × horas, a mesma conta do Treino) − basal/hora × horas = (3,5 − 1) × basal ÷ 24 × horas. O cardio na esteira feito depois do treino (no Treino, `tr_treino.cardio`) entra aqui também, pela mesma regra: `kcalEsteira` − basal/hora × horas na esteira.
 - **Caminhada (cumulativa):** linha "Andei" com minutos, km e **+**. Cada caminhada do dia (ida, volta, mercado…) é um **trecho**: toque em + (ou Enter num campo) e ele entra com o horário de agora, com os min e/ou km digitados; vazios = padrão de 20 min. Os campos limpam para o próximo. Até 600 min e 60 km por trecho, até 30 trechos por dia. Os trechos aparecem embaixo ("12:10 · 20 min ×"); toque duplo tira. O gasto soma todos. Nenhum dia vem marcado sozinho (nem quarta e quinta): sem trecho = não andou, e o dia sai de `al_dia`. Só dias com trecho contam como 1º dia do app. Gravado em `al_dia.caminhadas`; o total antigo do dia (antes da migration 02) virou 1 trecho sem horário.
+  - **Toque duplo sem querer** no + com os mesmos minutos e km, no mesmo dia, em menos de 0,5 s, é ignorado. Adicionar a prévia duas vezes também não duplica (o 1º toque já fecha a prévia); a IA não é chamada de novo com a pergunta anterior ainda no ar.
   - Conta por trecho (equação de caminhada do ACSM, terreno plano): MET = (0,1 × velocidade em m/min + 3,5) ÷ 3,5; soma (MET − 1) × basal ÷ 24 × horas.
   - Com minutos e km, a velocidade é a real (limitada a 2–7 km/h); só minutos ou só km, 5 km/h (só km: tempo = km ÷ 5). Ex.: 20 min sem km = 66 kcal; 3 km = 119 kcal (com basal 1.998).
   - Ao lado do +, o efeito de todos os trechos no saldo ("−66 kcal"). Esteira dentro do horário de um treino do Treino, ou marcada como cardio no Treino, já conta no treino: lance só a caminhada fora dele.

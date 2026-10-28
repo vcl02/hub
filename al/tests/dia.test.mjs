@@ -82,6 +82,26 @@ test('dois aparelhos no mesmo dia: a caminhada mescla com a nuvem (nada do outro
   assert.deepEqual(erros, []); await ctx.close();
 });
 
+test('toque duplo sem querer no "Andei +" lança um trecho só', async () => {
+  const { ctx, pg, erros } = await abrirApp({ nuvem: comTreino(novaNuvem()) });
+  await pg.dblclick('#c-mais');
+  assert.deepEqual(await trechos(pg), ['15:30 · 20 min ×']);
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
+test('metrô: o envio da caminhada chega ao banco mas a resposta se perde; o próximo não soma o mesmo trecho de novo', async () => {
+  const { ctx, pg, nuvem, erros } = await abrirApp({ nuvem: comTreino(novaNuvem()) });   // 18/09, 15:30
+  nuvem.perderResposta = 1;
+  await pg.click('#c-mais');
+  await pg.waitForFunction(() => erroSync && !enviando);                  // falhou sem resposta: fica pendente
+  assert.equal(nuvem.tabelas.al_dia[0].caminhadas.length, 1);             // mas o banco já gravou
+  await pg.evaluate(() => enviar());                                       // a próxima tentativa
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.al_dia[0].caminhadas.map(t => t.hora), ['15:30']);   // um trecho só
+  assert.deepEqual(await trechos(pg), ['15:30 · 20 min ×']);
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
 test('sem pesagem no Corpo não há gasto nem saldo, só o que foi comido', async () => {
   const { ctx, pg } = await abrirApp();
   assert.equal(await texto(pg, '#s-valor'), '—');

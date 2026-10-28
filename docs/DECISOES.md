@@ -61,3 +61,11 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md` (página inicial), `
 - **Histórico das metas:** `fin_meta` entra no `fin_historico` (`fin/41`).
 - **Versões:** o Fin passou a usar o `supabase-js` 2.118.0, o mesmo dos outros apps, e os tipos das Edge Functions ganharam versão fixa (`jsr:@supabase/functions-js@2.118.0`), a mesma do `supabase-js`.
 - **Aplicação (28/10/2026):** `fin/41`, `00` da raiz e `agua/02` foram rodadas juntas, num script só, pelo SQL Editor do Supabase, e conferidas por `SELECT` (tudo presente, 10 gatilhos de `hub_historico`).
+
+## Rede ruim e toques repetidos (28/10/2026)
+
+- Pergunta do mantenedor: o que acontece começando algo sem conexão ou com a conexão caindo no meio (metrô), e o que impede duplicar ações de clique.
+- **Duplicação achada e corrigida:** na Água, no Corpo e na caminhada do al, o envio mescla a lista do dia com a nuvem. Se o envio chegava ao banco e a resposta se perdia, a base não era atualizada e a tentativa seguinte somava de novo o que já tinha subido (o mesmo copo duas vezes). Agora o aparelho guarda o que vai deixar na nuvem antes de mandar e, na tentativa seguinte, reconhece que chegou. Resta um caso raro: outro aparelho mudar o mesmo dia entre a resposta perdida e a nova tentativa (a nuvem fica diferente do esperado e a mescla volta ao jeito antigo).
+- **Limite de tempo:** os clientes do Supabase fora do Fin não tinham teto; um pedido sem resposta podia prender o envio (`enviando`) ou a busca dos hábitos (`buscando`) por minutos. O `supabase-js` 2.118.0 repete sozinho até 3 vezes as leituras que falham por rede, então o pior caso de uma leitura fica perto de 1 min, mas sempre termina.
+- **Toque repetido:** 0,5 s para a mesma ação, porque dois copos, dois xixis ou dois trechos iguais nesse intervalo só acontecem por toque duplo sem querer. O toque duplo para apagar continua sendo o de confirmação (`confirmar`).
+- **Fin:** já tinha teto, repetição só do que é idempotente e `INSERT` nunca repetido sozinho. Faltava trava em Nova meta/Excluir meta (o 2º clique criava outra meta) e nos selos (o 2º clique reenviava o mesmo valor em vez de desfazer), e recarregar sozinho quando a conexão volta.

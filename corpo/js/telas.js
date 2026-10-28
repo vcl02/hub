@@ -154,6 +154,7 @@ function mudar(acao) { acao(); gravar(); desenhar(); }
 $('c-hora').addEventListener('input', avisoHorario);
 // +1: evacuação com o horário de agora (o do celular, fuso de São Paulo); tocar num horário (duas vezes) tira
 $('ev-mais').addEventListener('click', () => {
+  if (repetido('ev-mais ' + $('c-data').value)) return;
   const h = agoraHHMM();
   mudarDia(x => { x.evacuacoes.push(h); });
   toast(`Evacuação${h ? ' às ' + h : ''}`);
@@ -164,6 +165,7 @@ $('ev-horas').addEventListener('click', ev => {
 });
 // +1: xixi com o horário de agora; tocar num horário (duas vezes) tira
 $('x-mais').addEventListener('click', () => {
+  if (repetido('x-mais ' + $('c-data').value)) return;
   const h = agoraHHMM();
   mudarDia(x => { x.xixis.push(h); });
   toast(`Xixi às ${h}`);

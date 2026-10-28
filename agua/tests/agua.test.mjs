@@ -110,6 +110,48 @@ test('dois aparelhos no mesmo dia: o envio mescla com a nuvem (nada do outro apa
   assert.deepEqual(erros, []); await ctx.close();
 });
 
+test('toque duplo sem querer num botão de ml bebe uma vez só; tocar de novo depois bebe de novo', async () => {
+  const { ctx, pg, erros } = await abrirApp();
+  await beber(pg, 300);
+  await pg.waitForTimeout(600); await pg.dblclick('[data-ml="300"]');      // o dedo bateu duas vezes
+  assert.equal(await texto(pg, '#t-ml'), '600');
+  await pg.waitForTimeout(600); await pg.click('[data-ml="300"]');         // outro copo de verdade
+  assert.equal(await texto(pg, '#t-ml'), '900');
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
+test('metrô: o envio chega ao banco mas a resposta se perde; o próximo não soma o mesmo copo de novo', async () => {
+  const { ctx, pg, nuvem, erros } = await abrirApp();
+  nuvem.perderResposta = 1;
+  await beber(pg, 300);
+  await pg.waitForFunction(() => erroSync && !enviando);                  // falhou sem resposta: fica pendente
+  assert.deepEqual(nuvem.tabelas.agua_dia[0].aguas.map(a => a.ml), [300]);   // mas o banco já gravou
+  await pg.evaluate(() => enviar());                                       // a próxima tentativa (ao reconectar, 1 min…)
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.agua_dia[0].aguas.map(a => a.ml), [300]);   // um copo só
+  assert.equal(await texto(pg, '#t-ml'), '300');
+  await beber(pg, 200);                                                    // e o seguinte segue normal
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.agua_dia[0].aguas.map(a => a.ml).sort((a, b) => a - b), [200, 300]);
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
+test('metrô: pedido sem resposta nenhuma desiste no limite de tempo e o envio não fica preso', async () => {
+  const { ctx, pg, nuvem, erros } = await abrirApp();
+  nuvem.pendurar = true;
+  await beber(pg, 300);
+  await pg.waitForFunction(() => enviando);
+  // Cada tentativa desiste em 15 s; a leitura ainda é repetida pelo supabase-js (até 3 vezes, com espera curta)
+  for (let i = 0; i < 8 && await pg.evaluate(() => enviando); i++) { await pg.clock.fastForward(16000); await pg.waitForTimeout(50); }
+  await pg.waitForFunction(() => !enviando && /Failed to fetch/.test(erroSync));
+  assert.match(await texto(pg, '#sync'), /Sem internet: salvo no aparelho/);
+  nuvem.pendurar = false;
+  await pg.evaluate(() => enviar());
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.agua_dia[0].aguas.map(a => a.ml), [300]);
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
 test('cópia do aparelho num formato antigo (com xixis) não sobe por cima da nuvem nem apaga o dia', async () => {
   // O que aconteceu em 27/10/2026: o celular tinha a base e a cópia da versão com xixi; hoje só com xixi (sem água).
   // A nuvem já tinha a água de hoje (lançada em outro aparelho) e uma bebida em ontem que a cópia não conhecia.

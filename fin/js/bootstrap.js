@@ -157,5 +157,14 @@ setInterval(() => {
     if (Date.now() - Estado.ultimaCarga >= INTERVALO_RECARGA_AUTOMATICA_MS) recarregarDados();
 }, 30 * 1000);
 
+// Voltou a conexão (ex.: saiu do metrô): abriu sem internet e a carga falhou (a tela ficou em
+// "Falhou"), carrega sozinho; já tinha carregado, recarrega em silêncio se a tela estiver livre.
+// Gravação que falhou sem resposta não é refeita: o INSERT pode já ter entrado (ver supabase-api.js).
+addEventListener('online', () => {
+    if (el('app').style.display === 'none' || Estado.cargasEmAndamento) return;
+    if (!Estado.ultimaCarga) load();
+    else if (telaLivreParaRecarregar()) recarregarDados();
+});
+
 if (API.includes('SEUPROJETO')) { mostraTela(1); load(); }   // sem chaves configuradas: pula o login (modo dev)
 else boot();

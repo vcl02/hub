@@ -4,6 +4,7 @@
 
 - Só a conta do Victor. Dentro do hub, sem sessão vai para o login do hub (`../?volta=corpo/`) e volta depois de entrar; login próprio só fora do hub (testes). Outra conta: "Esta conta não tem acesso." Sem botão de sair.
 - Abre na hora com a cópia do aparelho, inclusive sem internet; depois envia o que estava pendente e traz a nuvem.
+- **Rede ruim (metrô):** cada pedido ao Supabase tem limite de 15 s; estourou, conta como sem internet (fica salvo no aparelho e envia na próxima tentativa), e o envio nunca fica preso. Envio que chegou à nuvem mas cuja resposta se perdeu não é somado de novo na tentativa seguinte (a mesma evacuação ou o mesmo xixi não entra duas vezes).
 
 ## Perfil (só em código, `perfil.js`)
 
@@ -27,6 +28,7 @@
 - **Evacuação:** quantas no dia e um **+1**, que grava com o horário de agora (o do celular, fuso de São Paulo). Cada horário aparece como etiqueta; tocar duas vezes tira. O "sim" antigo (migration 01) aparece como "sem horário".
 - Sem linha da última evacuação. Só com 3 dias ou mais desde a última aparece, em vermelho, "3 dias sem evacuar (última em 19/10)" (prisão de ventre é comum em dieta: fibra e água).
 - **Xixi:** quantos no dia e um **+1** com o horário de agora, como a evacuação; tocar duas vezes tira. Veio da Água (migration 04 copiou os xixis de `agua_dia` para `corpo_dia.xixis`).
+- **Toque duplo sem querer** no +1 (evacuação ou xixi) de novo em menos de 0,5 s, no mesmo dia, é ignorado.
 
 ## Bexiga
 

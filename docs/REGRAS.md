@@ -21,6 +21,7 @@ Comportamento visível da página inicial. As regras comuns a todos os apps (tem
 - **Dia perfeito:** todos os hábitos feitos (treino pode ser folga), sem proteção; o de hoje conta quando tudo já está feito. No topo, os dias perfeitos seguidos e a semana de hoje (segunda a domingo, com os dias que ainda não chegaram apagados).
 - **Proteções:** +1 a cada semana de treino perfeita (quarta e quinta feitas, contada na quinta), no máximo 2 guardadas. Dia que falha gasta uma automaticamente, na ordem dos hábitos, e fica protegido. Tudo é recalculado dos dados a cada abertura, sem tabela própria.
 - Dados: o hub só lê (`tr_treino`, `al_registro`, `al_dia`, `corpo_medida` por `lerMedidas`, `corpo_dia`, `agua_dia`, `fin` só a categoria Besteira), com cópia em `hub-habitos.<conta>` para abrir sem internet; tabela que falha fica com a cópia. Busca de novo ao voltar para a página. O que um app ainda não enviou à nuvem (sem internet, ou a página fechada antes do envio de 0,8 s) só aparece aqui depois de enviado.
+- Rede ruim (metrô): cada busca no Supabase tem limite de 15 s; estourou, a tabela fica com a cópia e a próxima busca (ao voltar para a página ou reconectar) não fica presa.
 - Atalhos sem hábito, fixos embaixo: Agenda e Anotações. O Fin abre pelo hábito Besteira (o gráfico dele vem na fase de gráficos).
 
 ## Atalhos

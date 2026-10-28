@@ -204,6 +204,30 @@ test('dois aparelhos no mesmo dia: evacuações, xixis e sono mesclam com a nuve
   assert.deepEqual(erros, []); await ctx.close();
 });
 
+test('toque duplo sem querer no +1 conta uma vez só', async () => {
+  const { ctx, pg, erros } = await abrirApp();
+  await pg.dblclick('#x-mais'); await pg.dblclick('#ev-mais');
+  assert.equal(await texto(pg, '#x-total'), '1');
+  assert.equal(await texto(pg, '#ev-total'), '1');
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
+test('metrô: o envio chega ao banco mas a resposta se perde; o próximo não soma o mesmo xixi de novo', async () => {
+  const { ctx, pg, nuvem, erros } = await abrirApp();
+  await pg.click('#x-mais');
+  await sincronizado(pg);
+  nuvem.perderResposta = 1;
+  await pg.click('#ev-mais');
+  await pg.waitForFunction(() => erroSync && !enviando);                  // falhou sem resposta: fica pendente
+  assert.deepEqual(nuvem.tabelas.corpo_dia[0].evacuacoes, ['08:00']);      // mas o banco já gravou
+  await pg.evaluate(() => enviar());                                       // a próxima tentativa
+  await sincronizado(pg);
+  const d = nuvem.tabelas.corpo_dia[0];
+  assert.deepEqual([d.evacuacoes, d.xixis], [['08:00'], ['08:00']]);     // uma evacuação só, e o xixi de antes intacto
+  assert.equal(await texto(pg, '#ev-total'), '1');
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
 test('sono: dormi e acordei (passando da meia-noite), as horas e BOM, OK ou RUIM; vazio tira; dia sem nada some', async () => {
   const { ctx, pg, nuvem, erros } = await abrirApp();                    // 22/10
   assert.equal(await pg.isVisible('#d-sono-res'), false);

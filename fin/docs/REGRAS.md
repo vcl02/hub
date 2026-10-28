@@ -35,6 +35,9 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Carga, `UPDATE` e `DELETE` são idempotentes e tentam sozinhos até 3 vezes (espera de 1 s e 2 s entre elas) só quando não houve resposta; erro HTTP (resposta de verdade, ex.: RLS) nunca é repetido.
   Numa repetição de `DELETE`, zero linhas removidas só conta como sucesso se a linha de fato não existir mais (a tentativa sem resposta pode ter excluído).
   `INSERT` nunca é repetido sozinho — sem resposta, pode já ter gravado e repetir duplicaria: a mensagem diz "sem confirmação: pode ter salvado. Recarregue e confira antes de repetir".
+- **Voltou a conexão** (evento `online`): se a carga tinha falhado (abriu sem internet e a tela ficou em "Falhou"), ela é refeita sozinha; se já tinha carregado, recarrega em silêncio quando a tela estiver livre.
+  Gravação que falhou sem resposta não é refeita sozinha: o `INSERT` pode já ter entrado.
+- **Clique duplo** (ou um 2º clique antes da resposta, com a rede lenta) não grava duas vezes: Salvar do cadastro, Excluir e Consolidar ficam desativados enquanto gravam; **Nova meta** e **Excluir** da meta ignoram o clique com o mesmo pedido ainda no ar (o `INSERT` da meta nunca repete sozinho); os selos Pago, Reserva, Comprometido e Pra sempre ignoram o clique com o `PATCH` daquele selo no ar (senão ele leria o valor antigo e mandaria o mesmo de novo, em vez de desfazer).
 
 ### Filtros globais, URL, Comparar e Backlog
 

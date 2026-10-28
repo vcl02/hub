@@ -5,8 +5,24 @@
 // Tabelas (todas com user_id e RLS "só o dono"): chave de cada linha entre colchetes.
 const TABELAS = { al_item: ['id'], al_registro: ['id'], al_dia: ['data'] };
 const ORDEM = Object.keys(TABELAS);
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const K_LOCAL = id => 'al.db.' + id, K_BASE = id => 'al.base.' + id, K_TR = id => 'al.tr.' + id, K_BEBIDAS = id => 'al.bebidas.' + id;
+// Rede ruim (metrô): sem teto, um pedido que perde o sinal no meio pode ficar pendente por minutos, e o que espera por ele
+// (o envio, a busca) fica preso até ele cair. Todo pedido ao Supabase, inclusive a leitura da resposta, tem limite; estourou,
+// vira falha de rede comum ("Failed to fetch") e o pendente vai na próxima tentativa. A função (IA) tem mais tempo.
+const TETO_REDE_MS = 15000, TETO_FUNCAO_MS = 40000;
+async function fetchComTeto(url, op = {}) {
+  const c = new AbortController(), ms = String(url).includes('/functions/v1/') ? TETO_FUNCAO_MS : TETO_REDE_MS, t = setTimeout(() => c.abort(), ms);
+  if (op.signal?.aborted) c.abort(); else op.signal?.addEventListener('abort', () => c.abort());
+  try {
+    const r = await fetch(url, { ...op, signal: c.signal });
+    const corpo = [101, 103, 204, 205, 304].includes(r.status) ? null : await r.arrayBuffer();
+    return new Response(corpo, { status: r.status, statusText: r.statusText, headers: r.headers });
+  } catch (e) {
+    if (c.signal.aborted && !op.signal?.aborted) throw new TypeError(`Failed to fetch: sem resposta em ${ms / 1000} s`);
+    throw e;
+  } finally { clearTimeout(t); }
+}
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { global: { fetch: fetchComTeto } });
+const K_LOCAL = id => 'al.db.' + id, K_BASE = id => 'al.base.' + id, K_TR = id => 'al.tr.' + id, K_BEBIDAS = id => 'al.bebidas.' + id, K_VOO = id => 'al.voo.' + id;
 // bebidas = { dia: [{ hora, bebida, volume }] }: suco, refri e as outras lançadas na Água (agua_dia, só leitura); contam como comido
 let bebidas = {};
 let db = null, tr = { treinos: [] }, medidas = [], usuario = null, base = null, enviando = false, tEnvio = null, erroSync = '';
@@ -39,7 +55,12 @@ function diferenca(a, b) {   // o que enviar para o servidor sair de a e chegar 
   }
   return n ? { up, del } : null;
 }
-const temPendente = () => !!(db && usuario && diferenca(base, linhas(db)));
+// Envio sem resposta (o sinal caiu no meio, ex.: metrô): pode ter chegado à nuvem ou não. Antes de mandar a caminhada, o
+// aparelho guarda como cada dia vai ficar lá ("em voo"); no envio seguinte, o dia que está na nuvem exatamente assim chegou, e a
+// base dele passa a ser isso. Sem isso a mescla somaria de novo o trecho que já tinha subido. (Comida e comidas salvas vão por
+// id: repetir não duplica.)
+const lerVoo = () => { try { return JSON.parse(store.get(K_VOO(usuario.id)) || 'null') || {}; } catch (e) { return {}; } };
+const temPendente = () => !!(db && usuario && (diferenca(base, linhas(db)) || Object.keys(lerVoo()).length));
 // Caminhada (al_dia) é enviada MESCLANDO: lê o dia como está na nuvem agora e aplica só os trechos que este aparelho
 // acrescentou ou tirou desde a base (multiconjunto); o que outro aparelho lançou nunca some por causa deste.
 function mesclar(nuvem, base, local) {
@@ -53,8 +74,8 @@ const trechosDe = (L, data) => preparar({ itens: [], registros: [], dias: [{ dat
 async function enviar() {
   clearTimeout(tEnvio);
   if (enviando || !usuario || !db) return;
-  const agora = linhas(db), mud = diferenca(base, agora);
-  if (!mud) { erroSync = ''; pintarSync(); return; }
+  const agora = linhas(db), mud = diferenca(base, agora) || { up: Object.fromEntries(ORDEM.map(t => [t, []])), del: Object.fromEntries(ORDEM.map(t => [t, []])) }, voo = lerVoo();
+  if (!ORDEM.some(t => mud.up[t].length || mud.del[t].length) && !Object.keys(voo).length) { erroSync = ''; pintarSync(); return; }
   enviando = true;
   try {
     const porId = ORDEM.filter(t => t !== 'al_dia');
@@ -67,12 +88,14 @@ async function enviar() {
       const { error } = await q; if (error) throw error;
     }
     // Caminhada: dia a dia, mesclada com o que está na nuvem agora
-    const dias = [...mud.up.al_dia.map(l => l.data), ...mud.del.al_dia.map(l => l.data)], final = {};
+    const dias = [...new Set([...mud.up.al_dia.map(l => l.data), ...mud.del.al_dia.map(l => l.data), ...Object.keys(voo)])], final = {};
     if (dias.length) {
       const { data: N, error } = await sb.from('al_dia').select('data,caminhadas').in('data', dias);
       if (error) throw error;
       const nuvem = Object.fromEntries((N || []).map(x => [x.data, trechosDe(x.caminhadas, x.data)]));
-      for (const d of dias) final[d] = trechosDe(mesclar(nuvem[d] || [], base?.al_dia?.[d]?.caminhadas || [], agora.al_dia[d]?.caminhadas || []), d);
+      const chegou = d => voo[d] && JSON.stringify(nuvem[d] || []) === JSON.stringify(voo[d]);
+      for (const d of dias) final[d] = trechosDe(mesclar(nuvem[d] || [], chegou(d) ? voo[d] : base?.al_dia?.[d]?.caminhadas || [], agora.al_dia[d]?.caminhadas || []), d);
+      store.set(K_VOO(usuario.id), JSON.stringify(final));
       const sobe = dias.filter(d => final[d].length), sai = dias.filter(d => !final[d].length && nuvem[d]);
       if (sobe.length) { const { error: e } = await sb.from('al_dia').upsert(sobe.map(d => ({ user_id: usuario.id, data: d, caminhadas: final[d] })), { onConflict: 'user_id,data' }); if (e) throw e; }
       for (const d of sai) { const { error: e } = await sb.from('al_dia').delete().eq('data', d); if (e) throw e; }
@@ -90,7 +113,7 @@ async function enviar() {
       store.set(K_LOCAL(usuario.id), JSON.stringify(db));
       if (typeof desenhar === 'function' && !$('v-dia').hidden) desenhar();
     }
-    store.set(K_BASE(usuario.id), JSON.stringify(base)); erroSync = '';
+    store.set(K_BASE(usuario.id), JSON.stringify(base)); store.set(K_VOO(usuario.id), '{}'); erroSync = '';
   } catch (e) { erroSync = e.message || String(e); }
   finally { enviando = false; }
   pintarSync();

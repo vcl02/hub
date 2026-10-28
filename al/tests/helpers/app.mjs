@@ -65,6 +65,8 @@ export async function fakeSupabase(ctx, nuvem, id = DONO) {
     if (req.method() === 'GET') { const off = +(u.searchParams.get('offset') || 0), lim = +(u.searchParams.get('limit') || 1e9); return json(linhas.slice(off, off + lim)); }
     if (req.method() === 'POST') {
       for (const l of [].concat(req.postDataJSON())) { const i = linhas.findIndex(x => chave(x) === chave(l)); if (i >= 0) linhas[i] = l; else linhas.push(l); }
+      // Metrô: gravou no banco, mas a resposta não volta (o sinal caiu no meio)
+      if (nuvem.perderResposta > 0) { nuvem.perderResposta--; return route.abort('connectionreset'); }
       return route.fulfill({ status: 201 });
     }
     if (req.method() === 'DELETE') { nuvem.tabelas[t] = linhas.filter(l => !filtros.every(([k, v]) => String(l[k]) === v)); return route.fulfill({ status: 204 }); }

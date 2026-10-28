@@ -496,6 +496,10 @@ window.alternarBloco = idTabela => {
 // clique no badge "Pago"/"Aberto" alterna o status na hora, sem selecionar a linha (o
 // listener de selecao abaixo esta no MESMO #out — precisa vir ANTES e parar a propagacao,
 // senao o clique tambem selecionaria a linha inteira por baixo do badge).
+// Clique duplo num selo (ou um 2º clique antes da resposta, com a rede lenta): enquanto o PATCH
+// daquele selo está no ar, o clique seguinte é ignorado — senão ele leria o valor antigo e
+// mandaria o mesmo PATCH de novo, em vez de desfazer.
+const togglesNoAr = new Set();
 el('out').addEventListener('click', async e => {
     const badge = e.target.closest('[data-tog-pago]');
     if (!badge) return;
@@ -507,7 +511,7 @@ el('out').addEventListener('click', async e => {
 
     const id = badge.dataset.togPago;
     const r = Estado.lancamentos.find(x => String(x.id) == id);
-    if (!r) return;
+    if (!r || togglesNoAr.has(`pago:${id}`)) return;
 
     const novoPago = !r.pago;
     let novaData = r.data;
@@ -538,6 +542,7 @@ el('out').addEventListener('click', async e => {
     badge.classList.toggle('vm', !novoPago);
     badge.textContent = novoPago ? 'Pago' : 'Aberto';
     badge.style.opacity = .5;   // feedback imediato enquanto o PATCH esta no ar
+    togglesNoAr.add(`pago:${id}`);
 
     try {
         const campos = { pago: novoPago };
@@ -550,6 +555,8 @@ el('out').addEventListener('click', async e => {
         badge.style.opacity = '';
         mostrarToast('Falhou ao atualizar', err.message);
         desenhar();   // redesenha pra garantir que o badge volta a refletir o estado real
+    } finally {
+        togglesNoAr.delete(`pago:${id}`);
     }
 });
 
@@ -568,7 +575,7 @@ el('out').addEventListener('click', async e => {
 
     const [campo, id] = badge.dataset.togFlag.split(':');
     const r = Estado.lancamentos.find(x => String(x.id) == id);
-    if (!r) return;
+    if (!r || togglesNoAr.has(`${campo}:${id}`)) return;
 
     const novoValor = !r[campo];
     // O mesmo compromisso = mesmo nome E mesma categoria (sem acento/caixa; a ordem das
@@ -581,6 +588,7 @@ el('out').addEventListener('click', async e => {
     badge.classList.toggle(COR_FLAG[campo], novoValor);
     badge.textContent = novoValor ? ROTULO_FLAG_TOGGLE[campo] : '—';
     badge.style.opacity = .5;   // feedback imediato enquanto o PATCH esta no ar
+    togglesNoAr.add(`${campo}:${id}`);
 
     try {
         // Um só PATCH (id=in.(...)) pra todas as linhas reais: tudo ou nada, sem metade do
@@ -598,6 +606,8 @@ el('out').addEventListener('click', async e => {
         badge.style.opacity = '';
         mostrarToast('Falhou ao atualizar', err.message);
         desenhar();
+    } finally {
+        togglesNoAr.delete(`${campo}:${id}`);
     }
 });
 
@@ -920,7 +930,14 @@ function valorDoCampoDaMeta(campo, texto) {
 
 // Grava uma mudança (ou insere/exclui): no banco, ou só na memória durante a simulação, como
 // toda edição simulada. A tela recarrega pelo aposGravar; a memória já reflete na hora.
+// Clique duplo (ou um 2º clique antes da resposta, com a rede lenta): Nova meta e Excluir gravam
+// uma vez só. O INSERT nunca repete sozinho (duplicaria a meta), então o clique que chega com o
+// mesmo pedido ainda no ar é ignorado. Atualizar não precisa: já vai pra memória antes de gravar.
+const metasNoAr = new Set();
 async function gravarMudancaDaMeta(acao, id, campos) {
+    const noAr = acao === 'atualizar' ? null : `${acao}:${id}`;
+    if (noAr && metasNoAr.has(noAr)) return;
+    if (noAr) metasNoAr.add(noAr);
     try {
         if (Estado.simulando) {
             if (acao === 'inserir') Estado.metas.push({ id: -(++Estado._proxIdSimulado), forma: 'avista', status: 'aberta', mes: null, ...campos });
@@ -946,6 +963,8 @@ async function gravarMudancaDaMeta(acao, id, campos) {
         }
     } catch (err) {
         mostrarToast('Meta não salva', err.message);
+    } finally {
+        if (noAr) metasNoAr.delete(noAr);
     }
     desenhar();
 }

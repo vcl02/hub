@@ -4,8 +4,24 @@
 // (diferença para "base", a última versão confirmada pelo servidor). Sem internet, fica pendente e envia ao reconectar.
 // O envio MESCLA, não sobrescreve: lê o dia como está na nuvem agora e aplica só o que este aparelho acrescentou ou tirou
 // desde a base. O que outro aparelho lançou nunca some por causa de uma cópia velha ou atrasada deste.
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const K_LOCAL = id => 'agua.db.' + id, K_BASE = id => 'agua.base.' + id;
+// Rede ruim (metrô): sem teto, um pedido que perde o sinal no meio pode ficar pendente por minutos, e o que espera por ele
+// (o envio, a busca) fica preso até ele cair. Todo pedido ao Supabase, inclusive a leitura da resposta, tem limite; estourou,
+// vira falha de rede comum ("Failed to fetch") e o pendente vai na próxima tentativa. A função (IA) tem mais tempo.
+const TETO_REDE_MS = 15000, TETO_FUNCAO_MS = 40000;
+async function fetchComTeto(url, op = {}) {
+  const c = new AbortController(), ms = String(url).includes('/functions/v1/') ? TETO_FUNCAO_MS : TETO_REDE_MS, t = setTimeout(() => c.abort(), ms);
+  if (op.signal?.aborted) c.abort(); else op.signal?.addEventListener('abort', () => c.abort());
+  try {
+    const r = await fetch(url, { ...op, signal: c.signal });
+    const corpo = [101, 103, 204, 205, 304].includes(r.status) ? null : await r.arrayBuffer();
+    return new Response(corpo, { status: r.status, statusText: r.statusText, headers: r.headers });
+  } catch (e) {
+    if (c.signal.aborted && !op.signal?.aborted) throw new TypeError(`Failed to fetch: sem resposta em ${ms / 1000} s`);
+    throw e;
+  } finally { clearTimeout(t); }
+}
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { global: { fetch: fetchComTeto } });
+const K_LOCAL = id => 'agua.db.' + id, K_BASE = id => 'agua.base.' + id, K_VOO = id => 'agua.voo.' + id;
 let db = null, usuario = null, base = null, enviando = false, tEnvio = null, erroSync = '';
 
 function linhas(d) {   // db → { data: linha }; listas copiadas: a base não pode mudar junto quando o dia muda
@@ -20,7 +36,11 @@ function diferenca(a, b) {   // o que enviar para sair de a e chegar em b; null 
   const del = Object.keys(a || {}).filter(k => !(k in b));
   return up.length || del.length ? { up, del } : null;
 }
-const temPendente = () => !!(db && usuario && diferenca(base, linhas(db)));
+// Envio sem resposta (o sinal caiu no meio, ex.: metrô): pode ter chegado à nuvem ou não. Antes de mandar, o aparelho guarda
+// como cada dia vai ficar lá ("em voo"); no envio seguinte, o dia que está na nuvem exatamente assim chegou, e a base dele passa
+// a ser isso. Sem isso a mescla somaria de novo o que já tinha subido (o mesmo copo duas vezes).
+const lerVoo = () => { try { return JSON.parse(store.get(K_VOO(usuario.id)) || 'null') || {}; } catch (e) { return {}; } };
+const temPendente = () => !!(db && usuario && (diferenca(base, linhas(db)) || Object.keys(lerVoo()).length));
 // Lista mesclada (multiconjunto: dois copos iguais no mesmo minuto são dois): a da nuvem, mais o que está no aparelho e não
 // estava na base (acrescentado aqui), menos o que estava na base e saiu do aparelho (tirado aqui).
 function mesclar(nuvem, base, local) {
@@ -34,16 +54,19 @@ const aguasDe = (L, data) => preparar({ dias: [{ data, aguas: L }] }).dias[0]?.a
 async function enviar() {
   clearTimeout(tEnvio);
   if (enviando || !usuario || !db) return;
-  const agora = linhas(db), mud = diferenca(base, agora);
-  if (!mud) { erroSync = ''; pintarSync(); return; }
+  const agora = linhas(db), mud = diferenca(base, agora), voo = lerVoo();
+  if (!mud && !Object.keys(voo).length) { erroSync = ''; pintarSync(); return; }
   enviando = true;
   try {
-    // Os dias que mudaram aqui, como estão na nuvem agora (com a mesma limpeza), e o resultado da mescla de cada um
-    const dias = [...mud.up.map(l => l.data), ...mud.del];
+    // Os dias que mudaram aqui (e os de um envio sem resposta), como estão na nuvem agora (com a mesma limpeza), e o
+    // resultado da mescla de cada um
+    const dias = [...new Set([...(mud ? [...mud.up.map(l => l.data), ...mud.del] : []), ...Object.keys(voo)])];
     const { data: N, error } = await sb.from('agua_dia').select('data,aguas').in('data', dias);
     if (error) throw error;
     const nuvem = Object.fromEntries((N || []).map(x => [x.data, aguasDe(x.aguas, x.data)]));
-    const final = Object.fromEntries(dias.map(d => [d, aguasDe(mesclar(nuvem[d] || [], base?.[d]?.aguas || [], agora[d]?.aguas || []), d)]));
+    const chegou = d => voo[d] && JSON.stringify(nuvem[d] || []) === JSON.stringify(voo[d]);
+    const final = Object.fromEntries(dias.map(d => [d, aguasDe(mesclar(nuvem[d] || [], chegou(d) ? voo[d] : base?.[d]?.aguas || [], agora[d]?.aguas || []), d)]));
+    store.set(K_VOO(usuario.id), JSON.stringify(final));
     const sobe = dias.filter(d => final[d].length), sai = dias.filter(d => !final[d].length && nuvem[d]);
     if (sobe.length) {
       const { error: e } = await sb.from('agua_dia').upsert(sobe.map(d => ({ user_id: usuario.id, data: d, aguas: final[d] })), { onConflict: 'user_id,data' });
@@ -59,7 +82,7 @@ async function enviar() {
     db = preparar(db);
     base = { ...agora, ...Object.fromEntries(dias.map(d => [d, { data: d, aguas: final[d] }])) };
     for (const d of dias) if (!final[d].length) delete base[d];
-    store.set(K_BASE(usuario.id), JSON.stringify(base)); store.set(K_LOCAL(usuario.id), JSON.stringify(db)); erroSync = '';
+    store.set(K_BASE(usuario.id), JSON.stringify(base)); store.set(K_LOCAL(usuario.id), JSON.stringify(db)); store.set(K_VOO(usuario.id), '{}'); erroSync = '';
     if (typeof desenhar === 'function' && !$('v-agua').hidden) desenhar();
   } catch (e) { erroSync = e.message || String(e); }
   finally { enviando = false; }

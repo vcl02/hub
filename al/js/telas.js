@@ -157,6 +157,7 @@ function marcarCaminhada() {
   const campo = id => { const t = $(id).value.trim(); return t ? num(t) : null; };
   const minutos = campo('c-min'), km = campo('c-km');
   if ((minutos != null && !(minutos > 0 && minutos <= 600)) || (km != null && !(km > 0 && km <= 60))) { toast('Até 600 min e 60 km por trecho', true); return; }
+  if (repetido(['caminhada', diaVisto, minutos, km].join(' '))) return;
   let d = db.dias.find(x => x.data === diaVisto);
   if (d && d.caminhadas.length >= TRECHOS_MAX) { toast(`No máximo ${TRECHOS_MAX} trechos por dia`, true); return; }
   mudar(() => {
@@ -225,6 +226,7 @@ $('p-lista').addEventListener('input', ev => {
 });
 $('p-cancelar').addEventListener('click', () => { previa = null; desenhar(); });
 $('p-adicionar').addEventListener('click', () => {
+  if (!previa) return;   // clique duplo: o 1º já adicionou e fechou a prévia
   lerPrevia();
   const validos = previa.filter(x => x.nome);
   if (!validos.length) { toast('Dê um nome à comida.', true); return; }

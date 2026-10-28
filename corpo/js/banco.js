@@ -5,8 +5,24 @@
 // corpo_dia é enviado MESCLANDO: lê o dia como está na nuvem agora e aplica só o que este aparelho acrescentou ou tirou nas
 // evacuações e nos xixis (e o sono, se mudou aqui) desde a base; o que outro aparelho lançou nunca some por causa deste.
 // Também atualiza corpo.medidas.<conta> (guardarMedidas, de ../corpo/perfil.js): Treino e Alimentação veem na hora.
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const K_LOCAL = id => 'corpo.db.' + id, K_BASE = id => 'corpo.base.' + id, K_AGUAS = id => 'corpo.aguas.' + id;
+// Rede ruim (metrô): sem teto, um pedido que perde o sinal no meio pode ficar pendente por minutos, e o que espera por ele
+// (o envio, a busca) fica preso até ele cair. Todo pedido ao Supabase, inclusive a leitura da resposta, tem limite; estourou,
+// vira falha de rede comum ("Failed to fetch") e o pendente vai na próxima tentativa. A função (IA) tem mais tempo.
+const TETO_REDE_MS = 15000, TETO_FUNCAO_MS = 40000;
+async function fetchComTeto(url, op = {}) {
+  const c = new AbortController(), ms = String(url).includes('/functions/v1/') ? TETO_FUNCAO_MS : TETO_REDE_MS, t = setTimeout(() => c.abort(), ms);
+  if (op.signal?.aborted) c.abort(); else op.signal?.addEventListener('abort', () => c.abort());
+  try {
+    const r = await fetch(url, { ...op, signal: c.signal });
+    const corpo = [101, 103, 204, 205, 304].includes(r.status) ? null : await r.arrayBuffer();
+    return new Response(corpo, { status: r.status, statusText: r.statusText, headers: r.headers });
+  } catch (e) {
+    if (c.signal.aborted && !op.signal?.aborted) throw new TypeError(`Failed to fetch: sem resposta em ${ms / 1000} s`);
+    throw e;
+  } finally { clearTimeout(t); }
+}
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { global: { fetch: fetchComTeto } });
+const K_LOCAL = id => 'corpo.db.' + id, K_BASE = id => 'corpo.base.' + id, K_AGUAS = id => 'corpo.aguas.' + id, K_VOO = id => 'corpo.voo.' + id;
 // aguas = { dia: ml } da Água (agua_dia, só leitura), para a bexiga
 let aguas = {};
 let db = null, usuario = null, base = null, enviando = false, tEnvio = null, erroSync = '';
@@ -40,7 +56,15 @@ function diferenca(a, b) {   // o que enviar para sair de a e chegar em b; null 
   }
   return n ? { up, del } : null;
 }
-const temPendente = () => { const d = db && usuario && diferenca(base, linhas(db)); return !!d && (!semCorpoDia || Object.keys(TABELAS).some(t => t !== 'corpo_dia' && (d.up[t].length || d.del[t].length))); };
+// Envio sem resposta (o sinal caiu no meio, ex.: metrô): pode ter chegado à nuvem ou não. Antes de mandar corpo_dia, o aparelho
+// guarda como cada dia vai ficar lá ("em voo"); no envio seguinte, o dia que está na nuvem exatamente assim chegou, e a base
+// dele passa a ser isso. Sem isso a mescla somaria de novo o que já tinha subido (o mesmo xixi duas vezes).
+const lerVoo = () => { try { return JSON.parse(store.get(K_VOO(usuario.id)) || 'null') || {}; } catch (e) { return {}; } };
+const temPendente = () => {
+  if (!db || !usuario) return false;
+  const d = diferenca(base, linhas(db));
+  return (!!d && (!semCorpoDia || Object.keys(TABELAS).some(t => t !== 'corpo_dia' && (d.up[t].length || d.del[t].length)))) || (!semCorpoDia && Object.keys(lerVoo()).length > 0);
+};
 // Lista mesclada (multiconjunto): a da nuvem, mais o que entrou aqui desde a base, menos o que saiu daqui
 function mesclar(nuvem, base, local) {
   const conta = L => L.reduce((m, x) => m.set(x, (m.get(x) || 0) + 1), new Map());
@@ -60,24 +84,26 @@ function diaMesclado(d, N, B, L) {
 async function enviar() {
   clearTimeout(tEnvio);
   if (enviando || !usuario || !db) return;
-  const agora = linhas(db), mud = diferenca(base, agora);
-  if (!mud) { erroSync = ''; pintarSync(); return; }
+  const agora = linhas(db), mud = diferenca(base, agora), voo = semCorpoDia ? {} : lerVoo();
+  if (!mud && !Object.keys(voo).length) { erroSync = ''; pintarSync(); return; }
   enviando = true;
   try {
-    // corpo_dia: dia a dia, mesclado com o que está na nuvem agora
-    const diasMudados = semCorpoDia ? [] : [...mud.up.corpo_dia.map(l => l.data), ...mud.del.corpo_dia];
+    // corpo_dia: dia a dia (os que mudaram aqui e os de um envio sem resposta), mesclado com o que está na nuvem agora
+    const diasMudados = semCorpoDia ? [] : [...new Set([...(mud ? [...mud.up.corpo_dia.map(l => l.data), ...mud.del.corpo_dia] : []), ...Object.keys(voo)])];
     const finais = {};
     if (diasMudados.length) {
       const { data: N, error } = await sb.from('corpo_dia').select('*').in('data', diasMudados);
       if (error) throw error;
       const nuvem = linhas({ medidas: [], dias: preparar({ dias: N || [] }).dias }).corpo_dia;
-      for (const d of diasMudados) finais[d] = diaMesclado(d, nuvem[d], base?.corpo_dia?.[d], agora.corpo_dia[d]);
+      const chegou = d => d in voo && JSON.stringify(nuvem[d] ?? null) === JSON.stringify(voo[d] ?? null);
+      for (const d of diasMudados) finais[d] = diaMesclado(d, nuvem[d], chegou(d) ? voo[d] : base?.corpo_dia?.[d], agora.corpo_dia[d]);
+      store.set(K_VOO(usuario.id), JSON.stringify(finais));
       const sobe = diasMudados.filter(d => finais[d]), sai = diasMudados.filter(d => !finais[d] && nuvem[d]);
       if (sobe.length) { const { error: e } = await sb.from('corpo_dia').upsert(sobe.map(d => ({ user_id: usuario.id, ...finais[d] })), { onConflict: 'user_id,data' }); if (e) throw e; }
       for (const d of sai) { const { error: e } = await sb.from('corpo_dia').delete().eq('data', d); if (e) throw e; }
     }
     for (const t in TABELAS) {
-      if (t === 'corpo_dia') continue;
+      if (t === 'corpo_dia' || !mud) continue;
       if (mud.up[t].length) {
         const { error } = await sb.from(t).upsert(mud.up[t].map(l => ({ user_id: usuario.id, ...l })), { onConflict: 'user_id,' + TABELAS[t] });
         if (error) throw error;
@@ -99,7 +125,7 @@ async function enviar() {
       store.set(K_LOCAL(usuario.id), JSON.stringify(db));
       if (typeof desenhar === 'function' && !$('v-corpo').hidden) desenhar();
     }
-    store.set(K_BASE(usuario.id), JSON.stringify(base)); erroSync = '';
+    store.set(K_BASE(usuario.id), JSON.stringify(base)); store.set(K_VOO(usuario.id), '{}'); erroSync = '';
   } catch (e) { erroSync = e.message || String(e); }
   finally { enviando = false; }
   pintarSync();

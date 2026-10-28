@@ -42,6 +42,10 @@ function confirmar(btn) {   // toque duplo: o 1º só deixa o botão vermelho (3
   setTimeout(() => btn.classList.remove('armado'), 3000);
   return false;
 }
+// Toque repetido sem querer (o dedo que bate duas vezes, o clique duplo): a mesma ação de novo em menos de 0,5 s é ignorada
+const REPETIDO_MS = 500;
+let ultimaAcao = { k: '', em: 0 };
+function repetido(k) { const agora = Date.now(), r = ultimaAcao.k === k && agora - ultimaAcao.em < REPETIDO_MS; ultimaAcao = { k, em: agora }; return r; }
 
 // ===== Gráfico de linha (peso ou barriga) =====
 // Eixo horizontal pela data (a distância entre os pontos é a distância entre os dias), com 3 datas marcadas: a 1ª, a do

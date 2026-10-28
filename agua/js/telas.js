@@ -42,6 +42,7 @@ function mudarHoje(acao) {
 // Bebe ml da bebida escolhida: água conta inteira; as outras, só a parte que é água (e ficam marcadas na lista)
 function beber(ml) {
   if (!(ml > 0 && ml <= ML_MAX)) { toast(`De 1 a ${inteiro(ML_MAX)} ml`, true); return; }
+  if (repetido('beber ' + bebida + ' ' + ml)) return;
   const hora = agoraHHMM(), a = bebida === 'agua' ? { hora, ml } : { hora, ml: Math.round(ml * BEBIDAS[bebida].agua), bebida, volume: ml };
   bebida = 'agua';
   mudarHoje(x => { x.aguas.push(a); });
