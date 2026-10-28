@@ -436,14 +436,17 @@ function atualizarIndicadoresFinanceiros(idxPeriodo) {
     const reserva = dadosMetaReservaEmergenciaCiclo(idxPeriodo);
     const comprometidos = dadosCompromissosCiclo(idxPeriodo);
     const comprometido = comprometidos.limites[0];
+    // Gastos e Liberdade contam as previstas de Besteira/Isabella como compras de verdade
+    // (o teto inteiro gasto, como na fatura e no saldo); as linhas das metas ficam fora.
+    const comPrevistas = [...Estado.lancamentos, ...previstasDosTetos()];
     const proporcaoDoCiclo = idx => dadosProporcaoReservaDoCiclo(
-        Estado.lancamentos
+        comPrevistas
             .filter(r => r.periodoIdx == idx)
             .map(r => ({ ...r, _transferencia: ehTransferenciaFatura(r) }))
     );
     const proporcaoReserva = proporcaoDoCiclo(idxPeriodo);
     const liberdade = dadosLiberdadeFinanceira(
-        Estado.lancamentos.map(r => ({ ...r, _transferencia: ehTransferenciaFatura(r) })),
+        comPrevistas.map(r => ({ ...r, _transferencia: ehTransferenciaFatura(r) })),
         idxPeriodo,
         guardadoRealAte(Estado.lancamentos, idxPeriodo),
         reserva.meta

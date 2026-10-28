@@ -36,7 +36,7 @@ function carrega(lancamentos, idxHoje = 1, ciclos = CICLOS) {
     const inicio = graficos.indexOf('// Base do percentual');
     const fim = graficos.indexOf('function dadosCompromissosCiclo(');
     vm.runInContext(graficos.slice(inicio, fim), contexto);
-    vm.runInContext('globalThis.r = { previstasDoCiclo, limitesCategoriaDoCiclo, totalBaseDoCiclo, lancamentosComPrevistas, limparCachesFinanceiros };', contexto);
+    vm.runInContext('globalThis.r = { previstasDoCiclo, limitesCategoriaDoCiclo, totalBaseDoCiclo, lancamentosComPrevistas, previstasDosTetos, limparCachesFinanceiros };', contexto);
     return contexto.r;
 }
 
@@ -169,4 +169,13 @@ test('previstas e faturas: Mensal, Aberto, Comprometido e Pra sempre só na exib
     // Comprometido: lançamentos reais e as linhas do plano das metas — nunca as previstas de Besteira/Isabella.
     assert.match(graficos, /const linhas = \[\.\.\.Estado\.lancamentos, \.\.\.linhasDasMetas\(\)\]\s*\n\s*\.filter\(r => r\.periodoIdx == idxPeriodo\)/);
     assert.match(regras, /Mostram Frequência \*\*Mensal\*\*, Pago \*\*Aberto\*\*, \*\*Comprometido\*\* e \*\*Pra sempre\*\*/);
+});
+
+test('indicadores Gastos e Liberdade contam as previstas como compras de verdade (sem as metas)', () => {
+    const r = carrega([...linhasCiclo]);
+    assert.equal(r.previstasDosTetos().map(l => l._sid).join(), 'prev:besteira:1,prev:isabella:1');
+    assert.match(graficos, /const comPrevistas = \[\.\.\.Estado\.lancamentos, \.\.\.previstasDosTetos\(\)\];/);
+    assert.match(graficos, /dadosProporcaoReservaDoCiclo\(\s*comPrevistas\s*\.filter/);
+    assert.match(graficos, /dadosLiberdadeFinanceira\(\s*comPrevistas\.map/);
+    assert.match(regras, /contam como gasto nos indicadores \*\*Gastos\*\* e \*\*Liberdade\*\*/);
 });

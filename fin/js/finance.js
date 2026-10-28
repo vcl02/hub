@@ -140,6 +140,10 @@ function lancamentosComPrevistas() {
     return _lancamentosComPrevistas;
 }
 
+// Só as previstas de Besteira/Isabella (sem as linhas das metas), pra quem soma lançamentos
+// reais e precisa delas como compras de verdade.
+const previstasDosTetos = () => lancamentosComPrevistas().filter(r => String(r._sid || '').startsWith('prev:'));
+
 // ===================================================================
 // METAS (fin_meta, migration 36)
 // ===================================================================
@@ -318,7 +322,7 @@ function detalheDoPlano(plano, anteriores, ctx) {
 // Investimento fica de fora porque a falta já é medida contra todo o guardado projetado, com
 // Aporte sugerido e Resgate necessário de cada ciclo: não há aporte a diminuir que vire dinheiro.
 function candidatosPraCaber() {
-    const tetos = lancamentosComPrevistas().filter(r => r._prev && String(r._sid).startsWith('prev:')).map(r => {
+    const tetos = previstasDosTetos().map(r => {
         const [, chave, idx] = r._sid.split(':');
         return { tipo: 'teto', chave, cicloTeto: +idx, ciclo: r.periodoIdx, ganho: -r.v, parcial: true };
     }).filter(c => c.ciclo != null && Estado.ciclos[c.cicloTeto]?.cicloId != null);
