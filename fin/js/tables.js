@@ -13,7 +13,7 @@ function ordenarLinhas(linhas, idTabela) {
     const tipo = COLS.find(c => c[0] == coluna)[2];
     const copia = [...linhas];
     // Próx. 3 é calculado (não é campo da linha); sem valor ("—") fica sempre por último.
-    const valor = r => coluna == 'seguintes' ? situacaoNosSeguintes(r)?.fracao ?? null : r[coluna];
+    const valor = r => coluna == 'seguintes' ? situacaoNosSeguintes(r)?.sim ?? null : r[coluna];
     copia.sort((a, b) => {
         const A = valor(a), B = valor(b);
         if (coluna == 'seguintes' && (A == null) != (B == null)) return A == null ? 1 : -1;
@@ -355,8 +355,8 @@ const celFlag = (r, chave) => {
         : (marcado ? `<span class=${COR_FLAG[chave]}>${texto}</span>` : texto);
 };
 
-// Próx. 3: Repete (nenhum ciclo seguinte sem ele), Some (nenhum com ele), "1 de 2"/"2 de 3" no
-// meio, contando só os ciclos que já dizem algo (ver situacaoNosSeguintes); "—" sem nenhum.
+// Próx. 3: Repete (nos 3 ciclos seguintes), Some (em nenhum, os 3 já terminados), "n de 3" no
+// meio, pelo que está nos dados (ver situacaoNosSeguintes); "—" sem dado nenhum ainda.
 // Cor só nas saídas: Repete vermelho, Some verde. Só leitura; tocar (ou o hover) mostra os
 // ciclos e as próximas ocorrências (handler data-seguintes).
 const celSeguintes = r => {
@@ -366,7 +366,7 @@ const celSeguintes = r => {
     const [texto, cor] = !situacao ? ['—', '']
         : situacao.tipo == 'repete' ? ['Repete', saida ? 'vm' : '']
             : situacao.tipo == 'some' ? ['Some', saida ? 'vd' : '']
-                : [`${situacao.sim} de ${situacao.sim + situacao.nao}`, ''];
+                : [`${situacao.sim} de ${CICLOS_SEGUINTES}`, ''];
     const detalhe = escapeHtml(detalheDosSeguintes(r));
     return `<span class="togSeguintes${cor ? ' ' + cor : ''}" data-seguintes="${detalhe}" title="${detalhe}">${texto}</span>`;
 };

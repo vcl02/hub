@@ -149,10 +149,9 @@ const previstasDosTetos = () => lancamentosComPrevistas().filter(r => String(r._
 // (recorrencia_id). Conta lançamentos reais, simulados e as previstas (Besteira/Isabella,
 // metas), pago ou aberto. null: linha sem ciclo, linha calculada (fatura, saldo, Aporte/
 // Resgate, que não são um compromisso) ou ciclo sem 3 ciclos cadastrados depois dele.
-// Ciclo que ainda não terminou (o de hoje e os seguintes) só diz "sim": sem o compromisso,
-// ele ainda pode aparecer (o café de novembro não aconteceu ainda), então não conta como
-// "não" — é "ainda não". O ciclo que importa é o das compras: no Crédito, o anterior ao da
-// fatura (é o ciclo em que a compra aparece na tela).
+// Só o que está nos dados, sem supor o futuro: ciclo que ainda não terminou (o de hoje e os
+// seguintes) e não tem o compromisso é "ainda não" — não prova que some nem que repete. O
+// ciclo que importa é o das compras: no Crédito, o anterior ao da fatura (o da tela).
 const CICLOS_SEGUINTES = 3;
 const chaveDoCompromisso = r => chaveDaRecorrencia({ ...r, nome: String(r.nome ?? '').replace(/\s*\(?\s*\d+\s*\/\s*\d+\s*\)?\s*$/, '') });
 let _presencas = null;
@@ -183,16 +182,16 @@ function ciclosSeguintesDaLinha(r) {
         return { idx, daTela, tem: !!(ciclos?.has(idx) || doLote?.has(idx)), aberto: !daTela || dataISO(daTela.fat) >= hoje };
     });
 }
-// Repete: nenhum "não" (os que já terminaram têm, os de agora em diante ou têm ou ainda não
-// aconteceram); Some: nenhum "sim" e algum "não"; parcial: os dois. null sem nenhum ciclo
-// que já diga algo ("—"). fracao ordena: Some 0 … Repete 1.
+// Contagem real: Repete só com o compromisso nos 3 ciclos seguintes; Some só sem ele em
+// nenhum e os 3 já terminados; senão, parcial ("n de 3"). null ("—") quando nada foi achado
+// e nenhum dos 3 terminou (não há dado pra dizer nada). sim ordena: 0 … 3.
 function situacaoNosSeguintes(r) {
     const seguintes = ciclosSeguintesDaLinha(r);
     if (!seguintes) return null;
     const sim = seguintes.filter(c => c.tem).length;
-    const nao = seguintes.filter(c => !c.tem && !c.aberto).length;
-    if (!sim && !nao) return null;
-    return { sim, nao, tipo: !nao ? 'repete' : !sim ? 'some' : 'parcial', fracao: sim / (sim + nao) };
+    const terminados = seguintes.filter(c => !c.aberto).length;
+    if (!sim && !terminados) return null;
+    return { sim, tipo: sim == CICLOS_SEGUINTES ? 'repete' : !sim && terminados == CICLOS_SEGUINTES ? 'some' : 'parcial' };
 }
 // "Out/26 sim · Nov/26 ainda não · Dez/26 ainda não", pelo ciclo em que a linha aparece na tela: o Crédito
 // de um ciclo mostra a fatura do seguinte, então a compra aparece um ciclo antes do da fatura.

@@ -119,7 +119,8 @@ O celular lê as notificações do Nubank no Tasker (`tasker/*.xml`) e envia cad
 ## Próx. 3: ciclo que ainda não terminou não é "não" (28/10/2026)
 
 - *O erro:* a 1ª versão contava como "não" o ciclo seguinte sem o compromisso, inclusive os que ainda não aconteceram. Num ciclo passado (Ago), Café e Renegociação viravam "2 de 3" só porque Nov ainda não tinha começado, e o que faltava no ciclo de hoje (ainda em andamento) virava "Some".
-- *A regra:* só ciclo que já terminou diz "não". Ciclo de hoje e futuros dizem "sim" quando o compromisso já está lá (série cadastrada pra frente) e, senão, "ainda não", que não entra na conta. Sem nenhum ciclo que diga algo, "—".
+- *1ª correção, desfeita:* "ainda não" saía da conta, e Repete passou a valer com uma confirmação só — a Renegociação de Ago virava Repete sem nenhuma parcela cadastrada depois de 05/10. Era supor o futuro.
+- *A regra:* contagem real. Repete só com os 3 ciclos tendo o compromisso; Some só sem ele e os 3 já terminados; senão "n de 3". "Ainda não" (ciclo não terminado, sem o compromisso) nunca vira Some nem completa Repete. Sem nada achado e nenhum ciclo terminado, "—".
 - *Crédito:* o ciclo que conta é o das compras (o anterior ao da fatura), o mesmo que a tela mostra; pela fatura, a compra de outubro seria julgada pelo ciclo de novembro.
 
 ## Documentação de produto

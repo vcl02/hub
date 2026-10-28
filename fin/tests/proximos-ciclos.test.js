@@ -1,7 +1,6 @@
-// Regressão: coluna Próx. 3 nas tabelas do ciclo — Repete quando o compromisso não falta em
-// nenhum dos 3 ciclos seguintes, Some quando não aparece em nenhum, "n de m" no meio; ciclo
-// que ainda não terminou só conta se já tem (senão é "ainda não", não "não"); cor só nas
-// saídas; parcelas "(2/12)" são o mesmo compromisso; tocar mostra os ciclos e as próximas.
+// Regressão: coluna Próx. 3 nas tabelas do ciclo — contagem real nos 3 ciclos seguintes, sem
+// supor o futuro: Repete só nos 3, Some só em nenhum com os 3 terminados, "n de 3" no meio,
+// "—" sem dado; ciclo não terminado sem o compromisso é "ainda não"; cor só nas saídas; parcelas "(2/12)" são o mesmo compromisso; tocar mostra os ciclos e as próximas.
 // Roda o código real de domain/shared/finance e a célula de tables.js, com hoje fixo.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -35,30 +34,31 @@ function carrega(linhas, hoje = '2027-03-01') {
     return contexto.f;
 }
 const linha = (id, nome, ciclo, extra = {}) => ({ id, nome, categ: 'Casa', v: -10, valor: -10, cred: false, pago: false, periodoIdx: ciclo, ...extra });
-const tipo = s => s && `${s.tipo} ${s.sim}/${s.nao}`;
+const tipo = s => s && `${s.tipo} ${s.sim}`;
 
 test('ciclos que já terminaram: Repete, Some e o meio; mesmo nome + categoria, sem acento/caixa', () => {
     const condominio = linha(1, 'Condomínio', 0), uber = linha(5, 'Uber', 0), gas = linha(6, 'Gás', 0);
     const f = carrega([condominio, linha(2, 'Condominio', 1), linha(3, 'CONDOMÍNIO', 2), linha(4, 'Condomínio', 3),
         uber, gas, linha(7, 'Gás', 2), linha(8, 'Condomínio', 1, { categ: 'Outra' })]);
-    assert.equal(tipo(f.situacao(condominio)), 'repete 3/0');
-    assert.equal(tipo(f.situacao(uber)), 'some 0/3');
-    assert.equal(tipo(f.situacao(gas)), 'parcial 1/2');
+    assert.equal(tipo(f.situacao(condominio)), 'repete 3');
+    assert.equal(tipo(f.situacao(uber)), 'some 0');
+    assert.equal(tipo(f.situacao(gas)), 'parcial 1');
 });
 
-test('ciclo que ainda não terminou não conta como "não": o café de novembro ainda não aconteceu', () => {
+test('sem supor o futuro: ciclo não terminado sem o compromisso não faz Some nem completa Repete', () => {
     // Hoje 20/09: Ago terminou, Set (o de hoje) e Out não.
     const cafe = linha(1, 'Café', 0), ia = linha(3, 'IA Crédito', 0), tudoDepois = linha(4, 'Novo', 2);
     const f = carrega([cafe, linha(2, 'Café', 1), ia, tudoDepois], '2026-09-20');
-    assert.equal(tipo(f.situacao(cafe)), 'repete 1/0');      // Ago sim; Set e Out ainda não
-    assert.equal(tipo(f.situacao(ia)), 'some 0/1');          // Ago não; o resto ainda não
+    assert.equal(tipo(f.situacao(cafe)), 'parcial 1');       // Ago sim; Set e Out ainda não: 1 de 3
+    assert.equal(tipo(f.situacao(ia)), 'parcial 0');         // Ago não; o resto ainda não: 0 de 3, não Some
     assert.equal(f.situacao(tudoDepois), null);              // Out, Nov e Dez: nada diz nada ainda
     assert.equal(f.detalhe(cafe), 'Ago/26 sim · Set/26 ainda não · Out/26 ainda não. Próximas: nenhuma');
     assert.match(f.cel(tudoDepois), />—</);
+    assert.match(f.cel(cafe), /class="togSeguintes"[^>]*>1 de 3</);
     // Série cadastrada pra frente diz "sim" mesmo no futuro.
     const serie = linha(10, 'Renegociação Nu', 0);
     const g = carrega([serie, linha(11, 'Renegociação Nu', 1), linha(12, 'Renegociação Nu', 2), linha(13, 'Renegociação Nu', 3)], '2026-09-20');
-    assert.equal(tipo(g.situacao(serie)), 'repete 3/0');
+    assert.equal(tipo(g.situacao(serie)), 'repete 3');
 });
 
 test('no Crédito, o ciclo que importa é o das compras (o anterior ao da fatura)', () => {
@@ -67,7 +67,7 @@ test('no Crédito, o ciclo que importa é o das compras (o anterior ao da fatura
     const f = carrega([compra, linha(2, 'Netflix', 2, { cred: true })], '2026-09-20');
     // Seguintes pela fatura: 2, 3, 4 → na tela: Ago (terminou), Set (hoje), Out.
     assert.equal(f.detalhe(compra), 'Ago/26 sim · Set/26 ainda não · Out/26 ainda não. Próximas: nenhuma');
-    assert.equal(tipo(f.situacao(compra)), 'repete 1/0');
+    assert.equal(tipo(f.situacao(compra)), 'parcial 1');
 });
 
 test('mesmo lote e parcelas "(n/m)" sem lote são o mesmo compromisso', () => {
@@ -75,8 +75,8 @@ test('mesmo lote e parcelas "(n/m)" sem lote são o mesmo compromisso', () => {
     const t1 = linha(4, 'Renegociação Itaú (1/12)', 0);
     const f = carrega([p1, linha(2, 'TV (2/3)', 1, { recorrencia_id: 9 }), linha(3, 'TV (3/3)', 2, { recorrencia_id: 9 }),
         t1, linha(5, 'Renegociação Itaú (2/12)', 1), linha(6, 'Renegociação Itaú (3/12)', 2), linha(7, 'Renegociação Itaú (4/12)', 3)]);
-    assert.equal(tipo(f.situacao(p1)), 'parcial 2/1');
-    assert.equal(tipo(f.situacao(t1)), 'repete 3/0');
+    assert.equal(tipo(f.situacao(p1)), 'parcial 2');
+    assert.equal(tipo(f.situacao(t1)), 'repete 3');
 });
 
 test('"—" sem ciclo, em linha calculada e sem 3 ciclos à frente', () => {
@@ -115,4 +115,5 @@ test('regra documentada', () => {
     assert.match(regras, /Cor só nas saídas: \*\*Repete\*\* em vermelho, \*\*Some\*\* em verde/);
     assert.match(regras, /ignorando o número de parcela no fim do nome/);
     assert.match(regras, /ainda não terminou/);
+    assert.match(regras, /sem supor o futuro/);
 });
