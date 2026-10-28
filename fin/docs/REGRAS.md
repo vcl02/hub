@@ -78,22 +78,19 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Os dois ícones ficam sempre em evidência, nunca cortados pelo texto truncado (não fazem parte da caixa com overflow escondido); clicar em qualquer um deles nunca entra em modo de edição nem seleciona a linha, e funcionam em qualquer tela, já que copiar ou abrir não altera dado nenhum.
   Nenhum dos dois campos participa de cálculo financeiro nem de nenhuma regra de negócio; são só anotações.
 
-### Coluna Próx. 3
+### Coluna Parcela
 
-- As tabelas Débito e Crédito do ciclo têm a coluna **Próx. 3**, logo depois de Frequência: se o mesmo compromisso volta nos **3 ciclos seguintes** ao da linha, só pelo que está nos dados, sem supor o futuro.
-  **Repete** quando aparece nos 3; **Some** quando não aparece em nenhum e os **3** já terminaram.
-  No meio, **como numeração de parcela**: `1 de 3 (até Out/26)` — esta é a 1ª de 3, e a última aparece em Out/26. A posição é quantos ciclos seguidos ele vem aparecendo até este (contando este); o total é a posição mais quantas vezes ele aparece nos 3 seguintes; o "até" é o último ciclo em que aparece.
+- As tabelas Débito e Crédito do ciclo têm a coluna **Parcela**, logo depois de Frequência: toda linha é numerada como parcela da sequência de ciclos seguidos em que o mesmo compromisso aparece — `2 de 3 (até Out/26)`: esta é a 2ª de 3, e a última aparece em Out/26.
+  A posição é quantos ciclos seguidos ele vem aparecendo até esta linha (contando ela); o total é a sequência inteira, pra trás e pra frente, sem limite (uma série cadastrada até 2032 fica `3 de 77 (até Dez/32)`); o "até" é o último ciclo da sequência.
+  Um ciclo sem o compromisso encerra a sequência: se ele volta depois, recomeça em `1`. Lançamento sozinho é `1 de 1 (até Out/26)`.
+  Só o que está nos dados, sem supor o futuro: o fim é o último ciclo cadastrado com ele (série cadastrada pra frente — Frequência, parcelas, pra sempre — conta como está).
   A Renegociação Nu de Ago, Set e Out (acaba na fatura de novembro) mostra `1 de 3`, `2 de 3` e `3 de 3`, todas `(até Out/26)`.
-  **Ainda não** quando o compromisso está sozinho (sem ciclo antes nem depois) e não voltou, mas nem todos os 3 terminaram; "—" sozinho, sem nada achado e nenhum dos 3 terminado.
-  Exemplo de **Ainda não**: um Fone de Ouvido comprado em Ago/26, olhado em 28/10 — Set/26 terminou sem ele (não), Out/26 ainda está em andamento (sem ele até agora) e Nov/26 não começou. Um ciclo só sem ele não basta pra dizer que sumiu; se Out/26 e Nov/26 terminarem sem ele, vira **Some** (o toque diz isso: "Vira Some se Out/26 e Nov/26 terminarem sem ele.").
-  Ciclo que **ainda não terminou** (o de hoje e os seguintes) e não tem o compromisso não prova que some nem que repete: não conta pra Some e não completa um Repete. Série cadastrada pra frente (Frequência, parcelas, pra sempre) conta como está.
-  O ciclo é o da tela, em que a ocorrência aparece: no Crédito, o das compras (o anterior ao da fatura).
-  Cor só nas saídas: **Repete** em vermelho, **Some** em verde; entrada (valor positivo) e os demais ficam sem cor.
+  O ciclo é o da tela, em que a ocorrência aparece: no Crédito, o das compras (o anterior ao da fatura). Várias ocorrências no mesmo ciclo (três cafés em Ago) são a mesma parcela.
   O mesmo compromisso é o mesmo nome + categoria (a regra da recorrência duplicada, `chaveDaRecorrencia`), ignorando o número de parcela no fim do nome (`(2/12)`, que o Tasker grava em cada parcela, sem lote), ou o mesmo lote (`recorrencia_id`).
   Contam lançamentos reais, simulados e previstos (Besteira/Isabella, metas), pago ou aberto.
-  Tocar na célula (ou passar o mouse) mostra cada um dos 3 ciclos — `sim`, `não` (terminou sem ele), `em andamento` (o de hoje, sem ele ainda) ou `não começou` — e as próximas ocorrências com data e, no Crédito, a fatura: `Set/26 sim · Out/26 sim · Nov/26 não começou. Próximas: 05/09 fat. 12/10 · 05/10 fat. 12/11` ("sem ciclo" quando a ocorrência não cai em nenhum); o toque não seleciona a linha.
-- Mostra "—" também em linha calculada (fatura, Saldo do mês anterior, Aporte sugerido/Resgate necessário), em linha sem ciclo e quando ainda não há 3 ciclos cadastrados depois do da linha. O Backlog não tem a coluna.
-- É só leitura, ordena por quantas vezes aparece nos 3 seguintes (0 → 3, "—" sempre por último) e filtra por clique: **Todos** → **Repete** → **Some**.
+  Tocar na célula (ou passar o mouse) mostra o trecho e as próximas ocorrências com data e, no Crédito, a fatura: `Parcela 2 de 3: de Ago/26 a Out/26. Próximas: 05/10 fat. 12/11` ("sem ciclo" quando a ocorrência não cai em nenhum); o toque não seleciona a linha.
+- Linha calculada (Fatura, Saldo do mês anterior, Aporte sugerido/Resgate necessário) fica com a célula vazia: não é um compromisso do banco. O Backlog não tem a coluna (não tem ciclo).
+- É só leitura, sem cor, ordena por quantas parcelas faltam (vazia sempre por último) e filtra por clique: **Todos** → **Última** (a sequência acaba nela) → **Continua**.
 
 ### Simulação
 
@@ -135,7 +132,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Zero não entra em positivos nem negativos.
   Linha de Investimento sugerido (`r._sug`) usa o mesmo valor que já aparece na célula.
   Os dois combinam (ex.: só negativos perto de R$ 150,00).
-- As tabelas de lançamentos (Débito, Crédito, Backlog) têm colunas de largura fixa, que não mudam conforme o filtro (Reserva, Comprometido, Pra sempre, sinal, busca): Data, Valor, Próx. 3, Pago, Reserva, Comprometido, Pra sempre, Prio e ID têm a largura do maior conteúdo possível (cabeçalho, botão de filtro ou célula); Nome, Categoria, Frequência, Obs e Canal dividem igualmente o espaço que sobra (no celular as larguras são outras, ver **Mobile**).
+- As tabelas de lançamentos (Débito, Crédito, Backlog) têm colunas de largura fixa, que não mudam conforme o filtro (Reserva, Comprometido, Pra sempre, sinal, busca): Data, Valor, Parcela, Pago, Reserva, Comprometido, Pra sempre, Prio e ID têm a largura do maior conteúdo possível (cabeçalho, botão de filtro ou célula); Nome, Categoria, Frequência, Obs e Canal dividem igualmente o espaço que sobra (no celular as larguras são outras, ver **Mobile**).
   **Nome** e **Obs** ficam numa linha só, cortados com "…" quando não cabem, e mostram o texto inteiro ao passar o mouse; no Nome, só o texto é cortado — as marcas ao lado (MP, ↳ Fat., ⚠ Resgatou tudo) ficam sempre inteiras; clicar continua editando o texto completo.
   Categoria e Frequência quebram linha dentro da própria coluna; Canal já era cortado com "…".
   Débito e Crédito ficam com as colunas alinhadas entre si.

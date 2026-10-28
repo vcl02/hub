@@ -143,16 +143,14 @@ function lancamentosComPrevistas() {
 // reais e precisa delas como compras de verdade.
 const previstasDosTetos = () => lancamentosComPrevistas().filter(r => String(r._sid || '').startsWith('prev:'));
 
-// Próx. 3: o mesmo compromisso nos 3 ciclos seguintes ao da linha — mesmo nome + categoria
-// (chaveDaRecorrencia, a regra da recorrência duplicada) sem o "(2/12)" das parcelas (o Tasker
-// grava cada parcela com o número no nome e sem lote), ou mesmo lote (recorrencia_id). Conta
-// lançamentos reais, simulados e as previstas (Besteira/Isabella, metas), pago ou aberto.
-// O ciclo de cada ocorrência é o da tela, em que ela aparece: no Crédito, o das compras (o
-// anterior ao da fatura). Só o que está nos dados, sem supor o futuro: ciclo que ainda não
-// terminou (o de hoje e os seguintes) e não tem o compromisso é "em andamento"/"não começou",
-// nunca "não". null: linha sem ciclo, linha calculada (fatura, saldo, Aporte/Resgate, que não
-// são um compromisso) ou sem 3 ciclos cadastrados depois do da linha.
-const CICLOS_SEGUINTES = 3;
+// Parcela: a linha como parcela da sequência de ciclos seguidos em que o mesmo compromisso
+// aparece — mesmo nome + categoria (chaveDaRecorrencia, a regra da recorrência duplicada) sem
+// o "(2/12)" das parcelas (o Tasker grava cada parcela com o número no nome e sem lote), ou
+// mesmo lote (recorrencia_id). Conta lançamentos reais, simulados e as previstas (Besteira/
+// Isabella, metas), pago ou aberto. O ciclo de cada ocorrência é o da tela, em que ela aparece:
+// no Crédito, o das compras (o anterior ao da fatura). Um ciclo sem o compromisso encerra a
+// sequência (se ele volta depois, recomeça em 1). Só o que está nos dados: o fim é o último
+// ciclo cadastrado com ele, sem supor o futuro.
 const chaveDoCompromisso = r => chaveDaRecorrencia({ ...r, nome: String(r.nome ?? '').replace(/\s*\(?\s*\d+\s*\/\s*\d+\s*\)?\s*$/, '') });
 const cicloDaTela = r => (r.periodoIdx == null ? null : r.cred ? r.periodoIdx - 1 : r.periodoIdx);
 let _presencas = null;
@@ -176,61 +174,30 @@ function presencasDoCompromisso(r) {
     const porLote = r.recorrencia_id != null ? _presencas.porLote.get(r.recorrencia_id) : null;
     return ciclo => !!(porChave?.has(ciclo) || porLote?.has(ciclo));
 }
-function ciclosSeguintesDaLinha(r) {
+// { posicao, total, falta, primeiro, ultimo }: "2 de 3 (até Out/26)". null em linha sem ciclo e
+// em linha calculada (fatura, saldo, Aporte/Resgate: não são um compromisso; célula vazia).
+function parcelaDaLinha(r) {
     const t = cicloDaTela(r);
-    if (t == null || t < 0 || r._fat || r._sal || r._res || r._sug != null) return null;
-    if (t + CICLOS_SEGUINTES >= Estado.ciclos.length) return null;
+    if (t == null || t < 0 || t >= Estado.ciclos.length || r._fat || r._sal || r._res || r._sug != null) return null;
     const tem = presencasDoCompromisso(r);
-    const hoje = hojeISO();
-    return Array.from({ length: CICLOS_SEGUINTES }, (_, k) => {
-        const daTela = Estado.ciclos[t + 1 + k];
-        return { daTela, tem: tem(t + 1 + k), aberto: dataISO(daTela.fat) >= hoje, comecou: dataISO(daTela.ini) <= hoje };
-    });
+    let inicio = t, fim = t;
+    while (inicio > 0 && tem(inicio - 1)) inicio--;
+    while (fim + 1 < Estado.ciclos.length && tem(fim + 1)) fim++;
+    return { posicao: t - inicio + 1, total: fim - inicio + 1, falta: fim - t, primeiro: Estado.ciclos[inicio], ultimo: Estado.ciclos[fim] };
 }
-// 'repete' com o compromisso nos 3 ciclos seguintes; 'some' sem ele em nenhum e os 3 já
-// terminados; 'parcela' como numeração de parcela — posicao = quantos ciclos seguidos ele vem
-// aparecendo até este (contando este), total = posicao + quantas vezes aparece nos 3 seguintes,
-// ultimo = o último ciclo em que aparece: a Renegociação de Ago, Set e Out (acaba na fatura de
-// Nov) diz "1 de 3", "2 de 3" e "3 de 3", todas "(até Out/26)"; 'aindaNao' quando está sozinho e
-// não voltou, mas nem todos os 3 terminaram. null ("—") sozinho, sem nada achado e nenhum
-// terminado. sim (quantas vezes nos 3 seguintes) ordena: 0 … 3.
-function situacaoNosSeguintes(r) {
-    const seguintes = ciclosSeguintesDaLinha(r);
-    if (!seguintes) return null;
-    const t = cicloDaTela(r);
-    const comEle = seguintes.filter(c => c.tem);
-    const sim = comEle.length;
-    const terminados = seguintes.filter(c => !c.aberto).length;
-    if (sim == CICLOS_SEGUINTES) return { sim, tipo: 'repete' };
-    if (!sim && terminados == CICLOS_SEGUINTES) return { sim, tipo: 'some' };
-    const tem = presencasDoCompromisso(r);
-    let posicao = 1;
-    while (t - posicao >= 0 && tem(t - posicao)) posicao++;
-    const total = posicao + sim;
-    if (total >= 2) return { sim, tipo: 'parcela', posicao, total, ultimo: comEle.at(-1)?.daTela ?? Estado.ciclos[t] };
-    if (terminados) return { sim, tipo: 'aindaNao', terminados };
-    return null;
-}
-// "Set/26 sim · Out/26 sim · Nov/26 não começou", pelo ciclo da tela (o mesmo da célula; no
-// Crédito, o das compras): sim, não (terminou sem ele), em andamento (o de hoje, sem ele ainda)
-// ou não começou — nunca uma lista que pareça "vai até Nov". Em "Ainda não", diz o que falta
-// ("Vira Some se Out/26 e Nov/26 terminarem sem ele."). Depois, as próximas ocorrências com data
-// (e fatura, no Crédito; "sem ciclo" se não caem em nenhum).
-function detalheDosSeguintes(r) {
-    const seguintes = ciclosSeguintesDaLinha(r);
-    if (!seguintes) return '';
-    const ciclos = seguintes.map(({ daTela, tem, aberto, comecou }) =>
-        `${nomePeriodoAbrev(daTela)} ${tem ? 'sim' : !aberto ? 'não' : comecou ? 'em andamento' : 'não começou'}`).join(' · ');
+// "Parcela 2 de 3: de Ago/26 a Out/26. Próximas: 05/10 fat. 12/11" — o trecho da sequência e as
+// próximas ocorrências com data (e fatura, no Crédito; "sem ciclo" se não caem em nenhum).
+function detalheDaParcela(r) {
+    const p = parcelaDaLinha(r);
+    if (!p) return '';
+    const trecho = p.total == 1 ? `só em ${nomePeriodoAbrev(p.ultimo)}` : `de ${nomePeriodoAbrev(p.primeiro)} a ${nomePeriodoAbrev(p.ultimo)}`;
     const curta = d => dataBR(d).slice(0, 5);
     const proximas = (_presencas.linhasPorChave.get(chaveDoCompromisso(r)) || [])
         .filter(l => l !== r && l.data && dataISO(l.data) > dataISO(r.data || ''))
         .sort((a, b) => timestamp(a.data) - timestamp(b.data))
         .slice(0, 4)
         .map(l => `${curta(l.data)}${l.cred ? ` fat. ${l.fatura ? curta(l.fatura) : 'nenhuma'}` : ''}${l.periodoIdx == null ? ' sem ciclo' : ''}`);
-    const situacao = situacaoNosSeguintes(r);
-    const faltam = situacao?.tipo == 'aindaNao' ? seguintes.filter(c => c.aberto).map(c => nomePeriodoAbrev(c.daTela)) : [];
-    const vira = faltam.length ? ` Vira Some se ${faltam.join(' e ')} ${faltam.length > 1 ? 'terminarem' : 'terminar'} sem ele.` : '';
-    return `${ciclos}.${vira} Próximas: ${proximas.length ? proximas.join(' · ') : 'nenhuma'}`;
+    return `Parcela ${p.posicao} de ${p.total}: ${trecho}. Próximas: ${proximas.length ? proximas.join(' · ') : 'nenhuma'}`;
 }
 
 // ===================================================================

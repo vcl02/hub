@@ -116,15 +116,13 @@ O celular lê as notificações do Nubank no Tasker (`tasker/*.xml`) e envia cad
 - *Pagar = hoje:* a regra antiga (ciclo diferente pede confirmação e mantém a data) deixaria a conta paga no ciclo passado, longe da tela. Como o pagamento atrasado acontece agora, a data vira hoje e o toast mostra a antiga.
 - *Depende de registrar o pagamento da fatura:* fatura passada sem Antecipação Fatura vira atrasada. Se algum pagamento antigo não foi lançado, ele aparece como atrasado até ser lançado.
 
-## Próx. 3: ciclo que ainda não terminou não é "não" (28/10/2026)
+## Coluna Parcela (antes Próx. 3) (28/10/2026)
 
-- *O erro:* a 1ª versão contava como "não" o ciclo seguinte sem o compromisso, inclusive os que ainda não aconteceram. Num ciclo passado (Ago), Café e Renegociação viravam "2 de 3" só porque Nov ainda não tinha começado, e o que faltava no ciclo de hoje (ainda em andamento) virava "Some".
-- *1ª correção, desfeita:* "ainda não" saía da conta, e Repete passou a valer com uma confirmação só — a Renegociação de Ago virava Repete sem nenhuma parcela cadastrada depois de 05/10. Era supor o futuro.
-- *A regra:* contagem real. Repete só com os 3 ciclos tendo o compromisso; Some só sem ele e os 3 já terminados; senão "n de 3". "Ainda não" (ciclo não terminado, sem o compromisso) nunca vira Some nem completa Repete. Sem nada achado e nenhum ciclo terminado, "—".
-- *Crédito:* o ciclo que conta é o das compras (o anterior ao da fatura), o mesmo que a tela mostra; pela fatura, a compra de outubro seria julgada pelo ciclo de novembro.
-- *Numeração de parcela:* "2 de 3" (Ago) e "1 de 3" (Set), contando quantas vezes aparece pra frente, eram lidos como número de parcela — agosto parecia mais adiantado que setembro. A pedido do mantenedor, o meio virou parcela de verdade: a posição conta os ciclos seguidos até a linha, o total soma os que vêm nos 3 seguintes, e o fim vai junto ("1 de 3 (até Out/26)", "2 de 3", "3 de 3"). O aviso diz o estado de cada ciclo ("não começou", "em andamento"), em vez de "ainda não", que numa lista Out · Nov · Dez parecia dizer "vai até Dez".
-- *Ciclo da tela em tudo:* a presença de cada ocorrência é contada pelo ciclo em que ela aparece na tela (no Crédito, o anterior ao da fatura), o mesmo da linha — uma série que mistura Débito e Crédito não fica desencontrada em um ciclo.
-- *Some com os 3:* o mantenedor chegou a pedir Some com 2 ciclos terminados sem o compromisso e voltou atrás no mesmo dia: Some só com os 3 terminados. Antes disso é "Ainda não", e o aviso diz quais ciclos ainda precisam terminar sem ele.
+- *Começo:* a coluna olhava só os 3 ciclos seguintes (Repete/Some e, no meio, uma contagem). Ao longo do dia, com os prints do mantenedor: "n de 3" sozinho era lido como número de parcela (agosto parecia mais adiantado que setembro); ciclo que ainda não começou contava como "não"; depois, "ainda não" fazia Repete com uma confirmação só (supor o futuro). Cada ajuste ficou nos commits.
+- *Decisão final, do mantenedor:* tudo vira parcela, sem Repete, Some nem traço — "2 de 3 (até Out/26)" em toda linha com ciclo, contando a sequência inteira de ciclos seguidos (sem a janela de 3).
+- *Regras que ficaram dos ajustes:* só o que está nos dados (o fim é o último ciclo cadastrado); ciclo da tela em tudo (no Crédito, o das compras), pra uma série que mistura Débito e Crédito não ficar desencontrada; o "(2/12)" do Tasker no nome não separa as parcelas.
+- *Ciclo sem o compromisso encerra a sequência:* sem essa regra, o café de Jul e o de Dez seriam "parcelas" da mesma série. Recomeçar em 1 é previsível e não depende de um limite de "buraco" escolhido à toa.
+- *Linha calculada vazia:* Fatura, Saldo e Aporte/Resgate não são compromisso do banco; a célula fica vazia em vez de "—".
 
 ## Documentação de produto
 

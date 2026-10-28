@@ -568,13 +568,13 @@ el('out').addEventListener('click', async e => {
     }
 });
 
-// Próx. 3: tocar mostra em quais dos 3 ciclos seguintes o compromisso aparece (no celular não
-// há hover). Só lê: não seleciona a linha nem grava nada.
+// Parcela: tocar mostra o trecho da sequência e as próximas (no celular não há hover). Só lê:
+// não seleciona a linha nem grava nada.
 el('out').addEventListener('click', e => {
-    const celula = e.target.closest('[data-seguintes]');
+    const celula = e.target.closest('[data-parcela]');
     if (!celula) return;
     e.stopImmediatePropagation();
-    mostrarToast('Próx. 3', celula.dataset.seguintes);
+    mostrarToast('Parcela', celula.dataset.parcela);
 });
 
 // clique no badge Reserva/Comprometido/Pra sempre alterna o bit na hora — mesmo esquema do

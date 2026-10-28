@@ -626,7 +626,7 @@
      tabela evita espremer o texto: abaixo dele a própria .wrap rola de lado. */
   table.larguraFixa {
       table-layout: fixed;
-      min-width: 91rem;
+      min-width: 92rem;
   }
 
   .col-data { width: 7rem; }
@@ -635,10 +635,10 @@
   .col-reserva { width: 6rem; }
   .col-comprometido { width: 8.25rem; }
   .col-pra_sempre { width: 7rem; }
-  .col-seguintes { width: 10.5rem; }
+  .col-parcela { width: 11.5rem; }
 
-  /* Próx. 3: tocar mostra os ciclos (só lê). */
-  .togSeguintes { cursor: pointer; white-space: nowrap; }
+  /* Parcela: tocar mostra o trecho e as próximas (só lê). */
+  .togParcela { cursor: pointer; white-space: nowrap; }
   .col-prio { width: 4.5rem; }
   .col-id { width: 4rem; }
 

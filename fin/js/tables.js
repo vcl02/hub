@@ -12,11 +12,12 @@ function ordenarLinhas(linhas, idTabela) {
     const { k: coluna, d: direcao } = estadoOrdenacao(idTabela);
     const tipo = COLS.find(c => c[0] == coluna)[2];
     const copia = [...linhas];
-    // Próx. 3 é calculado (não é campo da linha); sem valor ("—") fica sempre por último.
-    const valor = r => coluna == 'seguintes' ? situacaoNosSeguintes(r)?.sim ?? null : r[coluna];
+    // Parcela é calculada (não é campo da linha): ordena por quantas faltam; sem valor (linha
+    // calculada) fica sempre por último.
+    const valor = r => coluna == 'parcela' ? parcelaDaLinha(r)?.falta ?? null : r[coluna];
     copia.sort((a, b) => {
         const A = valor(a), B = valor(b);
-        if (coluna == 'seguintes' && (A == null) != (B == null)) return A == null ? 1 : -1;
+        if (coluna == 'parcela' && (A == null) != (B == null)) return A == null ? 1 : -1;
         // prio sem valor preenchido equivale a "sem prioridade nenhuma" — nao a zero, que
         // seria a MAIOR prioridade; fica atras de qualquer numero real, em qualquer sentido
         // de ordenacao (ex.: pior que 999).
@@ -38,7 +39,7 @@ const PERGUNTA_DA_COLUNA = {
     reserva: 'Se eu perder o emprego, preciso continuar pagando isso?',
     comprometido: 'Começou o mês, isso já é obrigatório pagar?',
     pra_sempre: 'Isso se repete sem data pra acabar?',
-    seguintes: 'Nos 3 ciclos seguintes: Repete aparece nos 3; Some não aparece em nenhum (os 3 já terminados); senão, como parcela: esta é a n de N, até o último ciclo em que aparece. Toque pra ver os ciclos',
+    parcela: 'Como parcela: esta é a n de N ciclos seguidos com o mesmo compromisso, até o último em que aparece. Toque pra ver',
 };
 // monta o <tr> de cabecalho de uma tabela, com a setinha de ordenacao na coluna ativa
 function cabecalhoTabela(idTabela) {
@@ -83,7 +84,7 @@ const ESTADOS_FILTRO_CLIQUE = {
     reserva: [['S', 'Reserva', 'Só com Reserva', 'flagReserva'], ['N', 'Sem', 'Só sem Reserva', '']],
     comprometido: [['S', 'Compr.', 'Só comprometidos', 'flagComprometido'], ['N', 'Sem', 'Só não comprometidos', '']],
     pra_sempre: [['S', 'Sempre', 'Só os pra sempre', 'flagPraSempre'], ['N', 'Com fim', 'Só os que têm fim', '']],
-    seguintes: [['repete', 'Repete', 'Só os que repetem nos ciclos seguintes', 'vm'], ['some', 'Some', 'Só os que somem nos ciclos seguintes', 'vd']],
+    parcela: [['ultima', 'Última', 'Só as últimas parcelas (a sequência acaba nelas)', ''], ['continua', 'Continua', 'Só as que continuam depois', '']],
 };
 function botaoFiltroEstado(idTabela, chave, valorAtual) {
     const estado = ESTADOS_FILTRO_CLIQUE[chave].find(([valor]) => valor == valorAtual);
@@ -161,7 +162,10 @@ function passaFiltroTexto(r, idTabela) {
         }
         if (coluna == 'pago') return termo == 'S' ? r.pago === true : r.pago === false;
         if (coluna == 'reserva' || coluna == 'comprometido' || coluna == 'pra_sempre') return termo == 'S' ? !!r[coluna] : !r[coluna];
-        if (coluna == 'seguintes') return situacaoNosSeguintes(r)?.tipo === termo;
+        if (coluna == 'parcela') {
+            const p = parcelaDaLinha(r);
+            return !!p && (termo == 'ultima' ? p.falta == 0 : p.falta > 0);
+        }
         // ID é exato (não "contém"): "4" acha só o lançamento 4, nunca 14 ou 40. "|" aceita
         // vários; linhas calculadas também têm id (-3, -4…) e podem ser achadas.
         if (coluna == 'id') {
@@ -355,21 +359,13 @@ const celFlag = (r, chave) => {
         : (marcado ? `<span class=${COR_FLAG[chave]}>${texto}</span>` : texto);
 };
 
-// Próx. 3: Repete (nos 3 ciclos seguintes), Some (em nenhum, os 3 já terminados), "1 de 3
-// (até Out/26)" (numeração de parcela: esta é a 1ª de 3, a última em Out/26), "Ainda não"
-// (sozinho, não voltou, nem todos terminaram), "—" sem dado nenhum (ver situacaoNosSeguintes). Cor só nas saídas: Repete
-// vermelho, Some verde. Só leitura; tocar (ou o hover) mostra os ciclos e as próximas
-// ocorrências (handler data-seguintes).
-const celSeguintes = r => {
-    if (!ciclosSeguintesDaLinha(r)) return '—';
-    const situacao = situacaoNosSeguintes(r);
-    const saida = (r.v || 0) < 0;
-    const [texto, cor] = !situacao ? ['—', '']
-        : situacao.tipo == 'repete' ? ['Repete', saida ? 'vm' : '']
-            : situacao.tipo == 'some' ? ['Some', saida ? 'vd' : '']
-                : situacao.tipo == 'parcela' ? [`${situacao.posicao} de ${situacao.total} (até ${nomePeriodoAbrev(situacao.ultimo)})`, ''] : ['Ainda não', ''];
-    const detalhe = escapeHtml(detalheDosSeguintes(r));
-    return `<span class="togSeguintes${cor ? ' ' + cor : ''}" data-seguintes="${detalhe}" title="${detalhe}">${texto}</span>`;
+// Parcela: "2 de 3 (até Out/26)" em toda linha com ciclo (ver parcelaDaLinha); linha calculada
+// fica vazia. Só leitura; tocar (ou o hover) mostra o trecho e as próximas (handler data-parcela).
+const celParcela = r => {
+    const p = parcelaDaLinha(r);
+    if (!p) return '';
+    const detalhe = escapeHtml(detalheDaParcela(r));
+    return `<span class=togParcela data-parcela="${detalhe}" title="${detalhe}">${p.posicao} de ${p.total} (até ${nomePeriodoAbrev(p.ultimo)})</span>`;
 };
 
 // monta as celulas <td> de uma linha, conforme o tipo de cada coluna. A edição por toque/
@@ -380,7 +376,7 @@ const celulasDaLinha = (r, idTabela) => colunasAtivas(idTabela).map(([chave, , t
     ? (r._sug != null ? celValorSomenteLeitura(r, r._sug, corValor(r._sug))
         : ehLinhaReal(r) ? celValorEditavel(r) : celValorSomenteLeitura(r)).replace(/$/,
             r._saldo != null ? `<span class=sd>${brl(r._saldo)}</span>` : '')
-    : tipo == 's' ? `<td>${celSeguintes(r)}`
+    : tipo == 's' ? `<td>${celParcela(r)}`
     : tipo == 'b' && chave != 'pago' ? `<td>${celFlag(r, chave)}`
     : tipo == 'b' ? `<td>${r[chave] == null ? '—'
         : (!ehLinhaReal(r) ? `<span class="${r[chave] ? 'vd' : 'vm'}">${r[chave] ? 'Pago' : 'Aberto'}</span>`
