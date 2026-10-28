@@ -28,7 +28,7 @@ const COLS = [
 // estadoOrdenacao), então some nas demais (Débito, Crédito), onde a linha já tem ciclo — e,
 // no Backlog, vem na FRENTE de tudo (inclusive Data), já que é o primeiro critério que
 // importa ali: decidir o que elevar primeiro pra um ciclo.
-// Próx. 3 (ver presencasNosSeguintes em finance.js) fala dos ciclos seguintes ao da linha:
+// Próx. 3 (ver situacaoNosSeguintes em finance.js) fala dos ciclos seguintes ao da linha:
 // sem ciclo, o Backlog não tem a coluna.
 const colunasDaTabela = idTabela => idTabela === 'bk'
     ? [COLS.find(([chave]) => chave === 'prio'), ...COLS.filter(([chave]) => chave !== 'prio' && chave !== 'seguintes')]

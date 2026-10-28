@@ -149,6 +149,10 @@ const previstasDosTetos = () => lancamentosComPrevistas().filter(r => String(r._
 // (recorrencia_id). Conta lançamentos reais, simulados e as previstas (Besteira/Isabella,
 // metas), pago ou aberto. null: linha sem ciclo, linha calculada (fatura, saldo, Aporte/
 // Resgate, que não são um compromisso) ou ciclo sem 3 ciclos cadastrados depois dele.
+// Ciclo que ainda não terminou (o de hoje e os seguintes) só diz "sim": sem o compromisso,
+// ele ainda pode aparecer (o café de novembro não aconteceu ainda), então não conta como
+// "não" — é "ainda não". O ciclo que importa é o das compras: no Crédito, o anterior ao da
+// fatura (é o ciclo em que a compra aparece na tela).
 const CICLOS_SEGUINTES = 3;
 const chaveDoCompromisso = r => chaveDaRecorrencia({ ...r, nome: String(r.nome ?? '').replace(/\s*\(?\s*\d+\s*\/\s*\d+\s*\)?\s*$/, '') });
 let _presencas = null;
@@ -172,27 +176,33 @@ function ciclosSeguintesDaLinha(r) {
     }
     const ciclos = _presencas.porChave.get(chaveDoCompromisso(r));
     const doLote = r.recorrencia_id != null ? _presencas.porLote.get(r.recorrencia_id) : null;
+    const hoje = hojeISO();
     return Array.from({ length: CICLOS_SEGUINTES }, (_, k) => {
         const idx = p + 1 + k;
-        return { idx, tem: !!(ciclos?.has(idx) || doLote?.has(idx)) };
+        const daTela = Estado.ciclos[r.cred ? idx - 1 : idx];
+        return { idx, daTela, tem: !!(ciclos?.has(idx) || doLote?.has(idx)), aberto: !daTela || dataISO(daTela.fat) >= hoje };
     });
 }
-// Quantos dos 3 seguintes têm o compromisso (0 a 3), ou null.
-function presencasNosSeguintes(r) {
+// Repete: nenhum "não" (os que já terminaram têm, os de agora em diante ou têm ou ainda não
+// aconteceram); Some: nenhum "sim" e algum "não"; parcial: os dois. null sem nenhum ciclo
+// que já diga algo ("—"). fracao ordena: Some 0 … Repete 1.
+function situacaoNosSeguintes(r) {
     const seguintes = ciclosSeguintesDaLinha(r);
-    return seguintes ? seguintes.filter(c => c.tem).length : null;
+    if (!seguintes) return null;
+    const sim = seguintes.filter(c => c.tem).length;
+    const nao = seguintes.filter(c => !c.tem && !c.aberto).length;
+    if (!sim && !nao) return null;
+    return { sim, nao, tipo: !nao ? 'repete' : !sim ? 'some' : 'parcial', fracao: sim / (sim + nao) };
 }
-// "Nov/26 sim · Dez/26 sim · Jan/27 não", pelo ciclo em que a linha aparece na tela: o Crédito
+// "Out/26 sim · Nov/26 ainda não · Dez/26 ainda não", pelo ciclo em que a linha aparece na tela: o Crédito
 // de um ciclo mostra a fatura do seguinte, então a compra aparece um ciclo antes do da fatura.
 // Depois, as próximas ocorrências com data (e fatura, no Crédito; "sem ciclo" se não caem em
 // nenhum), pra conferir de onde vem um "não": no Crédito o que conta é a fatura, não a data.
 function detalheDosSeguintes(r) {
     const seguintes = ciclosSeguintesDaLinha(r);
     if (!seguintes) return '';
-    const ciclos = seguintes.map(({ idx, tem }) => {
-        const ciclo = Estado.ciclos[r.cred ? idx - 1 : idx];
-        return `${ciclo ? nomePeriodoAbrev(ciclo) : '?'} ${tem ? 'sim' : 'não'}`;
-    }).join(' · ');
+    const ciclos = seguintes.map(({ daTela, tem, aberto }) =>
+        `${daTela ? nomePeriodoAbrev(daTela) : '?'} ${tem ? 'sim' : aberto ? 'ainda não' : 'não'}`).join(' · ');
     const curta = d => dataBR(d).slice(0, 5);
     const proximas = (_presencas.linhasPorChave.get(chaveDoCompromisso(r)) || [])
         .filter(l => l !== r && l.data && dataISO(l.data) > dataISO(r.data || ''))

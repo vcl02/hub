@@ -13,7 +13,7 @@ function ordenarLinhas(linhas, idTabela) {
     const tipo = COLS.find(c => c[0] == coluna)[2];
     const copia = [...linhas];
     // Próx. 3 é calculado (não é campo da linha); sem valor ("—") fica sempre por último.
-    const valor = r => coluna == 'seguintes' ? presencasNosSeguintes(r) : r[coluna];
+    const valor = r => coluna == 'seguintes' ? situacaoNosSeguintes(r)?.fracao ?? null : r[coluna];
     copia.sort((a, b) => {
         const A = valor(a), B = valor(b);
         if (coluna == 'seguintes' && (A == null) != (B == null)) return A == null ? 1 : -1;
@@ -83,7 +83,7 @@ const ESTADOS_FILTRO_CLIQUE = {
     reserva: [['S', 'Reserva', 'Só com Reserva', 'flagReserva'], ['N', 'Sem', 'Só sem Reserva', '']],
     comprometido: [['S', 'Compr.', 'Só comprometidos', 'flagComprometido'], ['N', 'Sem', 'Só não comprometidos', '']],
     pra_sempre: [['S', 'Sempre', 'Só os pra sempre', 'flagPraSempre'], ['N', 'Com fim', 'Só os que têm fim', '']],
-    seguintes: [['3', 'Repete', 'Só os que repetem nos 3 ciclos seguintes', 'vm'], ['0', 'Some', 'Só os que somem nos 3 ciclos seguintes', 'vd']],
+    seguintes: [['repete', 'Repete', 'Só os que repetem nos ciclos seguintes', 'vm'], ['some', 'Some', 'Só os que somem nos ciclos seguintes', 'vd']],
 };
 function botaoFiltroEstado(idTabela, chave, valorAtual) {
     const estado = ESTADOS_FILTRO_CLIQUE[chave].find(([valor]) => valor == valorAtual);
@@ -161,7 +161,7 @@ function passaFiltroTexto(r, idTabela) {
         }
         if (coluna == 'pago') return termo == 'S' ? r.pago === true : r.pago === false;
         if (coluna == 'reserva' || coluna == 'comprometido' || coluna == 'pra_sempre') return termo == 'S' ? !!r[coluna] : !r[coluna];
-        if (coluna == 'seguintes') return presencasNosSeguintes(r) === +termo;
+        if (coluna == 'seguintes') return situacaoNosSeguintes(r)?.tipo === termo;
         // ID é exato (não "contém"): "4" acha só o lançamento 4, nunca 14 ou 40. "|" aceita
         // vários; linhas calculadas também têm id (-3, -4…) e podem ser achadas.
         if (coluna == 'id') {
@@ -355,15 +355,18 @@ const celFlag = (r, chave) => {
         : (marcado ? `<span class=${COR_FLAG[chave]}>${texto}</span>` : texto);
 };
 
-// Próx. 3: Repete (aparece nos 3 ciclos seguintes), Some (em nenhum), "1 de 3"/"2 de 3" no
-// meio; "—" sem como saber. Cor só nas saídas: Repete vermelho, Some verde; entrada sem cor.
-// Só leitura; tocar (ou o hover) mostra em quais ciclos aparece (handler data-seguintes).
+// Próx. 3: Repete (nenhum ciclo seguinte sem ele), Some (nenhum com ele), "1 de 2"/"2 de 3" no
+// meio, contando só os ciclos que já dizem algo (ver situacaoNosSeguintes); "—" sem nenhum.
+// Cor só nas saídas: Repete vermelho, Some verde. Só leitura; tocar (ou o hover) mostra os
+// ciclos e as próximas ocorrências (handler data-seguintes).
 const celSeguintes = r => {
-    const n = presencasNosSeguintes(r);
-    if (n == null) return '—';
+    if (!ciclosSeguintesDaLinha(r)) return '—';
+    const situacao = situacaoNosSeguintes(r);
     const saida = (r.v || 0) < 0;
-    const [texto, cor] = n == CICLOS_SEGUINTES ? ['Repete', saida ? 'vm' : '']
-        : n == 0 ? ['Some', saida ? 'vd' : ''] : [`${n} de 3`, ''];
+    const [texto, cor] = !situacao ? ['—', '']
+        : situacao.tipo == 'repete' ? ['Repete', saida ? 'vm' : '']
+            : situacao.tipo == 'some' ? ['Some', saida ? 'vd' : '']
+                : [`${situacao.sim} de ${situacao.sim + situacao.nao}`, ''];
     const detalhe = escapeHtml(detalheDosSeguintes(r));
     return `<span class="togSeguintes${cor ? ' ' + cor : ''}" data-seguintes="${detalhe}" title="${detalhe}">${texto}</span>`;
 };

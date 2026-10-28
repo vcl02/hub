@@ -80,12 +80,15 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ### Coluna Próx. 3
 
-- As tabelas Débito e Crédito do ciclo têm a coluna **Próx. 3**, logo depois de Frequência: em quantos dos **3 ciclos seguintes** ao da linha o mesmo compromisso aparece de novo — **Repete** (nos 3), **Some** (em nenhum) e, no meio, `1 de 3`/`2 de 3`.
+- As tabelas Débito e Crédito do ciclo têm a coluna **Próx. 3**, logo depois de Frequência: se o mesmo compromisso volta nos **3 ciclos seguintes** ao da linha.
+  **Repete** quando nenhum desses ciclos fica sem ele; **Some** quando não aparece em nenhum; no meio, `1 de 2`/`2 de 3` (em quantos aparece, dos que já dizem algo).
+  Ciclo que **ainda não terminou** (o de hoje e os seguintes) só conta se o compromisso já está nele: sem ele, ainda pode aparecer (o café de novembro não aconteceu ainda), então fica como "ainda não", nunca como "não". Série cadastrada pra frente (Frequência, parcelas, pra sempre) já conta como "sim". Sem nenhum ciclo que diga algo, "—".
+  O ciclo que importa é o em que a ocorrência aparece na tela: no Crédito, o anterior ao da fatura (o das compras).
   Cor só nas saídas: **Repete** em vermelho, **Some** em verde; entrada (valor positivo) e o meio ficam sem cor.
   O mesmo compromisso é o mesmo nome + categoria (a regra da recorrência duplicada, `chaveDaRecorrencia`), ignorando o número de parcela no fim do nome (`(2/12)`, que o Tasker grava em cada parcela, sem lote), ou o mesmo lote (`recorrencia_id`).
-  Tocar na célula (ou passar o mouse) mostra em quais ciclos ele aparece, pelo ciclo da tela, e as próximas ocorrências com data e, no Crédito, a fatura (que é o que decide o ciclo): `Nov/26 sim · Dez/26 sim · Jan/27 não. Próximas: 05/11 fat. 12/12 · 05/12 fat. 12/12` (no Crédito, a compra aparece no ciclo anterior ao da fatura; "sem ciclo" quando a ocorrência não cai em nenhum); o toque não seleciona a linha.
-  Contam lançamentos reais, simulados e previstos (Besteira/Isabella, metas), pago ou aberto; o ciclo da linha é o dela (no Crédito, o da fatura).
-- Mostra "—" (sem como saber) em linha calculada (fatura, Saldo do mês anterior, Aporte sugerido/Resgate necessário), em linha sem ciclo e quando ainda não há 3 ciclos cadastrados depois do da linha. O Backlog não tem a coluna.
+  Contam lançamentos reais, simulados e previstos (Besteira/Isabella, metas), pago ou aberto.
+  Tocar na célula (ou passar o mouse) mostra cada um dos 3 ciclos (`sim`, `não` ou `ainda não`) e as próximas ocorrências com data e, no Crédito, a fatura (que é o que decide o ciclo): `Out/26 sim · Nov/26 ainda não · Dez/26 ainda não. Próximas: 05/11 fat. 12/12` ("sem ciclo" quando a ocorrência não cai em nenhum); o toque não seleciona a linha.
+- Mostra "—" também em linha calculada (fatura, Saldo do mês anterior, Aporte sugerido/Resgate necessário), em linha sem ciclo e quando ainda não há 3 ciclos cadastrados depois do da linha. O Backlog não tem a coluna.
 - É só leitura, ordena (Some → Repete, "—" sempre por último) e filtra por clique: **Todos** → **Repete** → **Some**.
 
 ### Simulação

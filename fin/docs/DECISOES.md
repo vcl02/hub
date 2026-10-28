@@ -116,6 +116,12 @@ O celular lê as notificações do Nubank no Tasker (`tasker/*.xml`) e envia cad
 - *Pagar = hoje:* a regra antiga (ciclo diferente pede confirmação e mantém a data) deixaria a conta paga no ciclo passado, longe da tela. Como o pagamento atrasado acontece agora, a data vira hoje e o toast mostra a antiga.
 - *Depende de registrar o pagamento da fatura:* fatura passada sem Antecipação Fatura vira atrasada. Se algum pagamento antigo não foi lançado, ele aparece como atrasado até ser lançado.
 
+## Próx. 3: ciclo que ainda não terminou não é "não" (28/10/2026)
+
+- *O erro:* a 1ª versão contava como "não" o ciclo seguinte sem o compromisso, inclusive os que ainda não aconteceram. Num ciclo passado (Ago), Café e Renegociação viravam "2 de 3" só porque Nov ainda não tinha começado, e o que faltava no ciclo de hoje (ainda em andamento) virava "Some".
+- *A regra:* só ciclo que já terminou diz "não". Ciclo de hoje e futuros dizem "sim" quando o compromisso já está lá (série cadastrada pra frente) e, senão, "ainda não", que não entra na conta. Sem nenhum ciclo que diga algo, "—".
+- *Crédito:* o ciclo que conta é o das compras (o anterior ao da fatura), o mesmo que a tela mostra; pela fatura, a compra de outubro seria julgada pelo ciclo de novembro.
+
 ## Documentação de produto
 
 As regras financeiras vivem em `docs/REGRAS.md`, junto das decisões e do checklist de publicação. O `AGENTS.md` na raiz continua curto e operacional, para orientar manutenção e automação.
