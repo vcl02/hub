@@ -94,7 +94,10 @@ test('service worker: push mostra o último lembrete (água, ou sem resposta da 
   assert.deepEqual(abertas, ['/hub/agua/']);
   ultimo = 'dentes';                                                       // 20 min depois de comer
   await disparar('push');
-  assert.deepEqual([mostradas[1].titulo, mostradas[1].body, mostradas[1].tag, mostradas[1].icon], ['Escove os dentes', 'Você comeu há 20 minutos.', 'dentes', 'https://vcl02.github.io/hub/icons/hub-192.png']);
+  assert.deepEqual([mostradas[1].titulo, mostradas[1].body, mostradas[1].tag, mostradas[1].icon], ['Escove os dentes', 'Você comeu há 20 minutos.', 'dentes', 'https://vcl02.github.io/hub/agua/icons/dentes-192.png']);
+  assert.equal(mostradas[1].badge, 'https://vcl02.github.io/hub/agua/icons/dentes-badge.png');   // escova, não a gota
+  const escova = readFileSync(path.join(RAIZ, 'icons/dentes-badge.png'));
+  assert.equal(escova.readUInt32BE(16), 96); assert.equal(escova[25], 6);   // 96 px, RGBA
   janelas = [];
   await disparar('notificationclick', { notification: { close: () => {}, data: mostradas[1].data } });
   assert.deepEqual(abertas, ['/hub/agua/', '/hub/']);                      // abre a página inicial

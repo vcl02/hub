@@ -27,7 +27,7 @@
 - Notificação de verdade (chega com o app fechado) nos mesmos horários dos lembretes, só se ainda não bebeu água de 30 min antes do horário até a hora do envio (no minuto 1 de cada hora). Texto: "Hora de beber água · Toque para registrar."; tocar abre a Água (ou volta para ela). Ícone grande: o do app; ícone pequeno da barra do Android: a gota branca (`icons/agua-badge.png`, fundo transparente).
 - Embaixo dos lembretes: **Ativar notificações** (pede a permissão e inscreve este aparelho). Ligadas: "Notificações ligadas". Permissão negada: "Notificações bloqueadas nas configurações do celular". Navegador sem notificação (iPhone fora da tela de início): a linha não aparece.
 - Cada aparelho ativado recebe; aparelho que o navegador desinscreveu sai sozinho da lista.
-- **Escovar os dentes:** 20 min depois de lançar comida no Alimentação (comida nova de hoje), chega "Escove os dentes · Você comeu há 20 minutos.", a qualquer hora. Outra comida antes disso empurra para 20 min depois da última: uma notificação por refeição. Mudar porções ou lançar em dia passado não agenda. Tocar abre a página inicial. Vai pelas mesmas notificações da Água (é preciso tê-las ativado).
+- **Escovar os dentes:** 20 min depois de lançar comida no Alimentação (comida nova de hoje), chega "Escove os dentes · Você comeu há 20 minutos.", a qualquer hora, com o ícone da escova (o pequeno da barra, escova branca). Outra comida antes disso empurra para 20 min depois da última: uma notificação por refeição. Mudar porções ou lançar em dia passado não agenda. Tocar abre a página inicial. Vai pelas mesmas notificações da Água (é preciso tê-las ativado).
 
 ## Últimos 7 dias
 

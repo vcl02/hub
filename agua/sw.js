@@ -4,7 +4,7 @@
 const CACHE_ESTATICO = 'agua-estatico';
 const ARQUIVOS_ESTATICOS = [
   './js/config.js', './js/util.js', './js/banco.js', './js/conta.js', './js/notificacoes.js', './js/telas.js', './js/bootstrap.js',
-  './css/agua.css', './', './index.html', '../supabase.js', '../corpo/perfil.js', './bebidas.js', './manifest.webmanifest', './icons/agua-192.png', './icons/agua-512.png', './icons/agua-badge.png'];
+  './css/agua.css', './', './index.html', '../supabase.js', '../corpo/perfil.js', './bebidas.js', './manifest.webmanifest', './icons/agua-192.png', './icons/agua-512.png', './icons/agua-badge.png', './icons/dentes-192.png', './icons/dentes-badge.png'];
 
 self.addEventListener('install', evento => {
   evento.waitUntil(caches.open(CACHE_ESTATICO).then(cache => Promise.all(
@@ -29,11 +29,12 @@ self.addEventListener('fetch', evento => {
 // Notificação de verdade (Web Push sem conteúdo): a função agua-lembrete manda quando é hora e falta água, ou 20 min depois
 // de lançar comida no Alimentação (escovar os dentes). Sem conteúdo no push, o texto sai do último lembrete mandado, que a
 // função responde em GET ?ultimo; sem resposta (sem internet), o de água.
-// badge = ícone pequeno da barra do Android, que só usa a transparência: gota branca em fundo transparente (icons/agua-badge.svg).
+// badge = ícone pequeno da barra do Android, que só usa a transparência: desenho branco em fundo transparente (gota da água,
+// escova dos dentes: icons/*-badge.svg).
 const ULTIMO_LEMBRETE = 'https://yzmyncxoskvqzdczaill.supabase.co/functions/v1/agua-lembrete?ultimo';
 const LEMBRETES = {
-  agua: { titulo: 'Hora de beber água', corpo: 'Toque para registrar.', tag: 'agua-lembrete', icone: 'icons/agua-192.png', abre: './' },
-  dentes: { titulo: 'Escove os dentes', corpo: 'Você comeu há 20 minutos.', tag: 'dentes', icone: '../icons/hub-192.png', abre: '../' }
+  agua: { titulo: 'Hora de beber água', corpo: 'Toque para registrar.', tag: 'agua-lembrete', icone: 'icons/agua-192.png', badge: 'icons/agua-badge.png', abre: './' },
+  dentes: { titulo: 'Escove os dentes', corpo: 'Você comeu há 20 minutos.', tag: 'dentes', icone: 'icons/dentes-192.png', badge: 'icons/dentes-badge.png', abre: '../' }
 };
 self.addEventListener('push', evento => {
   // Imagens com endereço completo (a partir do escopo da Água), sem depender de como o Android resolve caminho relativo
@@ -41,7 +42,7 @@ self.addEventListener('push', evento => {
   evento.waitUntil(fetch(ULTIMO_LEMBRETE, { cache: 'no-store' }).then(r => r.json()).then(x => x.tipo, () => 'agua').then(tipo => {
     const l = LEMBRETES[tipo] || LEMBRETES.agua;
     return self.registration.showNotification(l.titulo, {
-      body: l.corpo, icon: url(l.icone), badge: url('icons/agua-badge.png'), tag: l.tag, renotify: true, data: { abre: l.abre }
+      body: l.corpo, icon: url(l.icone), badge: url(l.badge), tag: l.tag, renotify: true, data: { abre: l.abre }
     });
   }));
 });
