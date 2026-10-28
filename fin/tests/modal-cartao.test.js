@@ -106,8 +106,8 @@ test('Hoje/Futuro com o rótulo em cima e as três colunas na largura toda; cabe
     const formularios = fs.readFileSync('css/forms.css', 'utf8');
     assert.match(formularios, /\.cartaoLinha \{\s*\n\s*display: grid;\s*\n\s*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
     assert.match(formularios, /\.cartaoLinhaRotulo \{\s*\n\s*grid-column: 1 \/ -1;/);
-    assert.match(fs.readFileSync('css/mobile.css', 'utf8'), /\.acoesCabecalho \{\s*\n\s*flex-wrap: wrap;/);
-    assert.match(regras, /Só no celular, quando o bloco não cabe nem sozinho na largura da tela, ele quebra entre os botões/);
+    assert.match(fs.readFileSync('css/mobile.css', 'utf8'), /\.acoesCabecalho \{\s*\n\s*display: grid;/);
+    assert.match(regras, /No celular, o bloco vira uma grade de 6 colunas com a largura da tela/);
 });
 
 test('REGRAS.md documenta o modal do cartão', () => {

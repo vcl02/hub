@@ -75,12 +75,36 @@
 
       /* Barra flutuante de seleção some atrás do teclado em formulários altos; mantém a
          mesma largura confortável do resto da tela. */
+      /* No celular a barra ocupa a largura da tela: o nome/soma numa linha só em cima (nome
+         longo vira "…") e os botões embaixo, dividindo a linha por igual — antes o Excluir
+         ficava cortado fora da tela. */
       #selbar {
+          left: .9rem;
           right: .9rem;
-          bottom: .9rem;
-          max-width: calc(100vw - 1.8rem);
-          gap: .8rem;
-          padding: .75rem .9rem;
+          bottom: calc(.9rem + env(safe-area-inset-bottom));
+          max-width: none;
+          flex-wrap: wrap;
+          gap: .55rem;
+          padding: .7rem .8rem;
+      }
+
+      #selbar .info {
+          flex: 1 1 100%;
+          min-width: 0;
+      }
+
+      #selbar .val {
+          font-size: 1.15rem;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+      }
+
+      #selbar button {
+          flex: 1 1 0;
+          min-width: 0;
+          min-height: 2.6rem;
+          padding: .5rem .4rem;
       }
 
       /* tabela com scroll horizontal */
@@ -97,9 +121,28 @@
       /* Ações do cabeçalho juntas, à direita (sem o Simular separado das demais). */
       /* Com os botões dos cartões, o grupo não cabe nem sozinho numa tela estreita: aí ele
          quebra entre os botões, também à esquerda (na largura em que cabe, segue inteiro). */
+      /* No celular os botões viram uma grade de 6 colunas que ocupa a largura toda: duas
+         linhas de botões maiores (mais fáceis de acertar com o dedo) em vez de três linhas
+         com os dois últimos sobrando sozinhos. A ordem continua a mesma. */
       .acoesCabecalho {
-          flex-wrap: wrap;
-          gap: .5rem;
+          display: grid;
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+          gap: .45rem;
+          flex: 1 1 100%;
+      }
+
+      /* Visualizações fica nas colunas da direita da grade: o menu abre alinhado pela
+         direita do ícone, pra dentro da tela. */
+      .visWrap .menuIcone {
+          left: auto;
+          right: 0;
+          max-width: calc(100vw - 1.8rem);
+      }
+
+      #app .acoesCabecalho > *,
+      #app .acoesCabecalho .visWrap > .btIcone {
+          width: 100%;
+          height: 2.5rem;
       }
 
       #abreNovo {
@@ -176,8 +219,8 @@
       }
 
       .blk h3:has(.resumoTitulo) .resumoTitulo {
-          flex-basis: calc(100% - 1.95rem);
-          margin-left: 1.95rem;
+          flex-basis: 100%;
+          margin-left: 0;
       }
   }
 
@@ -359,5 +402,99 @@
           display: block;
           color: var(--mu);
           font-size: .66rem;
+      }
+  }
+
+  /* =========================================================
+       TABELAS DE LANÇAMENTOS NO CELULAR
+       ========================================================= */
+
+  @media (max-width: 640px) {
+      /* Hoje/Futuro/Passado em cima dos dados, não numa coluna à esquerda: os valores ganham
+         a largura inteira da faixa e quebram menos. */
+      .resumoLinha {
+          grid-template-columns: minmax(0, 1fr);
+          gap: .15rem;
+          padding: .4rem .6rem;
+      }
+
+      /* Ano com dois dígitos (05/10/26): o século fica no HTML, só escondido. */
+      .seculo {
+          display: none;
+      }
+
+      /* Larguras pensadas pro celular (a tabela rola de lado de qualquer jeito): Data curta,
+         Nome mais largo e Categoria com espaço pra uma palavra inteira. Com todas as colunas
+         definidas, a tabela tem a soma delas; o mínimo do desktop deixa de valer. */
+      table.larguraFixa { min-width: 0; }
+      table.larguraFixa .col-data { width: 5rem; }
+      table.larguraFixa .col-nome { width: 8rem; }
+      table.larguraFixa .col-valor { width: 9.25rem; }
+
+      /* Texto um pouco menor e menos folga lateral: Data, Nome e Valor cabem juntos na
+         primeira tela, sem rolar de lado pra ver quanto é. */
+      table.larguraFixa td,
+      table.larguraFixa th {
+          padding-left: .5rem;
+          padding-right: .5rem;
+      }
+
+      table.larguraFixa td {
+          font-size: .9rem;
+      }
+
+      /* A data nunca quebra no meio (05/10/2 + 6). */
+      table.larguraFixa td.cData {
+          white-space: nowrap;
+      }
+      table.larguraFixa .col-categ { width: 8.5rem; }
+      table.larguraFixa .col-freq { width: 6.75rem; }
+      table.larguraFixa .col-obs,
+      table.larguraFixa .col-canal { width: 9rem; }
+
+      /* Quebra só entre palavras ("Contabilidade" inteira); palavra maior que a coluna ainda
+         quebra, pra nunca estourar. */
+      table.larguraFixa td {
+          overflow-wrap: break-word;
+      }
+
+      /* Nome fica fixo à esquerda ao rolar a tabela de lado: dá pra ler Categoria, Pago, Obs…
+         sabendo de que linha são. Fundo opaco e um traço à direita marcando a borda. */
+      table.larguraFixa .cNome {
+          position: sticky;
+          left: 0;
+          z-index: 1;
+          box-shadow: inset -1px 0 var(--ln);
+      }
+
+      /* Seletor fraco de propósito: o fundo das linhas especiais (fatura, previstas,
+         aporte, seleção, hover) é mais específico e continua valendo na coluna fixa. */
+      td.cNome {
+          background: var(--pa);
+      }
+
+      table.larguraFixa th.cNome {
+          z-index: 3;
+      }
+
+      /* Linhas com fundo translúcido (Mercado Pago) ou listrado (simulação) precisam da base
+         opaca por baixo, senão o texto que passa por trás aparece. */
+      tbody tr.mp td.cNome {
+          background: linear-gradient(rgba(108, 197, 238, .06), rgba(108, 197, 238, .06)), var(--pa);
+      }
+
+      tbody tr.mp:hover td.cNome {
+          background: linear-gradient(rgba(108, 197, 238, .1), rgba(108, 197, 238, .1)), var(--pa);
+      }
+
+      tbody tr.sim td.cNome,
+      tbody tr.sim:hover td.cNome {
+          background-color: var(--pa);
+      }
+
+      /* A data em edição é mais larga que a coluna curta: fica por cima do Nome fixo. */
+      .inpData {
+          position: relative;
+          z-index: 2;
       }
   }

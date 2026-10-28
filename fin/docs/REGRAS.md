@@ -115,7 +115,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Zero não entra em positivos nem negativos.
   Linha de Investimento sugerido (`r._sug`) usa o mesmo valor que já aparece na célula.
   Os dois combinam (ex.: só negativos perto de R$ 150,00).
-- As tabelas de lançamentos (Débito, Crédito, Backlog) têm colunas de largura fixa, que não mudam conforme o filtro (Reserva, Comprometido, Pra sempre, sinal, busca): Data, Valor, Pago, Reserva, Comprometido, Pra sempre, Prio e ID têm a largura do maior conteúdo possível (cabeçalho, botão de filtro ou célula); Nome, Categoria, Frequência, Obs e Canal dividem igualmente o espaço que sobra.
+- As tabelas de lançamentos (Débito, Crédito, Backlog) têm colunas de largura fixa, que não mudam conforme o filtro (Reserva, Comprometido, Pra sempre, sinal, busca): Data, Valor, Pago, Reserva, Comprometido, Pra sempre, Prio e ID têm a largura do maior conteúdo possível (cabeçalho, botão de filtro ou célula); Nome, Categoria, Frequência, Obs e Canal dividem igualmente o espaço que sobra (no celular as larguras são outras, ver **Mobile**).
   **Nome** e **Obs** ficam numa linha só, cortados com "…" quando não cabem, e mostram o texto inteiro ao passar o mouse; no Nome, só o texto é cortado — as marcas ao lado (MP, ↳ Fat., ⚠ Resgatou tudo) ficam sempre inteiras; clicar continua editando o texto completo.
   Categoria e Frequência quebram linha dentro da própria coluna; Canal já era cortado com "…".
   Débito e Crédito ficam com as colunas alinhadas entre si.
@@ -511,6 +511,16 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Sem período a mostrar (Backlog e Crédito histórico), a quantidade vai em cinza e menor, sem parênteses, logo depois do valor no próprio título (`Backlog · R$ 0,00 40 registros`), sem linha própria.
 - A tabela Débito começa logo abaixo do cabeçalho, sem linha divisória nem espaço reservado: a barra de filtros (`.tool`) não tem mais nenhum filtro visível e não ocupa espaço, e a linha de status vazia não reserva altura.
 
+### Tabelas, faixas e seleção no celular
+
+- Até 640px de largura, as tabelas de lançamentos (Débito, Crédito, Backlog) usam larguras próprias, pra **Data, Nome e Valor caberem juntos na primeira tela** sem rolar de lado: texto um pouco menor, menos folga lateral, Data curta e as demais colunas (Categoria, Frequência, Obs, Canal…) com largura fixa depois do Valor, alcançadas rolando a tabela de lado.
+- A Data aparece com o ano em dois dígitos (`05/10/26`) e nunca quebra; o ano inteiro continua no HTML (o século só fica escondido) e no desktop nada muda.
+- O **Nome** fica fixo à esquerda ao rolar a tabela de lado, com um traço marcando a borda: dá pra ler Categoria, Pago, Obs… sabendo de que linha são. Ele mantém a cor da linha (fatura, previstas, aporte, seleção, Mercado Pago, simulação).
+- Categoria quebra só entre palavras (`Contabilidade` inteira), nunca no meio de uma.
+- Nas faixas **Hoje**, **Futuro** e **Passado**, o rótulo fica em cima dos dados e a faixa usa a largura inteira, sem o recuo do botão de recolher.
+- A barra de seleção ocupa a largura da tela: o nome ou a soma numa linha só em cima (nome longo termina em "…") e os botões embaixo, dividindo a linha por igual, todos dentro da tela.
+- Na pizza de gastos, a legenda fica embaixo do gráfico, que usa a largura inteira.
+
 ### Cabeçalho e controles
 
 - O ícone do hub (**Hub**, a marca do hub em traço), o último do cabeçalho, volta à página inicial do hub (`../`), que abre os outros apps; é um link, não grava nada.
@@ -519,7 +529,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Os dois ficam lado a lado, sem texto ou traço entre eles (`Out/26` `Nov/26`).
 - O cabeçalho (navegação De/Até, simulação, cadastro, recarregar, diagnóstico, hub) é o mesmo em qualquer largura; quando não cabe numa linha só, quebra para a seguinte.
   Os botões (cartões Nubank e Mercado Pago, Todas/Diferentes, Gráfico, Visualizações, simulação, cadastro, recarregar, diagnóstico, hub, nessa ordem) formam um bloco só, à direita — a navegação de ciclo fica só com setas e De/Até: quando não cabem, descem **juntos** pra linha seguinte, nunca separados, e lá ficam alinhados **à esquerda**.
-  Só no celular, quando o bloco não cabe nem sozinho na largura da tela, ele quebra entre os botões, também alinhado à esquerda.
+  No celular, o bloco vira uma grade de 6 colunas com a largura da tela (duas linhas de botões maiores, mais fáceis de tocar), na mesma ordem; o menu de Visualizações abre alinhado pela direita do ícone, dentro da tela.
   A navegação de ciclo (setas, De/Até) ganha sua própria linha e encolhe/quebra internamente em vez de estourar a tela.
   O botão verde **Recarregar** do cabeçalho (mesmo ícone de setas) faz, num só clique e nesta ordem: recarrega os dados do banco, volta De/Até ao ciclo atual, limpa os filtros — buscas por coluna, filtro de teto (Besteira/Isabella), Linhas, ordenação, blocos recolhidos, seleção e categorias excluídas do gráfico —, devolvendo a tela ao estado em que ela abre, e roda o **Consolidar tudo** (ver **Aportes e resgates**).
   Não existem mais botões "Atual", "Limpar filtros" nem "Consolidar tudo" separados.

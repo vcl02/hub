@@ -43,7 +43,7 @@ function cabecalhoTabela(idTabela) {
     const linhaTitulos = cols.map(([chave, rotulo, tipo]) => {
         const seta = colunaAtiva == chave ? (direcao == 1 ? ' <span class=ar>↑</span>' : ' <span class=ar>↓</span>') : '';
         const dica = PERGUNTA_DA_COLUNA[chave] ? ` title="${PERGUNTA_DA_COLUNA[chave]}"` : '';
-        return `<th class="${tipo == 'n' ? 'n' : ''}"${dica} onclick="sortCol('${idTabela}','${chave}')">${rotulo}${seta}`;
+        return `<th class="${tipo == 'n' ? 'n' : ''}${chave == 'nome' ? 'cNome' : ''}"${dica} onclick="sortCol('${idTabela}','${chave}')">${rotulo}${seta}`;
     }).join('');
     // 2a linha do header: campo de busca por coluna, so nas colunas de texto (tipo 't').
     const filtroAtual = estadoFiltroTexto(idTabela);
@@ -59,7 +59,7 @@ function cabecalhoTabela(idTabela) {
                 `${campoBusca(chave, rotulo, 'inputmode=numeric ')}</span></th>`;
         }
         if (tipo == 't' || tipo == 'd') {
-            return `<th>${campoBusca(chave, rotulo, 'title="Digite \'vazio\' pra achar as linhas sem nada preenchido aqui" ')}</th>`;
+            return `<th${chave == 'nome' ? ' class=cNome' : ''}>${campoBusca(chave, rotulo, 'title="Digite \'vazio\' pra achar as linhas sem nada preenchido aqui" ')}</th>`;
         }
         if (tipo == 'b') return `<th>${botaoFiltroEstado(idTabela, chave, filtroAtual[chave])}</th>`;
         // ID: busca exata (coluna estreita, placeholder curto); "|" aceita vários ids.
@@ -231,7 +231,9 @@ const textoOuTraco = v => ehVazioTextual(v) ? '—' : v;
 const ehLinhaReal = r => Number.isInteger(+r.id) && +r.id > 0 && !r._sid && !r._sim;
 // conteudo da celula Data: DD/MM/AAAA ou '—'. A fatura e' escolhida manualmente,
 // portanto nao existe mais marca de fechamento/D+1.
-const textoData = r => r.data ? dataBR(r.data) : '—';
+// O século vai num span próprio: no celular ele some (05/10/26) e sobra largura pro Nome;
+// o ano continua inteiro na tela, só mais curto.
+const textoData = r => r.data ? dataBR(r.data).replace(/\/(\d{2})(\d{2})$/, '/<span class=seculo>$1</span>$2') : '—';
 // mesma ideia de celValorEditavel: clicar abre um <input type=date> inline. So' pra
 // lancamentos REAIS (id do banco, da' pra dar PATCH).
 const celData = r => {
@@ -358,8 +360,8 @@ const celulasDaLinha = (r, idTabela) => colunasAtivas(idTabela).map(([chave, , t
     // Nome e Obs ficam numa linha só, cortados com "…"; o texto inteiro aparece no hover
     // (title da célula). Clicar continua editando o texto completo.
     : chave == 'nome' || chave == 'obs'
-        ? `<td class=corta title="${escapeHtml(ehVazioTextual(r[chave]) ? '' : String(r[chave]))}">${chave == 'nome' ? celNome(r) : celObs(r)}`
-    : `<td class="${tipo == 'n' ? 'n' : ''}">${chave == 'data'
+        ? `<td class="corta${chave == 'nome' ? ' cNome' : ''}" title="${escapeHtml(ehVazioTextual(r[chave]) ? '' : String(r[chave]))}">${chave == 'nome' ? celNome(r) : celObs(r)}`
+    : `<td class="${tipo == 'n' ? 'n' : chave == 'data' ? 'cData' : ''}">${chave == 'data'
             ? celData(r)
             : (chave == 'nome' ? celNome(r)
                 : (chave == 'categ' ? celCateg(r)

@@ -122,7 +122,8 @@ test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
     assert.match(estilos, /\.alertaTitulo/);
     assert.match(visoes, /class=resumoDados/);
     assert.match(estilos, /grid-template-columns: 3\.65rem minmax\(0, 1fr\)/);
-    assert.match(estilosMobile, /flex-basis: calc\(100% - 1\.95rem\)/);
+    // No celular a faixa usa a largura toda, sem o recuo do botão de recolher.
+    assert.match(estilosMobile, /\.resumoTitulo \{\s*flex-basis: 100%;\s*margin-left: 0;/);
     assert.doesNotMatch(interacoes, /voltouDoAtualParaHistorico/);
     assert.match(interacoes, /if \(direcao > 0 && \+novoValor >= Estado\.idxHoje\) abrirBlocosFinanceiros\(\)/);
     assert.match(interacoes, /function voltarAoCicloAtualELimpar\(\) \{[\s\S]*abrirBlocosFinanceiros\(\)/);

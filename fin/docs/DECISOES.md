@@ -101,6 +101,12 @@ O celular lê as notificações do Nubank no Tasker (`tasker/*.xml`) e envia cad
 - *Plano em cascata, não otimização:* cada meta, pela data, usa a forma escolhida (À vista, Parcelado Crédito ou Parcelado Débito; sem "Automático", a pedido do mantenedor) e o plano diz se cabe; a entrada, parte do total, sai à vista. É previsível e explicável no próprio texto do plano; uma busca pela "melhor combinação" de todas as metas mudaria o plano de uma meta por causa de outra sem que isso fique claro na tela.
 - *Plano calculado com os caches zerados:* `limparCachesFinanceiros` refaz o plano na hora. Se ele nascesse no meio de um saldo em cálculo (a memoização trava o ciclo com 0 enquanto calcula), o guardado projetado sairia errado.
 
+## Celular: tabela legível sem tirar coluna (28/10/2026)
+
+- *Paridade mantida:* nenhuma coluna some no celular. Em vez de recortar colunas, a tabela ganhou larguras próprias pra Data, Nome e Valor caberem na primeira tela, e o Nome fica fixo ao rolar de lado (sticky, sem JavaScript).
+- *Ano curto por CSS:* o século vai num `<span class=seculo>` escondido no celular. O texto e a edição da data não mudam, e o desktop mostra o ano inteiro.
+- *Fundo da coluna fixa:* o fundo padrão dela usa um seletor fraco (`td.cNome`) de propósito, pra o fundo das linhas especiais (fatura, previstas, aporte, seleção) continuar valendo; Mercado Pago (translúcido) e simulação (listrado) ganham base opaca própria.
+
 ## Documentação de produto
 
 As regras financeiras vivem em `docs/REGRAS.md`, junto das decisões e do checklist de publicação. O `AGENTS.md` na raiz continua curto e operacional, para orientar manutenção e automação.

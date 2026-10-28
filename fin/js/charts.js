@@ -753,7 +753,7 @@ function desenhaGraficoPizza(idxPeriodo) {
                 abrirDetalheFatiaGrafico(categoria, idxPeriodo, linhasPorCategoria[categoria] || []);
             },
             plugins: {
-                legend: { position: 'right', labels: { boxWidth: 12, padding: 14 } },
+                legend: { position: isMobile() ? 'bottom' : 'right', labels: { boxWidth: 12, padding: 14 } },
                 tooltip: {
                     callbacks: {
                         label: ctx => {
