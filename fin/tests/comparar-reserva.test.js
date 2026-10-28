@@ -14,6 +14,7 @@ function regrasDaComparacao() {
     const normalizar = valor => String(valor ?? '').trim().normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '').toLowerCase();
     const contexto = {
+        ehDebitoAtrasado: () => false,   // atrasado tem testes próprios (atrasados.test.js)
         categoriasSeparadas: valor => String(valor ?? '').split(',').map(c => c.trim()).filter(Boolean),
         ehCategoria: (valor, procurada) => normalizar(valor) === normalizar(procurada),
         ehAntecipacaoFatura: valor => {

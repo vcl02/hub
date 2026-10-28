@@ -273,7 +273,11 @@ const celNome = r => {
     const textoNome = ehLinhaReal(r)
         ? `<span class="nomeTexto togNome" data-tog-nome="${escapeHtml(String(r.id))}">${nome}</span>`
         : `<span class=nomeTexto>${nome}</span>`;
-    return `<span class=nomeLinha>${sim}${textoNome}${badgeFatura}${badgeResgate}</span>`;
+    // Atrasado: em aberto de um ciclo que já acabou, contando no ciclo de hoje até ser pago.
+    const badgeAtrasado = r._atrasado || ehDebitoAtrasado(r)
+        ? ` <span class=tagAviso title="Venceu em ${escapeHtml(textoOuTraco(r.data && dataBR(r.data)))}, num ciclo que já acabou: conta no ciclo de hoje até ser pago">Atrasado</span>`
+        : '';
+    return `<span class=nomeLinha>${sim}${textoNome}${badgeFatura}${badgeResgate}${badgeAtrasado}</span>`;
 };
 // Categoria e Frequência (colunas de texto livre/vocabulário controlado): mesmo esquema de
 // clique-pra-editar do Nome/Data, só pra linha REAL.
@@ -400,7 +404,8 @@ const renderTabela = (linhasBrutas, idTabela, selecionavel) => {
         const saldo = saldoPorDia(baseParaSaldoDiario(idTabela));
         ordenadas.forEach((r, i) => {
             const d = dataISO(r.data);
-            if (!d || d < SALDO_DESDE) return;
+            // Atrasado tem data antiga, mas conta hoje: o saldo daquele dia não é o dele.
+            if (!d || d < SALDO_DESDE || r._atrasado || ehDebitoAtrasado(r)) return;
             const prox = ordenadas[i + 1];
             if (!prox || dataISO(prox.data) !== d) r._saldo = saldo[d];   // ultima do dia
         });

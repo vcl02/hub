@@ -14,6 +14,7 @@ const funcoes = (() => {
     const inicio = tabelas.indexOf('const ehCompraMercadoPago = r =>');
     const fim = tabelas.indexOf('\n};\n', tabelas.indexOf('const celNome = r => {')) + 4;
     const contexto = {
+        ehDebitoAtrasado: () => false,   // atrasado tem testes próprios (atrasados.test.js)
         CARTAO_MERCADO_PAGO: 'mp', TOLERANCIA_FINANCEIRA: 0.005,
         escapeHtml: s => String(s), textoOuTraco: s => s || '—',
         cartaoDaFatura: f => (String(f).endsWith('-13') ? 'mp' : 'nubank'),

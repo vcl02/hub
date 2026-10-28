@@ -107,6 +107,15 @@ O celular lê as notificações do Nubank no Tasker (`tasker/*.xml`) e envia cad
 - *Ano curto por CSS:* o século vai num `<span class=seculo>` escondido no celular. O texto e a edição da data não mudam, e o desktop mostra o ano inteiro.
 - *Fundo da coluna fixa:* o fundo padrão dela usa um seletor fraco (`td.cNome`) de propósito, pra o fundo das linhas especiais (fatura, previstas, aporte, seleção) continuar valendo; Mercado Pago (translúcido) e simulação (listrado) ganham base opaca própria.
 
+## Atrasados contam no ciclo de hoje (28/10/2026)
+
+- *Pedido do mantenedor:* não pagar uma conta (débito) ou a fatura de um ciclo passado precisava avisar e ser puxado pro ciclo atual.
+- *Pelo ciclo, num ponto só:* o débito atrasado muda só o ciclo calculado (`periodoDoLancamento`); tabela, saldo, Aporte/Resgate, indicadores e Comparar seguem sozinhos, sem gravar nada no banco. A fatura atrasada sai e entra pela mesma função das linhas de fatura (`faturasLiquidasDoCiclo`), que o saldo do ciclo passou a usar também — senão o saldo e a linha divergiriam.
+- *Investimento fora:* Aporte/Resgate aberto de ciclo passado não é conta a pagar; rolar ele pro ciclo de hoje faria o Consolidar achar dois Aportes no mesmo ciclo.
+- *Duplicadas fora:* a detecção de recorrência duplicada agrupa por mês; sem a exclusão, o atrasado de setembro faria o Consolidar mover o Condomínio de outubro pro próximo ciclo.
+- *Pagar = hoje:* a regra antiga (ciclo diferente pede confirmação e mantém a data) deixaria a conta paga no ciclo passado, longe da tela. Como o pagamento atrasado acontece agora, a data vira hoje e o toast mostra a antiga.
+- *Depende de registrar o pagamento da fatura:* fatura passada sem Antecipação Fatura vira atrasada. Se algum pagamento antigo não foi lançado, ele aparece como atrasado até ser lançado.
+
 ## Documentação de produto
 
 As regras financeiras vivem em `docs/REGRAS.md`, junto das decisões e do checklist de publicação. O `AGENTS.md` na raiz continua curto e operacional, para orientar manutenção e automação.

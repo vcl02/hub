@@ -124,7 +124,7 @@ test('Mercado Pago só entra no título depois da 1ª compra nele; com dois, cad
 
 test('Débito, saldo diário e gráfico usam uma linha de fatura por cartão', () => {
     assert.match(visoes, /const linhasFatura = faturasLiquidasDoCiclo\(visiveis, abatido, i\)/);
-    assert.match(visoes, /const sid = f\.cartao === CARTAO_NUBANK \? `fat:\$\{i\}` : `fat:\$\{i\}:\$\{f\.cartao\}`;/);
+    assert.match(visoes, /const sid = f\.atrasada \? `fat:\$\{i\}:atr:\$\{f\.cicloOrigem\}:\$\{f\.cartao\}`\s*\n\s*: f\.cartao === CARTAO_NUBANK \? `fat:\$\{i\}` : `fat:\$\{i\}:\$\{f\.cartao\}`;/);
     assert.match(visoes, /nome: `Fatura \$\{NOME_CARTAO\[f\.cartao\]\}`/);
     assert.match(ler('js/finance.js'), /faturasLiquidasDoCiclo\(base, abat, idx\)\.forEach/);
     assert.match(graficos, /faturasLiquidasDoCiclo\(base, abat, i\)\.forEach/);

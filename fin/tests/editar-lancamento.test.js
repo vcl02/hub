@@ -58,6 +58,7 @@ function carregaReclassificaPeriodo() {
     const fim = interacoes.indexOf('\n}\n', inicio) + 3;
     if (inicio < 0) throw Error('Não encontrou reclassificaPeriodo.');
     const contexto = {
+        ehDebitoAtrasado: () => false,   // atrasado tem testes próprios (atrasados.test.js)
         Estado: { ciclos: [0, 1, 2, 3, 4, 5] },   // só o .length importa aqui
         dataISO: v => v,
         periodoDoDebito: data => (data === '2026-10-09' ? 2 : -1),

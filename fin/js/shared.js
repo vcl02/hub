@@ -292,11 +292,28 @@ function nomeMesPeriodo(fatOuCiclo) {
 // Investimento: alguma das categorias (lista separada por vírgula) é exatamente
 // "Investimento" — "Investimento, Reserva" também é.
 const ehCategoriaInvestimento = categ => categoriasSeparadas(categ).some(categoria => /^investimento$/i.test(categoria));
-// Ciclo: Crédito pela fatura, Débito (inclusive antecipação) pela data; sem data nem fatura,
-// Backlog (null); fora de todos os ciclos conhecidos, também null.
+// Ciclo de hoje (índice; -1 fora de qualquer ciclo) e o dia em que ele começa.
+const cicloDeHoje = () => periodoDoDebito(hojeISO());
+const inicioDoCicloDeHoje = () => { const idx = cicloDeHoje(); return idx >= 0 ? dataISO(Estado.ciclos[idx].ini) : null; };
+// Débito atrasado: em aberto (pago = false), com data de SALDO_DESDE até a véspera do ciclo de
+// hoje. O dinheiro ainda não saiu, então ele conta no ciclo de hoje (periodoDoLancamento), não
+// no ciclo da data — que deixa de supor que ele foi pago. Ficam de fora: investimento (Aporte/
+// Resgate é o plano do guardado, recalculado ciclo a ciclo, não conta a pagar), pago vazio
+// (status nunca definido, histórico) e linha calculada. Pagar devolve a linha ao ciclo da data
+// nova (ver o toggle de Pago em interactions.js, que traz a data pra hoje).
+function ehDebitoAtrasado(r) {
+    if (!r || r.cred || r.pago !== false || !r.data || r._sid) return false;
+    if (ehCategoriaInvestimento(r.categ)) return false;
+    const inicio = inicioDoCicloDeHoje();
+    const data = dataISO(r.data);
+    return !!inicio && data >= SALDO_DESDE && data < inicio;
+}
+// Ciclo: Crédito pela fatura, Débito (inclusive antecipação) pela data — o atrasado, pelo
+// ciclo de hoje; sem data nem fatura, Backlog (null); fora de todos os ciclos conhecidos, null.
 function periodoDoLancamento(r) {
     const idx = !r.data && !r.fatura ? null
-        : r.cred ? periodoDaFatura(r.fatura) : periodoDoDebito(dataISO(r.data));
+        : r.cred ? periodoDaFatura(r.fatura)
+            : ehDebitoAtrasado(r) ? cicloDeHoje() : periodoDoDebito(dataISO(r.data));
     return idx != null && idx >= 0 && idx < Estado.ciclos.length ? idx : null;
 }
 
@@ -413,8 +430,28 @@ function abatimentoDoCartao(abatido, cartao) {
 
 // Fatura líquida de cada cartão num ciclo (compras do cartão + antecipações alocadas a ele),
 // com o vencimento daquele cartão. Base única das linhas "Fatura Nubank"/"Fatura Mercado
-// Pago" no Débito, no saldo por dia e no gráfico de evolução.
+// Pago" no Débito, do saldo do ciclo, do saldo por dia e do gráfico de evolução.
+// Fatura atrasada: de um ciclo que já acabou (desde SALDO_DESDE) e ainda com saldo a pagar
+// (nenhuma antecipação/pagamento a quitou). Sai do ciclo dela e entra no ciclo de hoje
+// (atrasada: true, cicloOrigem), como o débito atrasado: o dinheiro ainda não saiu. Quitar é
+// lançar a Antecipação Fatura apontando pra ela, que abate a fatura certa em qualquer data.
 function faturasLiquidasDoCiclo(base, abatido, idx) {
+    const atual = cicloDeHoje();
+    const proprias = faturasLiquidasDoProprioCiclo(base, abatido, idx);
+    if (atual < 0 || idx > atual) return proprias;
+    if (idx < atual) return proprias.filter(f => !faturaFicouAtrasada(idx, f));
+    const atrasadas = [];
+    for (let j = 0; j < atual; j++) {
+        if (dataISO(Estado.ciclos[j].fat) < SALDO_DESDE) continue;
+        faturasLiquidasDoProprioCiclo(base, abatido, j)
+            .filter(f => faturaFicouAtrasada(j, f))
+            .forEach(f => atrasadas.push({ ...f, atrasada: true, cicloOrigem: j }));
+    }
+    return [...proprias, ...atrasadas];
+}
+const faturaFicouAtrasada = (idx, f) => f.liquido < -TOLERANCIA_FINANCEIRA &&
+    dataISO(Estado.ciclos[idx].fat) >= SALDO_DESDE && dataISO(f.vencimento) >= SALDO_DESDE;
+function faturasLiquidasDoProprioCiclo(base, abatido, idx) {
     return CARTOES.map(cartao => {
         const bruto = base
             .filter(r => r.cred && r.periodoIdx === idx && cartaoDaFatura(r.fatura) === cartao)

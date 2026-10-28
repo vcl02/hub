@@ -33,9 +33,12 @@ function vCiclo() {
         .map(f => {
             // O Nubank mantém a chave de sempre; o Mercado Pago ganha sufixo próprio (e id
             // próprio na coluna ID, pra as duas faturas não aparecerem com o mesmo -3).
-            const sid = f.cartao === CARTAO_NUBANK ? `fat:${i}` : `fat:${i}:${f.cartao}`;
+            // A atrasada (de um ciclo que já acabou) ganha chave própria com o ciclo de origem.
+            const sid = f.atrasada ? `fat:${i}:atr:${f.cicloOrigem}:${f.cartao}`
+                : f.cartao === CARTAO_NUBANK ? `fat:${i}` : `fat:${i}:${f.cartao}`;
             Estado.valorFaturaPorCiclo[sid] = f.liquido;
             return {
+                _atrasado: !!f.atrasada,
                 data: f.vencimento || periodo.fat, nome: `Fatura ${NOME_CARTAO[f.cartao]}`, categ: 'Fatura',
                 // Só exibição, nenhum cálculo lê estes campos da linha calculada: fatura é mensal
                 // por natureza, fica sempre Aberto (o pagamento real é a antecipação/débito) e é
@@ -207,12 +210,20 @@ function vCiclo() {
         const debitoTemSaldoVermelho = classeSaldoNaLinhaUnica == 'vm' || (exibeFuturo && classeSaldoFuturo == 'vm');
         const alertaTituloDebito = alertaTitulo('alertaSaldo', debitoTemSaldoVermelho,
             'Saldo negativo', 'Saldo negativo após usar o guardado');
+        // Atrasados (débitos e faturas de ciclos que já acabaram, ainda em aberto): já estão
+        // nesta tabela e no Futuro; o item avisa quanto e quantos, com a lista no hover.
+        const atrasadosDoCiclo = cicloAtual ? linhasDebito.filter(r => r._atrasado || ehDebitoAtrasado(r)) : [];
+        const itemAtrasados = atrasadosDoCiclo.length
+            ? `<span class=resumoAtrasado title="${escapeHtml('Em aberto de ciclos que já acabaram (contam neste ciclo até serem pagos):\n' +
+                atrasadosDoCiclo.map(r => `${dataBR(r.data)} ${r.nome ?? ''} ${brl(r.v)}`).join('\n'))}">` +
+              `Atrasado <b class=vm>${brl(atrasadosDoCiclo.reduce((s, r) => s + r.v, 0))}</b> · ${atrasadosDoCiclo.length}</span>`
+            : '';
         const linhaHojeDebito = cicloDebitoFuturo ? '' :
             `<span class=resumoLinha><span class=resumoRotulo>${cicloDebitoPassado ? 'Passado' : 'Hoje'}</span><span class=resumoDados>` +
             `<span>Saldo <b class="${classeSaldoNaLinhaUnica}">${brl(saldoExibidoNaLinhaUnica)}</b></span>` +
             `<span>Guardado <b class="${corValor(guardadoExibidoNaLinhaUnica)}">${brl(guardadoExibidoNaLinhaUnica)}</b></span>` +
             // Passado é o fechamento do ciclo (como Saldo/Guardado acima): pago + aberto.
-            spansLimitesCategoria(cicloDebitoPassado ? 'percentualTotal' : 'percentualPago') + `</span></span>`;
+            spansLimitesCategoria(cicloDebitoPassado ? 'percentualTotal' : 'percentualPago') + itemAtrasados + `</span></span>`;
         const linhaFuturoDebito = exibeFuturo ?
             `<span class=resumoLinha><span class=resumoRotulo>Futuro</span><span class=resumoDados>` +
             `<span>Saldo <b class="${classeSaldoFuturo}">${brl(totalDebito)}</b></span>` +
@@ -486,7 +497,10 @@ function gruposComRecorrenciaDuplicadaEntreMeses(linhas) {
     // mesma conta cortada pela janela do ciclo". Mover a data mudaria quando o dinheiro de
     // verdade saiu da conta, por isso fica fora desta detecção desde a raiz.
     const mesesPorGrupo = {};
-    linhas.filter(ehLinhaReal).filter(r => !ehTransferenciaFatura(r)).forEach(r => {
+    // Débito atrasado também fica de fora: o Condomínio de setembro ainda em aberto no ciclo de
+    // outubro é outra conta devendo, não a de outubro repetida — mover a de outubro pro próximo
+    // ciclo seria errado.
+    linhas.filter(ehLinhaReal).filter(r => !ehTransferenciaFatura(r) && !ehDebitoAtrasado(r)).forEach(r => {
         const grupo = chaveDaRecorrencia(r);
         (mesesPorGrupo[grupo] = mesesPorGrupo[grupo] || new Set()).add(dataISO(r.data).slice(0, 7));
     });
@@ -522,7 +536,7 @@ function marcaOcorrenciasDuplicadasNoCiclo(debitos, proximoCiclo) {
     // repetida (Mercado em 15/10 e 03/11 no mesmo ciclo) é gasto de verdade nas duas datas,
     // não uma conta que a janela do ciclo cortou.
     const ehDeSerie = r => !!r.freq || r.recorrencia_id != null;
-    debitos.filter(ehLinhaReal).filter(r => !ehTransferenciaFatura(r) && r.v <= 0 && ehDeSerie(r)).forEach(r => {
+    debitos.filter(ehLinhaReal).filter(r => !ehTransferenciaFatura(r) && !ehDebitoAtrasado(r) && r.v <= 0 && ehDeSerie(r)).forEach(r => {
         const grupo = chaveDaRecorrencia(r);
         if (!grupos.has(grupo)) return;
         (porGrupo[grupo] = porGrupo[grupo] || []).push(r);

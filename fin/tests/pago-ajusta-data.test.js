@@ -33,6 +33,7 @@ function criaDecideAjustePago({ hoje, periodoPorData, confirmResposta = true }) 
     const corpo = interacoes.slice(inicio, fim);
     const chamadasConfirm = [];
     const contexto = {
+        ehDebitoAtrasado: () => false,   // atrasado tem testes próprios (atrasados.test.js)
         hojeISO: () => hoje,
         dataISO: v => v,
         dataBR: v => v,

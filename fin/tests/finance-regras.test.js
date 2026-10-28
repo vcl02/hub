@@ -19,6 +19,11 @@ function regrasFinanceiras(ciclos) {
         cartaoDaFatura: () => 'nubank',
         dataISO: valor => String(valor).slice(0, 10),
         hojeISO: () => '2026-09-26',
+        // Fatura por ciclo como antes (sem atrasada, que tem testes próprios): compras + antecipações.
+        faturasLiquidasDoCiclo: (base, abat, idx) => {
+            const bruto = base.filter(r => r.cred && r.periodoIdx === idx).reduce((s, r) => s + r.v, 0);
+            return bruto ? [{ liquido: bruto + (abat[idx] || 0) }] : [];
+        },
     };
     vm.createContext(contexto);
     vm.runInContext(`${fonte.slice(inicio, fim)}\n${fonte.slice(fonte.indexOf('function ajusteInvestimento('), fonte.indexOf('\n// Total do bloco Debito', fonte.indexOf('function ajusteInvestimento(')))}\n${trechoCredito}\nglobalThis.regras = { totalBaseDoCiclo, ajusteInvestimento, creditosExibidosNoCiclo, totalCreditoExibidoAposAntecipacoes, lancamentosPagos, resumoDebitoPago, guardadoGarantidoAte, guardadoRealAte, limiteCartaoOcupado, limiteCartaoTotal, limiteCartaoLivre, limiteCartaoLivreFuturo };`, contexto);
@@ -63,7 +68,8 @@ test('saldo base carrega o anterior, débito e fatura líquida de antecipação'
 
 test('saldo diário inclui pagamento antecipado na data e deixa a fatura futura líquida', () => {
     // A antecipação é débito real da conta; o abatimento já reduz a fatura sintética futura.
-    assert.match(fonte, /\.filter\(r => !r\.cred && r\.data\)\s*\.map\(r => \(\{ data: dataISO\(r\.data\), v: r\.v \}\)\)/);
+    // Débito atrasado sai hoje (ver atrasados.test.js); os demais, na própria data.
+    assert.match(fonte, /\.filter\(r => !r\.cred && r\.data\)[\s\S]{0,120}\.map\(r => \(\{ data: ehDebitoAtrasado\(r\) \? hojeISO\(\) : dataISO\(r\.data\), v: r\.v \}\)\)/);
     assert.doesNotMatch(fonte, /!r\.cred && r\.data && !ehTransferenciaFatura\(r\)/);
     const r = regrasFinanceiras([{ fat: '2026-09-30' }]);
     assert.equal(r.totalBaseDoCiclo(0, [
@@ -83,6 +89,8 @@ test('saldo diário alternativo recalcula eventos e ajustes só com a categoria 
         dataISO: valor => String(valor).slice(0, 10),
         alocacaoAntecipacoes: () => ({}),
         faturasLiquidasDoCiclo: () => [],
+        ehDebitoAtrasado: () => false,
+        hojeISO: () => '2026-01-01',
         filtrarLancamentos: () => contexto.Estado.lancamentos,
     };
     vm.createContext(contexto);
@@ -218,7 +226,7 @@ test('aviso "Resgatou tudo" na linha de resgate, calculada ou real', () => {
 test('no Nome só o texto é cortado com "…"; as marcas ficam inteiras', () => {
     const tabelas = fs.readFileSync('js/tables.js', 'utf8');
     const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
-    assert.match(tabelas, /return `<span class=nomeLinha>\$\{sim\}\$\{textoNome\}\$\{badgeFatura\}\$\{badgeResgate\}<\/span>`;/);
+    assert.match(tabelas, /return `<span class=nomeLinha>\$\{sim\}\$\{textoNome\}\$\{badgeFatura\}\$\{badgeResgate\}\$\{badgeAtrasado\}<\/span>`;/);
     assert.match(estilos, /\.nomeLinha > \.nomeTexto \{\s*\n\s*flex: 0 1 auto;\s*\n\s*min-width: 0;\s*\n\s*overflow: hidden;\s*\n\s*text-overflow: ellipsis;/);
     assert.match(estilos, /\.nomeLinha > \* \{\s*\n\s*flex: none;/);
 });

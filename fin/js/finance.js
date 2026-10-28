@@ -20,10 +20,9 @@ function totalBaseDoCiclo(idx, base, abat, saldoAnteriorFn) {
         .filter(r => r.periodoIdx === idx && !r.cred)
         .reduce((s, r) => s + r.v, 0);
 
-    const brutoFatura = base
-        .filter(r => r.cred && r.periodoIdx === idx)
-        .reduce((s, r) => s + r.v, 0);
-    const fatura = brutoFatura ? brutoFatura + (abat[idx] || 0) : 0;
+    // Mesma soma das linhas de fatura do Débito: compras do ciclo + antecipações, por cartão;
+    // a fatura atrasada sai do ciclo dela e entra no de hoje (faturasLiquidasDoCiclo).
+    const fatura = faturasLiquidasDoCiclo(base, abat, idx).reduce((s, f) => s + f.liquido, 0);
 
     const anterior = idx > 0 && dataISO(Estado.ciclos[idx - 1].fat) >= SALDO_DESDE
         ? saldoAnteriorFn(idx - 1) : 0;
@@ -656,7 +655,8 @@ function saldoPorDiaDaBase(base, abat, ajusteDoCiclo) {
     const faturas = [];
     Estado.ciclos.forEach((per, idx) => {
         faturasLiquidasDoCiclo(base, abat, idx).forEach(f => {
-            if (Math.abs(f.liquido) > 0.005) faturas.push({ data: f.vencimento, v: f.liquido });
+            // A atrasada sai hoje (ainda não saiu), não no vencimento que já passou.
+            if (Math.abs(f.liquido) > 0.005) faturas.push({ data: f.atrasada ? hojeISO() : f.vencimento, v: f.liquido });
         });
     });
 
@@ -672,7 +672,8 @@ function saldoPorDiaDaBase(base, abat, ajusteDoCiclo) {
     const eventos = [
         ...base
             .filter(r => !r.cred && r.data)
-            .map(r => ({ data: dataISO(r.data), v: r.v })),
+            // Débito atrasado sai hoje, no ciclo em que conta (ehDebitoAtrasado).
+            .map(r => ({ data: ehDebitoAtrasado(r) ? hojeISO() : dataISO(r.data), v: r.v })),
         ...faturas,
         ...ajustes,
     ]

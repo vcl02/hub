@@ -88,7 +88,8 @@ function alinharResumosDosTitulos() {
     el('out').querySelectorAll('.resumoTitulo').forEach(titulo => {
         const faixas = [...titulo.querySelectorAll(':scope > .resumoLinha > .resumoDados')];
         if (faixas.length < 2) return;
-        const celulas = faixas.map(f => [...f.children].filter(c => !c.classList.contains('resumoMeta') && c.id != 'indicadoresFinanceiros'));
+        const celulas = faixas.map(f => [...f.children].filter(c => !c.classList.contains('resumoMeta') &&
+            !c.classList.contains('resumoAtrasado') && c.id != 'indicadoresFinanceiros'));
         if (celulas.some(c => c.length != celulas[0].length)) return;
         const colunas = emColunas(celulas);
         // Primeiro os valores e rótulos variáveis de dentro de cada item ("Livre"/"Acima"),
@@ -523,7 +524,13 @@ el('out').addEventListener('click', async e => {
     // pra hoje sem perguntar. Fora do ciclo (atual ou outro ja fechado) e' o padrao exato do
     // bug de recorrencia que nasce paga (ver validarLancamentosCarregados em domain.js):
     // pede confirmacao em vez de aplicar direto.
-    if (novoPago && !r.cred && r.data) {
+    // Débito atrasado (em aberto de um ciclo que já acabou) pago agora: o pagamento é hoje, então
+    // a data vira hoje sem perguntar e a linha fica no ciclo de hoje, já paga. O toast diz a data
+    // antiga, pra corrigir na célula Data se ele foi pago lá atrás.
+    const dataDoAtraso = novoPago && ehDebitoAtrasado(r) ? dataISO(r.data) : null;
+    if (dataDoAtraso) {
+        novaData = hojeISO();
+    } else if (novoPago && !r.cred && r.data) {
         const hoje = hojeISO();
         const dataAtual = dataISO(r.data);
         if (dataAtual !== hoje) {
@@ -551,6 +558,7 @@ el('out').addEventListener('click', async e => {
         r.pago = novoPago;
         if (novaData !== r.data) { r.data = novaData; reclassificaPeriodo(r); }
         desenhar();
+        if (dataDoAtraso) mostrarToast('Atrasado pago hoje', `A data passou de ${dataBR(dataDoAtraso)} para hoje.`);
     } catch (err) {
         badge.style.opacity = '';
         mostrarToast('Falhou ao atualizar', err.message);

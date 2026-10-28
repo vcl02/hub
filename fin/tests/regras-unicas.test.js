@@ -16,6 +16,8 @@ function carregar() {
         dataISO: v => (v ? String(v).slice(0, 10) : ''),
         periodoDaFatura: f => (f ? ({ '2026-11-12': 1 })[f] ?? -1 : null),
         periodoDoDebito: d => ({ '2026-10-09': 0, '2026-11-20': 2 })[d] ?? -1,
+        ehDebitoAtrasado: () => false,   // atrasado tem testes próprios (atrasados.test.js)
+        cicloDeHoje: () => 0,
     };
     vm.runInNewContext(`${trecho('const ehCategoriaInvestimento', ';\n')}
 ${trecho('function periodoDoLancamento(r) {', '\n}\n')}

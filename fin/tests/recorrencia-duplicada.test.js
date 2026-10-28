@@ -22,6 +22,7 @@ function carregaMarcacao() {
     const fim = visoes.indexOf('function todasRecorrenciasDaMudancaSaoExplicadas');
     if (inicio < 0 || fim < 0) throw Error('Não encontrou a marcação de recorrência duplicada.');
     const contexto = {
+        ehDebitoAtrasado: () => false,   // atrasado tem testes próprios (atrasados.test.js)
         semAcento: valor => String(valor ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(),
         categoriaDaComparacao: categ => categ ?? '',
         textoOuTraco: v => (v == null || v === '' ? '—' : v),
@@ -64,6 +65,7 @@ function carregaCorrecaoEmLote() {
     }
     const chamadasPatch = [];
     const contexto = {
+        ehDebitoAtrasado: () => false,   // atrasado tem testes próprios (atrasados.test.js)
         semAcento: valor => String(valor ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(),
         categoriaDaComparacao: categ => categ ?? '',
         textoOuTraco: v => (v == null || v === '' ? '—' : v),

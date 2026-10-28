@@ -213,10 +213,24 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Também não avisa nas parcelas seguintes de uma compra parcelada (mesmo `recorrencia_id`) cuja 1ª fatura — a menor do lote — vence antes do ciclo N+2: é compra já feita, e o banco bloqueia o limite inteiro na hora; lançamento avulso ou lote que já começa dois ciclos à frente continua avisando.
   Nenhum lançamento é exceção: uma entrada já marcada como paga com data no início do próximo ciclo também gera o aviso.
 
+### Atrasados
+
+- **Débito atrasado:** lançamento de Débito real em aberto (`pago = false`) com data de `SALDO_DESDE` até a véspera do ciclo de hoje — uma conta que não foi paga num ciclo que já acabou.
+  Ele **conta no ciclo de hoje**, não no da data: aparece na tabela Débito do ciclo de hoje (com a data original e a marca **Atrasado** (a mesma de aviso do "Resgatou tudo") ao lado do nome, com a data no hover), entra no Saldo Futuro, no Aporte sugerido/Resgate necessário, nos indicadores e em Comparar do ciclo de hoje, e no saldo por dia sai hoje; o ciclo da data deixa de supor que ele foi pago.
+  O total não muda: só passa do ciclo antigo pro de hoje (o guardado acumulado é o mesmo).
+  Ficam de fora: investimento (Aporte/Resgate é o plano do guardado, recalculado ciclo a ciclo, não conta a pagar), linha com Pago vazio (`—`, status nunca definido), Crédito e linha calculada.
+- **Fatura atrasada:** a fatura de um cartão de um ciclo que já acabou (desde `SALDO_DESDE`) que ainda tem saldo a pagar — nenhuma Antecipação Fatura/pagamento apontando pra ela a quitou.
+  Sai do ciclo dela e entra no Débito do ciclo de hoje como mais uma linha **Fatura Nubank**/**Fatura Mercado Pago**, com o vencimento original e a marca **Atrasado**, contando no saldo do ciclo de hoje, no saldo por dia (hoje) e no gráfico de evolução.
+  Pra quitar, lance a Antecipação Fatura com data de hoje apontando pra essa fatura: ela abate a fatura certa e a linha atrasada some. O limite do cartão já ficava ocupado até o pagamento, como antes.
+- **Aviso:** no ciclo de hoje, a faixa **Hoje** do Débito mostra `Atrasado R$ X · N` em vermelho quando há atrasados (débitos e faturas), com a lista (data, nome e valor) no hover; o item não entra no alinhamento com a faixa Futuro.
+- **Pagar atrasado:** marcar Pago num débito atrasado muda a data pra hoje sem perguntar (o pagamento foi agora), e a linha fica paga no ciclo de hoje; um toast diz a data antiga ("A data passou de 20/09/2026 para hoje."), pra corrigir na célula Data se o pagamento foi lá atrás.
+- Atrasado nunca conta como recorrência duplicada no ciclo: o Condomínio de setembro ainda em aberto no ciclo de outubro é outra conta devendo, e o de outubro não ganha o "↷" nem é movido pelo Consolidar tudo.
+
 ### Badge Pago/Aberto
 
 - Clicar no badge Pago/Aberto de um lançamento real de Débito (nunca Crédito, cujo `pago` é "compra confirmada" e não tem vencimento comparável) para MARCAR como pago (nunca ao desmarcar) compara a data gravada com hoje antes de aplicar a mudança: datas iguais seguem direto, sem nenhum ajuste.
   Datas diferentes mas dentro do MESMO ciclo, com a data gravada ainda no futuro, ajustam a data para hoje automaticamente, sem perguntar — é o caso de pagar adiantado algo já disponível mas com vencimento mais à frente no ciclo (ex.: a conta de água, paga logo no início do ciclo).
+  Débito **atrasado** (ver **Atrasados**) é a exceção: a data vira hoje, sem perguntar.
   Dentro do mesmo ciclo mas já no passado, ou em qualquer ciclo diferente do de hoje (incluindo um já encerrado), a data nunca é tocada; só no caso de ciclo diferente, a ação pede confirmação antes de marcar como pago — é o mesmo padrão da recorrência que nasce paga sem querer (regra acima), só que pego no momento do clique em vez de só depois, no diagnóstico.
 
 ### Toasts e confirmações
