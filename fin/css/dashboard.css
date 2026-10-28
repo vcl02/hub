@@ -626,7 +626,7 @@
      tabela evita espremer o texto: abaixo dele a própria .wrap rola de lado. */
   table.larguraFixa {
       table-layout: fixed;
-      min-width: 81rem;
+      min-width: 87rem;
   }
 
   .col-data { width: 7rem; }
@@ -635,6 +635,7 @@
   .col-reserva { width: 6rem; }
   .col-comprometido { width: 8.25rem; }
   .col-pra_sempre { width: 7rem; }
+  .col-seguintes { width: 6.25rem; }
   .col-prio { width: 4.5rem; }
   .col-id { width: 4rem; }
 

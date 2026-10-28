@@ -18,7 +18,7 @@ const SALDO_INICIAL = 0;
 const SALDO_DESDE = '2026-08-07';
 const COLS = [
     ['data', 'Data', 'd'], ['nome', 'Nome', 't'], ['valor', 'Valor', 'n'],
-    ['categ', 'Categoria', 't'], ['freq', 'Frequência', 't'], ['pago', 'Pago', 'b'],
+    ['categ', 'Categoria', 't'], ['freq', 'Frequência', 't'], ['seguintes', 'Próx. 3', 's'], ['pago', 'Pago', 'b'],
     ['reserva', 'Reserva', 'b'], ['comprometido', 'Comprometido', 'b'], ['pra_sempre', 'Pra sempre', 'b'],
     ['prio', 'Prio', 'n'], ['obs', 'Obs', 't'], ['canal', 'Canal', 't'], ['id', 'ID', 'n'],
 ];
@@ -28,8 +28,10 @@ const COLS = [
 // estadoOrdenacao), então some nas demais (Débito, Crédito), onde a linha já tem ciclo — e,
 // no Backlog, vem na FRENTE de tudo (inclusive Data), já que é o primeiro critério que
 // importa ali: decidir o que elevar primeiro pra um ciclo.
+// Próx. 3 (ver presencasNosSeguintes em finance.js) fala dos ciclos seguintes ao da linha:
+// sem ciclo, o Backlog não tem a coluna.
 const colunasDaTabela = idTabela => idTabela === 'bk'
-    ? [COLS.find(([chave]) => chave === 'prio'), ...COLS.filter(([chave]) => chave !== 'prio')]
+    ? [COLS.find(([chave]) => chave === 'prio'), ...COLS.filter(([chave]) => chave !== 'prio' && chave !== 'seguintes')]
     : COLS.filter(([chave]) => chave !== 'prio');
 // Pra sempre só aparece quando o banco já tem a coluna (migration 31): antes dela, mostrar
 // ou gravar o campo faria o cadastro e o toggle falharem.

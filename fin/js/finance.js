@@ -143,6 +143,36 @@ function lancamentosComPrevistas() {
 // reais e precisa delas como compras de verdade.
 const previstasDosTetos = () => lancamentosComPrevistas().filter(r => String(r._sid || '').startsWith('prev:'));
 
+// Próx. 3: em quantos dos 3 ciclos seguintes ao da linha o mesmo compromisso aparece de novo
+// (0 a 3) — mesmo nome + categoria (chaveDaRecorrencia, a regra da recorrência duplicada) ou
+// mesmo lote (recorrencia_id: parcelas do Tasker têm "(2/12)" no nome). Conta lançamentos
+// reais, simulados e as previstas (Besteira/Isabella, metas), pago ou aberto. null: linha sem
+// ciclo, linha calculada (fatura, saldo, Aporte/Resgate, que não são um compromisso) ou ciclo
+// sem 3 ciclos cadastrados depois dele.
+const CICLOS_SEGUINTES = 3;
+let _presencas = null;
+function presencasNosSeguintes(r) {
+    const p = r.periodoIdx;
+    if (p == null || r._fat || r._sal || r._res || r._sug != null) return null;
+    if (p + CICLOS_SEGUINTES >= Estado.ciclos.length) return null;
+    const base = lancamentosComPrevistas();
+    if (_presencas?.base !== base) {
+        const porChave = new Map(), porLote = new Map();
+        const marca = (mapa, chave, ciclo) => { if (!mapa.has(chave)) mapa.set(chave, new Set()); mapa.get(chave).add(ciclo); };
+        base.forEach(l => {
+            if (l.periodoIdx == null) return;
+            marca(porChave, chaveDaRecorrencia(l), l.periodoIdx);
+            if (l.recorrencia_id != null) marca(porLote, l.recorrencia_id, l.periodoIdx);
+        });
+        _presencas = { base, porChave, porLote };
+    }
+    const ciclos = _presencas.porChave.get(chaveDaRecorrencia(r));
+    const doLote = r.recorrencia_id != null ? _presencas.porLote.get(r.recorrencia_id) : null;
+    let n = 0;
+    for (let j = p + 1; j <= p + CICLOS_SEGUINTES; j++) if (ciclos?.has(j) || doLote?.has(j)) n++;
+    return n;
+}
+
 // ===================================================================
 // METAS (fin_meta, migration 36)
 // ===================================================================

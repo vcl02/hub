@@ -12,13 +12,16 @@ function ordenarLinhas(linhas, idTabela) {
     const { k: coluna, d: direcao } = estadoOrdenacao(idTabela);
     const tipo = COLS.find(c => c[0] == coluna)[2];
     const copia = [...linhas];
+    // Próx. 3 é calculado (não é campo da linha); sem valor ("—") fica sempre por último.
+    const valor = r => coluna == 'seguintes' ? presencasNosSeguintes(r) : r[coluna];
     copia.sort((a, b) => {
-        const A = a[coluna], B = b[coluna];
+        const A = valor(a), B = valor(b);
+        if (coluna == 'seguintes' && (A == null) != (B == null)) return A == null ? 1 : -1;
         // prio sem valor preenchido equivale a "sem prioridade nenhuma" — nao a zero, que
         // seria a MAIOR prioridade; fica atras de qualquer numero real, em qualquer sentido
         // de ordenacao (ex.: pior que 999).
         const cmp = coluna == 'prio' ? ((A == null ? Infinity : +A) - (B == null ? Infinity : +B))
-            : tipo == 'n' || tipo == 'b' || tipo == 'r' || tipo == 'vol' ? ((+A || 0) - (+B || 0))
+            : tipo == 'n' || tipo == 'b' || tipo == 'r' || tipo == 's' || tipo == 'vol' ? ((+A || 0) - (+B || 0))
                 : tipo == 'd' ? (timestamp(A) - timestamp(B))
                     : String(A ?? '').localeCompare(String(B ?? ''), 'pt');
         const ordenado = direcao == 1 ? cmp : -cmp;
@@ -35,6 +38,7 @@ const PERGUNTA_DA_COLUNA = {
     reserva: 'Se eu perder o emprego, preciso continuar pagando isso?',
     comprometido: 'Começou o mês, isso já é obrigatório pagar?',
     pra_sempre: 'Isso se repete sem data pra acabar?',
+    seguintes: 'Nos 3 ciclos seguintes: Repete (vermelho) aparece nos 3; Some (verde) em nenhum; senão, em quantos aparece',
 };
 // monta o <tr> de cabecalho de uma tabela, com a setinha de ordenacao na coluna ativa
 function cabecalhoTabela(idTabela) {
@@ -61,7 +65,7 @@ function cabecalhoTabela(idTabela) {
         if (tipo == 't' || tipo == 'd') {
             return `<th${chave == 'nome' ? ' class=cNome' : ''}>${campoBusca(chave, rotulo, 'title="Digite \'vazio\' pra achar as linhas sem nada preenchido aqui" ')}</th>`;
         }
-        if (tipo == 'b') return `<th>${botaoFiltroEstado(idTabela, chave, filtroAtual[chave])}</th>`;
+        if (tipo == 'b' || tipo == 's') return `<th>${botaoFiltroEstado(idTabela, chave, filtroAtual[chave])}</th>`;
         // ID: busca exata (coluna estreita, placeholder curto); "|" aceita vários ids.
         if (chave == 'id') return `<th class=n>${campoBusca(chave, 'ID', 'inputmode=numeric title="ID exato; use | pra vários (ex.: 12|40)" ').replace('Filtrar id…', 'ID')}</th>`;
         return '<th>';
@@ -79,6 +83,7 @@ const ESTADOS_FILTRO_CLIQUE = {
     reserva: [['S', 'Reserva', 'Só com Reserva', 'flagReserva'], ['N', 'Sem', 'Só sem Reserva', '']],
     comprometido: [['S', 'Compr.', 'Só comprometidos', 'flagComprometido'], ['N', 'Sem', 'Só não comprometidos', '']],
     pra_sempre: [['S', 'Sempre', 'Só os pra sempre', 'flagPraSempre'], ['N', 'Com fim', 'Só os que têm fim', '']],
+    seguintes: [['3', 'Repete', 'Só os que repetem nos 3 ciclos seguintes', 'vm'], ['0', 'Some', 'Só os que somem nos 3 ciclos seguintes', 'vd']],
 };
 function botaoFiltroEstado(idTabela, chave, valorAtual) {
     const estado = ESTADOS_FILTRO_CLIQUE[chave].find(([valor]) => valor == valorAtual);
@@ -156,6 +161,7 @@ function passaFiltroTexto(r, idTabela) {
         }
         if (coluna == 'pago') return termo == 'S' ? r.pago === true : r.pago === false;
         if (coluna == 'reserva' || coluna == 'comprometido' || coluna == 'pra_sempre') return termo == 'S' ? !!r[coluna] : !r[coluna];
+        if (coluna == 'seguintes') return presencasNosSeguintes(r) === +termo;
         // ID é exato (não "contém"): "4" acha só o lançamento 4, nunca 14 ou 40. "|" aceita
         // vários; linhas calculadas também têm id (-3, -4…) e podem ser achadas.
         if (coluna == 'id') {
@@ -349,6 +355,16 @@ const celFlag = (r, chave) => {
         : (marcado ? `<span class=${COR_FLAG[chave]}>${texto}</span>` : texto);
 };
 
+// Próx. 3: Repete em vermelho (aparece nos 3 ciclos seguintes), Some em verde (em nenhum),
+// "1 de 3"/"2 de 3" neutro no meio; "—" sem como saber. Só leitura, em qualquer linha.
+const celSeguintes = r => {
+    const n = presencasNosSeguintes(r);
+    if (n == null) return '—';
+    if (n == CICLOS_SEGUINTES) return '<span class=vm title="Aparece nos 3 ciclos seguintes">Repete</span>';
+    if (n == 0) return '<span class=vd title="Não aparece em nenhum dos 3 ciclos seguintes">Some</span>';
+    return `<span title="Aparece em ${n} dos 3 ciclos seguintes">${n} de 3</span>`;
+};
+
 // monta as celulas <td> de uma linha, conforme o tipo de cada coluna. A edição por toque/
 // clique (Valor, Pago, Data) é a mesma em qualquer dispositivo; as linhas calculadas
 // (fatura, previstas — não existem no banco) veem tudo como texto simples, nunca editável.
@@ -357,6 +373,7 @@ const celulasDaLinha = (r, idTabela) => colunasAtivas(idTabela).map(([chave, , t
     ? (r._sug != null ? celValorSomenteLeitura(r, r._sug, corValor(r._sug))
         : ehLinhaReal(r) ? celValorEditavel(r) : celValorSomenteLeitura(r)).replace(/$/,
             r._saldo != null ? `<span class=sd>${brl(r._saldo)}</span>` : '')
+    : tipo == 's' ? `<td>${celSeguintes(r)}`
     : tipo == 'b' && chave != 'pago' ? `<td>${celFlag(r, chave)}`
     : tipo == 'b' ? `<td>${r[chave] == null ? '—'
         : (!ehLinhaReal(r) ? `<span class="${r[chave] ? 'vd' : 'vm'}">${r[chave] ? 'Pago' : 'Aberto'}</span>`

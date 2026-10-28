@@ -252,7 +252,7 @@ test('conta da Isabella saiu: nenhuma casca restrita, login só do mantenedor', 
 });
 
 test('mobile tem paridade total: mesmas colunas, edição e ações do desktop', () => {
-    assert.match(estado, /const colunasDaTabela = idTabela => idTabela === 'bk'\s*\n\s*\? \[COLS\.find\(\(\[chave\]\) => chave === 'prio'\), \.\.\.COLS\.filter\(\(\[chave\]\) => chave !== 'prio'\)\]\s*\n\s*: COLS\.filter\(\(\[chave\]\) => chave !== 'prio'\);/);
+    assert.match(estado, /const colunasDaTabela = idTabela => idTabela === 'bk'\s*\n\s*\? \[COLS\.find\(\(\[chave\]\) => chave === 'prio'\), \.\.\.COLS\.filter\(\(\[chave\]\) => chave !== 'prio' && chave !== 'seguintes'\)\]\s*\n\s*: COLS\.filter\(\(\[chave\]\) => chave !== 'prio'\);/);
     assert.doesNotMatch(estado, /COLS_MOBILE/);
     assert.match(tabelas, /const texto = ehLinhaReal\(r\)\s*\n\s*\? `<span class="togData"/);
     assert.match(tabelas, /: ehLinhaReal\(r\) \? celValorEditavel\(r\) : celValorSomenteLeitura\(r\)\)/);
