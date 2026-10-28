@@ -91,7 +91,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Contam lançamentos reais, simulados e previstos (Besteira/Isabella, metas), pago ou aberto.
   Tocar na célula (ou passar o mouse) mostra o trecho e as próximas ocorrências com data e, no Crédito, a fatura: `Parcela 2 de 3: de Ago/26 a Out/26. Próximas: 05/10 fat. 12/11` ("sem ciclo" quando a ocorrência não cai em nenhum); o toque não seleciona a linha.
 - Linha calculada (Fatura, Saldo do mês anterior, Aporte sugerido/Resgate necessário) fica com a célula vazia: não é um compromisso do banco. O Backlog não tem a coluna (não tem ciclo).
-- É só leitura, ordena por quantas parcelas faltam (vazia sempre por último) e filtra por clique: **Todos** → **Última** (a sequência acaba nela) → **Continua**.
+- É só leitura, ordena por quantas parcelas faltam (vazia sempre por último) e filtra por clique pela faixa da cor: **Todos** → **0–33%** (vermelho) → **33–66%** (amarelo) → **66–100%** (verde); como a cor, só pega saídas com sequência de 2 ou mais (recebimento e "—" ficam fora).
 
 ### Simulação
 

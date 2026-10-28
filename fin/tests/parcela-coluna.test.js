@@ -83,12 +83,12 @@ test('linha calculada e sem ciclo ficam vazias (sem traço)', () => {
     assert.equal(f.cel(linha(1, 'X', 0, { cred: true })), '');   // fatura de Jul: compra antes dos ciclos
 });
 
-test('coluna depois de Frequência, fora do Backlog; ordena por quantas faltam; filtro Última/Continua; toque', () => {
+test('coluna depois de Frequência, fora do Backlog; ordena por quantas faltam; filtro pela faixa da cor; toque', () => {
     assert.match(estado, /\['freq', 'Frequência', 't'\], \['parcela', 'Parcela', 's'\]/);
     assert.match(estado, /chave !== 'prio' && chave !== 'parcela'/);
     assert.doesNotMatch(tabelas, /Repete|'some'/);
-    assert.match(tabelas, /parcela: \[\['ultima', 'Última'[^\]]+\], \['continua', 'Continua'[^\]]+\]\]/);
-    assert.match(tabelas, /return !!p && \(termo == 'ultima' \? p\.falta == 0 : p\.falta > 0\);/);
+    assert.match(tabelas, /parcela: \[\['vm', '0–33%'[^\]]+'vm'\], \['am', '33–66%'[^\]]+'am'\], \['vd', '66–100%'[^\]]+'vd'\]\]/);
+    assert.match(tabelas, /return !!p && p\.total > 1 && \(r\.v \|\| 0\) <= 0 && corDaParcela\(p\) === termo;/);
     assert.match(tabelas, /const valor = r => coluna == 'parcela' \? parcelaDaLinha\(r\)\?\.falta \?\? null : r\[coluna\];/);
     assert.match(ler('css/dashboard.css'), /\.col-parcela \{ width: 11\.5rem; \}/);
     assert.match(ler('js/interactions.js'), /const celula = e\.target\.closest\('\[data-parcela\]'\);[\s\S]{0,80}e\.stopImmediatePropagation\(\);\s*\n\s*mostrarToast\('Parcela', celula\.dataset\.parcela\);/);
@@ -99,6 +99,7 @@ test('regra documentada', () => {
     assert.match(regras, /Um ciclo sem o compromisso encerra a sequência/);
     assert.match(regras, /até 1\/3 \*\*vermelho\*\*, até 2\/3 \*\*amarelo\*\*, depois \*\*verde\*\*/);
     assert.match(regras, /entrada \(valor positivo\) e o "—" ficam sem cor/);
+    assert.match(regras, /filtra por clique pela faixa da cor/);
     assert.match(regras, /Lançamento sozinho \(`1 de 1`\) mostra só "—"/);
     assert.match(regras, /ignorando o número de parcela no fim do nome/);
     assert.match(regras, /Linha calculada .* fica com a célula vazia/);

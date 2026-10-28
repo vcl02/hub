@@ -84,7 +84,7 @@ const ESTADOS_FILTRO_CLIQUE = {
     reserva: [['S', 'Reserva', 'Só com Reserva', 'flagReserva'], ['N', 'Sem', 'Só sem Reserva', '']],
     comprometido: [['S', 'Compr.', 'Só comprometidos', 'flagComprometido'], ['N', 'Sem', 'Só não comprometidos', '']],
     pra_sempre: [['S', 'Sempre', 'Só os pra sempre', 'flagPraSempre'], ['N', 'Com fim', 'Só os que têm fim', '']],
-    parcela: [['ultima', 'Última', 'Só as últimas parcelas (a sequência acaba nelas)', ''], ['continua', 'Continua', 'Só as que continuam depois', '']],
+    parcela: [['vm', '0–33%', 'Só as saídas até 1/3 da sequência (vermelho)', 'vm'], ['am', '33–66%', 'Só as saídas de 1/3 a 2/3 (amarelo)', 'am'], ['vd', '66–100%', 'Só as saídas depois de 2/3 (verde)', 'vd']],
 };
 function botaoFiltroEstado(idTabela, chave, valorAtual) {
     const estado = ESTADOS_FILTRO_CLIQUE[chave].find(([valor]) => valor == valorAtual);
@@ -162,9 +162,10 @@ function passaFiltroTexto(r, idTabela) {
         }
         if (coluna == 'pago') return termo == 'S' ? r.pago === true : r.pago === false;
         if (coluna == 'reserva' || coluna == 'comprometido' || coluna == 'pra_sempre') return termo == 'S' ? !!r[coluna] : !r[coluna];
+        // Parcela: pela faixa da cor (corDaParcela), só onde há cor — saída com sequência de 2+.
         if (coluna == 'parcela') {
             const p = parcelaDaLinha(r);
-            return !!p && (termo == 'ultima' ? p.falta == 0 : p.falta > 0);
+            return !!p && p.total > 1 && (r.v || 0) <= 0 && corDaParcela(p) === termo;
         }
         // ID é exato (não "contém"): "4" acha só o lançamento 4, nunca 14 ou 40. "|" aceita
         // vários; linhas calculadas também têm id (-3, -4…) e podem ser achadas.
