@@ -1,6 +1,6 @@
 // Regressão: coluna Próx. 3 nas tabelas do ciclo — pelos dados dos 3 ciclos seguintes, sem
-// supor o futuro: Repete só nos 3, Some em nenhum com 2 ciclos terminados sem ele, "1 de 3
-// (até Out/26)" no meio, "Ainda não" com 1 só, "—" sem dado; ciclo não terminado sem o compromisso é "ainda não"; cor só nas saídas; parcelas "(2/12)" são o mesmo compromisso; tocar mostra os ciclos e as próximas.
+// supor o futuro: Repete só nos 3, Some em nenhum com os 3 terminados, "1 de 3 (até Out/26)"
+// no meio, "Ainda não" antes de os 3 terminarem, "—" sem dado; ciclo não terminado sem o compromisso é "ainda não"; cor só nas saídas; parcelas "(2/12)" são o mesmo compromisso; tocar mostra os ciclos e as próximas.
 // Roda o código real de domain/shared/finance e a célula de tables.js, com hoje fixo.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -58,11 +58,14 @@ test('sem supor o futuro: ciclo não terminado sem o compromisso não faz Some n
     assert.match(f.cel(tudoDepois), />—</);
     assert.match(f.cel(cafe), /class="togSeguintes"[^>]*>1 de 3 \(até Ago\/26\)</);
     assert.match(f.cel(ia), /class="togSeguintes"[^>]*>Ainda não</);
-    assert.equal(f.detalhe(ia), 'Ago/26 não · Set/26 em andamento · Out/26 não começou. Vira Some se Set/26 terminar sem ele. Próximas: nenhuma');
-    // Um mês depois (hoje 20/10): Ago e Set terminaram sem ele — 2 bastam pra Some.
+    assert.equal(f.detalhe(ia), 'Ago/26 não · Set/26 em andamento · Out/26 não começou. Vira Some se Set/26 e Out/26 terminarem sem ele. Próximas: nenhuma');
+    // Um mês depois (hoje 20/10): Ago e Set terminaram sem ele, Out não — ainda não é Some.
     const depois = carrega([linha(3, 'IA Crédito', 0)], '2026-10-20');
-    assert.equal(tipo(depois.situacao(linha(3, 'IA Crédito', 0))), 'some 0');
-    assert.match(depois.cel(linha(3, 'IA Crédito', 0)), /class="togSeguintes vd"[^>]*>Some</);
+    assert.equal(tipo(depois.situacao(linha(3, 'IA Crédito', 0))), 'aindaNao 0');
+    assert.match(depois.detalhe(linha(3, 'IA Crédito', 0)), /Vira Some se Out\/26 terminar sem ele\./);
+    // Com Out terminado (hoje 20/11): os 3 sem ele, Some.
+    const fim = carrega([linha(3, 'IA Crédito', 0)], '2026-11-20');
+    assert.match(fim.cel(linha(3, 'IA Crédito', 0)), /class="togSeguintes vd"[^>]*>Some</);
     // Série cadastrada pra frente diz "sim" mesmo no futuro.
     const serie = linha(10, 'Renegociação Nu', 0);
     const g = carrega([serie, linha(11, 'Renegociação Nu', 1), linha(12, 'Renegociação Nu', 2), linha(13, 'Renegociação Nu', 3)], '2026-09-20');
@@ -143,6 +146,6 @@ test('regra documentada', () => {
     assert.match(regras, /ainda não terminou/);
     assert.match(regras, /sem supor o futuro/);
     assert.match(regras, /Nunca só "2 de 3"/);
-    assert.match(regras, /pelo menos \*\*2\*\* deles já terminaram/);
+    assert.match(regras, /não aparece em nenhum e os \*\*3\*\* já terminaram/);
     assert.match(regras, /Exemplo de \*\*Ainda não\*\*/);
 });

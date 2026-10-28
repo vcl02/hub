@@ -186,12 +186,11 @@ function ciclosSeguintesDaLinha(r) {
     });
 }
 // Pelo que está nos dados: 'repete' com o compromisso nos 3 ciclos seguintes; 'some' sem ele
-// em nenhum e pelo menos 2 deles já terminados (2 ciclos inteiros sem ele bastam); 'ate' quando
+// em nenhum e os 3 já terminados; 'ate' quando
 // aparece em parte deles ("1 de 3 (até Out/26)": ultimo = o último ciclo da tela em que
 // aparece — sem o "até", "2 de 3" em Ago e "1 de 3" em Set eram lidos como número de parcela);
-// 'aindaNao' quando não voltou, mas só 1 ciclo terminou sem ele. null ("—") sem nada achado e
+// 'aindaNao' quando não voltou, mas nem todos terminaram ainda. null ("—") sem nada achado e
 // nenhum terminado. sim ordena: 0 … 3.
-const CICLOS_PRA_SUMIR = 2;
 function situacaoNosSeguintes(r) {
     const seguintes = ciclosSeguintesDaLinha(r);
     if (!seguintes) return null;
@@ -199,13 +198,13 @@ function situacaoNosSeguintes(r) {
     const sim = comElas.length;
     const terminados = seguintes.filter(c => !c.aberto).length;
     if (!sim && !terminados) return null;
-    const tipo = sim == CICLOS_SEGUINTES ? 'repete' : sim ? 'ate' : terminados >= CICLOS_PRA_SUMIR ? 'some' : 'aindaNao';
+    const tipo = sim == CICLOS_SEGUINTES ? 'repete' : sim ? 'ate' : terminados == CICLOS_SEGUINTES ? 'some' : 'aindaNao';
     return { sim, tipo, terminados, ultimo: comElas.at(-1)?.daTela ?? null };
 }
 // "Set/26 sim · Out/26 sim · Nov/26 não começou", pelo ciclo da tela (o mesmo da célula; no
 // Crédito, o das compras): sim, não (terminou sem ele), em andamento (o de hoje, sem ele ainda)
-// ou não começou — nunca uma lista que pareça "vai até Nov". Em "Ainda não", diz qual ciclo
-// decide ("Vira Some se Out/26 terminar sem ele."). Depois, as próximas ocorrências com data
+// ou não começou — nunca uma lista que pareça "vai até Nov". Em "Ainda não", diz o que falta
+// ("Vira Some se Out/26 e Nov/26 terminarem sem ele."). Depois, as próximas ocorrências com data
 // (e fatura, no Crédito; "sem ciclo" se não caem em nenhum).
 function detalheDosSeguintes(r) {
     const seguintes = ciclosSeguintesDaLinha(r);
@@ -219,9 +218,8 @@ function detalheDosSeguintes(r) {
         .slice(0, 4)
         .map(l => `${curta(l.data)}${l.cred ? ` fat. ${l.fatura ? curta(l.fatura) : 'nenhuma'}` : ''}${l.periodoIdx == null ? ' sem ciclo' : ''}`);
     const situacao = situacaoNosSeguintes(r);
-    const decide = situacao?.tipo == 'aindaNao'
-        ? seguintes.filter(c => c.aberto)[CICLOS_PRA_SUMIR - situacao.terminados - 1]?.daTela : null;
-    const vira = decide ? ` Vira Some se ${nomePeriodoAbrev(decide)} terminar sem ele.` : '';
+    const faltam = situacao?.tipo == 'aindaNao' ? seguintes.filter(c => c.aberto && c.daTela).map(c => nomePeriodoAbrev(c.daTela)) : [];
+    const vira = faltam.length ? ` Vira Some se ${faltam.join(' e ')} ${faltam.length > 1 ? 'terminarem' : 'terminar'} sem ele.` : '';
     return `${ciclos}.${vira} Próximas: ${proximas.length ? proximas.join(' · ') : 'nenhuma'}`;
 }
 
