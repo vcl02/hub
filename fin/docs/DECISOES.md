@@ -123,6 +123,7 @@ O celular lê as notificações do Nubank no Tasker (`tasker/*.xml`) e envia cad
 - *Regras que ficaram dos ajustes:* só o que está nos dados (o fim é o último ciclo cadastrado); ciclo da tela em tudo (no Crédito, o das compras), pra uma série que mistura Débito e Crédito não ficar desencontrada; o "(2/12)" do Tasker no nome não separa as parcelas.
 - *Ciclo sem o compromisso encerra a sequência:* sem essa regra, o café de Jul e o de Dez seriam "parcelas" da mesma série. Recomeçar em 1 é previsível e não depende de um limite de "buraco" escolhido à toa.
 - *Linha calculada vazia:* Fatura, Saldo e Aporte/Resgate não são compromisso do banco; a célula fica vazia em vez de "—".
+- *Fora da numeração ("—"), a pedido do mantenedor, um por um:* 1 de 1, pra sempre (sem fim, "de N" seria só até 2032), Besteira, Isabella, Transporte, Alimentação, Investimento, Teste e antecipação/pagamento de fatura — gasto do dia a dia, plano do guardado ou transferência, em que a numeração não diz nada. As categorias ficam numa lista só (`CATEGORIAS_SEM_PARCELA`); a antecipação usa `ehTransferenciaFatura`, que também a reconhece pelo nome.
 
 ## Documentação de produto
 
