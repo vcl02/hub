@@ -69,3 +69,9 @@ test('documentado', () => {
     assert.match(decisoes, /Atalhos da captura/);
     assert.match(ler('docs/REGRAS.md'), /`migrations\/42-atalhos-captura\.sql`/);
 });
+
+test('cada perfil leva a mesma tarefa do arquivo avulso', () => {
+    const tarefa = (xml, sr) => xml.match(new RegExp(`<Task sr="${sr}">[\\s\\S]*?</Task>`))[0];
+    assert.equal(tarefa(ler('tasker/Nubank.prf.xml'), 'task3'), tarefa(ler('tasker/Nubank_A.tsk.xml'), 'task3'));
+    assert.equal(tarefa(ler('tasker/Nubank_Click.prf.xml'), 'task4'), tarefa(ler('tasker/Nubank_B.tsk.xml'), 'task4'));
+});
