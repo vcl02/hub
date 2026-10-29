@@ -18,9 +18,19 @@ function roda(codigo, locais) {
     return saida;
 }
 
-test('Nubank A: depois do Stop do não-despesa, tenta lançar sozinho e para se lançou', () => {
-    const a = acoes(ler('tasker/Nubank_A.tsk.xml'));
-    assert.deepEqual(a.map(x => x.codigo), ['129', '548', '137', '129', '339', '129', '523', '137', '129', '523']);
+test('Nubank A: depois do Stop do não-despesa, apaga a notificação da Nubank (AutoNotification), tenta lançar sozinho e para se lançou', () => {
+    const todas = acoes(ler('tasker/Nubank_A.tsk.xml'));
+    assert.deepEqual(todas.map(x => x.codigo), ['129', '548', '137', '2046367074', '129', '339', '129', '523', '137', '129', '523']);
+    // Cancel do AutoNotification: só a da Nubank com "aprovad" no texto, sem condição própria (o
+    // Stop de antes já garante que é compra; a condição antiga tinha "depesa*" e nunca rodava).
+    const cancela = todas[3].corpo;
+    assert.match(cancela, /<plugintypeid>com\.joaomgcd\.autonotification\.intent\.IntentCancelNotification<\/plugintypeid>/);
+    assert.match(cancela, /_array_InterceptApps0&gt;com\.nu\.production&lt;/);
+    assert.match(cancela, /<Text>aprovad<\/Text>/);
+    assert.match(cancela, /<CancelAll>false<\/CancelAll>/);
+    assert.doesNotMatch(cancela, /ConditionList/);
+    assert.doesNotMatch(ler('tasker/Nubank_A.tsk.xml'), /depesa/);
+    const a = [...todas.slice(0, 3), ...todas.slice(4)];   // o resto, como antes do Cancel
     const corpo = roda(script(a[3]), { tipo: 'despesa_credito', valor: '12.50', estab: 'NAQUELE CAFE', parcelas: '1' });
     assert.equal(JSON.parse(corpo.body).auto, true);
     assert.match(a[4].corpo, /captura-nubank<\/Str>/);
