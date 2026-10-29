@@ -114,8 +114,8 @@ test('regra documentada', () => {
     assert.match(regras, /até 1\/3 \*\*vermelho\*\*, até 2\/3 \*\*amarelo\*\*, depois \*\*verde\*\*/);
     assert.match(regras, /entrada \(valor positivo\) e o "—" ficam sem cor/);
     assert.match(regras, /filtra por clique pela faixa da cor/);
-    assert.match(regras, /\*\*Fora da numeração\*\*/);
-    assert.match(regras, /as categorias \*\*Besteira\*\*, \*\*Isabella\*\*, \*\*Transporte\*\*, \*\*Alimentação\*\*, \*\*Investimento\*\* e \*\*Teste\*\*/);
+    assert.match(regras, /- \*\*Fora da numeração:\*\* mostram só "—"/);
+    assert.match(regras, /As categorias \*\*Besteira\*\*, \*\*Isabella\*\*, \*\*Transporte\*\*, \*\*Alimentação\*\*, \*\*Investimento\*\* e \*\*Teste\*\*/);
     assert.match(regras, /\*\*Antecipação\/pagamento de fatura\*\*/);
     assert.match(regras, /ignorando o número de parcela no fim do nome/);
     assert.match(regras, /Linha calculada .* fica com a célula vazia/);
