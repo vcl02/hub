@@ -9,8 +9,11 @@ const arquivos = ['tasker/Nubank_B.tsk.xml', 'tasker/Nubank_Click.prf.xml'];
 test('mensagem de sucesso usa %nome, nunca %estab', () => {
     for (const arquivo of arquivos) {
         const xml = fs.readFileSync(arquivo, 'utf8');
-        assert.match(xml, /<Str sr="arg0" ve="3">%nome R\$ %valor<\/Str>/, arquivo);
+        // O flash final mostra %fim, montado com o nome digitado (ver tasker-atalho.test.js).
+        assert.match(xml, /<Str sr="arg0" ve="3">%fim<\/Str>/, arquivo);
+        assert.match(xml, /var t = local\("nome"\) \+ " R\$ " \+ local\("valor"\);/, arquivo);
         assert.doesNotMatch(xml, /%estab R\$ %valor/, arquivo);
+        assert.doesNotMatch(xml, /local\("estab"\) \+ " R\$ "/, arquivo);
     }
 });
 

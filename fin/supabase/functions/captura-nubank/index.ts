@@ -4,8 +4,11 @@
 // GET ?acao=categorias -> lista de categorias distintas (texto, separadas por vírgula; vírgula interna vira " + ")
 // POST -> insere lançamento (com parcelas)
 //   auto: true -> só lança se o estabelecimento tem atalho (fin_atalho, migration 42), com o nome, a
-//                 categoria e as parcelas dele; sem atalho, responde lancado: false e não grava nada
-//   lembrar: true -> depois de lançar, grava (ou troca) o atalho do estabelecimento com o que foi escolhido
+//                 categoria e as parcelas dele; sem atalho, responde lancado: false e não grava nada.
+//                 O atalho vale se o trecho dele está em qualquer parte do estabelecimento (a maquininha
+//                 muda o resto), sem ligar pra acento, maiúscula, espaço ou pontuação; o trecho mais longo ganha
+//   lembrar: true -> depois de lançar, grava (ou troca) o atalho com o que foi escolhido; trecho = a parte
+//                 do estabelecimento que identifica o lugar (vazio, curto ou fora do nome: o nome inteiro)
 import "jsr:@supabase/functions-js@2.118.0/edge-runtime.d.ts";
 
 const DIA_FECHAMENTO = 5; // compras a partir deste dia vão para a fatura do mês seguinte (inferido dos dados)
@@ -72,22 +75,37 @@ function supa() {
   return { url, headers };
 }
 
-// Chave do atalho: o estabelecimento sem acento, em minúsculas e com espaços simples ("NAQUELE  CAFÉ"
-// e "naquele cafe" são o mesmo lugar).
-const chaveDoEstab = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+// Chave do atalho: o trecho sem acento, em minúsculas e com pontuação e espaços viram um espaço só
+// ("NAQUELE  CAFÉ" e "naquele-cafe" dão "naquele cafe"). A comparação usa a forma compacta, sem espaço
+// nenhum, então "NAQUELECAFE" também acha "naquele cafe".
+const MIN_TRECHO = 4; // trecho mais curto pegaria lugar demais (o nome inteiro sempre vale)
+const chaveDoEstab = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const compacta = (s: string) => chaveDoEstab(s).replace(/ /g, "");
 
 async function atalhoDo(estab: string) {
-  const chave = chaveDoEstab(estab);
-  if (!chave) return null;
+  const alvo = compacta(estab);
+  if (!alvo) return null;
   const { url, headers } = supa();
-  const r = await fetch(`${url}/rest/v1/fin_atalho?chave=eq.${encodeURIComponent(chave)}&select=nome,categ,parcelas&limit=1`, { headers });
+  const r = await fetch(`${url}/rest/v1/fin_atalho?select=chave,nome,categ,parcelas`, { headers });
   if (!r.ok) throw new Error(`atalho ${r.status}: ${await r.text()}`);
-  const linhas = (await r.json()) as Array<{ nome: string; categ: string; parcelas: number }>;
-  return linhas[0] ?? null;
+  const linhas = (await r.json()) as Array<{ chave: string; nome: string; categ: string; parcelas: number }>;
+  return linhas
+    .map((l) => ({ ...l, trecho: compacta(l.chave) }))
+    .filter((l) => l.trecho && alvo.includes(l.trecho))
+    .sort((a, b) => b.trecho.length - a.trecho.length)[0] ?? null;
 }
 
-async function lembrarAtalho(estab: string, nome: string, categ: string, parcelas: number) {
-  const chave = chaveDoEstab(estab);
+// Trecho que vira a chave: só vale se está no estabelecimento e não é curto demais; senão, o nome inteiro.
+function chaveDoTrecho(estab: string, trecho: string) {
+  const inteiro = chaveDoEstab(estab);
+  const t = chaveDoEstab(trecho);
+  if (!t || t === inteiro) return { chave: inteiro };
+  if (compacta(t).length < MIN_TRECHO) return { chave: inteiro, aviso: `trecho "${trecho}" curto demais, guardei o nome inteiro` };
+  if (!compacta(estab).includes(compacta(t))) return { chave: inteiro, aviso: `trecho "${trecho}" fora do nome, guardei o nome inteiro` };
+  return { chave: t };
+}
+
+async function lembrarAtalho(chave: string, estab: string, nome: string, categ: string, parcelas: number) {
   if (!chave) throw new Error("sem estabelecimento");
   const { url, headers } = supa();
   const r = await fetch(`${url}/rest/v1/fin_atalho?on_conflict=chave`, {
@@ -202,7 +220,13 @@ Deno.serve(async (req) => {
   // "Sempre assim?" = Sim no Tasker: o lançamento já entrou, então falhar aqui vira aviso, não erro
   // (erro faria o Tasker tentar de novo e duplicar o lançamento).
   if (sim(b.lembrar)) {
-    try { await lembrarAtalho(estab, nome, categ, parcelas); resposta.lembrado = true; } catch (e) { resposta.aviso = `atalho nao gravado: ${e}`; }
+    const { chave, aviso } = chaveDoTrecho(estab, limpa(b.trecho));
+    try {
+      await lembrarAtalho(chave, estab, nome, categ, parcelas);
+      resposta.lembrado = true;
+      resposta.atalho = chave;
+      if (aviso) resposta.aviso = aviso;
+    } catch (e) { resposta.aviso = `atalho nao gravado: ${e}`; }
   }
   return json(resposta);
 });

@@ -269,6 +269,49 @@ Selected Index
 			<Int sr="arg9" val="30"/>
 		</Action>
 		<Action sr="act13" ve="7">
+			<code>360</code>
+			<Bundle sr="arg0">
+				<Vals sr="val">
+					<net.dinglisch.android.tasker.RELEVANT_VARIABLES>&lt;StringArray sr=""&gt;&lt;_array_net.dinglisch.android.tasker.RELEVANT_VARIABLES0&gt;%input
+Input
+The text that was inserted in the dialog&lt;/_array_net.dinglisch.android.tasker.RELEVANT_VARIABLES0&gt;&lt;/StringArray&gt;</net.dinglisch.android.tasker.RELEVANT_VARIABLES>
+					<net.dinglisch.android.tasker.RELEVANT_VARIABLES-type>[Ljava.lang.String;</net.dinglisch.android.tasker.RELEVANT_VARIABLES-type>
+				</Vals>
+			</Bundle>
+			<Str sr="arg1" ve="3">Trecho que identifica o lugar (apague o que muda)</Str>
+			<Str sr="arg2" ve="3"/>
+			<Str sr="arg3" ve="3">%estab</Str>
+			<Int sr="arg4" val="60"/>
+			<Str sr="arg5" ve="3"/>
+			<Int sr="arg6" val="0"/>
+			<Int sr="arg7" val="0"/>
+			<Str sr="arg8" ve="3"/>
+			<ConditionList sr="if">
+				<Condition sr="c0" ve="3">
+					<lhs>%ld_selected</lhs>
+					<op>2</op>
+					<rhs>Sim</rhs>
+				</Condition>
+			</ConditionList>
+		</Action>
+		<Action sr="act14" ve="7">
+			<code>547</code>
+			<Str sr="arg0" ve="3">%trecho</Str>
+			<Str sr="arg1" ve="3">%input</Str>
+			<Int sr="arg2" val="0"/>
+			<Int sr="arg3" val="0"/>
+			<Int sr="arg4" val="0"/>
+			<Int sr="arg5" val="3"/>
+			<Int sr="arg6" val="1"/>
+			<ConditionList sr="if">
+				<Condition sr="c0" ve="3">
+					<lhs>%ld_selected</lhs>
+					<op>2</op>
+					<rhs>Sim</rhs>
+				</Condition>
+			</ConditionList>
+		</Action>
+		<Action sr="act15" ve="7">
 			<code>129</code>
 			<Str sr="arg0" ve="3">// Nome digitado; vazio volta pro nome da notificação (mesma regra da Edge Function).
 var nome = local("nome");
@@ -278,13 +321,14 @@ setLocal("body", JSON.stringify({
   tipo: local("tipo"), valor: local("valor"), estab: local("estab"),
   parcelas: local("parcelas"), nome: local("nome"),
   categ: local("categ"), ts: local("ts"),
-  lembrar: local("ld_selected") === "Sim"
+  lembrar: local("ld_selected") === "Sim",
+  trecho: local("ld_selected") === "Sim" ? local("trecho") : ""
 }));</Str>
 			<Str sr="arg1" ve="3"/>
 			<Int sr="arg2" val="1"/>
 			<Int sr="arg3" val="45"/>
 		</Action>
-		<Action sr="act14" ve="7">
+		<Action sr="act16" ve="7">
 			<code>339</code>
 			<se>false</se>
 			<Bundle sr="arg0">
@@ -319,7 +363,7 @@ x-fin-token:%FINTOKEN</Str>
 			<Int sr="arg8" val="30"/>
 			<Int sr="arg9" val="0"/>
 		</Action>
-		<Action sr="act15" ve="7">
+		<Action sr="act17" ve="7">
 			<code>129</code>
 			<Str sr="arg0" ve="3">var raw = global("FINPEND"), pend = {};
 try { if (raw &amp;&amp; raw.charAt(0) !== "%") pend = JSON.parse(raw); } catch (e) {}
@@ -335,9 +379,29 @@ delete pend[local("titulo")]; setGlobal("FINPEND", JSON.stringify(pend));</Str>
 				</Condition>
 			</ConditionList>
 		</Action>
-		<Action sr="act16" ve="7">
+		<Action sr="act18" ve="7">
+			<code>129</code>
+			<Str sr="arg0" ve="3">// Texto do flash final: nome, valor e, com "Sempre assim?" = Sim, o trecho que ficou de atalho.
+var r = {};
+try { r = JSON.parse(local("http_data") || "{}"); } catch (e) {}
+var t = local("nome") + " R$ " + local("valor");
+if (r.lembrado) t += " · atalho: " + r.atalho;
+if (r.aviso) t += " · " + r.aviso;
+setLocal("fim", t);</Str>
+			<Str sr="arg1" ve="3"/>
+			<Int sr="arg2" val="1"/>
+			<Int sr="arg3" val="45"/>
+			<ConditionList sr="if">
+				<Condition sr="c0" ve="3">
+					<lhs>%http_response_code</lhs>
+					<op>2</op>
+					<rhs>2*</rhs>
+				</Condition>
+			</ConditionList>
+		</Action>
+		<Action sr="act19" ve="7">
 			<code>548</code>
-			<Str sr="arg0" ve="3">%nome R$ %valor</Str>
+			<Str sr="arg0" ve="3">%fim</Str>
 			<Int sr="arg1" val="0"/>
 			<Str sr="arg10" ve="3"/>
 			<Int sr="arg11" val="1"/>
@@ -361,7 +425,7 @@ delete pend[local("titulo")]; setGlobal("FINPEND", JSON.stringify(pend));</Str>
 				</Condition>
 			</ConditionList>
 		</Action>
-		<Action sr="act17" ve="7">
+		<Action sr="act20" ve="7">
 			<code>548</code>
 			<Str sr="arg0" ve="3">Falhou: %http_response_code | %http_data</Str>
 			<Int sr="arg1" val="0"/>
@@ -387,7 +451,7 @@ delete pend[local("titulo")]; setGlobal("FINPEND", JSON.stringify(pend));</Str>
 				</Condition>
 			</ConditionList>
 		</Action>
-		<Action sr="act18" ve="7">
+		<Action sr="act21" ve="7">
 			<code>523</code>
 			<Str sr="arg0" ve="3">%titulo</Str>
 			<Str sr="arg1" ve="3">Falhou, toque para tentar de novo</Str>

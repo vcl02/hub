@@ -49,18 +49,40 @@ test('Nubank A: depois do Stop do não-despesa, apaga a notificação da Nubank 
     assert.match(script(a[8]), /var agora = parseInt\(local\("agora"\), 10\) \|\| Math\.floor/);
 });
 
-test('Nubank B (e a cópia no perfil Click): "Sempre assim?" depois de Parcelas; Sim manda lembrar', () => {
+test('Nubank B (e a cópia no perfil Click): "Sempre assim?" depois de Parcelas; Sim pede o trecho do lugar e manda lembrar', () => {
     for (const arquivo of ['tasker/Nubank_B.tsk.xml', 'tasker/Nubank_Click.prf.xml']) {
         const b = acoes(ler(arquivo));
-        assert.equal(b.length, 19, arquivo);
+        assert.equal(b.length, 22, arquivo);
         assert.equal(b[12].codigo, '378');
         assert.match(b[12].corpo, /<Str sr="arg2" ve="3">Sempre assim\?<\/Str>/);
         assert.match(b[12].corpo, /<Str sr="arg3" ve="3">Sim,Não<\/Str>/);
-        const base = { nome: 'Café', estab: 'X', tipo: 'despesa_credito', valor: '1', parcelas: '1', categ: 'Besteira', ts: '1' };
-        assert.equal(JSON.parse(roda(script(b[13]), { ...base, ld_selected: 'Sim' }).body).lembrar, true);
-        assert.equal(JSON.parse(roda(script(b[13]), { ...base, ld_selected: 'Não' }).body).lembrar, false);
-        assert.equal(JSON.parse(roda(script(b[13]), { ...base, ld_selected: '' }).body).lembrar, false);
-        assert.equal(b[14].codigo, '339');
+        // Com Sim: Input Dialog já preenchido com o estabelecimento, guardado em %trecho.
+        const soComSim = /<lhs>%ld_selected<\/lhs>\s*<op>2<\/op>\s*<rhs>Sim<\/rhs>/;
+        assert.equal(b[13].codigo, '360');
+        assert.match(b[13].corpo, /<Str sr="arg1" ve="3">Trecho que identifica o lugar/);
+        assert.match(b[13].corpo, /<Str sr="arg3" ve="3">%estab<\/Str>/);
+        assert.match(b[13].corpo, soComSim);
+        assert.equal(b[14].codigo, '547');
+        assert.match(b[14].corpo, /<Str sr="arg0" ve="3">%trecho<\/Str>\s*<Str sr="arg1" ve="3">%input<\/Str>/);
+        assert.match(b[14].corpo, soComSim);
+        const base = { nome: 'Café', estab: 'X', tipo: 'despesa_credito', valor: '1', parcelas: '1', categ: 'Besteira', ts: '1', trecho: 'naquele cafe' };
+        const sim = JSON.parse(roda(script(b[15]), { ...base, ld_selected: 'Sim' }).body);
+        assert.equal(sim.lembrar, true);
+        assert.equal(sim.trecho, 'naquele cafe');
+        for (const ld_selected of ['Não', '']) {
+            const nao = JSON.parse(roda(script(b[15]), { ...base, ld_selected }).body);
+            assert.equal(nao.lembrar, false);
+            assert.equal(nao.trecho, '');
+        }
+        assert.equal(b[16].codigo, '339');
+        // Flash final: nome, valor e o atalho lembrado (ou o aviso da função).
+        const fim = dados => roda(script(b[18]), { nome: 'Café', valor: '12.50', http_data: dados }).fim;
+        assert.equal(fim('{"ok":true}'), 'Café R$ 12.50');
+        assert.equal(fim('{"ok":true,"lembrado":true,"atalho":"naquele cafe"}'), 'Café R$ 12.50 · atalho: naquele cafe');
+        assert.equal(fim('{"ok":true,"lembrado":true,"atalho":"x y z w","aviso":"trecho fora do nome"}'), 'Café R$ 12.50 · atalho: x y z w · trecho fora do nome');
+        assert.match(b[18].corpo, /<lhs>%http_response_code<\/lhs>\s*<op>2<\/op>\s*<rhs>2\*<\/rhs>/);
+        assert.equal(b[19].codigo, '548');
+        assert.match(b[19].corpo, /<Str sr="arg0" ve="3">%fim<\/Str>/);
     }
 });
 

@@ -85,9 +85,9 @@ test('dry_run devolve as linhas sem gravar (parcelas, centavos na 1ª, fatura pe
 });
 
 // Atalhos (fin_atalho, migration 42): auto lança só com atalho; lembrar grava o atalho depois.
-function bancoFalso({ atalho = null, falhaLembrar = false } = {}) {
+function bancoFalso({ atalhos = [], falhaLembrar = false } = {}) {
     return (url, opcoes) => {
-        if (url.includes('/rest/v1/fin_atalho?chave=')) return new Response(JSON.stringify(atalho ? [atalho] : []), { status: 200 });
+        if (url.includes('/rest/v1/fin_atalho?select=')) return new Response(JSON.stringify(atalhos), { status: 200 });
         if (url.includes('/rest/v1/fin_atalho?on_conflict=chave')) return new Response(falhaLembrar ? 'erro' : '', { status: falhaLembrar ? 500 : 201 });
         if (url.endsWith('/rest/v1/fin')) return new Response(JSON.stringify(JSON.parse(opcoes.body).map((_, i) => ({ id: 100 + i }))), { status: 201 });
         return new Response('inesperado', { status: 500 });
@@ -100,12 +100,33 @@ test('auto sem atalho: lancado false e nada gravado em fin', async () => {
     const r = await handler(pedido(TOKEN, { metodo: 'POST', caminho: '', corpo: compra({ auto: true }) }));
     assert.deepEqual(await r.json(), { ok: true, lancado: false });
     assert.equal(chamadas.length, 1);
-    // Chave sem acento, em minúsculas e com espaços simples.
-    assert.match(chamadas[0].url, /fin_atalho\?chave=eq\.naquele%20cafe%20comercio&/);
+    assert.match(chamadas[0].url, /fin_atalho\?select=chave,nome,categ,parcelas$/);
+    // Atalho de outro lugar não serve.
+    const { handler: h2 } = carregaFuncao(undefined, bancoFalso({ atalhos: [{ chave: 'padaria do ze', nome: 'Pão', categ: 'Alimentação', parcelas: 1 }] }));
+    assert.equal((await (await h2(pedido(TOKEN, { metodo: 'POST', caminho: '', corpo: compra({ auto: true }) }))).json()).lancado, false);
+});
+
+test('auto: o atalho vale se o trecho está em qualquer parte do nome, sem ligar pra acento, maiúscula, espaço ou pontuação', async () => {
+    const cafe = { chave: 'naquele cafe', nome: 'Café', categ: 'Besteira', parcelas: 1 };
+    for (const estab of ['NAQUELE  CAFÉ COMERCIO', 'SUMUP *NAQUELE CAFE', 'PAG*NaqueleCafe LTDA', 'naquele-café', 'Naquele Café']) {
+        const { handler } = carregaFuncao(undefined, bancoFalso({ atalhos: [cafe] }));
+        const corpo = await (await handler(pedido(TOKEN, { metodo: 'POST', caminho: '', corpo: compra({ auto: true, estab }) }))).json();
+        assert.equal(corpo.lancado, true, estab);
+        assert.equal(corpo.nome, 'Café', estab);
+    }
+    // Chave gravada no formato antigo (com acento ou pontuação) também acha.
+    const { handler: h2 } = carregaFuncao(undefined, bancoFalso({ atalhos: [{ ...cafe, chave: 'NAQUELE CAFÉ' }] }));
+    assert.equal((await (await h2(pedido(TOKEN, { metodo: 'POST', caminho: '', corpo: compra({ auto: true, estab: 'SUMUP*NAQUELE CAFE' }) }))).json()).lancado, true);
+    // Dois atalhos servem: ganha o mais longo (o mais específico).
+    const atalhos = [cafe, { chave: 'naquele cafe comercio', nome: 'Café da loja', categ: 'Alimentação', parcelas: 1 }];
+    const { handler: h3 } = carregaFuncao(undefined, bancoFalso({ atalhos }));
+    assert.equal((await (await h3(pedido(TOKEN, { metodo: 'POST', caminho: '', corpo: compra({ auto: true }) }))).json()).nome, 'Café da loja');
+    const { handler: h4 } = carregaFuncao(undefined, bancoFalso({ atalhos }));
+    assert.equal((await (await h4(pedido(TOKEN, { metodo: 'POST', caminho: '', corpo: compra({ auto: true, estab: 'NAQUELE CAFE SHOPPING' }) }))).json()).nome, 'Café');
 });
 
 test('auto com atalho: lança com nome, categoria e parcelas do atalho', async () => {
-    const { handler, chamadas } = carregaFuncao(undefined, bancoFalso({ atalho: { nome: 'Café', categ: 'Besteira', parcelas: 1 } }));
+    const { handler, chamadas } = carregaFuncao(undefined, bancoFalso({ atalhos: [{ chave: 'naquele cafe comercio', nome: 'Café', categ: 'Besteira', parcelas: 1 }] }));
     const r = await handler(pedido(TOKEN, { metodo: 'POST', caminho: '', corpo: compra({ auto: true }) }));
     const corpo = await r.json();
     assert.equal(corpo.lancado, true);
@@ -114,7 +135,7 @@ test('auto com atalho: lança com nome, categoria e parcelas do atalho', async (
     const linhas = JSON.parse(chamadas[1].opcoes.body);
     assert.deepEqual(linhas.map(l => [l.nome, l.categ, l.valor]), [['Café', 'Besteira', -12.5]]);
     // Parcelas da notificação (NuPay "em 3x") valem sobre as do atalho.
-    const { handler: h2, chamadas: c2 } = carregaFuncao(undefined, bancoFalso({ atalho: { nome: 'Café', categ: 'Besteira', parcelas: 1 } }));
+    const { handler: h2, chamadas: c2 } = carregaFuncao(undefined, bancoFalso({ atalhos: [{ chave: 'naquele cafe comercio', nome: 'Café', categ: 'Besteira', parcelas: 1 }] }));
     await h2(pedido(TOKEN, { metodo: 'POST', caminho: '', corpo: compra({ auto: true, parcelas: '3', valor: '30' }) }));
     assert.equal(JSON.parse(c2[1].opcoes.body).length, 3);
 });
@@ -136,4 +157,30 @@ test('lembrar: depois de lançar grava o atalho (upsert pela chave); falha vira 
     const { handler: h3, chamadas: c3 } = carregaFuncao(undefined, bancoFalso());
     await h3(pedido(TOKEN, { metodo: 'POST', caminho: '', corpo: compra({ nome: 'Café', categ: 'Besteira' }) }));
     assert.ok(!c3.some(c => c.url.includes('fin_atalho')));
+});
+
+test('lembrar com trecho: grava só a parte escolhida; trecho curto ou fora do nome vira o nome inteiro, com aviso', async () => {
+    const lembra = async trecho => {
+        const { handler, chamadas } = carregaFuncao(undefined, bancoFalso());
+        const corpo = await (await handler(pedido(TOKEN, { metodo: 'POST', caminho: '', corpo: compra({ nome: 'Café', categ: 'Besteira', lembrar: true, trecho }) }))).json();
+        const upsert = JSON.parse(chamadas.find(c => c.url.includes('on_conflict=chave')).opcoes.body);
+        return { corpo, upsert };
+    };
+    let { corpo, upsert } = await lembra('Naquele Café');
+    assert.equal(upsert.chave, 'naquele cafe');
+    assert.equal(upsert.estab, 'NAQUELE  CAFÉ COMERCIO');
+    assert.equal(corpo.atalho, 'naquele cafe');
+    assert.equal(corpo.aviso, undefined);
+    ({ corpo, upsert } = await lembra(''));
+    assert.equal(upsert.chave, 'naquele cafe comercio');
+    assert.equal(corpo.aviso, undefined);
+    ({ corpo, upsert } = await lembra('%trecho'));   // variável do Tasker não preenchida
+    assert.equal(upsert.chave, 'naquele cafe comercio');
+    ({ corpo, upsert } = await lembra('caf'));
+    assert.equal(upsert.chave, 'naquele cafe comercio');
+    assert.match(corpo.aviso, /curto demais/);
+    ({ corpo, upsert } = await lembra('padaria'));
+    assert.equal(upsert.chave, 'naquele cafe comercio');
+    assert.match(corpo.aviso, /fora do nome/);
+    assert.equal(corpo.lembrado, true);
 });
