@@ -69,7 +69,105 @@ setLocal("parcelas", parcelas);</Str>
 		</Action>
 		<Action sr="act3" ve="7">
 			<code>129</code>
-			<Str sr="arg0" ve="3">var agora = Math.floor(Date.now() / 1000);
+			<Str sr="arg0" ve="3">// Lança sozinho se o estabelecimento tem atalho (fin_atalho): a Edge Function responde lancado.
+var agora = Math.floor(Date.now() / 1000);
+setLocal("agora", String(agora));
+setLocal("body", JSON.stringify({ tipo: local("tipo"), valor: local("valor"), estab: local("estab"),
+  parcelas: local("parcelas"), ts: String(agora), auto: true }));</Str>
+			<Str sr="arg1" ve="3"/>
+			<Int sr="arg2" val="1"/>
+			<Int sr="arg3" val="45"/>
+		</Action>
+		<Action sr="act4" ve="7">
+			<code>339</code>
+			<se>false</se>
+			<Bundle sr="arg0">
+				<Vals sr="val">
+					<net.dinglisch.android.tasker.RELEVANT_VARIABLES>&lt;StringArray sr=""&gt;&lt;_array_net.dinglisch.android.tasker.RELEVANT_VARIABLES0&gt;%http_cookies
+Cookies
+The cookies the server sent in the response in the Cookie:COOKIE_VALUE format. You can use this directly in the 'Headers' field of the HTTP Request action&lt;/_array_net.dinglisch.android.tasker.RELEVANT_VARIABLES0&gt;&lt;_array_net.dinglisch.android.tasker.RELEVANT_VARIABLES1&gt;%http_data
+Data
+Data that the server responded from the HTTP request.&lt;/_array_net.dinglisch.android.tasker.RELEVANT_VARIABLES1&gt;&lt;_array_net.dinglisch.android.tasker.RELEVANT_VARIABLES2&gt;%http_file_output
+File Output
+Will always contain the file's full path even if you specified a directory as the File to save.&lt;/_array_net.dinglisch.android.tasker.RELEVANT_VARIABLES2&gt;&lt;_array_net.dinglisch.android.tasker.RELEVANT_VARIABLES3&gt;%http_response_code
+Response Code
+The HTTP Code the server responded&lt;/_array_net.dinglisch.android.tasker.RELEVANT_VARIABLES3&gt;&lt;_array_net.dinglisch.android.tasker.RELEVANT_VARIABLES4&gt;%http_headers()
+Response Headers
+The HTTP Headers the server sent in the response. Each header is in the 'key:value' format&lt;/_array_net.dinglisch.android.tasker.RELEVANT_VARIABLES4&gt;&lt;_array_net.dinglisch.android.tasker.RELEVANT_VARIABLES5&gt;%http_response_length
+Response Length
+The size of the response in bytes&lt;/_array_net.dinglisch.android.tasker.RELEVANT_VARIABLES5&gt;&lt;/StringArray&gt;</net.dinglisch.android.tasker.RELEVANT_VARIABLES>
+					<net.dinglisch.android.tasker.RELEVANT_VARIABLES-type>[Ljava.lang.String;</net.dinglisch.android.tasker.RELEVANT_VARIABLES-type>
+				</Vals>
+			</Bundle>
+			<Int sr="arg1" val="1"/>
+			<Int sr="arg10" val="0"/>
+			<Int sr="arg11" val="0"/>
+			<Int sr="arg12" val="1"/>
+			<Str sr="arg2" ve="3">https://yzmyncxoskvqzdczaill.supabase.co/functions/v1/captura-nubank</Str>
+			<Str sr="arg3" ve="3">Content-Type:application/json
+x-fin-token:%FINTOKEN</Str>
+			<Str sr="arg4" ve="3"/>
+			<Str sr="arg5" ve="3">%body</Str>
+			<Str sr="arg6" ve="3"/>
+			<Str sr="arg7" ve="3"/>
+			<Int sr="arg8" val="20"/>
+			<Int sr="arg9" val="0"/>
+		</Action>
+		<Action sr="act5" ve="7">
+			<code>129</code>
+			<Str sr="arg0" ve="3">// Sem resposta, erro ou sem atalho: segue o fluxo de sempre (notificação pra tocar).
+var r = {};
+try { r = JSON.parse(local("http_data") || "{}"); } catch (e) {}
+var ok = String(local("http_response_code") || "").charAt(0) === "2" &amp;&amp; r.lancado === true;
+setLocal("lancado", ok ? "sim" : "nao");
+if (ok) setLocal("aviso", r.nome + " R$ " + local("valor").replace(".", ",") + " · " + String(r.categ || ""));</Str>
+			<Str sr="arg1" ve="3"/>
+			<Int sr="arg2" val="1"/>
+			<Int sr="arg3" val="45"/>
+		</Action>
+		<Action sr="act6" ve="7">
+			<code>523</code>
+			<Str sr="arg0" ve="3">%aviso</Str>
+			<Str sr="arg1" ve="3">Lançado sozinho</Str>
+			<Str sr="arg10" ve="3"/>
+			<Str sr="arg11" ve="3">Fin</Str>
+			<Str sr="arg12" ve="3"/>
+			<Int sr="arg13" val="0"/>
+			<Str sr="arg14" ve="3"/>
+			<Str sr="arg15" ve="3"/>
+			<Img sr="arg2" ve="2">
+				<nme>mw_editor_monetization_on</nme>
+			</Img>
+			<Int sr="arg3" val="0"/>
+			<Int sr="arg4" val="0"/>
+			<Int sr="arg5" val="5"/>
+			<Int sr="arg6" val="0"/>
+			<Int sr="arg7" val="0"/>
+			<Int sr="arg8" val="0"/>
+			<Str sr="arg9" ve="3"/>
+			<ConditionList sr="if">
+				<Condition sr="c0" ve="3">
+					<lhs>%lancado</lhs>
+					<op>2</op>
+					<rhs>sim</rhs>
+				</Condition>
+			</ConditionList>
+		</Action>
+		<Action sr="act7" ve="7">
+			<code>137</code>
+			<Int sr="arg0" val="0"/>
+			<Str sr="arg1" ve="3"/>
+			<ConditionList sr="if">
+				<Condition sr="c0" ve="3">
+					<lhs>%lancado</lhs>
+					<op>2</op>
+					<rhs>sim</rhs>
+				</Condition>
+			</ConditionList>
+		</Action>
+		<Action sr="act8" ve="7">
+			<code>129</code>
+			<Str sr="arg0" ve="3">var agora = parseInt(local("agora"), 10) || Math.floor(Date.now() / 1000);
 var d = new Date();
 var p2 = function (n) { return ("0" + n).slice(-2); };
 var hora = p2(d.getHours()) + ":" + p2(d.getMinutes()) + ":" + p2(d.getSeconds());
@@ -90,7 +188,7 @@ setLocal("titulo", titulo);</Str>
 			<Int sr="arg2" val="1"/>
 			<Int sr="arg3" val="45"/>
 		</Action>
-		<Action sr="act4" ve="7">
+		<Action sr="act9" ve="7">
 			<code>523</code>
 			<Str sr="arg0" ve="3">%titulo</Str>
 			<Str sr="arg1" ve="3"/>

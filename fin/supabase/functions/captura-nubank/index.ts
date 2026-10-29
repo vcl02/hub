@@ -3,6 +3,9 @@
 // Supabase, nunca no código nem no repositório, que é público). Sem o secret, recusa tudo.
 // GET ?acao=categorias -> lista de categorias distintas (texto, separadas por vírgula; vírgula interna vira " + ")
 // POST -> insere lançamento (com parcelas)
+//   auto: true -> só lança se o estabelecimento tem atalho (fin_atalho, migration 42), com o nome, a
+//                 categoria e as parcelas dele; sem atalho, responde lancado: false e não grava nada
+//   lembrar: true -> depois de lançar, grava (ou troca) o atalho do estabelecimento com o que foi escolhido
 import "jsr:@supabase/functions-js@2.118.0/edge-runtime.d.ts";
 
 const DIA_FECHAMENTO = 5; // compras a partir deste dia vão para a fatura do mês seguinte (inferido dos dados)
@@ -69,6 +72,32 @@ function supa() {
   return { url, headers };
 }
 
+// Chave do atalho: o estabelecimento sem acento, em minúsculas e com espaços simples ("NAQUELE  CAFÉ"
+// e "naquele cafe" são o mesmo lugar).
+const chaveDoEstab = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+
+async function atalhoDo(estab: string) {
+  const chave = chaveDoEstab(estab);
+  if (!chave) return null;
+  const { url, headers } = supa();
+  const r = await fetch(`${url}/rest/v1/fin_atalho?chave=eq.${encodeURIComponent(chave)}&select=nome,categ,parcelas&limit=1`, { headers });
+  if (!r.ok) throw new Error(`atalho ${r.status}: ${await r.text()}`);
+  const linhas = (await r.json()) as Array<{ nome: string; categ: string; parcelas: number }>;
+  return linhas[0] ?? null;
+}
+
+async function lembrarAtalho(estab: string, nome: string, categ: string, parcelas: number) {
+  const chave = chaveDoEstab(estab);
+  if (!chave) throw new Error("sem estabelecimento");
+  const { url, headers } = supa();
+  const r = await fetch(`${url}/rest/v1/fin_atalho?on_conflict=chave`, {
+    method: "POST",
+    headers: { ...headers, Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({ chave, estab, nome, categ, parcelas, atualizado_em: new Date().toISOString() }),
+  });
+  if (!r.ok) throw new Error(`lembrar ${r.status}: ${await r.text()}`);
+}
+
 async function listaCategorias() {
   const { url, headers } = supa();
   const r = await fetch(`${url}/rest/v1/rpc/fin_categorias`, { method: "POST", headers, body: "{}" });
@@ -110,8 +139,8 @@ Deno.serve(async (req) => {
   const tipo = String(b.tipo ?? "");
   if (!tipo.startsWith("despesa")) return json({ ok: true, ignorado: `tipo ${tipo || "vazio"}` });
 
-  const parcelas = parseInt(String(b.parcelas ?? "1"), 10) || 1;
-  if (parcelas < 1 || parcelas > MAX_PARCELAS) return json({ erro: "parcelas invalidas", recebido: b.parcelas }, 400);
+  const parcelasRecebidas = parseInt(String(b.parcelas ?? "1"), 10) || 1;
+  if (parcelasRecebidas < 1 || parcelasRecebidas > MAX_PARCELAS) return json({ erro: "parcelas invalidas", recebido: b.parcelas }, 400);
 
   const valor = parseFloat(String(b.valor ?? "").replace(",", "."));
   if (!isFinite(valor) || valor <= 0) return json({ erro: "valor invalido", recebido: b.valor }, 400);
@@ -121,9 +150,19 @@ Deno.serve(async (req) => {
     return s && !s.startsWith("%") ? s : ""; // ignora variável do Tasker não preenchida
   };
   const estab = limpa(b.estab);
-  const nome = limpa(b.nome) || estab || "Sem nome";
+  const sim = (v: unknown) => v === true || v === "true";
+
+  // Lançamento sozinho (Tasker, assim que a notificação chega): só com atalho do estabelecimento.
+  // Parcelas da notificação (NuPay "em 3x") valem sobre as do atalho.
+  let atalho: { nome: string; categ: string; parcelas: number } | null = null;
+  if (sim(b.auto)) {
+    try { atalho = await atalhoDo(estab); } catch (e) { return json({ erro: "falha ao ler atalho", detalhe: String(e) }, 500); }
+    if (!atalho) return json({ ok: true, lancado: false });
+  }
+  const parcelas = atalho && parcelasRecebidas == 1 ? atalho.parcelas : parcelasRecebidas;
+  const nome = atalho?.nome || limpa(b.nome) || estab || "Sem nome";
   const categRecebida = limpa(b.categ).split(/\s*\+\s*/).filter(Boolean).join(", ");
-  const categ = categRecebida || MAPA_CATEG.find(([re]) => re.test(estab))?.[1] || CATEG_PADRAO;
+  const categ = atalho?.categ || categRecebida || MAPA_CATEG.find(([re]) => re.test(estab))?.[1] || CATEG_PADRAO;
 
   const { data, origem } = dataDaCompra(b.ts);
 
@@ -159,5 +198,11 @@ Deno.serve(async (req) => {
   const txt = await r.text();
   if (!r.ok) return json({ erro: "falha ao inserir", status: r.status, detalhe: txt }, 500);
   const ins = JSON.parse(txt) as Array<{ id: number }>;
-  return json({ ok: true, ids: ins.map((x) => x.id), data_origem: origem, parcelas });
+  const resposta: Record<string, unknown> = { ok: true, lancado: true, ids: ins.map((x) => x.id), data_origem: origem, parcelas, nome, categ };
+  // "Sempre assim?" = Sim no Tasker: o lançamento já entrou, então falhar aqui vira aviso, não erro
+  // (erro faria o Tasker tentar de novo e duplicar o lançamento).
+  if (sim(b.lembrar)) {
+    try { await lembrarAtalho(estab, nome, categ, parcelas); resposta.lembrado = true; } catch (e) { resposta.aviso = `atalho nao gravado: ${e}`; }
+  }
+  return json(resposta);
 });

@@ -678,6 +678,9 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Não altera nenhuma linha e não muda nada no app; rodar de novo não muda nada.
   Coberta por `node --test tests/historico-mudancas.test.js`.
 
+- `migrations/42-atalhos-captura.sql` cria `public.fin_atalho` (estabelecimento da notificação do Nubank → nome, categoria e parcelas de sempre), usada pela Edge Function `captura-nubank` pra lançar sozinha os lugares de sempre (ver `docs/DECISOES.md`, "Captura do Nubank").
+  RLS só do dono pelo app (a função grava com a chave de serviço, como em `fin`) e histórico em `fin_historico`; não altera nenhuma linha de `fin` e rodar de novo não muda nada.
+  Coberta por `node --test tests/captura-nubank.test.js tests/tasker-atalho.test.js`.
 ## Testes
 
 - Os estilos são carregados em camadas por `css/base.css`, `css/dashboard.css`, `css/forms.css`, `css/charts.css`, `css/utilities.css` e `css/mobile.css`; o responsivo permanece por último para preservar a cascata.

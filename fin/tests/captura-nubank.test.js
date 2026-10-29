@@ -10,7 +10,7 @@ const { stripTypeScriptTypes } = require('node:module');
 const fonte = fs.readFileSync('supabase/functions/captura-nubank/index.ts', 'utf8');
 const TOKEN = 'a'.repeat(40);
 
-function carregaFuncao(env = { FIN_TOKEN: TOKEN }) {
+function carregaFuncao(env = { FIN_TOKEN: TOKEN }, responde = null) {
     let handler = null;
     const chamadas = [];
     const contexto = {
@@ -21,6 +21,7 @@ function carregaFuncao(env = { FIN_TOKEN: TOKEN }) {
         crypto: globalThis.crypto, TextEncoder, Response, Request, URL, Intl, Date, Math, Number, String, JSON, Array, Set, Promise, Uint8Array,
         fetch: async (url, opcoes) => {
             chamadas.push({ url, opcoes });
+            if (responde) return responde(url, opcoes);
             return new Response(JSON.stringify(['Besteira', 'Lazer, Isabella']), { status: 200 });
         },
     };
@@ -81,4 +82,58 @@ test('dry_run devolve as linhas sem gravar (parcelas, centavos na 1ª, fatura pe
     assert.deepEqual(corpo.linhas.map(l => l.nome), ['Loja (1/3)', 'Loja (2/3)', 'Loja (3/3)']);
     assert.ok(corpo.linhas.every(l => l.categ === 'Lazer, Isabella' && l.cred === true && l.pago === true && /-12$/.test(l.fatura)));
     assert.equal(chamadas.length, 0);
+});
+
+// Atalhos (fin_atalho, migration 42): auto lança só com atalho; lembrar grava o atalho depois.
+function bancoFalso({ atalho = null, falhaLembrar = false } = {}) {
+    return (url, opcoes) => {
+        if (url.includes('/rest/v1/fin_atalho?chave=')) return new Response(JSON.stringify(atalho ? [atalho] : []), { status: 200 });
+        if (url.includes('/rest/v1/fin_atalho?on_conflict=chave')) return new Response(falhaLembrar ? 'erro' : '', { status: falhaLembrar ? 500 : 201 });
+        if (url.endsWith('/rest/v1/fin')) return new Response(JSON.stringify(JSON.parse(opcoes.body).map((_, i) => ({ id: 100 + i }))), { status: 201 });
+        return new Response('inesperado', { status: 500 });
+    };
+}
+const compra = extra => ({ tipo: 'despesa_credito', valor: '12.5', parcelas: '1', estab: 'NAQUELE  CAFÉ COMERCIO', ts: Math.floor(Date.now() / 1000), ...extra });
+
+test('auto sem atalho: lancado false e nada gravado em fin', async () => {
+    const { handler, chamadas } = carregaFuncao(undefined, bancoFalso());
+    const r = await handler(pedido(TOKEN, { metodo: 'POST', caminho: '', corpo: compra({ auto: true }) }));
+    assert.deepEqual(await r.json(), { ok: true, lancado: false });
+    assert.equal(chamadas.length, 1);
+    // Chave sem acento, em minúsculas e com espaços simples.
+    assert.match(chamadas[0].url, /fin_atalho\?chave=eq\.naquele%20cafe%20comercio&/);
+});
+
+test('auto com atalho: lança com nome, categoria e parcelas do atalho', async () => {
+    const { handler, chamadas } = carregaFuncao(undefined, bancoFalso({ atalho: { nome: 'Café', categ: 'Besteira', parcelas: 1 } }));
+    const r = await handler(pedido(TOKEN, { metodo: 'POST', caminho: '', corpo: compra({ auto: true }) }));
+    const corpo = await r.json();
+    assert.equal(corpo.lancado, true);
+    assert.equal(corpo.nome, 'Café');
+    assert.equal(corpo.categ, 'Besteira');
+    const linhas = JSON.parse(chamadas[1].opcoes.body);
+    assert.deepEqual(linhas.map(l => [l.nome, l.categ, l.valor]), [['Café', 'Besteira', -12.5]]);
+    // Parcelas da notificação (NuPay "em 3x") valem sobre as do atalho.
+    const { handler: h2, chamadas: c2 } = carregaFuncao(undefined, bancoFalso({ atalho: { nome: 'Café', categ: 'Besteira', parcelas: 1 } }));
+    await h2(pedido(TOKEN, { metodo: 'POST', caminho: '', corpo: compra({ auto: true, parcelas: '3', valor: '30' }) }));
+    assert.equal(JSON.parse(c2[1].opcoes.body).length, 3);
+});
+
+test('lembrar: depois de lançar grava o atalho (upsert pela chave); falha vira aviso, não erro', async () => {
+    const { handler, chamadas } = carregaFuncao(undefined, bancoFalso());
+    const r = await handler(pedido(TOKEN, { metodo: 'POST', caminho: '', corpo: compra({ nome: 'Café', categ: 'Besteira', lembrar: true }) }));
+    const corpo = await r.json();
+    assert.equal(corpo.lembrado, true);
+    const upsert = chamadas.find(c => c.url.includes('on_conflict=chave'));
+    assert.match(upsert.opcoes.headers.Prefer, /resolution=merge-duplicates/);
+    assert.deepEqual((({ chave, nome, categ, parcelas }) => ({ chave, nome, categ, parcelas }))(JSON.parse(upsert.opcoes.body)),
+        { chave: 'naquele cafe comercio', nome: 'Café', categ: 'Besteira', parcelas: 1 });
+    const { handler: h2 } = carregaFuncao(undefined, bancoFalso({ falhaLembrar: true }));
+    const r2 = await h2(pedido(TOKEN, { metodo: 'POST', caminho: '', corpo: compra({ nome: 'Café', categ: 'Besteira', lembrar: true }) }));
+    assert.equal(r2.status, 200);
+    assert.match((await r2.json()).aviso, /atalho nao gravado/);
+    // Sem lembrar, nenhum atalho é gravado.
+    const { handler: h3, chamadas: c3 } = carregaFuncao(undefined, bancoFalso());
+    await h3(pedido(TOKEN, { metodo: 'POST', caminho: '', corpo: compra({ nome: 'Café', categ: 'Besteira' }) }));
+    assert.ok(!c3.some(c => c.url.includes('fin_atalho')));
 });

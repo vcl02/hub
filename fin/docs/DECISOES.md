@@ -91,6 +91,11 @@ O celular lê as notificações do Nubank no Tasker (`tasker/*.xml`) e envia cad
 - Sem o secret (ou com menos de 32 caracteres) a função recusa tudo (503); token errado dá 401. A comparação é feita pelos hashes, em tempo constante.
 - A confirmação final (`Nubank B`) mostra o nome digitado no diálogo Nome (`%nome R$ %valor`); deixado em branco, vale o estabelecimento da notificação, mesma regra da Edge Function.
   `Nubank_B.tsk.xml` e `Nubank_Click.prf.xml` levam a mesma tarefa: mudar uma é mudar as duas.
+- **Atalhos da captura (migration 42, a pedido do mantenedor):** lugar de sempre lança sozinho, sem tocar em nada. A tabela `fin_atalho` liga o estabelecimento da notificação (chave sem acento, em minúsculas e com espaços simples) ao nome, categoria e parcelas.
+  `Nubank A`, assim que a notificação chega e é uma compra, manda a compra com `auto: true`: com atalho, a função lança com ele (parcelas da notificação, como o "em 3x" do NuPay, valem sobre as do atalho) e o Tasker mostra "Café R$ 12,50 · Besteira" e para; sem atalho, a função responde `lancado: false` sem gravar nada e o Tasker segue o fluxo de tocar de sempre. Sem internet ou com erro, também segue o fluxo de sempre.
+  O lugar entra na lista pelo `Nubank B`: depois de Nome, Categoria e Parcelas, "Sempre assim?" (Sim/Não); com Sim, a função grava (ou troca) o atalho depois de lançar. Perguntar em vez de gravar toda escolha evita que um lançamento fora do padrão (o mercado que variou de categoria) vire regra.
+  Falhar ao gravar o atalho vira aviso, não erro: o lançamento já entrou, e erro faria tentar de novo e duplicar. Pra tirar ou corrigir um atalho, por enquanto, é no DataGrip (`fin_atalho`); o histórico fica em `fin_historico`.
+  Mesmo risco de antes: se a resposta do lançamento automático se perder depois de gravar, o Tasker cai no fluxo de tocar e um segundo lançamento é possível (raro: a função responde em menos de um segundo e o limite é 20 s).
 - **Trocar o token:** gerar um novo (ex.: no DataGrip, `select replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '')`, que mostra o valor só no resultado), gravá-lo no secret `FIN_TOKEN` e em `%FINTOKEN`. A troca do secret vale na hora, sem deploy, e o token antigo para de funcionar.
 
 ## Metas (migration 36)
