@@ -11,6 +11,9 @@
 //                 muda o resto), sem ligar pra acento, maiúscula, espaço ou pontuação; o trecho mais longo ganha
 //   lembrar: true -> depois de lançar, grava (ou troca) o atalho com o que foi escolhido; trecho = a parte
 //                 do estabelecimento que identifica o lugar (vazio, curto ou fora do nome: o nome inteiro)
+//   tipo receita_debito -> entrada nova na conta (Pix recebido que não era conta prevista)
+//   tipo conta_saida (Pix enviado, boleto pago) / conta_entrada (Pix recebido) -> paga uma conta prevista
+//                 em aberto em fin (ver contaPrevista): estab = quem recebeu ou pagou
 import "jsr:@supabase/functions-js@2.118.0/edge-runtime.d.ts";
 
 // Cada cartão: compras a partir do dia de fechamento vão para a fatura do mês seguinte, que vence no
@@ -22,6 +25,9 @@ const CARTOES: Record<string, { fechamento: number; vencimento: number }> = {
   mp: { fechamento: 6, vencimento: 13 },
 };
 const MAX_PARCELAS = 24;
+const SALDO_DESDE = "2026-08-07"; // o mesmo de js/app-state.js: conta em aberto desde aqui é atrasada, não esquecida
+const TOLERANCIA = 0.3; // conta vinculada única com valor até 30% diferente do previsto: paga sozinha
+const MAX_OPCOES = 6;
 const CATEG_PADRAO = "A classificar";
 const SEP_INTERNO = " + "; // representa a vírgula de categorias compostas ("Lazer, Isabella") na lista do Tasker
 const MAPA_CATEG: Array<[RegExp, string]> = [
@@ -125,6 +131,194 @@ async function lembrarAtalho(chave: string, estab: string, nome: string, categ: 
   if (!r.ok) throw new Error(`lembrar ${r.status}: ${await r.text()}`);
 }
 
+const limpa = (v: unknown) => {
+  const s = String(v ?? "").trim();
+  return s && !s.startsWith("%") ? s : ""; // ignora variável do Tasker não preenchida
+};
+const sim = (v: unknown) => v === true || v === "true";
+const centavos = (v: number) => Math.round(Math.abs(v) * 100);
+const brl = (v: number) => {
+  const [i, d] = (centavos(v) / 100).toFixed(2).split(".");
+  return `${i.replace(/\B(?=(\d{3})+(?!\d))/g, ".")},${d}`;
+};
+const diaMes = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+
+async function inserir(linhas: unknown[]) {
+  const { url, headers } = supa();
+  const r = await fetch(`${url}/rest/v1/fin`, {
+    method: "POST",
+    headers: { ...headers, Prefer: "return=representation" },
+    body: JSON.stringify(linhas),
+  });
+  const txt = await r.text();
+  if (!r.ok) throw new Error(`inserir ${r.status}: ${txt}`);
+  return (JSON.parse(txt) as Array<{ id: number }>).map((x) => x.id);
+}
+
+// ---------- Contas previstas (Pix enviado, boleto pago, Pix recebido) ----------
+// Em vez de lançar, marca como paga uma linha que já existe em fin, em aberto (pago = false), fora do
+// cartão e no sentido certo (saída negativa, entrada positiva). Candidatas: do ciclo de hoje, as
+// atrasadas (desde SALDO_DESDE, menos Investimento, como ehDebitoAtrasado no app) e as do próximo
+// ciclo (estas só na lista, nunca sozinhas: pagar antes muda a linha de ciclo).
+// Vínculo (fin_vinculo, migration 43): trecho de quem recebeu ou pagou -> conta (nome sem parcela +
+// categoria). Uma pessoa pode ter várias contas (o iPhone e outra pagos pra mesma pessoa).
+// Ao pagar: pago, data = dia do pagamento e valor = o pago (o previsto fica em fin_historico).
+type Conta = { id: number; data: string; valor: number; nome: string; categ: string; atrasado?: boolean; proximo?: boolean };
+const semParcela = (nome: string) => nome.replace(/\s*\(?\s*\d+\s*\/\s*\d+\s*\)?\s*$/, "").trim();
+const contaDe = (l: { nome: string; categ: string }) => `${chaveDoEstab(semParcela(l.nome))}|${chaveDoEstab(l.categ)}`;
+const ehInvestimento = (categ: string) => String(categ ?? "").split(/\s*,\s*/).some((c) => /^investimento$/i.test(c));
+
+async function contasEmAberto(entrada: boolean, hoje: string) {
+  const { url, headers } = supa();
+  const rc = await fetch(`${url}/rest/v1/fin_ciclo?select=inicio,fim&order=inicio`, { headers });
+  if (!rc.ok) throw new Error(`ciclos ${rc.status}: ${await rc.text()}`);
+  const ciclos = (await rc.json()) as Array<{ inicio: string; fim: string | null }>;
+  const i = ciclos.findIndex((c) => c.inicio <= hoje && (!c.fim || hoje <= c.fim));
+  if (i < 0) throw new Error(`nenhum ciclo contém ${hoje}`);
+  const atual = ciclos[i], prox = ciclos[i + 1];
+  const ate = (prox ? prox.fim : atual.fim) ?? "9999-12-31";
+  const r = await fetch(`${url}/rest/v1/fin?select=id,data,valor,nome,categ&cred=eq.false&pago=eq.false` +
+    `&valor=${entrada ? "gt" : "lt"}.0&data=gte.${SALDO_DESDE}&data=lte.${ate}&order=data,id`, { headers });
+  if (!r.ok) throw new Error(`contas ${r.status}: ${await r.text()}`);
+  return ((await r.json()) as Conta[])
+    .map((l) => ({ ...l, valor: Number(l.valor), atrasado: l.data < atual.inicio, proximo: !!atual.fim && l.data > atual.fim }))
+    .filter((l) => !(l.atrasado && ehInvestimento(l.categ)))
+    .sort((a, b) => a.data.localeCompare(b.data) || a.id - b.id); // a mais antiga primeiro (contaSozinha)
+}
+
+async function vinculosDe(quem: string) {
+  const alvo = compacta(quem);
+  if (!alvo) return [];
+  const { url, headers } = supa();
+  const r = await fetch(`${url}/rest/v1/fin_vinculo?select=chave,nome,categ`, { headers });
+  if (!r.ok) throw new Error(`vinculos ${r.status}: ${await r.text()}`);
+  const linhas = (await r.json()) as Array<{ chave: string; nome: string; categ: string }>;
+  return linhas.filter((v) => { const t = compacta(v.chave); return t && alvo.includes(t); });
+}
+
+// Marca sozinha só quando não há dúvida: uma conta vinculada (a mais antiga, se a mesma conta está em
+// aberto em dois meses) com o valor igual ou até 30% diferente, ou, com várias vinculadas, a única com
+// o valor exato. O resto pergunta (Trybe e Água, ambas R$ 250,00, mostram por que valor só não basta).
+function contaSozinha(vinculadas: Conta[], valor: number) {
+  const porConta = new Map<string, Conta>();
+  for (const l of vinculadas.filter((l) => !l.proximo)) if (!porConta.has(contaDe(l))) porConta.set(contaDe(l), l);
+  const unicas = [...porConta.values()];
+  const igual = (l: Conta) => centavos(l.valor) === centavos(valor);
+  if (unicas.length === 1) {
+    const l = unicas[0];
+    return Math.abs(centavos(valor) - centavos(l.valor)) <= TOLERANCIA * centavos(l.valor) ? l : null;
+  }
+  const iguais = unicas.filter(igual);
+  return iguais.length === 1 ? iguais[0] : null;
+}
+
+// Lista pra escolher no Tasker: vinculadas primeiro, depois o valor mais perto e a data mais perto.
+// Rótulo sem vírgula (a lista do Tasker separa por vírgula): o centavo usa "‚" (U+201A), que parece vírgula.
+function opcoesPara(contas: Conta[], vinculadas: Conta[], valor: number, hoje: string) {
+  const vinc = new Set(vinculadas.map((l) => l.id));
+  const dist = (d: string) => Math.abs(Date.parse(d) - Date.parse(hoje));
+  const perto = (l: Conta) => Math.abs(centavos(l.valor) - centavos(valor));
+  return [...contas]
+    .sort((a, b) => Number(vinc.has(b.id)) - Number(vinc.has(a.id)) || perto(a) - perto(b) || dist(a.data) - dist(b.data))
+    .slice(0, MAX_OPCOES)
+    .map((l) => ({
+      id: l.id,
+      rotulo: `${l.nome} R$ ${brl(l.valor)} · ${diaMes(l.data)}${l.atrasado ? " · atrasado" : ""}${l.proximo ? " · próx. ciclo" : ""}`.replace(/,/g, "\u201a"),
+    }));
+}
+
+async function pagar(id: number, dia: string, valor: number, entrada: boolean) {
+  const { url, headers } = supa();
+  const filtro = `id=eq.${id}&cred=eq.false&pago=eq.false&valor=${entrada ? "gt" : "lt"}.0`;
+  const antes = await fetch(`${url}/rest/v1/fin?${filtro}&select=id,data,valor,nome,categ`, { headers });
+  if (!antes.ok) throw new Error(`conta ${antes.status}: ${await antes.text()}`);
+  const [conta] = (await antes.json()) as Conta[];
+  if (!conta) return null;
+  const r = await fetch(`${url}/rest/v1/fin?${filtro}`, {
+    method: "PATCH",
+    headers: { ...headers, Prefer: "return=representation" },
+    body: JSON.stringify({ pago: true, data: dia, valor: (entrada ? 1 : -1) * centavos(valor) / 100 }),
+  });
+  if (!r.ok) throw new Error(`pagar ${r.status}: ${await r.text()}`);
+  return ((await r.json()) as Conta[]).length ? { ...conta, valor: Number(conta.valor) } : null;
+}
+
+const textoDoPagamento = (conta: Conta, valor: number, entrada: boolean) =>
+  `${conta.nome}: ${entrada ? "recebido" : "pago"} R$ ${brl(valor)}` +
+  (centavos(conta.valor) !== centavos(valor) ? ` (previsto R$ ${brl(conta.valor)})` : "");
+
+async function lembrarVinculo(chave: string, conta: Conta) {
+  if (!chave) throw new Error("sem o nome de quem recebeu ou pagou");
+  const { url, headers } = supa();
+  const r = await fetch(`${url}/rest/v1/fin_vinculo?on_conflict=chave,nome,categ`, {
+    method: "POST",
+    headers: { ...headers, Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({ chave, nome: semParcela(conta.nome), categ: conta.categ, atualizado_em: new Date().toISOString() }),
+  });
+  if (!r.ok) throw new Error(`vinculo ${r.status}: ${await r.text()}`);
+}
+
+// id: conta escolhida no Tasker; acao "opcoes": a lista pra escolher; auto: tenta sozinho (Nubank A).
+async function contaPrevista(b: Record<string, unknown>, entrada: boolean) {
+  const valor = parseFloat(String(b.valor ?? "").replace(",", "."));
+  if (!isFinite(valor) || valor <= 0) return json({ erro: "valor invalido", recebido: b.valor }, 400);
+  const quem = limpa(b.estab);
+  const { data: dia } = dataDaCompra(b.ts);
+
+  if (limpa(b.id)) {
+    const id = parseInt(limpa(b.id), 10);
+    if (!(id > 0)) return json({ erro: "id invalido", recebido: b.id }, 400);
+    let conta: Conta | null;
+    try { conta = await pagar(id, dia, valor, entrada); } catch (e) { return json({ erro: "falha ao pagar", detalhe: String(e) }, 500); }
+    if (!conta) return json({ erro: "conta nao esta mais em aberto", id }, 409);
+    const resposta: Record<string, unknown> = { ok: true, pago: true, id, nome: conta.nome, texto: textoDoPagamento(conta, valor, entrada) };
+    // Como o atalho: o pagamento já entrou, então falhar aqui vira aviso, não erro.
+    if (sim(b.lembrar)) {
+      const { chave, aviso } = chaveDoTrecho(quem, limpa(b.trecho));
+      try {
+        await lembrarVinculo(chave, conta);
+        resposta.lembrado = true;
+        resposta.vinculo = chave;
+        if (aviso) resposta.aviso = aviso;
+      } catch (e) { resposta.aviso = `vinculo nao gravado: ${e}`; }
+    }
+    return json(resposta);
+  }
+
+  let contas: Conta[], vinculadas: Conta[];
+  try {
+    contas = await contasEmAberto(entrada, dia);
+    const vinculos = new Set((await vinculosDe(quem)).map(contaDe));
+    vinculadas = contas.filter((l) => vinculos.has(contaDe(l)));
+  } catch (e) { return json({ erro: "falha ao ler contas", detalhe: String(e) }, 500); }
+
+  if (b.acao === "opcoes") return json({ ok: true, opcoes: opcoesPara(contas, vinculadas, valor, dia) });
+  if (!sim(b.auto)) return json({ erro: "use id, acao opcoes ou auto" }, 400);
+
+  const escolhida = contaSozinha(vinculadas, valor);
+  if (escolhida) {
+    try {
+      const conta = await pagar(escolhida.id, dia, valor, entrada);
+      if (conta) return json({ ok: true, pago: true, id: conta.id, nome: conta.nome, texto: textoDoPagamento(conta, valor, entrada) });
+    } catch (e) { return json({ erro: "falha ao pagar", detalhe: String(e) }, 500); }
+  }
+  // Sem conta vinculada nenhuma, quem tem atalho ("Novo lançamento" + "Sempre assim? Sim") vira
+  // lançamento novo na conta, pago, como uma compra no débito.
+  if (!vinculadas.length) {
+    let atalho: { nome: string; categ: string } | null;
+    try { atalho = await atalhoDo(quem); } catch (e) { return json({ erro: "falha ao ler atalho", detalhe: String(e) }, 500); }
+    if (atalho) {
+      const linha = { data: dia, valor: (entrada ? 1 : -1) * centavos(valor) / 100, nome: atalho.nome, categ: atalho.categ,
+        freq: null, cred: false, pago: true, fatura: null, obs: "auto:tasker" };
+      try {
+        const ids = await inserir([linha]);
+        return json({ ok: true, lancado: true, ids, nome: atalho.nome, categ: atalho.categ, forma: entrada ? "entrada" : "débito" });
+      } catch (e) { return json({ erro: "falha ao inserir", detalhe: String(e) }, 500); }
+    }
+  }
+  return json({ ok: true, pago: false, lancado: false });
+}
+
 async function listaCategorias() {
   const { url, headers } = supa();
   const r = await fetch(`${url}/rest/v1/rpc/fin_categorias`, { method: "POST", headers, body: "{}" });
@@ -164,10 +358,13 @@ Deno.serve(async (req) => {
   try { b = await req.json(); } catch { return json({ erro: "json invalido" }, 400); }
 
   const tipo = String(b.tipo ?? "");
-  if (!tipo.startsWith("despesa")) return json({ ok: true, ignorado: `tipo ${tipo || "vazio"}` });
+  if (tipo === "conta_saida" || tipo === "conta_entrada") return await contaPrevista(b, tipo === "conta_entrada");
+  if (!tipo.startsWith("despesa") && tipo !== "receita_debito") return json({ ok: true, ignorado: `tipo ${tipo || "vazio"}` });
 
   // Débito (conta Nubank) não tem fatura nem parcelas; crédito vai pro cartão da notificação.
-  const debito = tipo === "despesa_debito";
+  // receita_debito: entrada nova na conta, mesmas regras do débito com o valor positivo.
+  const receita = tipo === "receita_debito";
+  const debito = tipo === "despesa_debito" || receita;
   const cartao = debito ? null : b.cartao === "mp" ? "mp" : "nubank";
   const parcelasRecebidas = debito ? 1 : parseInt(String(b.parcelas ?? "1"), 10) || 1;
   if (parcelasRecebidas < 1 || parcelasRecebidas > MAX_PARCELAS) return json({ erro: "parcelas invalidas", recebido: b.parcelas }, 400);
@@ -175,12 +372,7 @@ Deno.serve(async (req) => {
   const valor = parseFloat(String(b.valor ?? "").replace(",", "."));
   if (!isFinite(valor) || valor <= 0) return json({ erro: "valor invalido", recebido: b.valor }, 400);
 
-  const limpa = (v: unknown) => {
-    const s = String(v ?? "").trim();
-    return s && !s.startsWith("%") ? s : ""; // ignora variável do Tasker não preenchida
-  };
   const estab = limpa(b.estab);
-  const sim = (v: unknown) => v === true || v === "true";
 
   // Lançamento sozinho (Tasker, assim que a notificação chega): só com atalho do estabelecimento.
   // Parcelas da notificação (NuPay "em 3x") valem sobre as do atalho.
@@ -206,7 +398,7 @@ Deno.serve(async (req) => {
     const cent = baseCent + (i === 0 ? sobra : 0);
     return {
       data: dataParcela,
-      valor: -cent / 100,
+      valor: (receita ? cent : -cent) / 100,
       nome: parcelas > 1 ? `${nome} (${i + 1}/${parcelas})` : nome,
       categ,
       freq: null,
@@ -219,17 +411,10 @@ Deno.serve(async (req) => {
 
   if (b.dry_run === true || b.dry_run === "true") return json({ ok: true, dry_run: true, data_origem: origem, linhas });
 
-  const { url, headers } = supa();
-  const r = await fetch(`${url}/rest/v1/fin`, {
-    method: "POST",
-    headers: { ...headers, Prefer: "return=representation" },
-    body: JSON.stringify(linhas),
-  });
-  const txt = await r.text();
-  if (!r.ok) return json({ erro: "falha ao inserir", status: r.status, detalhe: txt }, 500);
-  const ins = JSON.parse(txt) as Array<{ id: number }>;
-  const forma = debito ? "débito" : cartao === "mp" ? "Mercado Pago" : "Nubank";
-  const resposta: Record<string, unknown> = { ok: true, lancado: true, ids: ins.map((x) => x.id), data_origem: origem, parcelas, nome, categ, forma };
+  let ids: number[];
+  try { ids = await inserir(linhas); } catch (e) { return json({ erro: "falha ao inserir", detalhe: String(e) }, 500); }
+  const forma = receita ? "entrada" : debito ? "débito" : cartao === "mp" ? "Mercado Pago" : "Nubank";
+  const resposta: Record<string, unknown> = { ok: true, lancado: true, ids, data_origem: origem, parcelas, nome, categ, forma };
   // "Sempre assim?" = Sim no Tasker: o lançamento já entrou, então falhar aqui vira aviso, não erro
   // (erro faria o Tasker tentar de novo e duplicar o lançamento).
   if (sim(b.lembrar)) {

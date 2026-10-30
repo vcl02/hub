@@ -357,6 +357,11 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Crédito ou antecipação sem `fatura` é Nubank.
   Nomes e categorias não identificam cartão.
   A captura do celular (Tasker + `captura-nubank`) segue a mesma regra: compra no Mercado Pago grava a fatura do dia 13 (fecha dia 6, suposição a confirmar), no Nubank a do dia 12 (fecha dia 5), e compra no débito do Nubank entra no Débito, paga, sem fatura e em 1 parcela.
+- **Contas previstas pelo celular (Pix enviado, boleto pago, Pix recebido):** em vez de lançar, a captura marca como paga uma linha que já existe, em aberto e fora do cartão, no sentido certo (saída negativa, entrada positiva): **Pago**, **data = dia do pagamento** e **valor = o pago** (o previsto fica em `fin_historico`).
+  Candidatas: as do ciclo de hoje, as atrasadas (desde `SALDO_DESDE`, menos Investimento, como no aviso de atrasados) e as do próximo ciclo; estas só aparecem na lista, nunca são pagas sozinhas, porque pagar antes muda a linha de ciclo (ex.: o Faturamento PJ recebido antes do início do ciclo dele).
+  Paga sozinha só com vínculo (`fin_vinculo`, migration 43: trecho de quem recebeu → conta): uma conta vinculada com o valor igual ou até 30% diferente; com várias vinculadas (a mesma pessoa pra iPhone e outra conta), a única com o valor exato; a mesma conta em aberto em dois meses paga a mais antiga.
+  O resto pergunta no toque da notificação: até 6 contas (vinculadas primeiro, depois o valor e a data mais perto), **Novo lançamento** (vira débito, ou entrada, pelo fluxo de compra) e **Ignorar**; escolhida a conta, "Sempre assim?" com Sim liga o trecho de quem recebeu a ela. Sem vínculo, valor igual nunca basta (Trybe e Água, ambas R$ 250,00).
+  Sem conta vinculada nenhuma, quem tem atalho vira lançamento novo pago fora do cartão. Um Pix que paga duas contas juntas não é casado: fica pra transações separadas.
   Na tela continua existindo uma única tabela de Crédito por ciclo, com as compras dos dois cartões juntas e o total somado; compra do Mercado Pago tem a linha inteira num fundo azul (o do cartão) bem claro e apagado, com contorno suave, sem selo "MP" (a cor de seleção sobressai por cima); a antecipação do Mercado Pago continua com "MP" na tag `↳ Fat.`, e o Nubank fica sem marca.
   O bloco Crédito mostra só a quantidade de registros ("17 registros"), sem as datas das faturas.
   No Débito, a linha calculada de fatura vira uma por cartão — **Fatura Nubank** e **Fatura Mercado Pago**, cada uma no próprio vencimento e líquida das antecipações do próprio cartão —, e o saldo por dia e o gráfico de evolução seguem as mesmas duas linhas.
@@ -681,6 +686,9 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 - `migrations/42-atalhos-captura.sql` cria `public.fin_atalho` (estabelecimento da notificação do Nubank → nome, categoria e parcelas de sempre), usada pela Edge Function `captura-nubank` pra lançar sozinha os lugares de sempre (ver `docs/DECISOES.md`, "Captura do Nubank").
   RLS só do dono pelo app (a função grava com a chave de serviço, como em `fin`) e histórico em `fin_historico`; não altera nenhuma linha de `fin` e rodar de novo não muda nada.
+  Coberta por `node --test tests/captura-nubank.test.js tests/tasker-atalho.test.js`.
+- `migrations/43-vinculos-pagamento.sql` cria `public.fin_vinculo` (trecho de quem recebe ou paga no Pix/boleto → conta prevista em `fin`, por nome sem parcela e categoria; uma pessoa pode ter várias contas), usada pela Edge Function `captura-nubank` pra marcar como paga a conta certa (ver "Contas previstas pelo celular").
+  RLS só do dono pelo app e histórico em `fin_historico`; não altera nenhuma linha de `fin` e rodar de novo não muda nada.
   Coberta por `node --test tests/captura-nubank.test.js tests/tasker-atalho.test.js`.
 ## Testes
 
