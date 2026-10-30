@@ -218,8 +218,8 @@ test('aberto pela página inicial num dia anterior (?dia=): o dia dele, só leit
   await pg.evaluate(() => mudarDia(x => { x.xixis.push('12:00'); }));                   // nem por baixo grava
   assert.equal(await texto(pg, '#x-total'), '2');
   await pg.click('#dia-visto a');                                                       // Hoje: o app normal
-  await pg.waitForSelector('#dia-visto', { state: 'hidden' });
-  assert.equal(await pg.inputValue('#c-data'), '2026-10-22');
+  await pg.waitForFunction(() => !location.search && document.getElementById('c-data').value === '2026-10-22');   // a página nova já aberta
+  assert.equal(await pg.isVisible('#dia-visto'), false);
   assert.equal(await pg.isDisabled('#x-mais'), false);
   assert.deepEqual(erros, []); await ctx.close();
 });
