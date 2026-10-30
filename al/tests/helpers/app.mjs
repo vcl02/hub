@@ -83,14 +83,14 @@ export const comTreino = nuvem => {
 };
 
 // Fontes do Google são bloqueadas para o teste não depender de internet. Relógio fixo no meio da tarde do DIA.
-export async function abrirApp({ nuvem = novaNuvem(), conta, relogio = new Date('2026-09-18T15:30:00-03:00') } = {}) {
+export async function abrirApp({ busca = '', nuvem = novaNuvem(), conta, relogio = new Date('2026-09-18T15:30:00-03:00') } = {}) {
   const ctx = await app.navegador.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, timezoneId: 'America/Sao_Paulo', serviceWorkers: 'block' });
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   await fakeSupabase(ctx, nuvem, conta);
   const pg = await ctx.newPage(), erros = [];
   pg.on('pageerror', e => erros.push(e.message));
   await pg.clock.install({ time: relogio });
-  await pg.goto(app.url);
+  await pg.goto(app.url + busca);   // busca: ?dia=… (aberto pela página inicial num dia anterior)
   await pg.fill('#l-usuario', 'eu@teste.com'); await pg.fill('#l-senha', 'senha123'); await pg.press('#l-senha', 'Enter');
   if (!conta) await pg.waitForSelector('#v-dia:not([hidden])');
   return { ctx, pg, erros, nuvem };

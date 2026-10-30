@@ -70,6 +70,14 @@ function aplicarCicloDaUrl() {
         if ([...el('compDe').options].some(opcao => opcao.value === '-1')) el('compDe').value = -1;
         return;
     }
+    // ?dia=AAAA-MM-DD (a página inicial, com a Besteira de um dia anterior), sem ?ciclo: o ciclo daquele dia, com o Fin normal
+    // (editável como sempre). Vale uma vez: a URL passa a ter o ?ciclo dele (sincronizarCicloNaUrl tira o ?dia).
+    const dia = new URLSearchParams(window.location.search).get('dia');
+    if (!chave && /^\d{4}-\d{2}-\d{2}$/.test(dia || '')) {
+        const doDia = periodoDoDebito(dia);
+        if (doDia >= 0 && [...el('compDe').options].some(opcao => +opcao.value === doDia)) { el('compDe').value = doDia; el('compAte').value = doDia; }
+        return;
+    }
     if (!/^\d{4}-\d{2}$/.test(chave || '')) return;
 
     const idx = Estado.ciclos.findIndex((_, i) => chaveCicloNaUrl(i) === chave);
@@ -93,6 +101,7 @@ function sincronizarCicloNaUrl() {
     _ultimaChaveCicloUrl = chave;
 
     const url = new URL(window.location.href);
+    url.searchParams.delete('dia');   // ?dia só escolhe o ciclo ao abrir
     if (chave) url.searchParams.set('ciclo', chave);
     else url.searchParams.delete('ciclo');
     const destino = url.pathname + url.search + url.hash;

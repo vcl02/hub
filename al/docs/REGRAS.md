@@ -5,6 +5,7 @@
 - Só a conta do Victor (a mesma do hub e do Treino). Dentro do hub, sem sessão vai para o login do hub (`../?volta=al/`) e volta depois de entrar. A tela de login própria (usuário e senha) só aparece com o app servido fora do hub (testes). Outra conta: "Esta conta não tem acesso." Sem botão de sair (Sair fica no hub).
 - Abre na hora com a cópia do aparelho, inclusive sem internet; depois envia o que estava pendente e traz a nuvem e o Treino.
 - **Rede ruim (metrô):** cada pedido ao Supabase tem limite de 15 s (a IA, 40 s); estourou, conta como sem internet (fica salvo no aparelho e envia na próxima tentativa), e o envio nunca fica preso. Envio que chegou à nuvem mas cuja resposta se perdeu não é somado de novo na tentativa seguinte (o mesmo trecho de caminhada não entra duas vezes; comida vai por id e repetir não duplica).
+- **Aberto pela página inicial num dia anterior** (`?dia=AAAA-MM-DD`): abre naquele dia, que já é só leitura como todo dia passado; › leva até hoje, que volta a aceitar mudanças. Hoje, futuro ou texto inválido em `?dia`: hoje.
 
 ## Gasto do dia
 

@@ -340,6 +340,22 @@ test('app novo começa hoje: sem dia anterior para ver e só hoje nos últimos 7
   await ctx.close();
 });
 
+test('aberto pela página inicial num dia anterior (?dia=): abre nele, só leitura; › volta para hoje', async () => {
+  const nuvem = comTreino(novaNuvem());
+  nuvem.tabelas.al_registro.push({ user_id: 'x', id: 'r1', data: '2026-09-17', hora: '20:00', item_id: null, nome: 'Pizza', porcao: '4 fatias', qtd: '1', kcal: '1100', prot: '44', carb: '120', gord: '48' });
+  const { ctx, pg, erros } = await abrirApp({ nuvem, busca: '?dia=2026-09-17' });
+  assert.equal(await texto(pg, '#d-nome'), 'Ontem');
+  assert.equal(await pg.isDisabled('#f-texto'), true);
+  assert.equal(await pg.isDisabled('#c-mais'), true);
+  await pg.click('#d-prox');
+  assert.equal(await texto(pg, '#d-nome'), 'Hoje');
+  assert.equal(await pg.isDisabled('#f-texto'), false);
+  assert.deepEqual(erros, []); await ctx.close();
+  const hojeMesmo = await abrirApp({ nuvem: comTreino(novaNuvem()), busca: '?dia=2026-09-18' });   // hoje (ou futuro): o app normal
+  assert.equal(await texto(hojeMesmo.pg, '#d-nome'), 'Hoje');
+  await hojeMesmo.ctx.close();
+});
+
 test('dias anteriores: ‹ e os últimos 7 dias mostram o dia, com saldo e média dos dias com comida; dia passado é só leitura', async () => {
   const nuvem = comTreino(novaNuvem());
   nuvem.tabelas.al_registro.push({ user_id: 'x', id: 'r1', data: '2026-09-17', hora: '20:00', item_id: null, nome: 'Pizza', porcao: '4 fatias', qtd: '1', kcal: '1100', prot: '44', carb: '120', gord: '48' });

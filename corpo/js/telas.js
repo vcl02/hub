@@ -23,6 +23,15 @@ const recentes = () => [...db.medidas].reverse();   // mais recente primeiro
 const horaHabitual = () => recentes().find(m => m.peso && m.hora)?.hora || '';
 let editando = null;
 
+// Aberto pela página inicial num dia anterior (?dia=): o formulário e o cartão do dia ficam naquele dia, e nada grava (mudar não
+// faz nada; campos e botões desativados, inclusive editar e apagar no histórico)
+const DIA = diaDaUrl();
+function travarSeDia() {
+  $('dia-visto').hidden = !DIA;
+  if (!DIA) return;
+  $('dia-nome').textContent = deIso(DIA).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  for (const el of document.querySelectorAll('#c-form input, #c-form button, #ev-cartao input, #ev-cartao button, #c-historico button')) el.disabled = true;
+}
 function desenhar() {
   const L = recentes(), P = L.filter(m => m.peso), C = L.filter(m => m.cintura), u = P[0], prim = P[P.length - 1];
   // Card do peso atual: número grande, IMC, faixa, quanto falta, variação desde a 1ª pesagem e barriga
@@ -51,6 +60,8 @@ function desenhar() {
   grafico($('c-grafico'), janela(P).map(x => ({ data: x.data, hora: x.hora, valor: x.peso })), 'kg', 'Evolução do peso');
   grafico($('c-grafico-cint'), janela(C).map(x => ({ data: x.data, hora: x.hora, valor: x.cintura })), 'cm', 'Evolução da barriga');
   pintarHistorico();
+  if (DIA) $('c-hora').value = m?.hora || '';
+  travarSeDia();
 }
 
 // O dia do formulário: sono (dormi e acordei, as horas e BOM, OK ou RUIM) e evacuações (quantas e os horários) e há quanto tempo foi a última evacuação.
@@ -149,7 +160,7 @@ function lerValores(peso, cintura) {
 const pesoLancado = (antes, v) => !v.peso ? {} : antes?.peso ? (antes.pesoEm ? { pesoEm: antes.pesoEm } : {}) : { pesoEm: new Date().toISOString() };
 
 // ===== Interações =====
-function mudar(acao) { acao(); gravar(); desenhar(); }
+function mudar(acao) { if (DIA) return; acao(); gravar(); desenhar(); }
 
 $('c-hora').addEventListener('input', avisoHorario);
 // +1: evacuação com o horário de agora (o do celular, fuso de São Paulo); tocar num horário (duas vezes) tira

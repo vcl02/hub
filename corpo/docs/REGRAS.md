@@ -5,6 +5,7 @@
 - Só a conta do Victor. Dentro do hub, sem sessão vai para o login do hub (`../?volta=corpo/`) e volta depois de entrar; login próprio só fora do hub (testes). Outra conta: "Esta conta não tem acesso." Sem botão de sair.
 - Abre na hora com a cópia do aparelho, inclusive sem internet; depois envia o que estava pendente e traz a nuvem.
 - **Rede ruim (metrô):** cada pedido ao Supabase tem limite de 15 s; estourou, conta como sem internet (fica salvo no aparelho e envia na próxima tentativa), e o envio nunca fica preso. Envio que chegou à nuvem mas cuja resposta se perdeu não é somado de novo na tentativa seguinte (a mesma evacuação ou o mesmo xixi não entra duas vezes).
+- **Aberto pela página inicial num dia anterior** (`?dia=AAAA-MM-DD`): o formulário e o cartão do dia (sono, evacuações e xixis) ficam naquele dia, com o que foi lançado nele, e nada grava: campos e botões desativados, inclusive editar e apagar no histórico. Em cima, o dia e **Hoje**, que volta ao app normal. Hoje, futuro ou texto inválido em `?dia`: o app normal.
 
 ## Perfil (só em código, `perfil.js`)
 

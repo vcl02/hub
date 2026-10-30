@@ -110,6 +110,22 @@ test('dois aparelhos no mesmo dia: o envio mescla com a nuvem (nada do outro apa
   assert.deepEqual(erros, []); await ctx.close();
 });
 
+test('aberto pela página inicial num dia anterior (?dia=): aquele dia, só leitura; Hoje volta ao app normal', async () => {
+  const nuvem = novaNuvem();
+  nuvem.tabelas.agua_dia.push({ user_id: DONO, data: '2026-10-18', aguas: [{ hora: '10:00', ml: 300 }, { hora: '12:27', ml: 132, bebida: 'suco', volume: 150 }] });
+  const { ctx, pg, erros } = await abrirApp({ nuvem, busca: '?dia=2026-10-18' });
+  await pg.waitForFunction(() => document.getElementById('t-ml').textContent === '432');
+  assert.match(await texto(pg, '#dia-visto'), /^domingo, 18 de outubro · só leitura Hoje$/);
+  for (const id of ['#lembretes', '#b-tipos', '#b-form', '#b-botoes']) assert.equal(await pg.isVisible(id), false, id);
+  assert.equal(await pg.locator('#b-lista [data-tirar-agua]').count(), 0);                // nada para tirar
+  assert.deepEqual(await pg.$$eval('#b-lista li', L => L.map(li => li.textContent)), ['10:00 · 300 ml', '12:27 · suco 150 ml (132 ml de água · 60 kcal)']);
+  await pg.click('#dia-visto a');                                                          // Hoje: o app normal
+  await pg.waitForSelector('#b-form:not([hidden])');
+  assert.equal(await texto(pg, '#t-ml'), '0');
+  assert.equal(await pg.isVisible('#dia-visto'), false);
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
 test('toque duplo sem querer num botão de ml bebe uma vez só; tocar de novo depois bebe de novo', async () => {
   const { ctx, pg, erros } = await abrirApp();
   await beber(pg, 300);

@@ -355,6 +355,23 @@ test('ver o resumo de um treino antigo', async () => {
   assert.deepEqual(erros, []); await ctx.close();
 });
 
+test('aberto pela página inicial num dia anterior (?dia=): resumo daquele dia, sem Editar; hoje continua normal', async () => {
+  const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-22T19:00:00') });
+  await pg.evaluate(() => {
+    db.treinos.push({ inicio: new Date('2026-10-21T17:43').getTime(), fim: new Date('2026-10-21T18:37').getTime(), fechado: true, cardio: { inicio: new Date('2026-10-21T18:40').getTime(), ms: 600000, vel: 6, incl: 0 } });
+    gravar();
+  });
+  await pg.goto(pg.url() + '?dia=2026-10-21');                                                // o hábito Treino num dia anterior
+  await pg.waitForSelector('#v-fim:not([hidden])');
+  assert.match(await pg.textContent('#f-data'), /21 de outubro/);
+  assert.match(await pg.textContent('#f-tiles'), /54 min/);
+  assert.equal(await pg.locator('#f-treino [data-editar-treino]').count(), 0);                // só leitura: sem Editar
+  assert.equal(await pg.locator('#f-cardio [data-apagar-cardio]').count(), 0);                // nem apagar o cardio
+  await pg.click('#f-prox');                                                                  // › depois do último: a lista de hoje
+  await pg.waitForSelector('#v-inicio:not([hidden])');
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
 test('parabéns em tela cheia ao finalizar, com as conquistas ganhas no treino', async () => {
   const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-21T19:00:00') });   // quarta: sem o bônus de dia extra (segunda)
   await pg.tap('.slot >> nth=0'); await pg.fill('#e-carga', '40'); await pg.dispatchEvent('#e-carga', 'input');

@@ -1,12 +1,17 @@
 'use strict';
 // Tela de hoje: total e meta, lembretes, beber (bebida, campo de ml e botões das quantidades já usadas) e 7 dias.
 let bebida = 'agua';   // a bebida do próximo lançamento; volta para água depois de cada outra bebida
+// Aberto pela página inicial num dia anterior (?dia=): a tela é daquele dia, só leitura (sem lembretes, beber nem tirar)
+const DIA = diaDaUrl();
 const nomeBebida = a => BEBIDAS[a.bebida]?.nome.toLowerCase() || '';
 // "10:00 · 300 ml" ou "10:00 · suco 300 ml (264 ml de água · 120 kcal)": as kcal entram no Alimentação
 const textoAgua = a => a.bebida ? `${a.hora} · ${nomeBebida(a)} ${inteiro(a.volume)} ml (${inteiro(a.ml)} ml de água · ${inteiro(nutrientesBebida(a).kcal)} kcal)` : `${a.hora} · ${inteiro(a.ml)} ml`;
 
 function desenhar() {
-  const dia = hoje(), x = doDia(dia), total = totalMl(dia);
+  const dia = DIA || hoje(), x = doDia(dia), total = totalMl(dia);
+  $('dia-visto').hidden = !DIA;
+  if (DIA) $('dia-nome').textContent = deIso(DIA).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  for (const id of ['lembretes', 'b-tipos', 'b-form', 'b-botoes']) $(id).hidden = !!DIA;
   // Total e meta
   $('t-ml').textContent = inteiro(total);
   $('t-meta').textContent = `/ ${inteiro(META_ML)} ml`;
@@ -21,7 +26,8 @@ function desenhar() {
   // Beber: botões das quantidades já usadas e a lista de hoje
   $('b-botoes').innerHTML = botoesMl().map(ml => `<li><button type="button" class="ml-bt" data-ml="${ml}">${inteiro(ml)} ml</button></li>`).join('');
   $('b-tipos').querySelectorAll('[data-bebida]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.bebida === bebida)));
-  $('b-lista').innerHTML = x.aguas.map((a, i) => `<li><button type="button" class="${a.bebida ? 'outra' : ''}" data-tirar-agua="${i}" title="Tirar (toque duplo)" aria-label="Tirar ${textoAgua(a)}">${textoAgua(a)} ×</button></li>`).join('');
+  $('b-lista').innerHTML = DIA ? x.aguas.map(a => `<li><span class="${a.bebida ? 'outra' : ''}">${textoAgua(a)}</span></li>`).join('')
+    : x.aguas.map((a, i) => `<li><button type="button" class="${a.bebida ? 'outra' : ''}" data-tirar-agua="${i}" title="Tirar (toque duplo)" aria-label="Tirar ${textoAgua(a)}">${textoAgua(a)} ×</button></li>`).join('');
   pintarSemana();
 }
 
@@ -41,6 +47,7 @@ function mudarHoje(acao) {
 }
 // Bebe ml da bebida escolhida: água conta inteira; as outras, só a parte que é água (e ficam marcadas na lista)
 function beber(ml) {
+  if (DIA) return;
   if (!(ml > 0 && ml <= ML_MAX)) { toast(`De 1 a ${inteiro(ML_MAX)} ml`, true); return; }
   if (repetido('beber ' + bebida + ' ' + ml)) return;
   const hora = agoraHHMM(), a = bebida === 'agua' ? { hora, ml } : { hora, ml: Math.round(ml * BEBIDAS[bebida].agua), bebida, volume: ml };
@@ -62,7 +69,7 @@ $('b-form').addEventListener('submit', ev => {
 $('b-botoes').addEventListener('click', ev => { const b = ev.target.closest('[data-ml]'); if (b) beber(+b.dataset.ml); });
 $('b-lista').addEventListener('click', ev => {
   const b = ev.target.closest('[data-tirar-agua]');
-  if (b && confirmar(b)) mudarHoje(x => { x.aguas.splice(+b.dataset.tirarAgua, 1); });
+  if (b && !DIA && confirmar(b)) mudarHoje(x => { x.aguas.splice(+b.dataset.tirarAgua, 1); });
 });
 // O app aberto acompanha o relógio: o lembrete da vez aparece sozinho (e o dia vira à meia-noite)
 setInterval(() => { if (db && !$('v-agua').hidden) desenhar(); }, 60000);

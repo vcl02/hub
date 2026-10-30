@@ -60,7 +60,7 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 .tipos{display:flex;flex-wrap:wrap;gap:6px}
 .tipo{flex:1 1 auto;border:1px solid var(--line);border-radius:999px;background:transparent;padding:8px 10px;font-weight:600;color:var(--muted)}
 .tipo[aria-pressed="true"]{border-color:var(--cyan);background:var(--cyan-soft);color:var(--cyan)}
-.eventos button.outra{border-style:dashed}   /* outra bebida: só a parte que é água conta */
+.eventos button.outra,.eventos span.outra{border-style:dashed}   /* outra bebida: só a parte que é água conta */
 .beber{display:flex;gap:8px}
 .beber input{flex:1;min-width:0;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font-family:var(--display);font-weight:700;font-size:1.3rem}
 .beber input:focus{outline:none;border-color:var(--cyan)}
@@ -70,7 +70,7 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 .ml-bt{border:1px solid var(--cyan);border-radius:12px;background:var(--cyan-soft);color:var(--cyan);padding:10px 14px;font-weight:700;font-size:1rem;min-width:84px}
 .eventos{display:flex;flex-wrap:wrap;gap:6px}
 .eventos:empty{display:none}
-.eventos button{border:1px solid var(--line);border-radius:999px;background:transparent;padding:4px 10px;font-size:.875rem;font-variant-numeric:tabular-nums}
+.eventos button,.eventos span{border:1px solid var(--line);border-radius:999px;background:transparent;padding:4px 10px;font-size:.875rem;font-variant-numeric:tabular-nums}
 .eventos button.armado{border-color:var(--red);background:var(--red);color:var(--bg)}
 
 .chip-bt{min-width:64px;border:1px solid var(--cyan);border-radius:999px;background:var(--cyan-soft);padding:8px 14px;color:var(--cyan);font-weight:700}
@@ -81,6 +81,9 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 .sem-lista .ok{color:var(--green);font-weight:600}
 
 /* ---------- Avisos ---------- */
+.so-leitura{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:.9rem;margin:0}
+.so-leitura span{display:inline-block}
+.so-leitura span::first-letter{text-transform:uppercase}
 .sync{font-size:.8rem;color:var(--muted);text-align:center;margin-top:12px}
 .sync.erro{color:var(--red)}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:calc(100% - 32px);background:#30353A;border:1px solid var(--line);border-radius:12px;padding:10px 16px;box-shadow:0 10px 30px rgba(0,0,0,.4);font-size:.9rem;z-index:10}

@@ -119,6 +119,9 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 .bt-ic.perigo.armado{background:var(--red);border-color:var(--red);color:var(--bg)}
 
 /* ---------- Avisos ---------- */
+.so-leitura{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:.9rem;margin:0}
+.so-leitura span{display:inline-block}
+.so-leitura span::first-letter{text-transform:uppercase}
 .sync{font-size:.8rem;color:var(--muted);text-align:center;margin-top:12px}
 .sync.erro{color:var(--red)}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:calc(100% - 32px);background:#30353A;border:1px solid var(--line);border-radius:12px;padding:10px 16px;box-shadow:0 10px 30px rgba(0,0,0,.4);font-size:.9rem;z-index:10}

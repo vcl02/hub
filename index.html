@@ -36,7 +36,13 @@
 <main class="hub" id="v-apps" hidden>
   <header class="topo">
     <div>
-      <p class="hoje" id="h-data"></p>
+      <!-- O dia visto (hoje ou um anterior): ‹ › e arrastar de lado trocam o dia; Hoje volta. hub.js preenche. -->
+      <div class="dia-nav">
+        <button type="button" class="dia-seta" id="h-anterior" title="Dia anterior" aria-label="Dia anterior"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <p class="hoje" id="h-data"></p>
+        <button type="button" class="dia-seta" id="h-proximo" title="Dia seguinte" aria-label="Dia seguinte" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+        <button type="button" class="dia-hoje" id="h-hoje" hidden>Hoje</button>
+      </div>
       <h1><span>hub</span></h1>
     </div>
     <!-- Sair: encerra a sessão neste aparelho (vale para todos os apps); toque duplo. -->

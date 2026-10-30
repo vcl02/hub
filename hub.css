@@ -144,6 +144,54 @@ h1 span {
   text-transform: uppercase;
 }
 
+/* Dia anterior: ‹ › e Hoje ao lado da data; num dia passado a data fica em roxo. */
+.dia-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+}
+
+.dia-nav .hoje {
+  margin: 0;
+}
+
+.dia-seta,
+.dia-hoje {
+  display: grid;
+  place-items: center;
+  flex: none;
+  height: 26px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: .8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dia-seta {
+  width: 26px;
+}
+
+.dia-hoje {
+  padding: 0 10px;
+  border-color: var(--purple);
+  color: var(--purple);
+}
+
+.dia-seta:disabled {
+  opacity: .3;
+  cursor: default;
+}
+
+.passado .hoje {
+  color: var(--purple);
+}
+
 .perfeito,
 .habito {
   border: 1px solid rgba(255, 255, 255, .08);

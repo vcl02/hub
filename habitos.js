@@ -132,7 +132,8 @@ const milhar = n => Math.round(n).toLocaleString('pt-BR');
 const decimal = n => (Math.round(n * 10) / 10).toLocaleString('pt-BR');
 const horasTxt = h => { const m = Math.round(h * 60); return `${Math.floor(m / 60)} h${m % 60 ? ' ' + pad2(m % 60) : ''}`; };   // 7,5 → "7 h 30"
 const pad2 = n => String(n).padStart(2, '0');
-function resumoDeHoje(D, hoje) {
+// passado: um dia que já fechou (a tela inicial voltando para dias anteriores): o texto diz o que aconteceu, não o que fazer
+function resumoDeHoje(D, hoje, passado = false) {
   const wd = semanaDoDia(hoje);
   const proximo = [1, 2, 3, 4, 5, 6, 7].map(n => (wd + n) % 7).find(x => ROTINA.treino.includes(x));
   const treinou = D.treinos.some(t => diaDoInstante(t.inicio) === hoje);
@@ -141,6 +142,17 @@ function resumoDeHoje(D, hoje) {
   const presencial = ROTINA.presencial.includes(wd), gastou = D.besteiras?.[hoje] || 0;
   const proximoPresencial = [1, 2, 3, 4, 5, 6, 7].map(n => (wd + n) % 7).find(x => ROTINA.presencial.includes(x));
   const reais = v => 'R$\u00a0' + v.toLocaleString('pt-BR', { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 });
+  if (passado) return {
+    treino: { valor: treinou ? 'Treinou' : ROTINA.treino.includes(wd) ? 'Não treinou' : 'Folga', ...(!treinou && ROTINA.treino.includes(wd) && { acima: true }) },
+    deficit: !c.comidas.length ? { valor: 'Nada lançado', acima: true } : resta == null ? { valor: 'Sem pesagem' } : resta >= 0
+      ? { valor: `${milhar(resta)} kcal abaixo da meta`, progresso: c.meta ? c.comido / c.meta : 0 }
+      : { valor: `${milhar(-resta)} kcal acima`, progresso: 1, acima: true },
+    peso: { valor: m ? `${decimal(m.peso)} kg` : 'Sem pesagem' },
+    sono: { valor: s && s.sono != null ? horasTxt(s.sono) : SONO_FOLGA.includes(wd) ? 'Folga' : 'Sem sono', ...(s && s.sono != null && s.sono < SONO_MIN_H && { acima: true }) },
+    agua: { valor: `${milhar(ml)} / ${milhar(META_AGUA_ML)} ml`, progresso: Math.min(1, ml / META_AGUA_ML) },
+    besteira: !presencial ? { valor: 'Folga' }
+      : { valor: `${reais(gastou)} / ${reais(LIMITE_BESTEIRA_DIA)}`, progresso: Math.min(1, gastou / LIMITE_BESTEIRA_DIA), ...(gastou > LIMITE_BESTEIRA_DIA && { acima: true }) }
+  };
   return {
     treino: { valor: treinou ? 'Treinou' : ROTINA.treino.includes(wd) ? 'Dia de treino' : `Próximo: ${NOMES_SEMANA[proximo]}` },
     deficit: resta == null ? { valor: 'Sem pesagem' } : resta >= 0
@@ -152,4 +164,21 @@ function resumoDeHoje(D, hoje) {
     besteira: !presencial ? { valor: `Próximo: ${NOMES_SEMANA[proximoPresencial]}` }
       : { valor: `${reais(gastou)} / ${reais(LIMITE_BESTEIRA_DIA)}`, progresso: Math.min(1, gastou / LIMITE_BESTEIRA_DIA), ...(gastou > LIMITE_BESTEIRA_DIA && { acima: true }) }
   };
+}
+
+// Como estava no fim de um dia já passado (a tela inicial voltando para dias anteriores), pelos mesmos estados de
+// calcularHabitos(D, hoje): a ofensiva de cada hábito e os dias perfeitos seguidos até aquele dia, contados para trás.
+function ateODia(R, dia) {
+  const ofensiva = id => {
+    let n = 0;
+    for (let d = dia; R.habitos[id].dias[d] != null; d = diaMais(d, -1)) {
+      const e = R.habitos[id].dias[d];
+      if (e === 'feito') n++;
+      else if (e === 'falhou' || e === 'antes') break;
+    }
+    return n;
+  };
+  let perfeitos = 0;
+  for (let d = dia; R.perfeito[d]; d = diaMais(d, -1)) perfeitos++;
+  return { ofensiva: Object.fromEntries(HABITOS.map(h => [h.id, ofensiva(h.id)])), perfeitos };
 }

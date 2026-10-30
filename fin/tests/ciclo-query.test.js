@@ -48,6 +48,26 @@ test('URL restaura somente um ciclo único pelo mês de início', () => {
     assert.equal(elementos.compAte.value, 1);
 });
 
+test('?dia= (Besteira de um dia anterior, na página inicial) abre no ciclo daquele dia, e a URL fica só com o ?ciclo', () => {
+    const { contexto, elementos, chamadas } = criarContexto('https://exemplo.test/?dia=2026-10-02');
+    contexto.periodoDoDebito = dia => (dia >= '2026-10-08' ? 1 : dia >= '2026-09-08' ? 0 : -1);   // 2/10 ainda é do ciclo de setembro
+    contexto.regras.aplicarCicloDaUrl();
+    assert.deepEqual([elementos.compDe.value, elementos.compAte.value], [0, 0]);
+    elementos.compDe.value = elementos.compAte.value = '0';   // o select do navegador guarda texto
+    contexto.regras.sincronizarCicloNaUrl();
+    assert.equal(chamadas[0][2], '/?ciclo=2026-09');
+    // ?ciclo vence o ?dia; dia sem ciclo (antes do primeiro) mantém o padrão
+    const comCiclo = criarContexto('https://exemplo.test/?ciclo=2026-10&dia=2026-10-02');
+    comCiclo.contexto.periodoDoDebito = () => 0;
+    comCiclo.contexto.regras.aplicarCicloDaUrl();
+    assert.equal(comCiclo.elementos.compDe.value, 1);
+    const antes = criarContexto('https://exemplo.test/?dia=2020-01-01');
+    antes.contexto.periodoDoDebito = () => -1;
+    antes.contexto.regras.aplicarCicloDaUrl();
+    assert.equal(antes.elementos.compDe.value, '');
+    assert.match(regrasMd, /`\?dia=AAAA-MM-DD`/);
+});
+
 test('URL inclui ciclo para De igual a Até e remove ao comparar', () => {
     const unico = criarContexto('https://exemplo.test/', { compDe: '0', compAte: '0' });
     unico.contexto.regras.sincronizarCicloNaUrl();

@@ -11,7 +11,7 @@ const RAIZ = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ler = arquivo => readFileSync(path.join(RAIZ, arquivo), 'utf8');
 const ctx = vm.createContext({});
 for (const f of ['corpo/perfil.js', 'al/gasto.js', 'habitos.js']) vm.runInContext(ler(f), ctx, { filename: f });
-const H = vm.runInContext('({ calcularHabitos, resumoDeHoje, estadoNoDia, HABITOS, META_AGUA_ML, PROTECOES_MAX, LANCADO_NO_DIA_DESDE, LIMITE_BESTEIRA_DIA, gastoNoDia, metaKcal })', ctx);
+const H = vm.runInContext('({ calcularHabitos, resumoDeHoje, ateODia, estadoNoDia, HABITOS, META_AGUA_ML, PROTECOES_MAX, LANCADO_NO_DIA_DESDE, LIMITE_BESTEIRA_DIA, gastoNoDia, metaKcal })', ctx);
 const json = x => JSON.parse(JSON.stringify(x));
 
 // Instante local (o hub usa o relógio do celular): dia AAAA-MM-DD e hora
@@ -209,4 +209,20 @@ test('resumo de hoje: valor curto de cada hábito e o progresso das metas', () =
   assert.deepEqual([r.deficit.valor, r.deficit.acima], ['1.250 kcal acima', true]);
   assert.equal(json(H.resumoDeHoje(D, '2026-11-02')).treino.valor, 'Próximo: qua');
   assert.equal(json(H.resumoDeHoje(vazio(), HOJE)).deficit.valor, 'Sem pesagem');
+});
+
+test('dia passado: o texto diz o que aconteceu, e a ofensiva e os dias perfeitos são os do fim daquele dia', () => {
+  // água feita de 1 a 3/11, falhou em 4/11 (sem proteção), feita hoje (5/11)
+  const D = { ...vazio(), aguas: { '2026-11-01': 1000, '2026-11-02': 1000, '2026-11-03': 1000, '2026-11-05': 1000 } };
+  const R = H.calcularHabitos(D, HOJE);
+  assert.equal(R.habitos.agua.ofensiva, 1);                                   // hoje: quebrou em 4/11
+  assert.equal(H.ateODia(R, '2026-11-03').ofensiva.agua, 3);                  // no fim de 3/11 eram 3
+  assert.equal(H.ateODia(R, '2026-11-04').ofensiva.agua, 0);
+  assert.equal(H.ateODia(R, '2026-11-03').perfeitos, 0);                      // os outros hábitos não foram feitos
+  const r = json(H.resumoDeHoje(D, '2026-11-04', true));                      // quarta passada
+  assert.deepEqual([r.treino.valor, r.treino.acima], ['Não treinou', true]);
+  assert.deepEqual([r.peso.valor, r.sono.valor, r.deficit.valor, r.agua.valor], ['Sem pesagem', 'Folga', 'Nada lançado', '0 / 1.000 ml']);
+  assert.equal(json(H.resumoDeHoje(D, '2026-11-03', true)).besteira.valor, 'Folga');   // terça: sem besteira
+  assert.equal(json(H.resumoDeHoje(D, '2026-11-03', true)).treino.valor, 'Folga');
+  assert.equal(json(H.resumoDeHoje(D, '2026-11-04')).treino.valor, 'Dia de treino');  // como hoje, o texto de antes
 });

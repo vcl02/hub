@@ -50,6 +50,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Trocar de ciclo único ou entrar/sair do Backlog empurra uma entrada no histórico do navegador, então Voltar/Avançar navegam entre os ciclos já visitados nesta sessão sem precisar reabrir o Supabase; qualquer outro redesenho que não muda o ciclo (filtro, seleção de linha, edição inline…) continua só substituindo a entrada atual, sem acumular histórico.
   Um `ciclo=backlog` não imposto quando a opção não existe no combo De mantém o ciclo padrão seguro, igual a um `AAAA-MM` sem ciclo correspondente.
   Comparação entre ciclos e filtros não entram na URL.
+- `?dia=AAAA-MM-DD` (a página inicial, com a Besteira de um dia anterior) abre o Fin no ciclo que contém aquele dia, normal e editável (não há modo só leitura); `?ciclo` vence o `?dia`, e depois de abrir a URL fica só com o `?ciclo`.
 - Em Comparar, a escolha entre **Todas** e **Diferentes** é um ícone (sinal de diferente, ≠) no início do bloco de botões do cabeçalho, antes do Gráfico: cada clique alterna entre as duas, e ligado (só Diferentes) ele fica verde.
   Ele fica sempre visível, mas só funciona com exatamente dois ciclos: fora da comparação (um ciclo só ou Backlog) ou com três ou mais ciclos fica desativado (esmaecido), porque Diferentes só existe entre dois.
   O antigo seletor "Linhas" saiu da tela.

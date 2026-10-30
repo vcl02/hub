@@ -53,6 +53,8 @@ setInterval(pintarTempo, 15000);
 
 // ===== Resumo do treino: no fim do treino de hoje ou ao tocar num dia antigo =====
 let diaVisto = null;   // null = treino que acabou de terminar
+// Aberto pela página inicial num dia anterior (?dia=): começa no resumo daquele dia, e os dias antigos ficam só leitura (sem Editar)
+const SO_LEITURA = diaDaUrl();
 let parabensPendente = false;   // só ao finalizar: voltar ao resumo (do cardio, por exemplo) não mostra os parabéns de novo
 telas.fim = () => {
   const { dia, r, t } = pintarResumo();
@@ -105,7 +107,8 @@ arrastarLado($('v-fim'), irParaDia);
 // Linha do horário no resumo, com Editar (horário ou excluir o treino do dia)
 function pintarLinhaTreino(t) {
   $('f-treino').hidden = !t;
-  if (t) $('f-treino').innerHTML = `<li><i class="h-d">${dataCurta(iso(new Date(t.inicio)))}</i><span class="h-d">${hhmm(t.inicio)}–${hhmm(t.fim)}${kcal(t) ? ` · ~${kcal(t)} kcal` : ''}</span><span class="ed-acoes"><span class="h-v">${duracao(t.fim - t.inicio)}</span><button type="button" class="del" data-editar-treino="${t.inicio}">Editar</button></span></li>`;
+  const editar = !(SO_LEITURA && diaVisto) ? `<button type="button" class="del" data-editar-treino="${t.inicio}">Editar</button>` : '';
+  if (t) $('f-treino').innerHTML = `<li><i class="h-d">${dataCurta(iso(new Date(t.inicio)))}</i><span class="h-d">${hhmm(t.inicio)}–${hhmm(t.fim)}${kcal(t) ? ` · ~${kcal(t)} kcal` : ''}</span><span class="ed-acoes"><span class="h-v">${duracao(t.fim - t.inicio)}</span>${editar}</span></li>`;
 }
 // Tela cheia de parabéns ao finalizar o treino de hoje, com as conquistas e o nível ganhos no dia; "Ver resumo" fecha
 function parabens(dia, r, t) {

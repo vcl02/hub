@@ -10,6 +10,8 @@ const pad = n => String(n).padStart(2, '0');
 const iso = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 const deIso = d => { const [a, m, dia] = d.split('-').map(Number); return new Date(a, m - 1, dia); };
 const hoje = () => iso(new Date());
+// ?dia=AAAA-MM-DD: a página inicial abriu o app num dia anterior, só leitura (hoje, futuro ou inválido: o app normal)
+const diaDaUrl = () => { const d = new URLSearchParams(location.search).get('dia'); return d && /^\d{4}-\d{2}-\d{2}$/.test(d) && d < hoje() ? d : null; };
 const somaDias = (d, n) => { const x = deIso(d); x.setDate(x.getDate() + n); return iso(x); };
 const dataOk = d => /^\d{4}-\d{2}-\d{2}$/.test(d);
 const agoraHHMM = () => { const d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };

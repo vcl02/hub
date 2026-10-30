@@ -39,7 +39,7 @@ function mostrar(logado, erro = '') {
 // Só aceita a pasta de um dos apps da página (nunca outro site nem caminho fora dela).
 function destinoDaVolta() {
   const volta = new URLSearchParams(location.search).get('volta') || '';
-  const pastas = [...document.querySelectorAll('.app:not(.externo)')].map(a => a.getAttribute('href'));
+  const pastas = [...document.querySelectorAll('.app:not(.externo)')].map(a => a.dataset.pasta || a.getAttribute('href'));
   const daPasta = pastas.some(p => volta === p || volta.startsWith(p + '?') || volta.startsWith(p + '#'));
   return daPasta && !/\.\.|\/\/|\\/.test(volta) ? volta : null;
 }
@@ -131,38 +131,89 @@ async function atualizarHabitos() {
 // Estados de cada dia (feito, falhou, protegido, pendente, folga, antes) viram classes das barrinhas
 const LETRAS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 let diaDesenhado = '';
+// Dia visto: null = hoje. Arrastar para a direita volta um dia (até o 1º dia com registro), para a esquerda avança (até
+// hoje). Num dia passado tudo é do fim daquele dia, e cada hábito abre o app naquele dia (?dia=AAAA-MM-DD), só leitura;
+// o Fin (Besteira) abre no ciclo daquele dia, normal (o Fin não tem modo só leitura).
+let diaVisto = null;
 function desenhar() {
   if (!dados || $('v-apps').hidden) return;
-  const hoje = diaDoInstante(Date.now()), R = calcularHabitos(dados, hoje), H = resumoDeHoje(dados, hoje);
-  // A semana de hoje, de segunda a domingo (como no Treino): os dias que ainda não chegaram ficam vazios (.futuro)
-  const segunda = diaMais(hoje, -((semanaDoDia(hoje) + 6) % 7)), semana = [0, 1, 2, 3, 4, 5, 6].map(n => diaMais(segunda, n));
+  const hoje = diaDoInstante(Date.now()), R = calcularHabitos(dados, hoje);
+  const primeiro = Object.keys(R.perfeito)[0] || hoje;
+  if (diaVisto && (diaVisto >= hoje || diaVisto < primeiro)) diaVisto = diaVisto < primeiro && primeiro < hoje ? primeiro : null;
+  const dia = diaVisto || hoje, passado = dia < hoje, H = resumoDeHoje(dados, dia, passado), A = ateODia(R, dia);
+  // A semana do dia visto, de segunda a domingo (como no Treino): os dias que ainda não chegaram ficam vazios (.futuro)
+  const segunda = diaMais(dia, -((semanaDoDia(dia) + 6) % 7)), semana = [0, 1, 2, 3, 4, 5, 6].map(n => diaMais(segunda, n));
   diaDesenhado = hoje;
-  const [a, m, d] = hoje.split('-').map(Number);
-  $('h-data').textContent = new Date(a, m - 1, d).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-  $('h-perfeitos').textContent = R.perfeitos;
-  $('h-perfeitos').nextElementSibling.textContent = R.perfeitos === 1 ? 'dia perfeito' : 'dias perfeitos';
-  $('h-perfeitos').parentElement.classList.toggle('acesa', R.perfeitos > 0);
+  const [a, m, d] = dia.split('-').map(Number);
+  const data = new Date(a, m - 1, d).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  $('h-data').textContent = dia === diaMais(hoje, -1) ? 'ontem · ' + data : data;
+  $('v-apps').classList.toggle('passado', passado);
+  $('h-hoje').hidden = !passado;
+  $('h-anterior').disabled = dia <= primeiro;
+  $('h-proximo').disabled = !passado;
+  const perfeitos = passado ? A.perfeitos : R.perfeitos;
+  $('h-perfeitos').textContent = perfeitos;
+  $('h-perfeitos').nextElementSibling.textContent = perfeitos === 1 ? 'dia perfeito' : 'dias perfeitos';
+  $('h-perfeitos').parentElement.classList.toggle('acesa', perfeitos > 0);
   $('h-protecoes').querySelector('b').textContent = R.protecoes;
   $('h-protecoes').setAttribute('aria-label', `${R.protecoes} de ${PROTECOES_MAX} proteções`);
   $('h-protecoes').classList.toggle('apagada', !R.protecoes);
-  $('h-semana').innerHTML = semana.map(x => `<li class="${x > hoje ? 'futuro' : R.perfeito[x] ? 'sim' : ''}${x === hoje ? ' hoje' : ''}"><span>${LETRAS[semanaDoDia(x)]}</span><i></i></li>`).join('');
+  $('h-semana').innerHTML = semana.map(x => `<li class="${x > hoje ? 'futuro' : R.perfeito[x] ? 'sim' : ''}${x === dia ? ' hoje' : ''}"><span>${LETRAS[semanaDoDia(x)]}</span><i></i></li>`).join('');
   for (const el of document.querySelectorAll('[data-habito]')) {
-    const id = el.dataset.habito, h = R.habitos[id], r = H[id];
+    const id = el.dataset.habito, h = R.habitos[id], r = H[id], estado = h.dias[dia] || 'antes', ofensiva = passado ? A.ofensiva[id] : h.ofensiva;
+    el.dataset.pasta ||= el.getAttribute('href');
+    el.setAttribute('href', passado ? `${el.dataset.pasta}?dia=${dia}` : el.dataset.pasta);
     el.querySelector('.hab-valor').textContent = r.valor;
     el.querySelector('.hab-valor').classList.toggle('acima', !!r.acima);
     const barra = el.querySelector('.hab-barra');
     barra.hidden = r.progresso == null;
     if (r.progresso != null) barra.firstElementChild.style.width = Math.round(Math.min(1, Math.max(0, r.progresso)) * 100) + '%';
     const of = el.querySelector('.hab-ofensiva');
-    of.querySelector('b').textContent = h.ofensiva;
-    // Chama acesa: feito hoje, ou dia de folga com a ofensiva em dia (treino na sexta depois de qua e qui feitos)
-    of.classList.toggle('acesa', h.hoje === 'feito' || (h.hoje === 'folga' && h.ofensiva > 0));
-    of.classList.toggle('apagada', !h.ofensiva);
-    of.setAttribute('aria-label', `Ofensiva: ${h.ofensiva}`);
-    el.classList.toggle('feito', h.hoje === 'feito');
-    el.querySelector('.hab-dias').innerHTML = semana.map(x => `<i class="${x > hoje ? 'futuro' : h.dias[x] || 'antes'}${x === hoje ? ' hoje' : ''}"></i>`).join('');
+    of.querySelector('b').textContent = ofensiva;
+    // Chama acesa: feito no dia, ou dia de folga com a ofensiva em dia (treino na sexta depois de qua e qui feitos)
+    of.classList.toggle('acesa', estado === 'feito' || (estado === 'folga' && ofensiva > 0));
+    of.classList.toggle('apagada', !ofensiva);
+    of.setAttribute('aria-label', `Ofensiva: ${ofensiva}`);
+    el.classList.toggle('feito', estado === 'feito');
+    el.querySelector('.hab-dias').innerHTML = semana.map(x => `<i class="${x > hoje ? 'futuro' : h.dias[x] || 'antes'}${x === dia ? ' hoje' : ''}"></i>`).join('');
   }
 }
+function mudarDia(n) {
+  if (!dados) return;
+  const hoje = diaDoInstante(Date.now()), alvo = diaMais(diaVisto || hoje, n);
+  const primeiro = Object.keys(calcularHabitos(dados, hoje).perfeito)[0] || hoje;
+  if (alvo > hoje || alvo < primeiro) return;
+  diaVisto = alvo < hoje ? alvo : null;
+  desenhar();
+}
+// Arrastar de lado na tela dos hábitos (como no Treino: só gesto claramente horizontal, longo ou rápido); no computador,
+// as setas do teclado e os botões ‹ ›. O link do hábito não abre no fim de um arrasto.
+let x0 = 0, y0 = 0, t0 = 0, arrastando = false, eixo = null, arrastou = false;
+$('v-apps').addEventListener('touchstart', ev => {
+  arrastando = ev.touches.length === 1; eixo = null; arrastou = false;
+  if (arrastando) { x0 = ev.touches[0].clientX; y0 = ev.touches[0].clientY; t0 = Date.now(); }
+}, { passive: true });
+$('v-apps').addEventListener('touchmove', ev => {
+  if (!arrastando || eixo) return;
+  const dx = ev.touches[0].clientX - x0, dy = ev.touches[0].clientY - y0;
+  if (Math.abs(dx) > 10 || Math.abs(dy) > 10) eixo = Math.abs(dx) > Math.abs(dy) * 1.3 ? 'x' : 'y';
+  if (eixo === 'x') soltarCard();
+}, { passive: true });
+$('v-apps').addEventListener('touchend', ev => {
+  if (!arrastando) return; arrastando = false;
+  const dx = ev.changedTouches[0].clientX - x0, rapido = Date.now() - t0 < 300;
+  if (eixo === 'x' && (Math.abs(dx) > 80 || (rapido && Math.abs(dx) > 40))) { arrastou = true; mudarDia(dx > 0 ? -1 : 1); }
+});
+$('v-apps').addEventListener('touchcancel', () => { arrastando = false; });
+$('v-apps').addEventListener('click', ev => { if (arrastou && ev.target.closest('.app')) { ev.preventDefault(); ev.stopImmediatePropagation(); } arrastou = false; }, true);
+addEventListener('keydown', ev => {
+  if ($('v-apps').hidden || ev.target.closest?.('input')) return;
+  if (ev.key === 'ArrowLeft') mudarDia(-1);
+  if (ev.key === 'ArrowRight') mudarDia(1);
+});
+$('h-anterior').addEventListener('click', () => mudarDia(-1));
+$('h-proximo').addEventListener('click', () => mudarDia(1));
+$('h-hoje').addEventListener('click', () => { diaVisto = null; desenhar(); });
 // Voltou de um app: busca de novo. Passou da meia-noite com a tela aberta: redesenha o dia novo.
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') atualizarHabitos(); });
 addEventListener('online', () => atualizarHabitos());
@@ -217,7 +268,7 @@ $('sair').addEventListener('click', async () => {
   }
   clearTimeout(armado); botao.classList.remove('armado');
   await sairDaConta();
-  conta = null; dados = null;
+  conta = null; dados = null; diaVisto = null;
   $('l-usuario').value = ''; $('l-senha').value = '';
   mostrar(false);
 });

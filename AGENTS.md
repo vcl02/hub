@@ -35,6 +35,7 @@ Valem para todos os apps. O comportamento visível da página inicial (login, h�
 - Sair existe só no hub: fin e tr não têm botão de sair.
 - App aberto sem sessão (link direto, ícone antigo) vai para o login do hub com `?volta=<pasta>/…` e, depois de entrar, o hub devolve para ele. `?volta` só é aceito se for a pasta de um app da página (hábito ou atalho do hub; nunca externo, outro site ou `..`). A tela de login própria dos apps só aparece com eles servidos fora do hub (testes).
 - Cada app volta para a página inicial pelo ícone do hub (a marca em traço: nó central ligado a quatro pontas; link para `../`).
+- **`?dia=AAAA-MM-DD`:** a página inicial, num dia anterior, abre o app daquele hábito naquele dia, só leitura (Treino, Alimentação, Corpo e Água; `diaDaUrl` no `js/util.js` de cada um). Hoje, futuro ou texto inválido: o app normal. O Fin não tem modo só leitura: com `?dia` ele só abre no ciclo daquele dia, normal.
 - Caminhos sempre relativos (`./`, `../`): o site roda em `/hub/`, e os apps em `/hub/fin/`, `/hub/tr/`, `/hub/al/`, `/hub/corpo/` e `/hub/agua/`.
 - Mesma origem para todos: `localStorage`, caches e a sessão do Supabase são compartilhados.
   - Chaves de `localStorage` e nomes de cache sempre com prefixo do app (`fin-`, `carga-`/`tr.`, `al-`/`al.`, `corpo-`/`corpo.`, `agua-`/`agua.`, `hub-`). Nenhum service worker apaga cache de outro prefixo.

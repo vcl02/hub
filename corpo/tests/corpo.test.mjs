@@ -204,6 +204,26 @@ test('dois aparelhos no mesmo dia: evacuações, xixis e sono mesclam com a nuve
   assert.deepEqual(erros, []); await ctx.close();
 });
 
+test('aberto pela página inicial num dia anterior (?dia=): o dia dele, só leitura; Hoje volta ao app normal', async () => {
+  const nuvem = novaNuvem();
+  nuvem.tabelas.corpo_medida.push({ user_id: DONO, data: '2026-10-20', hora: '07:10', peso: 99.5, cintura: null });
+  nuvem.tabelas.corpo_dia.push({ user_id: DONO, data: '2026-10-20', evacuacoes: ['09:00'], xixis: ['08:00', '11:00'], sono: 7.5, dormiu: '23:30', acordou: '07:00' });
+  const { ctx, pg, erros } = await abrirApp({ nuvem, busca: '?dia=2026-10-20' });
+  await pg.waitForFunction(() => document.getElementById('x-total').textContent === '2');
+  assert.match(await texto(pg, '#dia-visto'), /^terça-feira, 20 de outubro · só leitura Hoje$/);
+  assert.deepEqual([await pg.inputValue('#c-data'), await pg.inputValue('#c-hora'), await pg.inputValue('#c-peso')], ['2026-10-20', '07:10', '99,5']);
+  assert.equal(await texto(pg, '#ev-total'), '1');
+  for (const sel of ['#c-data', '#c-peso', '#ev-mais', '#x-mais', '#d-dormiu', '#c-form button[type="submit"]']) assert.equal(await pg.isDisabled(sel), true, sel);
+  assert.equal(await pg.$$eval('#c-historico button', L => L.every(b => b.disabled)), true);
+  await pg.evaluate(() => mudarDia(x => { x.xixis.push('12:00'); }));                   // nem por baixo grava
+  assert.equal(await texto(pg, '#x-total'), '2');
+  await pg.click('#dia-visto a');                                                       // Hoje: o app normal
+  await pg.waitForSelector('#dia-visto', { state: 'hidden' });
+  assert.equal(await pg.inputValue('#c-data'), '2026-10-22');
+  assert.equal(await pg.isDisabled('#x-mais'), false);
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
 test('toque duplo sem querer no +1 conta uma vez só', async () => {
   const { ctx, pg, erros } = await abrirApp();
   await pg.dblclick('#x-mais'); await pg.dblclick('#ev-mais');

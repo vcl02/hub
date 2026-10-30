@@ -1,6 +1,6 @@
 'use strict';
 // Tela do dia: saldo, macros, campo "o que comi" (sugestões, IA e prévia), lista do dia e os últimos 7 dias.
-let diaVisto = hoje(), previa = null;
+let diaVisto = diaDaUrl() || hoje(), previa = null;   // aberto pela página inicial num dia anterior: aquele dia (só leitura)
 // 1º dia do app: o mais antigo com comida ou caminhada registrada (sem nada, hoje). Antes dele não há o que ver.
 const inicio = () => [hoje(), ...db.registros.map(r => r.data), ...db.dias.map(x => x.data)].reduce((a, b) => b < a ? b : a);
 

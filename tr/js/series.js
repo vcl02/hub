@@ -4,7 +4,7 @@
 // { dia, series: {exercicio: n}, feitas: {exercicio: [{reps, kg?, falha?}]}, ajuste: {exercicio: {i: {kg?, reps?}}},
 //   rascunho: {variacao: {carga}}, aquecimento: {regiao: exercicio}, exercicio, fim, aberto }
 const K_SESSAO = 'carga.sessao';
-let rascunho = {};
+let rascunho = {}, diaPedidoAberto = false;
 function salvarSessao() {
   if (!db) return;
   store.set(K_SESSAO, JSON.stringify({ dia: T.dia, series: T.series, feitas: T.feitas, ajuste: T.ajuste, rascunho, aquecimento: T.aquecimento, exercicio: T.exercicio, fim: T.fim, aberto: $('v-exercicio').hidden ? null : atual }));
@@ -13,6 +13,7 @@ function restaurarSessao() {
   let s = null; try { s = JSON.parse(store.get(K_SESSAO)); } catch (e) {}
   const existe = id => db.exercicios.some(e => e.id === id);
   ir('inicio');
+  if (SO_LEITURA && !diaPedidoAberto) { diaPedidoAberto = true; diaVisto = SO_LEITURA; ir('fim'); }   // ?dia=: o resumo daquele dia
   retomarCardio();   // cardio na esteira que estava rodando (js/cardio.js)
   if (!s || s.dia !== hoje()) return;
   T.dia = s.dia; T.series = s.series || {}; T.ajuste = s.ajuste || {}; rascunho = s.rascunho || {};

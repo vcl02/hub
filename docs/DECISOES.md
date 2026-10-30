@@ -69,3 +69,10 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md` (página inicial), `
 - **Limite de tempo:** os clientes do Supabase fora do Fin não tinham teto; um pedido sem resposta podia prender o envio (`enviando`) ou a busca dos hábitos (`buscando`) por minutos. O `supabase-js` 2.118.0 repete sozinho até 3 vezes as leituras que falham por rede, então o pior caso de uma leitura fica perto de 1 min, mas sempre termina.
 - **Toque repetido:** 0,5 s para a mesma ação, porque dois copos, dois xixis ou dois trechos iguais nesse intervalo só acontecem por toque duplo sem querer. O toque duplo para apagar continua sendo o de confirmação (`confirmar`).
 - **Fin:** já tinha teto, repetição só do que é idempotente e `INSERT` nunca repetido sozinho. Faltava trava em Nova meta/Excluir meta (o 2º clique criava outra meta) e nos selos (o 2º clique reenviava o mesmo valor em vez de desfazer), e recarregar sozinho quando a conexão volta.
+
+## Dias anteriores na página inicial (30/10/2026)
+
+- Pedido do mantenedor: navegar para os dias anteriores com swipe, com os hábitos abrindo os apps naqueles dias, só leitura.
+- A página inicial recalcula tudo dos dados (sem tabela própria), então um dia passado é só olhar os estados de `calcularHabitos` naquele dia: a ofensiva e os dias perfeitos são contados para trás a partir dele (`ateODia`). As proteções não têm histórico por dia e ficam as de agora.
+- Arrastar para a direita volta um dia (como virar a página para trás). O resumo do Treino usa o sentido contrário (para a esquerda, o treino anterior); ficou como estava lá.
+- Só leitura por `?dia=` em cada app, sem nada novo no banco. O Fin não tem modo só leitura, a pedido do mantenedor: com `?dia` ele só abre no ciclo daquele dia, editável como sempre.

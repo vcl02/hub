@@ -37,6 +37,9 @@
     </a>
   </header>
 
+  <!-- Aberto pela página inicial num dia anterior (?dia=): aquele dia, só leitura; Hoje volta ao app normal -->
+  <p class="so-leitura" id="dia-visto" hidden><span id="dia-nome"></span> · só leitura <a class="chip-bt" href="./">Hoje</a></p>
+
   <!-- Total de hoje e a meta; no canto, se bateu -->
   <div class="cartao total" id="total">
     <p class="total-num"><b id="t-ml">0</b> <small id="t-meta">/ 1.000 ml</small><span class="bateu" id="t-bateu" hidden>Meta batida</span></p>
@@ -44,7 +47,7 @@
   </div>
 
   <!-- Lembretes do dia (só no app): feito, atrasado ou ainda não chegou; o da vez em destaque -->
-  <div class="cartao lembretes">
+  <div class="cartao lembretes" id="lembretes">
     <p class="lembrete-agora" id="l-agora" hidden></p>
     <ul class="horas" id="l-horas" aria-label="Lembretes de hoje"></ul>
     <!-- Notificação de verdade (Web Push) nos mesmos horários, mesmo com o app fechado -->

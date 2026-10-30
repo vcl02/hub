@@ -144,11 +144,57 @@ test('hábitos com os dados dos apps: valor de hoje, ofensivas, dias perfeitos e
   assert.equal(await pg.$$eval('[data-habito="treino"] .hab-dias i', L => L.map(i => i.className).join(' ')), 'folga hoje futuro futuro futuro futuro futuro futuro');
   assert.equal(await pg.$$eval('#h-semana li', L => L.map(li => li.textContent + (li.className.trim() ? ':' + li.className.trim() : '')).join(' ')), 'S:hoje T:futuro Q:futuro Q:futuro S:futuro S:futuro D:futuro');
   assert.equal(await pg.$eval('[data-habito="peso"] .hab-ofensiva', el => el.classList.contains('acesa')), true);   // feito hoje: chama acesa
+  // Dia anterior: arrastar para a direita volta um dia; tudo é do fim daquele dia e cada hábito abre o app nele (só leitura)
+  assert.equal(await pg.getAttribute('[data-habito="agua"]', 'href'), 'agua/');
+  assert.equal(await pg.isVisible('#h-hoje'), false);
+  const arrastar = dx => pg.evaluate(dx => {
+    const el = document.getElementById('v-apps'), toque = x => [new Touch({ identifier: 1, target: el, clientX: x, clientY: 300 })];
+    el.dispatchEvent(new TouchEvent('touchstart', { touches: toque(100), changedTouches: toque(100), bubbles: true }));
+    el.dispatchEvent(new TouchEvent('touchmove', { touches: toque(100 + dx), changedTouches: toque(100 + dx), bubbles: true }));
+    el.dispatchEvent(new TouchEvent('touchend', { touches: [], changedTouches: toque(100 + dx), bubbles: true }));
+  }, dx);
+  await arrastar(150);                                                              // domingo 25/10
+  assert.match(await pg.textContent('#h-data'), /^ontem · domingo, 25 de outubro$/);
+  assert.deepEqual(await linha('agua'), ['1.000 / 1.000 ml', '2']);                // 23/10, 24/10 protegido e 25/10
+  assert.deepEqual(await linha('sono'), ['7 h', '1']);
+  assert.deepEqual(await linha('peso'), ['Sem pesagem', '0']);
+  assert.equal(await pg.getAttribute('[data-habito="agua"]', 'href'), 'agua/?dia=2026-10-25');
+  assert.equal(await pg.getAttribute('[data-habito="besteira"]', 'href'), 'fin/?dia=2026-10-25');   // o Fin no ciclo do dia, normal
+  assert.equal(await pg.isVisible('#h-hoje'), true);
+  assert.equal(await pg.$$eval('#h-semana li', L => L.findIndex(li => li.classList.contains('hoje'))), 6);   // domingo da semana de 19 a 25/10
+  await pg.keyboard.press('ArrowLeft');                                             // no computador, as setas
+  assert.match(await pg.textContent('#h-data'), /^sábado, 24 de outubro$/);
+  assert.deepEqual(await linha('agua'), ['0 / 1.000 ml', '1']);
+  await arrastar(-150);                                                             // para a esquerda avança
+  assert.match(await pg.textContent('#h-data'), /^ontem/);
+  await pg.click('#h-hoje');                                                        // Hoje volta direto
+  assert.match(await pg.textContent('#h-data'), /^segunda-feira, 26 de outubro$/);
+  assert.equal(await pg.getAttribute('[data-habito="agua"]', 'href'), 'agua/');
+  assert.equal(await pg.isDisabled('#h-proximo'), true);                            // não passa de hoje
   nuvem.online = false;                                                            // sem internet: a cópia do aparelho
   await pg.reload();
   await pg.waitForSelector('#v-apps:not([hidden])');
   assert.deepEqual(await linha('agua'), ['400 / 1.000 ml', '2']);
   assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test('dia anterior: o hábito abre o app naquele dia, só leitura (a Água)', async () => {
+  const nuvem = novaNuvem();
+  nuvem.tabelas.agua_dia.push({ data: '2026-10-25', aguas: [{ hora: '10:00', ml: 700 }], xixis: [] });
+  const { ctx, pg, erros } = await abrir(base, { nuvem });
+  await pg.clock.install({ time: new Date('2026-10-26T12:00:00-03:00') });
+  await pg.reload();
+  await entrar(pg, 'eu@teste.com', 'senha123');
+  await pg.waitForFunction(() => document.querySelector('[data-habito="agua"] .hab-valor').textContent === '0 / 1.000 ml');
+  await pg.click('#h-anterior');                                                    // no computador, o ‹
+  assert.equal(await pg.getAttribute('[data-habito="agua"]', 'href'), 'agua/?dia=2026-10-25');
+  await pg.click('[data-habito="agua"]');
+  await pg.waitForURL(`${base}agua/?dia=2026-10-25`);
+  await pg.waitForFunction(() => document.getElementById('t-ml')?.textContent === '700');
+  assert.equal(await pg.isVisible('#dia-visto'), true);
+  assert.equal(await pg.isVisible('#b-form'), false);
+  assert.deepEqual(erros.filter(e => !/tabela\?|404|Falh|carreg/i.test(e)), []);   // o falso não tem as tabelas do fin
   await ctx.close();
 });
 

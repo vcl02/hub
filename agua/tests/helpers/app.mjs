@@ -76,7 +76,7 @@ export async function fakeSupabase(ctx, nuvem, id = DONO) {
 
 // Fontes do Google são bloqueadas para o teste não depender de internet. Relógio fixo: segunda 19/10/2026 (em casa), 9h.
 // iniciar: [função, argumento] que roda na página antes do app (ex.: push simulado)
-export async function abrirApp({ nuvem = novaNuvem(), conta, relogio = new Date('2026-10-19T09:00:00-03:00'), iniciar } = {}) {
+export async function abrirApp({ busca = '', nuvem = novaNuvem(), conta, relogio = new Date('2026-10-19T09:00:00-03:00'), iniciar } = {}) {
   const ctx = await app.navegador.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, timezoneId: 'America/Sao_Paulo', serviceWorkers: 'block' });
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   await fakeSupabase(ctx, nuvem, conta);
@@ -84,7 +84,7 @@ export async function abrirApp({ nuvem = novaNuvem(), conta, relogio = new Date(
   const pg = await ctx.newPage(), erros = [];
   pg.on('pageerror', e => erros.push(e.message));
   await pg.clock.install({ time: relogio });
-  await pg.goto(app.url);
+  await pg.goto(app.url + busca);   // busca: ?dia=… (aberto pela página inicial num dia anterior)
   await pg.fill('#l-usuario', 'eu@teste.com'); await pg.fill('#l-senha', 'senha123'); await pg.press('#l-senha', 'Enter');
   if (!conta) await pg.waitForSelector('#v-agua:not([hidden])');
   return { ctx, pg, erros, nuvem };
