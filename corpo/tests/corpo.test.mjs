@@ -35,6 +35,20 @@ test('pesagem de hoje: horário livre (vem a hora de agora), 1 por dia, e só re
   assert.deepEqual(erros, []); await ctx.close();
 });
 
+test('horário de sempre: a mediana das últimas 7 pesagens com horário; uma fora da rotina não muda', async () => {
+  const { ctx, pg, erros } = await abrirApp();                           // 22/10, 08:00
+  const aviso = async h => { await pg.fill('#c-hora', h); await pg.dispatchEvent('#c-hora', 'input'); return pg.isVisible('#c-aviso') ? texto(pg, '#c-aviso') : ''; };
+  for (const [d, h] of [['14', '06:50'], ['15', '07:10'], ['16', '07:00'], ['17', '07:05'], ['18', '06:55'], ['19', '07:00'], ['20', '21:00']]) await salvar(pg, { data: `2026-10-${d}`, hora: h, peso: '90' });
+  await pg.fill('#c-data', '2026-10-22'); await pg.dispatchEvent('#c-data', 'change');
+  assert.equal(await pg.evaluate(() => horaHabitual()), '07:00');                             // a das 21:00 (a mais recente) não muda
+  assert.equal(await aviso('07:30'), '');
+  assert.match(await aviso('09:00'), /Fora do seu horário de sempre \(07:00\)/);
+  for (const d of ['21', '22']) await salvar(pg, { data: `2026-10-${d}`, hora: '21:10', peso: '90' });
+  for (const d of ['12', '13']) await salvar(pg, { data: `2026-10-${d}`, hora: '21:05', peso: '90' });   // antigas: fora das últimas 7
+  assert.equal(await pg.evaluate(() => horaHabitual()), '07:05');                              // 06:55 07:00 07:00 [07:05] 21:00 21:10 21:10: 3 noites ainda não viram a rotina
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
 test('barriga sem peso (e peso sem barriga) num dia; outro dia pela data; não deixa salvar vazio nem dia futuro', async () => {
   const { ctx, pg, nuvem } = await abrirApp();
   await salvar(pg);

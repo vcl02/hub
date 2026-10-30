@@ -18,7 +18,7 @@
 - Formulário: dia (hoje por padrão; até hoje, nunca futuro), horário (vem a hora de agora, livre), peso e barriga com − / + (peso de 0,1 em 0,1 kg; barriga de 0,5 em 0,5 cm). O dia escolhido já mostra o que foi medido nele; "Salvar" troca a medida desse dia.
 - Peso de 30 a 300 kg; barriga maior que zero (sem trava baixa). Vazio = não medido.
 - **Quando o peso foi lançado** (`peso_em`, migration 03): o instante em que o dia ganhou um peso, pelo relógio do celular (no formulário ou no lápis do histórico). Corrigir o peso do mesmo dia mantém o primeiro lançamento; mudar a medida de dia pelo lápis é lançamento novo no dia de destino; só barriga não tem. Os hábitos da página inicial do hub só contam pesagem lançada no próprio dia (a partir de 27/10/2026).
-- **Horário de sempre:** o da pesagem mais recente com horário. Mais de 1 h longe dele: aviso (só recomenda, salva igual).
+- **Horário de sempre:** a mediana dos horários das últimas 7 pesagens com horário (com número par, o mais cedo dos dois do meio): uma pesagem fora da rotina não muda a referência. Mais de 1 h longe dele: aviso (só recomenda, salva igual).
 
 ## Sono, evacuações e xixi
 
