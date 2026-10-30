@@ -47,6 +47,8 @@
   <!-- Saldo do dia: comido − gasto; negativo = déficit (verde), positivo = superávit (vermelho) -->
   <div class="cartao saldo" id="saldo">
     <p class="saldo-num"><b id="s-valor">—</b> <small id="s-rotulo">kcal</small></p>
+    <!-- Hoje acima da meta: o dia ainda em déficit (comido abaixo do gasto do dia inteiro) ou já em superávit -->
+    <p class="saldo-ainda" id="s-ainda" hidden></p>
     <p class="saldo-conta" id="s-conta"></p>
     <p class="previsto" id="s-previsto" hidden></p>
     <!-- Treino extra virou obrigatório: passou da meta no dia de treino opcional e ainda não treinou -->

@@ -50,6 +50,9 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 .saldo.deficit .saldo-num b{color:var(--green)}
 .saldo.superavit{border-color:var(--red);background:linear-gradient(160deg,var(--red-soft),var(--surface) 70%)}
 .saldo.superavit .saldo-num b{color:var(--red)}
+.saldo-ainda{margin:-2px 0 0;font-weight:600;font-size:.95rem}
+.saldo-ainda.bom{color:var(--green)}
+.saldo-ainda.ruim{color:var(--red)}
 .saldo-conta{display:flex;flex-direction:column;gap:2px}
 .saldo-conta span{display:flex;justify-content:space-between;align-items:baseline;gap:8px;max-width:18em}
 .saldo-conta small{margin-right:auto;color:var(--muted);font-size:.75rem}

@@ -206,6 +206,19 @@ test('bebidas lançadas na Água (suco, refri…) contam como comido: na lista, 
   await ctx.close();
 });
 
+test('hoje passou da meta mas ainda abaixo do gasto: diz que ainda está em déficit (menor que os 500 planejados)', async () => {
+  const nuvem = comTreino(novaNuvem());
+  nuvem.ia = iaCom({ nome: 'Marmita', porcao: '1', kcal: 2300, prot: 100, carb: 250, gord: 80 });
+  const { ctx, pg, erros } = await abrirApp({ nuvem });
+  assert.equal(await pg.isVisible('#s-ainda'), false);                  // dentro da meta: nada
+  await descrever(pg, 'marmita'); await pg.click('#p-adicionar');
+  assert.equal(await texto(pg, '#s-valor'), '194');                     // 2300 − 2106
+  assert.equal(await texto(pg, '#s-rotulo'), 'kcal acima da meta');
+  assert.equal(await texto(pg, '#s-ainda'), 'Ainda em déficit de 306 kcal');   // 2606 − 2300
+  assert.match(await pg.getAttribute('#s-ainda', 'class'), /bom/);
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
 test('hoje passou da meta: mostra quanto passou (vermelho), e os macros que passaram; dia passado mostra o saldo final', async () => {
   const nuvem = comTreino(novaNuvem());
   nuvem.ia = iaCom({ nome: 'Rodízio', porcao: '1 noite', kcal: 3000, prot: 150, carb: 300, gord: 120 });
@@ -214,6 +227,8 @@ test('hoje passou da meta: mostra quanto passou (vermelho), e os macros que pass
   await pg.click('#p-adicionar');
   assert.equal(await texto(pg, '#s-valor'), '894');                    // 3000 − 2106
   assert.equal(await texto(pg, '#s-rotulo'), 'kcal acima da meta');
+  assert.equal(await texto(pg, '#s-ainda'), 'Já em superávit de 394 kcal');   // 3000 − 2606 (o gasto do dia inteiro)
+  assert.match(await pg.getAttribute('#s-ainda', 'class'), /ruim/);
   assert.match(await pg.getAttribute('#saldo', 'class'), /superavit/);
   assert.equal(await texto(pg, '#macros .m-gord i'), 'passou 61 g');   // 120 − 59
   assert.match(await pg.getAttribute('#macros .m-gord i', 'class'), /ruim/);

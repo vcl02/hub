@@ -37,6 +37,11 @@ function pintarSaldo() {
   $('saldo').className = 'cartao saldo' + (!g ? '' : bom ? ' deficit' : ' superavit');
   $('s-valor').textContent = !g ? '—' : inteiro(Math.abs(aberto ? resto : saldo));
   $('s-rotulo').textContent = !g ? 'kcal' : aberto ? (resto >= 0 ? 'kcal restantes' : 'kcal acima da meta') : saldo <= 0 ? 'kcal de déficit' : 'kcal de superávit';
+  // Passou da meta (que já tem os 500 kcal de déficit planejado): o dia ainda pode fechar em déficit, só menor que o planejado.
+  // Quanto falta para o gasto do dia inteiro (sem comer mais nada): "Ainda em déficit de 306 kcal"; passou do gasto, superávit.
+  const acima = !!g && aberto && resto < 0, ainda = g ? g.total - c.kcal : 0;
+  $('s-ainda').hidden = !acima;
+  if (acima) { $('s-ainda').className = 'saldo-ainda ' + (ainda >= 0 ? 'bom' : 'ruim'); $('s-ainda').textContent = ainda >= 0 ? `Ainda em déficit de ${inteiro(ainda)} kcal` : `Já em superávit de ${inteiro(-ainda)} kcal`; }
   $('s-conta').innerHTML = !g ? `${linha('Comi', c.kcal)}<span>Sem pesagem no Corpo para calcular o gasto</span>`
     : linhaMeta() + linha('Comi', c.kcal) + linha('Gastei', aberto ? gastoAteAgora(g) : g.total);
   // Hoje é dia de treino e ainda não treinou: quanto a mais dá para comer depois do treino
