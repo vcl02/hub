@@ -20,7 +20,13 @@ function rumoAoNormal(peso) {
 }
 const sinal = n => (n > 0 ? '+' : n < 0 ? '−' : '') + fmt(Math.abs(n));
 const recentes = () => [...db.medidas].reverse();   // mais recente primeiro
-const horaHabitual = () => recentes().find(m => m.peso && m.hora)?.hora || '';
+// Horário de sempre: a mediana dos horários das últimas 7 pesagens com horário (com número par, o mais cedo dos dois do meio):
+// uma pesagem fora da rotina não muda a referência, e mudar de horário de verdade muda em poucos dias
+const HORA_HABITUAL_N = 7;
+const horaHabitual = () => {
+  const H = recentes().filter(m => m.peso && m.hora).slice(0, HORA_HABITUAL_N).map(m => m.hora).sort();
+  return H.length ? H[Math.floor((H.length - 1) / 2)] : '';
+};
 let editando = null;
 
 // Aberto pela página inicial num dia anterior (?dia=): o formulário e o cartão do dia ficam naquele dia, e nada grava (mudar não
