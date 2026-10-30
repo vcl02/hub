@@ -393,7 +393,7 @@ test('parabéns em tela cheia ao finalizar, com as conquistas ganhas no treino',
   assert.deepEqual(erros, []); await ctx.close();
 });
 
-test('semanas: para a esquerda volta; lista da tela inicial: para a direita mostra o treino anterior ali mesmo', async () => {
+test('semanas, lista da tela inicial e resumo: para a direita o anterior, para a esquerda o seguinte (como em todo o hub)', async () => {
   const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-22T19:00:00') });   // quinta
   await pg.evaluate(() => {
     for (const d of ['2026-10-08', '2026-10-15', '2026-10-21']) db.treinos.push({ inicio: new Date(d + 'T18:00').getTime(), fim: new Date(d + 'T19:00').getTime(), fechado: true });
@@ -402,16 +402,16 @@ test('semanas: para a esquerda volta; lista da tela inicial: para a direita most
     gravar(); mostrar('inicio');
   });
   const y = async sel => { const b = await pg.locator(sel).boundingBox(); return b.y + b.height / 2; };
-  // Semanas: para a esquerda volta, para a direita avança
-  await arrastar(ctx, pg, 330, 60, await y('#i-semana'));
+  // Semanas: para a direita volta, para a esquerda avança
+  await arrastar(ctx, pg, 60, 330, await y('#i-semana'));
   assert.match(await pg.textContent('#i-msg'), /12\/10 a 18\/10/);
-  await arrastar(ctx, pg, 330, 60, await y('.week-msg'));                                     // também pela linha de baixo
+  await arrastar(ctx, pg, 60, 330, await y('.week-msg'));                                     // também pela linha de baixo
   assert.match(await pg.textContent('#i-msg'), /05\/10 a 11\/10/);
-  await arrastar(ctx, pg, 330, 60, await y('#i-semana'));                                     // semana do 1º treino: para
+  await arrastar(ctx, pg, 60, 330, await y('#i-semana'));                                     // semana do 1º treino: para
   assert.match(await pg.textContent('#i-msg'), /05\/10 a 11\/10/);
-  await arrastar(ctx, pg, 60, 330, await y('#i-semana')); await arrastar(ctx, pg, 60, 330, await y('#i-semana'));
+  await arrastar(ctx, pg, 330, 60, await y('#i-semana')); await arrastar(ctx, pg, 330, 60, await y('#i-semana'));
   assert.match(await pg.textContent('#i-msg'), /Hoje é dia de treino fixo/);
-  // Lista de hoje: para a DIREITA (o contrário das semanas) mostra o treino de ontem aqui mesmo
+  // Lista de hoje: para a direita (como as semanas) mostra o treino de ontem aqui mesmo
   await arrastar(ctx, pg, 60, 330, await y('.slot >> nth=2'));
   assert.equal(await pg.isVisible('#v-inicio'), true);
   assert.equal(await pg.textContent('#i-cont-l'), 'Qua, 21/10');
@@ -432,15 +432,15 @@ test('semanas: para a esquerda volta; lista da tela inicial: para a direita most
   // Resumo de um dia (toque no ✓): ‹ › e arrastar vão de um treino para o outro; depois do mais recente, a lista de hoje
   await pg.click('#i-semana [data-dia="2026-10-21"]');
   await pg.waitForSelector('#v-fim:not([hidden])');
-  await arrastar(ctx, pg, 330, 60, 400);
+  await arrastar(ctx, pg, 60, 330, 400);
   assert.match(await pg.textContent('#f-data'), /15 de outubro/);
   await pg.click('#f-ant');
   assert.match(await pg.textContent('#f-data'), /8 de outubro/);
   assert.equal(await pg.isDisabled('#f-ant'), true);
-  await arrastar(ctx, pg, 60, 330, 400); await arrastar(ctx, pg, 60, 330, 400);
+  await arrastar(ctx, pg, 330, 60, 400); await arrastar(ctx, pg, 330, 60, 400);
   assert.match(await pg.textContent('#f-data'), /21 de outubro/);
   assert.equal(await pg.getAttribute('#f-prox', 'title'), 'Hoje');
-  await arrastar(ctx, pg, 60, 330, 400);
+  await arrastar(ctx, pg, 330, 60, 400);
   await pg.waitForSelector('#v-inicio:not([hidden])');
   assert.deepEqual(erros, []); await ctx.close();
 });

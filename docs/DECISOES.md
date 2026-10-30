@@ -74,5 +74,6 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md` (página inicial), `
 
 - Pedido do mantenedor: navegar para os dias anteriores com swipe, com os hábitos abrindo os apps naqueles dias, só leitura.
 - A página inicial recalcula tudo dos dados (sem tabela própria), então um dia passado é só olhar os estados de `calcularHabitos` naquele dia: a ofensiva e os dias perfeitos são contados para trás a partir dele (`ateODia`). As proteções não têm histórico por dia e ficam as de agora.
-- Arrastar para a direita volta um dia (como virar a página para trás). O resumo do Treino usa o sentido contrário (para a esquerda, o treino anterior); ficou como estava lá.
+- Arrastar para a direita volta um dia (como virar a página para trás). No mesmo dia, a pedido do mantenedor, todo o hub passou a usar esse sentido: a semana e o resumo do Treino, que iam ao contrário, foram alinhados (regra em `../AGENTS.md`).
+- Cabeçalho: sem o "ontem", a data com largura fixa (pra nada pular) e o Hoje só como ícone, o mesmo botão do Sair (em roxo, a cor do dia anterior), que some em hoje. Os ‹ › só no computador: no celular não cabem ao lado da data fixa, do Hoje e do Sair.
 - Só leitura por `?dia=` em cada app, sem nada novo no banco. O Fin não tem modo só leitura, a pedido do mantenedor: com `?dia` ele só abre no ciclo daquele dia, editável como sempre.

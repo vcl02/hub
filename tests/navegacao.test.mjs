@@ -154,20 +154,28 @@ test('hábitos com os dados dos apps: valor de hoje, ofensivas, dias perfeitos e
     el.dispatchEvent(new TouchEvent('touchend', { touches: [], changedTouches: toque(100 + dx), bubbles: true }));
   }, dx);
   await arrastar(150);                                                              // domingo 25/10
-  assert.match(await pg.textContent('#h-data'), /^ontem · domingo, 25 de outubro$/);
+  assert.equal(await pg.textContent('#h-data'), 'domingo, 25 de outubro');           // sem "ontem"
   assert.deepEqual(await linha('agua'), ['1.000 / 1.000 ml', '2']);                // 23/10, 24/10 protegido e 25/10
   assert.deepEqual(await linha('sono'), ['7 h', '1']);
   assert.deepEqual(await linha('peso'), ['Sem pesagem', '0']);
   assert.equal(await pg.getAttribute('[data-habito="agua"]', 'href'), 'agua/?dia=2026-10-25');
   assert.equal(await pg.getAttribute('[data-habito="besteira"]', 'href'), 'fin/?dia=2026-10-25');   // o Fin no ciclo do dia, normal
   assert.equal(await pg.isVisible('#h-hoje'), true);
+  // Hoje: só o ícone, o mesmo botão do Sair (tamanho e forma); a data não muda de largura de um dia para o outro
+  const caixa = sel => pg.$eval(sel, el => { const r = el.getBoundingClientRect(), s = getComputedStyle(el); return [r.width, r.height, s.borderRadius]; });
+  assert.deepEqual(await caixa('#h-hoje'), await caixa('#sair'));
+  assert.equal((await pg.textContent('#h-hoje')).trim(), '');                      // sem texto
+  const largura = () => pg.$eval('#h-data', el => el.getBoundingClientRect().width);
+  const antes = await largura();
   assert.equal(await pg.$$eval('#h-semana li', L => L.findIndex(li => li.classList.contains('hoje'))), 6);   // domingo da semana de 19 a 25/10
   await pg.keyboard.press('ArrowLeft');                                             // no computador, as setas
   assert.match(await pg.textContent('#h-data'), /^sábado, 24 de outubro$/);
   assert.deepEqual(await linha('agua'), ['0 / 1.000 ml', '1']);
   await arrastar(-150);                                                             // para a esquerda avança
-  assert.match(await pg.textContent('#h-data'), /^ontem/);
+  assert.equal(await pg.textContent('#h-data'), 'domingo, 25 de outubro');
   await pg.click('#h-hoje');                                                        // Hoje volta direto
+  assert.equal(await largura(), antes);
+  assert.equal(await pg.isVisible('#h-hoje'), false);                                // some em hoje
   assert.match(await pg.textContent('#h-data'), /^segunda-feira, 26 de outubro$/);
   assert.equal(await pg.getAttribute('[data-habito="agua"]', 'href'), 'agua/');
   assert.equal(await pg.isDisabled('#h-proximo'), true);                            // não passa de hoje

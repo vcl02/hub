@@ -146,7 +146,7 @@ function desenhar() {
   diaDesenhado = hoje;
   const [a, m, d] = dia.split('-').map(Number);
   const data = new Date(a, m - 1, d).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-  $('h-data').textContent = dia === diaMais(hoje, -1) ? 'ontem · ' + data : data;
+  $('h-data').textContent = data;
   $('v-apps').classList.toggle('passado', passado);
   $('h-hoje').hidden = !passado;
   $('h-anterior').disabled = dia <= primeiro;

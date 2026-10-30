@@ -144,7 +144,9 @@ h1 span {
   text-transform: uppercase;
 }
 
-/* Dia anterior: ‹ › e Hoje ao lado da data; num dia passado a data fica em roxo. */
+/* Dia anterior: a data com largura fixa (a mais longa do ano, "segunda-feira, 30 de novembro", cabe), pra ‹ › e o resto
+   não pularem quando ela muda; num dia passado ela fica em roxo. ‹ › só no computador: no celular é arrastar, e eles não cabem
+   ao lado da data, do Hoje e do Sair. */
 .dia-nav {
   display: flex;
   align-items: center;
@@ -152,40 +154,62 @@ h1 span {
   margin: 0 0 6px;
 }
 
-.dia-nav .hoje {
-  margin: 0;
+/* Celular estreito (360 px): a coluna da data pode encolher até caber ao lado do Hoje e do Sair; a largura continua fixa naquela
+   tela (a da coluna), e só a data mais longa perde as últimas letras. */
+.topo > div {
+  min-width: 0;
 }
 
-.dia-seta,
-.dia-hoje {
+.dia-nav .hoje {
+  flex: none;
+  width: 15.5em;
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dia-seta {
   display: grid;
   place-items: center;
   flex: none;
+  width: 26px;
   height: 26px;
   padding: 0;
   border: 1px solid rgba(255, 255, 255, .1);
   border-radius: 8px;
   background: transparent;
   color: var(--muted);
-  font: inherit;
-  font-size: .8rem;
-  font-weight: 600;
   cursor: pointer;
-}
-
-.dia-seta {
-  width: 26px;
-}
-
-.dia-hoje {
-  padding: 0 10px;
-  border-color: var(--purple);
-  color: var(--purple);
 }
 
 .dia-seta:disabled {
   opacity: .3;
   cursor: default;
+}
+
+@media (hover: none) {
+  .dia-seta {
+    display: none;
+  }
+}
+
+.topo-acoes {
+  display: flex;
+  flex: none;
+  gap: 8px;
+}
+
+/* Hoje: o mesmo botão do Sair, em roxo. */
+.sair.voltar-hoje {
+  border-color: var(--purple);
+  background: rgba(167, 139, 250, .14);
+  color: var(--purple);
+}
+
+.sair.voltar-hoje[hidden] {
+  display: none;
 }
 
 .passado .hoje {

@@ -36,19 +36,25 @@
 <main class="hub" id="v-apps" hidden>
   <header class="topo">
     <div>
-      <!-- O dia visto (hoje ou um anterior): ‹ › e arrastar de lado trocam o dia; Hoje volta. hub.js preenche. -->
+      <!-- O dia visto (hoje ou um anterior): arrastar de lado (e, no computador, ‹ ›) troca o dia. A data tem largura fixa,
+           pra nada pular quando ela muda. hub.js preenche. -->
       <div class="dia-nav">
         <button type="button" class="dia-seta" id="h-anterior" title="Dia anterior" aria-label="Dia anterior"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
         <p class="hoje" id="h-data"></p>
         <button type="button" class="dia-seta" id="h-proximo" title="Dia seguinte" aria-label="Dia seguinte" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
-        <button type="button" class="dia-hoje" id="h-hoje" hidden>Hoje</button>
       </div>
       <h1><span>hub</span></h1>
     </div>
-    <!-- Sair: encerra a sessão neste aparelho (vale para todos os apps); toque duplo. -->
-    <button type="button" class="sair" id="sair" title="Sair" aria-label="Sair">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v9"/><path d="M6.4 6.4a8 8 0 1 0 11.2 0"/></svg>
-    </button>
+    <div class="topo-acoes">
+      <!-- Hoje: só num dia anterior; volta direto para hoje. Mesmo botão do Sair, em roxo (a cor do dia anterior). -->
+      <button type="button" class="sair voltar-hoje" id="h-hoje" title="Hoje" aria-label="Hoje" hidden>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M16 3v4M8 3v4M4 10h16"/><circle cx="12" cy="15.5" r="1.6" fill="currentColor" stroke="none"/></svg>
+      </button>
+      <!-- Sair: encerra a sessão neste aparelho (vale para todos os apps); toque duplo. -->
+      <button type="button" class="sair" id="sair" title="Sair" aria-label="Sair">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v9"/><path d="M6.4 6.4a8 8 0 1 0 11.2 0"/></svg>
+      </button>
+    </div>
   </header>
 
   <!-- Dias perfeitos seguidos (todos os hábitos do dia feitos), os últimos 7 dias e as proteções guardadas.
