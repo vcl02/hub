@@ -41,7 +41,7 @@
 
 ## Lista do dia
 
-- **Bebidas da Água:** suco, refri, cappuccino e leite com Toddy são lançados na Água (lá conta a parte que é água) e aparecem aqui na lista do dia, com contorno tracejado e "· da Água", só para ver (mudam na Água). As kcal e os macros deles (por 100 ml, `../agua/bebidas.js`: suco 40 kcal, refri 42, cappuccino 60, leite com Toddy 85) contam como comido no saldo e nos macros. Bebida com calorias não se lança aqui.
+- **Bebidas da Água:** suco, refri, cappuccino, leite com Toddy e leite são lançados na Água (lá conta a parte que é água) e aparecem aqui na lista do dia, com contorno tracejado e "· da Água", só para ver (mudam na Água). As kcal e os macros deles (por 100 ml, `../agua/bebidas.js`: suco 40 kcal, refri 42, cappuccino 60, leite com Toddy 85, leite integral 60) contam como comido no saldo e nos macros. Bebida com calorias não se lança aqui.
 - **Lembrete dos dentes:** comida nova de hoje agenda, no banco, uma notificação "Escove os dentes" para 20 min depois (outra comida antes disso empurra). Vai pelas notificações da Água (`../agua/`, migration `agua/02`).
 - Em ordem de hora (sem hora no fim): hora, nome, porção (com "2 × " quando há mais de uma), P/C/G e kcal do total.
 - Porções: ½, 1, 1½, 2, 3 (multiplica a porção salva).
