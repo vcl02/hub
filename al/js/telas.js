@@ -280,3 +280,6 @@ $('lista').addEventListener('click', ev => {
   if (!b || !confirmar(b)) return;
   mudar(() => { db.registros = db.registros.filter(r => r.id !== b.dataset.apagar); });
 });
+
+// Esc com a prévia aberta: cancela a prévia (senão, Esc sai do app, js/util.js)
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && !$('previa').hidden) { ev.preventDefault(); $('p-cancelar').click(); } });

@@ -132,9 +132,9 @@ const milhar = n => Math.round(n).toLocaleString('pt-BR');
 const decimal = n => (Math.round(n * 10) / 10).toLocaleString('pt-BR');
 const horasTxt = h => { const m = Math.round(h * 60); return `${Math.floor(m / 60)} h${m % 60 ? ' ' + pad2(m % 60) : ''}`; };   // 7,5 → "7 h 30"
 const pad2 = n => String(n).padStart(2, '0');
-// Passou da meta (gasto − 500): o dia ainda em déficit (comido abaixo do gasto do dia inteiro), só menor que o planejado, ou já
-// em superávit. "300 kcal acima · déficit de 200" / "1.250 kcal acima · superávit de 750"
-const acimaTxt = c => { const d = c.gasto - c.comido; return `${milhar(c.comido - c.meta)} kcal acima · ${d >= 0 ? `déficit de ${milhar(d)}` : `superávit de ${milhar(-d)}`}`; };
+// Passou da meta (gasto − 500): o dia ainda em déficit (comido abaixo do gasto do dia inteiro), só menor que o planejado
+// ("300 kcal acima · déficit de 200"), ou já em superávit, e aí só ele ("Superávit de 750 kcal")
+const acimaTxt = c => { const d = c.gasto - c.comido; return d >= 0 ? `${milhar(c.comido - c.meta)} kcal acima · déficit de ${milhar(d)}` : `Superávit de ${milhar(-d)} kcal`; };
 // passado: um dia que já fechou (a tela inicial voltando para dias anteriores): o texto diz o que aconteceu, não o que fazer
 function resumoDeHoje(D, hoje, passado = false) {
   const wd = semanaDoDia(hoje);

@@ -238,3 +238,13 @@ test('outra conta não passa do login; tema escuro; sem rolagem para o lado', as
   assert.ok(await pg.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   await ctx.close();
 });
+
+test('Esc: num campo só tira o foco; sem nada aberto, sai do app (volta para a página inicial do hub)', async () => {
+  const { ctx, pg, erros } = await abrirApp();
+  await pg.evaluate(() => { window.saidas = 0; sairDoApp = () => { saidas++; }; });   // fora do hub ../ é a própria raiz
+  const campo = pg.locator('input:visible').first();
+  if (await campo.count()) { await campo.focus(); await pg.keyboard.press('Escape'); assert.equal(await pg.evaluate(() => saidas), 0); }
+  await pg.keyboard.press('Escape');
+  assert.equal(await pg.evaluate(() => saidas), 1);
+  assert.deepEqual(erros, []); await ctx.close();
+});

@@ -110,3 +110,14 @@ function grafico(box, P, unidade, rotulo) {   // P = [{ data, valor, hora? }] em
   svg.addEventListener('pointerdown', mostrar);
   svg.addEventListener('pointerleave', () => dica.setAttribute('visibility', 'hidden'));
 }
+
+// ===== Esc =====
+// Esc sai do app (volta para a página inicial do hub, ../) quando nada mais usou a tecla: o que está aberto (prévia, edição na
+// linha) trata antes e chama preventDefault; num campo de texto, o 1º Esc só tira o foco. Mesma regra em todos os apps.
+function sairDoApp() { location.href = '../'; }
+addEventListener('keydown', ev => {
+  if (ev.key !== 'Escape' || ev.defaultPrevented || ev.isComposing) return;
+  if (ev.target.closest?.('input,textarea,select')) { ev.target.blur(); return; }
+  if (document.querySelector('dialog[open]')) return;
+  sairDoApp();
+});

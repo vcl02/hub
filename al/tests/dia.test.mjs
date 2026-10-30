@@ -434,6 +434,23 @@ test('trocar o dia arrastando de lado (para a direita, o anterior) e com ← →
   assert.deepEqual(erros, []); await ctx.close();
 });
 
+test('Esc: fecha a prévia aberta; num campo só tira o foco; sem nada aberto, sai do app (volta para a página inicial do hub)', async () => {
+  const nuvem = novaNuvem();
+  nuvem.ia = iaCom(OVO);
+  const { ctx, pg, erros } = await abrirApp({ nuvem });
+  await pg.evaluate(() => { window.saidas = 0; sairDoApp = () => { saidas++; }; });   // fora do hub ../ é a própria raiz
+  await descrever(pg, 'ovo');
+  await pg.waitForSelector('#previa:not([hidden])');
+  await pg.keyboard.press('Escape');
+  assert.equal(await pg.isVisible('#previa'), false);
+  assert.equal(await pg.evaluate(() => saidas), 0);
+  await pg.focus('#f-texto'); await pg.keyboard.press('Escape');
+  assert.deepEqual(await pg.evaluate(() => [saidas, document.activeElement.id]), [0, '']);
+  await pg.keyboard.press('Escape');
+  assert.equal(await pg.evaluate(() => saidas), 1);
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
 test('sem internet: abre com a cópia do aparelho e envia o que ficou pendente ao reconectar', async () => {
   const nuvem = novaNuvem();
   nuvem.ia = iaCom(OVO);

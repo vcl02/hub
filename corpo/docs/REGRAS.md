@@ -6,6 +6,7 @@
 - Abre na hora com a cópia do aparelho, inclusive sem internet; depois envia o que estava pendente e traz a nuvem.
 - **Rede ruim (metrô):** cada pedido ao Supabase tem limite de 15 s; estourou, conta como sem internet (fica salvo no aparelho e envia na próxima tentativa), e o envio nunca fica preso. Envio que chegou à nuvem mas cuja resposta se perdeu não é somado de novo na tentativa seguinte (a mesma evacuação ou o mesmo xixi não entra duas vezes).
 - **Dia anterior é só leitura** (escolhido na data do formulário ou aberto pela página inicial): o formulário e o cartão do dia (sono, evacuações e xixis) mostram o que foi lançado nele, com campos e botões desativados (a data não, para voltar). Em cima, o dia e **Hoje**, que volta para hoje. No histórico, só a medida de hoje se edita (horário, peso e barriga; o dia não muda) ou apaga. O dia fica no endereço (`?dia=AAAA-MM-DD`, como o `?ciclo` do Fin; em hoje, sem): recarregar mantém, e o Voltar do navegador volta ao dia de antes. Hoje, futuro ou texto inválido em `?dia`: hoje.
+- **Esc:** cancela a edição na linha do histórico; num campo de texto, só tira o foco; sem nada aberto, sai do app para a página inicial do hub (`../`), como em todos os apps.
 
 ## Perfil (só em código, `perfil.js`)
 

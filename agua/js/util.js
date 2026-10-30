@@ -58,3 +58,14 @@ let ultimaAcao = { k: '', em: 0 };
 function repetido(k) { const agora = Date.now(), r = ultimaAcao.k === k && agora - ultimaAcao.em < REPETIDO_MS; ultimaAcao = { k, em: agora }; return r; }
 const somaDias = (d, n) => { const x = deIso(d); x.setDate(x.getDate() + n); return iso(x); };
 const inteiro = n => Math.round(n).toLocaleString('pt-BR');
+
+// ===== Esc =====
+// Esc sai do app (volta para a página inicial do hub, ../) quando nada mais usou a tecla: o que está aberto (prévia, edição na
+// linha) trata antes e chama preventDefault; num campo de texto, o 1º Esc só tira o foco. Mesma regra em todos os apps.
+function sairDoApp() { location.href = '../'; }
+addEventListener('keydown', ev => {
+  if (ev.key !== 'Escape' || ev.defaultPrevented || ev.isComposing) return;
+  if (ev.target.closest?.('input,textarea,select')) { ev.target.blur(); return; }
+  if (document.querySelector('dialog[open]')) return;
+  sairDoApp();
+});

@@ -254,4 +254,4 @@ $('c-historico').addEventListener('click', ev => {
   }
   else if (d.apagar && d.apagar === hoje() && confirmar(b)) mudar(() => { db.medidas = db.medidas.filter(m => m.data !== d.apagar); });
 });
-document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && editando) { editando = null; pintarHistorico(); } });
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && editando) { ev.preventDefault(); editando = null; pintarHistorico(); } });   // senão, Esc sai do app (js/util.js)

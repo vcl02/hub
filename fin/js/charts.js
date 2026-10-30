@@ -136,7 +136,7 @@ document.addEventListener('click', e => {
     if (!el('visMenu').hidden && !el('visIcone').contains(e.target)) fecharMenuVis();
 });
 document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && !el('visMenu').hidden) { fecharMenuVis(); el('btVis').focus(); }
+    if (e.key === 'Escape' && !el('visMenu').hidden) { e.preventDefault(); fecharMenuVis(); el('btVis').focus(); }
 });
 
 el('fechaVisualizacao').onclick = () => el('modalVisualizacao').close();

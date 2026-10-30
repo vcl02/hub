@@ -396,3 +396,17 @@ test('outra conta não passa do login; tema escuro mesmo com o celular no modo c
   assert.ok(await pg.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   await ctx.close();
 });
+
+test('Esc: cancela a edição na linha; num campo só tira o foco; sem nada aberto, sai do app (volta para a página inicial do hub)', async () => {
+  const { ctx, pg, erros } = await abrirApp();
+  await pg.evaluate(() => { window.saidas = 0; sairDoApp = () => { saidas++; }; });   // fora do hub ../ é a própria raiz
+  await salvar(pg, { peso: '90' });
+  await pg.click('[data-editar="2026-10-22"]');
+  await pg.keyboard.press('Escape');
+  assert.deepEqual([await pg.locator('#c-historico li.editando').count(), await pg.evaluate(() => saidas)], [0, 0]);
+  await pg.focus('#c-peso'); await pg.keyboard.press('Escape');
+  assert.equal(await pg.evaluate(() => saidas), 0);
+  await pg.keyboard.press('Escape');
+  assert.equal(await pg.evaluate(() => saidas), 1);
+  assert.deepEqual(erros, []); await ctx.close();
+});

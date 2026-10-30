@@ -133,7 +133,7 @@ test('navegação de ciclo quebra linha em vez de sobrepor o cabeçalho, e no mo
 test('menu de Visualizações fecha ao escolher, ao clicar fora e com Esc, e não sai da tela', () => {
     assert.match(graficos, /el\('visMenu'\)\.onclick = e => \{[\s\S]*?fecharMenuVis\(\);\s*\n\s*abrirVisualizacao\(item\.dataset\.vis\);/);
     assert.match(graficos, /if \(!el\('visMenu'\)\.hidden && !el\('visIcone'\)\.contains\(e\.target\)\) fecharMenuVis\(\);/);
-    assert.match(graficos, /if \(e\.key === 'Escape' && !el\('visMenu'\)\.hidden\) \{ fecharMenuVis\(\); el\('btVis'\)\.focus\(\); \}/);
+    assert.match(graficos, /if \(e\.key === 'Escape' && !el\('visMenu'\)\.hidden\) \{ e\.preventDefault\(\); fecharMenuVis\(\); el\('btVis'\)\.focus\(\); \}/);   // preventDefault: Esc não sai do fin
     assert.match(graficos, /if \(sobra < 0\) menu\.style\.left = `\$\{sobra\}px`;/);
 });
 

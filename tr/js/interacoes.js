@@ -49,14 +49,17 @@ document.addEventListener('click', ev => {
   }
 });
 
-// Esc: fecha a tela cheia aberta (garrafinha como o X, parabéns como "Ver resumo"), cancela a edição na linha ou volta uma tela
+// Esc: fecha a tela cheia aberta (garrafinha como o X, parabéns como "Ver resumo"), cancela a edição na linha, volta uma tela
+// ou, na tela inicial, sai do app (volta para a página inicial do hub, como em todos os apps)
+function sairDoApp() { location.href = '../'; }
 document.addEventListener('keydown', ev => {
   if (ev.key !== 'Escape' || !db) return;
   if (!$('agua').hidden) $('agua-x').click();
   else if (!$('parabens').hidden) $('parabens-ok').click();
   else if (document.querySelector('[data-cancelar]')) document.querySelector('[data-cancelar]').click();
   else if (pilha[pilha.length - 1] !== 'inicio') voltar();
-  else return;
+  else if (ev.target.closest?.('input,textarea,select')) ev.target.blur();
+  else sairDoApp();
   ev.preventDefault();
 });
 

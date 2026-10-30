@@ -570,6 +570,9 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 - O ícone do hub (**Hub**, a marca do hub em traço), o último do cabeçalho, volta à página inicial do hub (`../`), que abre os outros apps; é um link, não grava nada.
   Não há botão de sair no fin: o login e o Sair ficam só na página inicial do hub (a sessão é a mesma).
+- **Esc** sai do fin para a página inicial do hub (`../`), como em todos os apps, quando nada mais usou a tecla.
+  Modal aberto fecha antes (o próprio `<dialog>` fecha com Esc), e o menu de visualização e a edição na célula também.
+  Num campo de texto, o 1º Esc só tira o foco.
 - Os seletores **De** e **Até** mostram cada ciclo pelo mês abreviado (`Out/26`, mês do início do ciclo), com o nome completo (`Outubro 2026`) no tooltip da opção.
   Os dois ficam lado a lado, sem texto ou traço entre eles (`Out/26` `Nov/26`).
 - O cabeçalho (navegação De/Até, simulação, cadastro, recarregar, diagnóstico, hub) é o mesmo em qualquer largura; quando não cabe numa linha só, quebra para a seguinte.

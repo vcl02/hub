@@ -94,7 +94,7 @@ test('voltar é só a seta azul, sem texto', async () => {
   await ctx.close();
 });
 
-test('Esc fecha tela cheia, cancela edição e volta', async () => {
+test('Esc fecha tela cheia, cancela edição, volta e, na tela inicial, sai do app', async () => {
   const { ctx, pg } = await abrirApp({ agua: true });
   await pg.tap('.slot >> nth=0');
   assert.equal(await pg.isVisible('#agua'), true);
@@ -111,5 +111,13 @@ test('Esc fecha tela cheia, cancela edição e volta', async () => {
   await pg.keyboard.press('Escape');
   assert.equal(await pg.locator('#f-treino [data-cancelar]').count(), 0);                      // cancelou a edição
   assert.equal(await pg.isVisible('#v-fim'), true);
+  await pg.evaluate(() => { window.saidas = 0; sairDoApp = () => { saidas++; }; });           // fora do hub ../ é a própria raiz
+  await pg.keyboard.press('Escape');
+  await pg.waitForSelector('#v-exercicio:not([hidden])');                                      // do resumo, a tela de antes
+  await pg.keyboard.press('Escape');
+  await pg.waitForSelector('#v-inicio:not([hidden])');
+  assert.equal(await pg.evaluate(() => saidas), 0);
+  await pg.keyboard.press('Escape');                                                           // e da tela inicial sai do app
+  assert.equal(await pg.evaluate(() => saidas), 1);
   await ctx.close();
 });

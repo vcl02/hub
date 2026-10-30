@@ -6,6 +6,7 @@
 - Abre na hora com a cópia do aparelho, inclusive sem internet; depois envia o que estava pendente e traz a nuvem e o Treino.
 - **Rede ruim (metrô):** cada pedido ao Supabase tem limite de 15 s (a IA, 40 s); estourou, conta como sem internet (fica salvo no aparelho e envia na próxima tentativa), e o envio nunca fica preso. Envio que chegou à nuvem mas cuja resposta se perdeu não é somado de novo na tentativa seguinte (o mesmo trecho de caminhada não entra duas vezes; comida vai por id e repetir não duplica).
 - **O dia no endereço** (`?dia=AAAA-MM-DD`, como o `?ciclo` do Fin; em hoje, sem): ‹ ›, os últimos 7 dias e a página inicial abrem o dia com ele; recarregar mantém, e o Voltar do navegador volta ao dia de antes. Dia anterior é só leitura, como sempre. Hoje, futuro ou texto inválido em `?dia`: hoje.
+- **Esc:** fecha a prévia aberta; num campo de texto, só tira o foco; sem nada aberto, sai do app para a página inicial do hub (`../`), como em todos os apps.
 
 ## Gasto do dia
 

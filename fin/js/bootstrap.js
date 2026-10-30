@@ -166,5 +166,15 @@ addEventListener('online', () => {
     else if (telaLivreParaRecarregar()) recarregarDados();
 });
 
+// Esc sai do Fin (volta para a página inicial do hub, ../) quando nada mais usou a tecla, como em todos os apps: modal aberto
+// (o próprio <dialog> fecha com Esc), menu e edição na célula tratam antes; num campo de texto, o 1º Esc só tira o foco.
+function sairDoApp() { location.href = '../'; }
+window.addEventListener('keydown', e => {
+    if (e.key != 'Escape' || e.defaultPrevented || e.isComposing) return;
+    if (e.target.closest && e.target.closest('input,textarea,select')) { e.target.blur(); return; }
+    if (document.querySelector('dialog[open]')) return;
+    sairDoApp();
+});
+
 if (API.includes('SEUPROJETO')) { mostraTela(1); load(); }   // sem chaves configuradas: pula o login (modo dev)
 else boot();
