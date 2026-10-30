@@ -37,7 +37,7 @@ test('tema escuro único: hub, fin e tr com o mesmo fundo', () => {
   assert.match(ler('fin/css/base.css'), /--bg: #1B1E21;/);
   assert.match(ler('tr/css/base.css'), /--bg:#1B1E21;/);
   assert.match(ler('al/css/al.css'), /--bg:#1B1E21;/);
-  assert.match(ler('corpo/css/corpo.css'), /--bg:#1B1E21;/);
+  assert.match(ler('corpo/index.html'), /<link rel="stylesheet" href="\.\.\/base\/tokens\.css">/);   // na base comum
   assert.match(ler('base/tokens.css'), /--bg:#1B1E21;/);   // módulo na base comum: o fundo vem de lá
   assert.match(ler('agua/index.html'), /<link rel="stylesheet" href="\.\.\/base\/tokens\.css">/);
   for (const arquivo of ['index.html', 'fin/index.html', 'tr/index.html', 'al/index.html', 'corpo/index.html', 'agua/index.html']) assert.match(ler(arquivo), /<meta name=("theme-color"|theme-color) content="#1B1E21">/, arquivo);
@@ -186,4 +186,11 @@ test('base comum: tokens e componentes existem, a referência carrega os dois e 
   assert.doesNotMatch(comp, /@view-transition\{/, 'transição só no passo 3, em todos os módulos de uma vez');
   assert.match(ref, /<link rel="stylesheet" href="tokens\.css">\n<link rel="stylesheet" href="componentes\.css">/);
   assert.deepEqual([...ref.matchAll(/<h1>([^<]+)<\/h1>/g)].map(m => m[1]), ['Alimentação', 'Água', 'Corpo', 'Treino', 'Fin']);
+});
+
+test('módulos na base comum só usam as cores da base (nada de --teal, --cyan, --green… que deixaram de existir)', () => {
+  for (const app of ['agua', 'corpo']) {
+    const arquivos = [`${app}/index.html`, ...readdirSync(path.join(RAIZ, app, 'js')).map(n => `${app}/js/${n}`), ...readdirSync(path.join(RAIZ, app, 'css')).map(n => `${app}/css/${n}`)];
+    for (const f of arquivos) assert.doesNotMatch(ler(f), /var\(--(teal|cyan|yellow|blue|green|red|on-teal|on-cyan)[a-z-]*\)/, f);
+  }
 });

@@ -10,6 +10,8 @@
 <link rel="icon" href="icons/corpo-192.png">
 <link rel="apple-touch-icon" href="icons/corpo-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../base/tokens.css">
+<link rel="stylesheet" href="../base/componentes.css">
 <link rel="stylesheet" href="css/corpo.css">
 </head>
 <body>
@@ -30,11 +32,11 @@
 <!-- Corpo: peso atual, perfil, medida do dia, evolução e histórico. Tudo preenchido por js/telas.js. -->
 <section id="v-corpo" class="view" hidden>
   <header class="topo">
-    <h1>Corpo</h1>
     <!-- Hub: volta à página inicial (../), que abre os outros apps -->
-    <a class="icon-btn" href="../" id="i-hub" title="Hub" aria-label="Hub">
+    <a class="bt-ic" href="../" id="i-hub" title="Hub" aria-label="Hub">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M9.9 9.9 6.6 6.6M14.1 9.9l3.3-3.3M9.9 14.1l-3.3 3.3M14.1 14.1l3.3 3.3"/><circle cx="5" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></svg>
     </a>
+    <h1>Corpo</h1>
   </header>
 
   <!-- ‹ › e arrastar de lado trocam o dia mostrado (para trás até o 1º dia com registro, para frente até hoje), como no al -->
@@ -44,18 +46,18 @@
     <button type="button" class="bt-ic" id="d-prox" title="Próximo dia" aria-label="Próximo dia"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
   </nav>
   <!-- Dia anterior (no formulário ou pelo ?dia=, que acompanha o dia): só leitura; Hoje volta para hoje -->
-  <p class="so-leitura" id="dia-visto" hidden><span id="dia-nome"></span> · só leitura <button type="button" class="chip-bt" id="dia-hoje">Hoje</button></p>
-  <div class="peso-card" id="c-resumo" hidden></div>
+  <p class="so-leitura" id="dia-visto" hidden><span id="dia-nome"></span> · só leitura <button type="button" class="chip ativo" id="dia-hoje">Hoje</button></p>
+  <div class="cartao destaque peso-card" id="c-resumo" hidden></div>
   <p class="perfil" id="c-perfil"></p>
 
   <!-- Medida do dia (hoje por padrão; outro dia pela data): peso e/ou barriga, 1 por dia -->
   <form id="c-form" class="cartao form" novalidate>
     <div class="quando">
-      <input id="c-data" type="date" aria-label="Dia" required>
-      <input id="c-hora" type="time" aria-label="Horário da medida">
+      <input id="c-data" class="campo" type="date" aria-label="Dia" required>
+      <input id="c-hora" class="campo" type="time" aria-label="Horário da medida">
     </div>
     <p class="aviso" id="c-aviso" hidden></p>
-    <div class="campo">
+    <div class="grandeza">
       <label for="c-peso">Peso</label>
       <div class="stepper">
         <button type="button" data-passo="peso" data-dir="-1" aria-label="Diminuir peso">−</button>
@@ -63,7 +65,7 @@
         <button type="button" data-passo="peso" data-dir="1" aria-label="Aumentar peso">+</button>
       </div>
     </div>
-    <div class="campo">
+    <div class="grandeza">
       <label for="c-cintura" title="Na linha do umbigo">Barriga</label>
       <div class="stepper">
         <button type="button" data-passo="cintura" data-dir="-1" aria-label="Diminuir barriga">−</button>
@@ -84,15 +86,15 @@
     <p class="sono-res" id="d-sono-res" hidden></p>
     <div class="dia-linha">
       <span>Evacuação <b id="ev-total">0</b></span>
-      <button type="button" class="chip-bt mais" id="ev-mais" title="Evacuei agora" aria-label="Evacuei agora">+1</button>
+      <button type="button" class="chip ativo" id="ev-mais" title="Evacuei agora" aria-label="Evacuei agora">+1</button>
     </div>
-    <ul class="ev-horas" id="ev-horas"></ul>
+    <ul class="chips" id="ev-horas"></ul>
     <p class="evac-ultima" id="ev-ultima" hidden></p>
     <div class="dia-linha">
       <span>Xixi <b id="x-total">0</b></span>
-      <button type="button" class="chip-bt mais" id="x-mais" title="Fiz xixi agora" aria-label="Fiz xixi agora">+1</button>
+      <button type="button" class="chip ativo" id="x-mais" title="Fiz xixi agora" aria-label="Fiz xixi agora">+1</button>
     </div>
-    <ul class="ev-horas" id="x-horas"></ul>
+    <ul class="chips" id="x-horas"></ul>
   </div>
 
   <!-- Sono: média e as últimas noites, com BOM (8 h ou mais), OK (7 a 8) e RUIM (menos de 7) -->
@@ -108,7 +110,7 @@
   <h3 class="sec">Evolução da barriga</h3>
   <div id="c-grafico-cint" class="cartao chart"></div>
   <h3 class="sec">Histórico</h3>
-  <ul id="c-historico" class="cartao hist"></ul>
+  <ul id="c-historico" class="lista hist"></ul>
 </section>
 
 <p id="sync" class="sync" role="status" hidden></p>

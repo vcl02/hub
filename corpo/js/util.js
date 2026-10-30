@@ -88,14 +88,14 @@ function grafico(box, P, unidade, rotulo) {   // P = [{ data, valor, hora? }] em
     .map(([d, ancora, px]) => `<text class="eixo-x" x="${px}" y="${H - 6}" text-anchor="${ancora}" font-size="11" fill="var(--muted)">${dataCurta(d)}</text>`).join('');
   box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${rotulo}">
     ${valores}
-    <path d="M${x(P[0].data)},${H - b} L${pts.join(' L')} L${x(fim.data)},${H - b} Z" fill="var(--teal)" fill-opacity=".12"/>
-    <polyline points="${pts.join(' ')}" fill="none" stroke="var(--teal)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-    ${P.map(p => `<circle cx="${x(p.data)}" cy="${y(p.valor)}" r="2.5" fill="var(--teal)"/>`).join('')}
-    <circle cx="${x(fim.data)}" cy="${y(fim.valor)}" r="4.5" fill="var(--teal)"/>
+    <path d="M${x(P[0].data)},${H - b} L${pts.join(' L')} L${x(fim.data)},${H - b} Z" fill="var(--cor)" fill-opacity=".12"/>
+    <polyline points="${pts.join(' ')}" fill="none" stroke="var(--cor)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${P.map(p => `<circle cx="${x(p.data)}" cy="${y(p.valor)}" r="2.5" fill="var(--cor)"/>`).join('')}
+    <circle cx="${x(fim.data)}" cy="${y(fim.valor)}" r="4.5" fill="var(--cor)"/>
     ${datas}
     <g class="dica" visibility="hidden" pointer-events="none">
       <line y1="${t}" y2="${H - b}" stroke="var(--muted)" stroke-dasharray="2 3"/>
-      <circle r="5" fill="var(--bg)" stroke="var(--teal)" stroke-width="2.5"/>
+      <circle r="5" fill="var(--bg)" stroke="var(--cor)" stroke-width="2.5"/>
       <rect height="20" rx="6" fill="#30353A" stroke="var(--line)"/>
       <text font-size="11" fill="var(--fg)" text-anchor="middle"></text>
     </g>

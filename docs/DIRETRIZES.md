@@ -174,7 +174,9 @@ Pedido do mantenedor em 30/10/2026, feito aos poucos, passo a passo, e sempre pa
   1. Base visual e referência: criadas e aprovadas em 30/10/2026 (cores e detalhes se ajustam depois, na base, para todos).
   2. Cada módulo passa a carregar a base e troca as peças próprias pelas da base: Água, Corpo, Alimentação, Treino, página inicial e, por último, o Fin (o maior, que começa só renomeando os tokens próprios para os da base).
      Feito: Água (30/10/2026: cabeçalho, barra do dia com a pílula Hoje, cartão de destaque, chips, campo com +, lista do dia e avisos da base; o CSS próprio ficou só com a cor, os lembretes, a meta batida e os 7 dias).
+     Feito: Corpo (30/10/2026: as mesmas peças, o histórico na lista da base e os horários do dia em chips; o gráfico passou a usar `--cor`).
      O servidor de teste de cada módulo entrega `../base/` (como `../corpo/perfil.js`).
+     Módulo na base usa só as cores da base (`--cor`, `--ok`, `--erro`…), também no JavaScript (ex.: o gráfico): `tests/hub.test.mjs` confere.
   3. Navegação leve: transição entre páginas (`@view-transition`, ligada em todos os módulos no mesmo commit: com só uma das duas páginas aceitando, o navegador cancela a transição com erro na página; e a página que troca antes de aparecer, como o redirecionamento para o login, precisa tratar a transição cancelada), pré-carregar os módulos a partir da página inicial e um service worker só, na raiz.
   4. Núcleo de código comum (`base/nucleo.js`): cliente do Supabase com limite de tempo, login e volta ao hub, armazenamento, toast, confirmar, repetido, datas, barra do dia e o motor de sincronização (diferença, mescla e voo), testados uma vez; os módulos migram na mesma ordem do passo 2.
 - Página única (cada módulo uma rota) fica fora por enquanto: seria reescrever tudo; os passos 1 a 4 dão quase a mesma sensação com bem menos risco.

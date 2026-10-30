@@ -72,6 +72,7 @@ function desenhar() {
   travarPassado();
   const dia = $('c-data').value;
   $('d-nome').textContent = dataOk(dia) ? nomeDoDia(dia) : '';
+  $('d-nome').classList.toggle('hoje', dia === hoje());   // o hoje igual em todo módulo (pílula da cor, base)
   $('d-ant').disabled = !dataOk(dia) || dia <= primeiroDia();
   $('d-prox').disabled = !dataOk(dia) || dia >= hoje();
   diaNaUrl(dia, false);
@@ -89,10 +90,10 @@ function pintarEvacuacao() {
   $('d-sono-res').hidden = x?.sono == null;
   if (x?.sono != null) $('d-sono-res').innerHTML = sonoTxt(x.sono);
   $('ev-total').textContent = ev.length;
-  $('ev-horas').innerHTML = ev.map((h, i) => `<li><button type="button" data-tirar-ev="${i}" title="Tirar (toque duplo)" aria-label="Tirar evacuação ${h || 'sem horário'}">${h || 'sem horário'} ×</button></li>`).join('');
+  $('ev-horas').innerHTML = ev.map((h, i) => `<li><button type="button" class="chip" data-tirar-ev="${i}" title="Tirar (toque duplo)" aria-label="Tirar evacuação ${h || 'sem horário'}">${h || 'sem horário'} ×</button></li>`).join('');
   const xx = x?.xixis || [];
   $('x-total').textContent = xx.length;
-  $('x-horas').innerHTML = xx.map((h, i) => `<li><button type="button" data-tirar-xixi="${i}" title="Tirar (toque duplo)" aria-label="Tirar xixi das ${h}">${h} ×</button></li>`).join('');
+  $('x-horas').innerHTML = xx.map((h, i) => `<li><button type="button" class="chip" data-tirar-xixi="${i}" title="Tirar (toque duplo)" aria-label="Tirar xixi das ${h}">${h} ×</button></li>`).join('');
   const ultima = [...db.dias].reverse().find(d => d.evacuacoes.length && d.data <= hoje());
   // Só avisa quando faz 3 dias ou mais desde a última evacuação (prisão de ventre é comum em dieta: fibra e água)
   const n = ultima ? Math.round((deIso(hoje()) - deIso(ultima.data)) / 864e5) : 0;
@@ -156,7 +157,7 @@ function pintarHistorico() {
   const L = recentes();
   $('c-historico').innerHTML = L.length ? L.map(m => m.data === editando
     ? `<li class="editando"><span class="ed-inline"><input type="date" id="em-data" value="${m.data}" min="${hoje()}" max="${hoje()}" aria-label="Data"><input type="time" id="em-hora" value="${m.hora}" aria-label="Horário"><input id="em-peso" inputmode="decimal" value="${m.peso ? virgula(m.peso) : ''}" placeholder="kg" title="Peso (kg)" aria-label="Peso em kg"><input id="em-cint" inputmode="decimal" value="${m.cintura ? virgula(m.cintura) : ''}" placeholder="cm" title="Barriga (cm, linha do umbigo)" aria-label="Barriga em cm"></span><span class="ed-acoes">${btIcone('x', 'Cancelar', 'data-cancelar')}${btIcone('ok', 'Salvar', `data-salvar="${m.data}"`, 'ok')}</span></li>`
-    : `<li class="medida"><i class="h-d">${dataCurta(m.data)}${m.hora ? ' <br>' + m.hora : ''}</i> <span class="h-v">${[m.peso && fmt(m.peso) + '\u00a0kg', m.cintura && fmt(m.cintura) + '\u00a0cm'].filter(Boolean).join(' · ')}${m.peso ? `<small class="h-sub"> · IMC ${fmt(imc(m.peso))}</small>` : ''}</span> <span class="ed-acoes">${btIcone('lapis', 'Editar', `data-editar="${m.data}"`)}${btIcone('lixo', 'Apagar', `data-apagar="${m.data}"`, 'perigo')}</span></li>`).join('')
+    : `<li class="medida"><i class="h-d hora">${dataCurta(m.data)}${m.hora ? ' <br>' + m.hora : ''}</i> <span class="h-v oque">${[m.peso && fmt(m.peso) + '\u00a0kg', m.cintura && fmt(m.cintura) + '\u00a0cm'].filter(Boolean).join(' · ')}${m.peso ? `<small class="h-sub"> · IMC ${fmt(imc(m.peso))}</small>` : ''}</span> <span class="ed-acoes">${btIcone('lapis', 'Editar', `data-editar="${m.data}"`)}${btIcone('lixo', 'Apagar', `data-apagar="${m.data}"`, 'perigo')}</span></li>`).join('')
     : '<li class="vazio">Nenhuma medida ainda.</li>';
 }
 

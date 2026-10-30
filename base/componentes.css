@@ -29,6 +29,8 @@ h1{font-size:var(--t-xl)} h2{font-size:var(--t-lg)}
 .topo h1::before{content:'';display:inline-block;width:10px;height:10px;margin-right:var(--e-2);border-radius:50%;background:var(--cor);vertical-align:.12em}
 .bt-ic{display:grid;place-items:center;flex:none;width:40px;height:40px;padding:0;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);color:var(--fg);text-decoration:none}
 .bt-ic:disabled{opacity:.35}
+.bt-ic.ok{border-color:var(--cor);background:var(--cor);color:var(--on-cor)}
+.bt-ic.perigo{color:var(--erro)}
 .bt-ic.perigo.armado{border-color:var(--erro);background:var(--erro);color:var(--bg)}
 
 /* ---------- Barra do dia: ‹ dia › — hoje sempre igual em todo módulo: "Hoje" com a pílula da cor do módulo ---------- */
@@ -56,7 +58,7 @@ h1{font-size:var(--t-xl)} h2{font-size:var(--t-lg)}
 
 /* ---------- Lista: hora · o quê (nome e detalhe) · valor · ação ---------- */
 .lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--e-2)}
-.lista li{display:grid;grid-template-columns:3em 1fr auto auto;align-items:center;gap:var(--e-2);min-height:52px;padding:var(--e-2) var(--e-2) var(--e-2) var(--e-3);background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.lista li{display:grid;grid-template-columns:minmax(3em,auto) 1fr auto auto;align-items:center;gap:var(--e-2);min-height:52px;padding:var(--e-2) var(--e-2) var(--e-2) var(--e-3);background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
 .lista .hora{color:var(--muted);font-size:var(--t-sm);font-variant-numeric:tabular-nums}
 .lista .oque{display:flex;flex-direction:column;min-width:0}
 .lista .oque small{color:var(--muted);font-size:var(--t-sm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

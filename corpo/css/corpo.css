@@ -1,132 +1,82 @@
-/* Corpo — tema escuro do hub, verde-água do app; card do peso, formulário com − / +, gráficos e histórico. */
-:root{
-  --bg:#1B1E21; --surface:#24272B; --line:#3B4147; --fg:#E9ECEF; --muted:#AAB1B8;
-  --teal:#3DD6B5; --teal-soft:#173A33; --on-teal:#0F2420;
-  --green:#4CCB78; --green-soft:#1E392A; --red:#F06A61; --red-soft:#402624;
-  --display:'Barlow Condensed','Arial Narrow','Roboto Condensed',sans-serif;
-  --body:'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
-  --r:14px;
-  color-scheme:dark;   /* só tema escuro, mesmo com o celular no modo claro */
-}
-*{box-sizing:border-box}
-[hidden]{display:none!important}
-html,body{background:var(--bg);color:var(--fg)}
-body{margin:0;font-family:var(--body);font-size:1rem;line-height:1.4;-webkit-tap-highlight-color:transparent}
-button,input{font:inherit;color:inherit}
-button{cursor:pointer}
-:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
-p{margin:0}
-.wrap{max-width:560px;margin:0 auto;overflow-x:clip;padding:max(12px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
-.view{display:flex;flex-direction:column;gap:12px}
-h1{font-family:var(--display);font-weight:700;font-size:1.8rem;line-height:1.05;margin:0}
-h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:500;margin:8px 0 0}
-.cartao{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
-.btn{border-radius:12px;border:1px solid var(--line);background:var(--surface);padding:12px 16px;font-weight:600;min-height:52px}
-.btn.primario{background:var(--teal);border-color:var(--teal);color:var(--on-teal)}
-.erro{color:var(--red);font-size:.875rem;min-height:1.2em}
-.bom{color:var(--green);font-weight:600} .ruim{color:var(--red);font-weight:600}
-.icon-btn{text-decoration:none;width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);display:grid;place-items:center;flex:none}
-.topo{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-top:6px}
-
-/* ---------- Login (só fora do hub) ---------- */
-.login fieldset{display:flex;flex-direction:column;gap:10px;margin:40px 0 0;padding:0;border:0}
-.login input{padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+/* Corpo — o que é só dele, sobre a base comum (../base/tokens.css e ../base/componentes.css): a cor (verde-água), o cartão
+   do peso, a medida do dia com − / +, o dia (sono, evacuações e xixis), sono, bexiga, gráficos e o histórico. */
+:root{--cor:#3DD6B5}
+.bom{color:var(--ok);font-weight:600} .ruim{color:var(--erro);font-weight:600}
 
 /* ---------- Peso atual ---------- */
-.peso-card{display:flex;align-items:center;gap:16px;background:linear-gradient(160deg,var(--teal-soft),var(--surface) 70%);border:1px solid var(--teal);border-radius:var(--r);padding:14px 16px}
-.peso-card>b{font-family:var(--display);font-size:clamp(2.4rem,13vw,4.25rem);font-weight:700;line-height:.9;white-space:nowrap;color:var(--teal)}   /* encolhe em tela estreita */
-.peso-card>b small{font-size:1.25rem;margin-left:2px;color:var(--muted);font-family:var(--body);font-weight:500}
-.pc-lado{display:flex;flex-direction:column;gap:2px;font-size:.875rem;min-width:0}
+.peso-card{display:flex;align-items:center;gap:var(--e-4)}
+.peso-card>b{font-family:var(--display);font-size:clamp(2.4rem,13vw,4.25rem);font-weight:700;line-height:.9;white-space:nowrap;color:var(--cor)}   /* encolhe em tela estreita */
+.peso-card>b small{font-size:var(--t-lg);margin-left:2px;color:var(--muted);font-family:var(--body);font-weight:500}
+.pc-lado{display:flex;flex-direction:column;gap:2px;font-size:var(--t-sm);min-width:0}
 .pc-lado i{color:var(--muted)}
-.pc-lado .falta{color:var(--muted);font-size:.75rem}
-.perfil{color:var(--muted);font-size:.875rem}
+.pc-lado .falta{color:var(--muted);font-size:var(--t-xs)}
+.perfil{color:var(--muted);font-size:var(--t-sm)}
 
-/* ---------- Medida do dia ---------- */
-.form{display:flex;flex-direction:column;gap:12px}
-.quando{display:flex;gap:8px}
-.quando input{flex:1;min-width:0;border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:10px 12px;font-family:var(--display);font-weight:700;font-size:1.25rem}
-.aviso{font-size:.875rem;padding:10px 12px;border-radius:10px;background:var(--teal-soft)}
-.aviso b{color:var(--teal)}
-.campo{display:flex;flex-direction:column;gap:6px}
-.campo>label{font-size:.875rem;color:var(--muted)}
-.stepper{display:grid;grid-template-columns:56px 1fr 56px;gap:8px;align-items:stretch}
-.stepper button{border:1px solid var(--line);background:var(--bg);border-radius:12px;font-size:1.6rem;font-weight:600;min-height:56px}
-.mid{display:flex;align-items:baseline;justify-content:center;gap:4px;border:1px solid var(--line);border-radius:12px;padding:0 10px;background:var(--bg)}
-.mid input{width:100%;min-width:0;border:0;background:transparent;text-align:right;font-family:var(--display);font-weight:700;font-size:2.25rem;padding:4px 0;font-variant-numeric:tabular-nums}
+/* ---------- Medida do dia: data e horário, peso e barriga com − / + ---------- */
+.form{display:flex;flex-direction:column;gap:var(--e-3)}
+.quando{display:flex;gap:var(--e-2)}
+.quando .campo{flex:1;font-family:var(--display);font-weight:700;font-size:var(--t-lg)}
+.aviso{font-size:var(--t-sm);padding:10px 12px;border-radius:var(--r);background:var(--cor-soft)}
+.aviso b{color:var(--cor)}
+.grandeza{display:flex;flex-direction:column;gap:6px}
+.grandeza>label{font-size:var(--t-sm);color:var(--muted)}
+.stepper{display:grid;grid-template-columns:56px 1fr 56px;gap:var(--e-2);align-items:stretch}
+.stepper button{border:1px solid var(--line);background:var(--bg);border-radius:var(--r);font-size:1.6rem;font-weight:600;min-height:56px}
+.mid{display:flex;align-items:baseline;justify-content:center;gap:4px;border:1px solid var(--line);border-radius:var(--r);padding:0 10px;background:var(--bg)}
+.mid input{width:100%;min-width:0;border:0;background:transparent;text-align:right;font-family:var(--display);font-weight:700;font-size:var(--t-2xl);padding:4px 0;font-variant-numeric:tabular-nums}
 .mid input:focus{outline:none}
-.mid:focus-within{outline:3px solid var(--teal);outline-offset:1px}
-.unit{color:var(--muted);flex:none;min-width:2.2em;font-size:.875rem}
+.mid:focus-within{outline:3px solid var(--cor);outline-offset:1px}
+.unit{color:var(--muted);flex:none;min-width:2.2em;font-size:var(--t-sm)}
 
 /* ---------- Dia: sono, evacuações e xixis ---------- */
 .evac{display:flex;flex-direction:column;gap:10px}
-.dia-linha{display:flex;align-items:center;gap:8px}
-.dia-linha>span{margin-right:auto;font-size:.95rem}
-.dia-linha>span b{font-family:var(--display);font-size:1.35rem;margin-left:6px;color:var(--teal)}
-.dia-linha input{width:4.5em;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);text-align:right;font-family:var(--display);font-weight:700;font-size:1.25rem}
+.dia-linha{display:flex;align-items:center;gap:var(--e-2)}
+.dia-linha>span{margin-right:auto}
+.dia-linha>span b{font-family:var(--display);font-size:var(--t-lg);margin-left:6px;color:var(--cor)}
 .dia-linha small{color:var(--muted)}
-.chip-bt{min-width:64px;border:1px solid var(--teal);border-radius:999px;background:var(--teal-soft);padding:8px 14px;color:var(--teal);font-weight:700}
-.ev-horas{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
-.ev-horas:empty{display:none}
-.ev-horas button{border:1px solid var(--line);border-radius:999px;background:transparent;padding:4px 10px;font-size:.875rem;color:var(--fg)}
-.ev-horas button.armado{border-color:var(--red);background:var(--red);color:var(--bg)}
-.evac-ultima{font-size:.875rem;color:var(--red);font-weight:600}   /* só aparece como aviso: 3+ dias sem evacuar */
+.dia-linha .chip.ativo{min-width:64px;font-weight:700}
+.chips:empty{display:none}
+.evac-ultima{font-size:var(--t-sm);color:var(--erro);font-weight:600}   /* só aparece como aviso: 3+ dias sem evacuar */
 
 /* ---------- Sono: dormi e acordei, horas e BOM (verde), OK (neutro) ou RUIM (vermelho) ---------- */
-.sono-linha{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sono-linha{display:grid;grid-template-columns:1fr 1fr;gap:var(--e-2)}
 .sono-linha>span{grid-column:1/-1}
-.hora-l{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--muted)}
-.hora-l input{width:100%;text-align:left;padding:6px 8px;border:1px solid var(--line);border-radius:10px;background:var(--bg);font-family:var(--display);font-weight:700;font-size:1.15rem;color:var(--fg)}
+.hora-l{display:flex;flex-direction:column;gap:4px;font-size:var(--t-xs);color:var(--muted)}
+.hora-l input{width:100%;text-align:left;padding:6px 8px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--bg);font-family:var(--display);font-weight:700;font-size:1.15rem;color:var(--fg)}
 .hora-l input::-webkit-calendar-picker-indicator{display:none}   /* tocar no campo já abre o seletor */
-.sono-res,.sono-media{display:flex;align-items:center;gap:8px;margin:0;font-size:.95rem}
-.sono-res b,.sono-media b{font-family:var(--display);font-size:1.35rem}
-.nivel{font-size:.75rem;font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
-.nivel.bom{border-color:var(--green);background:var(--green-soft);color:var(--green)}
-.nivel.ruim{border-color:var(--red);background:var(--red-soft);color:var(--red)}
-.noites{margin-top:8px}
-.noites li{padding:8px 0}
-.noites .h-v{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.sono-res,.sono-media{display:flex;align-items:center;gap:var(--e-2);margin:0}
+.sono-res b,.sono-media b{font-family:var(--display);font-size:var(--t-lg)}
+.nivel{font-size:var(--t-xs);font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:var(--r-pill);border:1px solid var(--line);color:var(--muted)}
+.nivel.bom{border-color:var(--ok);background:var(--ok-soft);color:var(--ok)}
+.nivel.ruim{border-color:var(--erro);background:var(--erro-soft);color:var(--erro)}
+.noites{list-style:none;margin:var(--e-2) 0 0;padding:0}
+.noites li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:var(--e-2) 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.noites li:first-child{border-top:0}
+.noites .h-d{color:var(--muted);font-size:var(--t-sm)}
+.noites .h-sub{color:var(--muted);font-size:var(--t-sm)}
+.noites .h-v{display:flex;align-items:center;gap:var(--e-2);justify-content:flex-end}
 .noites .h-v b{font-family:var(--display);font-size:1.1rem}
 
 /* ---------- Bexiga ---------- */
-.numeros{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.numeros{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:var(--e-2)}
 .numeros li{display:flex;flex-direction:column}
-.numeros b{font-family:var(--display);font-size:1.5rem;line-height:1.1;color:var(--teal)}
-.numeros span{font-size:.8rem;color:var(--muted)}
-.bx-nota,.bx-vazio{margin:8px 0 0;font-size:.8rem;color:var(--muted)}
+.numeros b{font-family:var(--display);font-size:1.5rem;line-height:1.1;color:var(--cor)}
+.numeros span{font-size:var(--t-xs);color:var(--muted)}
+.bx-nota,.bx-vazio{margin:var(--e-2) 0 0;font-size:var(--t-xs);color:var(--muted)}
 .bx-vazio{margin:0;font-style:italic}
 
 /* ---------- Gráficos ---------- */
 .chart{padding:10px}
 .chart svg{display:block;width:100%;height:auto;touch-action:pan-y;cursor:crosshair}   /* arrastar o dedo para o lado mostra os pontos; para cima e para baixo rola */
 
-/* ---------- Histórico ---------- */
-.hist{list-style:none;margin:0;padding:0}
-.hist li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:10px 14px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
-.hist li:first-child{border-top:0}
-.hist .h-d{color:var(--muted);font-size:.875rem;line-height:1.2}
-.hist .h-v{font-weight:600}
-.hist .h-sub{font-weight:400;color:var(--muted);font-size:.875rem;white-space:nowrap}
-.hist .vazio{display:block;color:var(--muted);font-style:italic}
-.hist li.editando{display:flex;flex-wrap:wrap;gap:4px;padding:8px}
+/* ---------- Histórico (a lista da base: data e hora · peso, barriga e IMC · editar e apagar) ---------- */
+.hist .h-d{font-style:normal;line-height:1.2}
+.hist .h-sub{font-weight:400;color:var(--muted);font-size:var(--t-sm);white-space:nowrap}
+.hist li.vazio{display:block;color:var(--muted);font-style:italic}
+.hist li.editando{display:flex;flex-wrap:wrap;gap:4px;padding:var(--e-2)}
 .ed-acoes{display:flex;gap:6px;align-items:center;justify-content:flex-end;margin-left:auto}
+.ed-acoes .bt-ic{width:34px;height:34px}
 .ed-inline{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
-.ed-inline input{border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:5px 6px;font-size:.85rem;max-width:4.6em}
+.ed-inline input{border:1px solid var(--line);border-radius:var(--r-sm);background:var(--bg);padding:5px 6px;font-size:.85rem;max-width:4.6em}
 .ed-inline input[type=date]{max-width:8.4em}
 .ed-inline #em-peso,.ed-inline #em-cint{max-width:3.6em}
-.bt-ic{width:32px;height:32px;flex:none;display:grid;place-items:center;padding:0;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--muted)}
-.bt-ic.ok{background:var(--teal);border-color:var(--teal);color:var(--on-teal)}
-.bt-ic.perigo{color:var(--red)}
-.bt-ic.perigo.armado{background:var(--red);border-color:var(--red);color:var(--bg)}
-
-/* ---------- Avisos ---------- */
-.dia-nav{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.dia-nav b{font-weight:600;text-transform:capitalize}
-.dia-nav .bt-ic{display:grid;place-items:center;width:36px;height:36px;padding:0;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--muted);flex:none}
-.dia-nav .bt-ic:disabled{opacity:.35}
-.so-leitura{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:.9rem;margin:0}
-.so-leitura span{display:inline-block}
-.so-leitura span::first-letter{text-transform:uppercase}
-.sync{font-size:.8rem;color:var(--muted);text-align:center;margin-top:12px}
-.sync.erro{color:var(--red)}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:calc(100% - 32px);background:#30353A;border:1px solid var(--line);border-radius:12px;padding:10px 16px;box-shadow:0 10px 30px rgba(0,0,0,.4);font-size:.9rem;z-index:10}
-.toast.erro{border-color:var(--red);color:var(--red)}

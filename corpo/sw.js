@@ -3,7 +3,7 @@
 // Só apaga caches "corpo-" antigos: os outros apps dividem a mesma origem e os mesmos caches.
 const CACHE_ESTATICO = 'corpo-estatico';
 const ARQUIVOS_ESTATICOS = [
-  './perfil.js', './js/config.js', './js/util.js', './js/banco.js', './js/telas.js', './js/bootstrap.js',
+  './perfil.js', '../base/tokens.css', '../base/componentes.css', './js/config.js', './js/util.js', './js/banco.js', './js/telas.js', './js/bootstrap.js',
   './css/corpo.css', './', './index.html', '../supabase.js', './manifest.webmanifest', './icons/corpo-192.png', './icons/corpo-512.png'];
 
 self.addEventListener('install', evento => {
