@@ -26,11 +26,10 @@ const SONO_FOLGA = [3];   // Date.getDay do dia em que acordou: quarta
 
 const HABITOS = Object.freeze([
   { id: 'treino', nome: 'Treino', pasta: 'tr/' },
-  { id: 'deficit', nome: 'Déficit', pasta: 'al/' },
-  { id: 'peso', nome: 'Peso', pasta: 'corpo/' },   // pesagem lançada no dia
-  { id: 'sono', nome: 'Sono', pasta: 'corpo/' },   // 7 h ou mais, lançado no dia; terça → quarta é folga
+  { id: 'deficit', nome: 'Alimentação', pasta: 'al/' },   // o déficit do dia
+  { id: 'corpo', nome: 'Corpo (Peso e Sono)', pasta: 'corpo/' },   // as duas partes: pesagem e sono (7 h ou mais), lançados no dia
   { id: 'agua', nome: 'Água', pasta: 'agua/' },
-  { id: 'besteira', nome: 'Besteira', pasta: 'fin/' }   // qua e qui: até R$ 22 em besteira
+  { id: 'besteira', nome: 'Fin (Besteira)', pasta: 'fin/' }   // qua e qui: até R$ 22 em besteira
 ]);
 
 const diaMais = (dia, n) => { const [a, m, d] = dia.split('-').map(Number); return diaDoInstante(new Date(a, m - 1, d + n, 12).getTime()); };
@@ -54,7 +53,12 @@ function estadoNoDia(id, dia, D, hoje) {
     const c = contaDoDia(D, dia);
     return c.comidas.length && !c.tarde && c.meta != null && c.comido <= c.meta ? 'feito' : aindaDa;
   }
-  if (id === 'peso') {   // pesagem lançada no próprio dia
+  if (id === 'corpo') {   // peso e sono: feito com os dois (sono de folga vale); qualquer um que falhou, falhou; senão, falta um
+    const p = estadoNoDia('peso', dia, D, hoje), s = estadoNoDia('sono', dia, D, hoje);
+    if (p === 'falhou' || s === 'falhou') return 'falhou';
+    return p === 'feito' && (s === 'feito' || s === 'folga') ? 'feito' : aindaDa;
+  }
+  if (id === 'peso') {   // pesagem lançada no próprio dia (uma das partes do Corpo)
     const m = D.medidas.find(x => x.data === dia && x.peso);
     return m && lancadoNoDia(m.pesoEm, dia) ? 'feito' : aindaDa;
   }
@@ -74,6 +78,7 @@ function estadoNoDia(id, dia, D, hoje) {
 // Primeiro dia com registro de cada hábito (sem nenhum, hoje): antes dele o hábito não existia
 function primeiroDia(id, D, hoje) {
   if (id === 'besteira') return BESTEIRA_DESDE < hoje ? BESTEIRA_DESDE : hoje;
+  if (id === 'corpo') { const p = primeiroDia('peso', D, hoje), s = primeiroDia('sono', D, hoje); return p < s ? p : s; }
   const L = id === 'treino' ? D.treinos.map(t => diaDoInstante(t.inicio)) : id === 'deficit' ? Object.keys(D.comidas)
     : id === 'peso' ? D.medidas.filter(m => m.peso).map(m => m.data) : id === 'sono' ? Object.keys(D.sonos).filter(d => D.sonos[d].sono != null)
     : Object.keys(D.aguas).filter(d => D.aguas[d] > 0);
@@ -136,6 +141,8 @@ const pad2 = n => String(n).padStart(2, '0');
 // déficit (só menor que o planejado, "200 kcal"); vermelho, já em superávit ("750 kcal")
 const acimaDaMeta = c => { const d = c.gasto - c.comido; return { valor: `${milhar(Math.abs(d))} kcal`, progresso: 1, ...(d >= 0 ? { bom: true } : { acima: true }) }; };
 // passado: um dia que já fechou (a tela inicial voltando para dias anteriores): o texto diz o que aconteceu, não o que fazer
+// Corpo (Peso e Sono): os dois textos juntos ("100,4 kg · 7 h 30"); em vermelho se alguma parte está
+const comCorpo = r => ({ ...r, corpo: { valor: `${r.peso.valor} · ${r.sono.valor}`, ...((r.peso.acima || r.sono.acima) && { acima: true }) } });
 function resumoDeHoje(D, hoje, passado = false) {
   const wd = semanaDoDia(hoje);
   const proximo = [1, 2, 3, 4, 5, 6, 7].map(n => (wd + n) % 7).find(x => ROTINA.treino.includes(x));
@@ -145,7 +152,7 @@ function resumoDeHoje(D, hoje, passado = false) {
   const presencial = ROTINA.presencial.includes(wd), gastou = D.besteiras?.[hoje] || 0;
   const proximoPresencial = [1, 2, 3, 4, 5, 6, 7].map(n => (wd + n) % 7).find(x => ROTINA.presencial.includes(x));
   const reais = v => 'R$\u00a0' + v.toLocaleString('pt-BR', { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 });
-  if (passado) return {
+  if (passado) return comCorpo({
     treino: { valor: treinou ? 'Treinou' : ROTINA.treino.includes(wd) ? 'Não treinou' : 'Folga', ...(!treinou && ROTINA.treino.includes(wd) && { acima: true }) },
     deficit: !c.comidas.length ? { valor: 'Nada lançado', acima: true } : resta == null ? { valor: 'Sem pesagem' } : resta >= 0
       ? { valor: `${milhar(resta)} kcal`, progresso: c.meta ? c.comido / c.meta : 0, bom: true }   // dentro da meta: só o que sobrou, em verde
@@ -155,8 +162,8 @@ function resumoDeHoje(D, hoje, passado = false) {
     agua: { valor: `${milhar(ml)} / ${milhar(META_AGUA_ML)} ml`, progresso: Math.min(1, ml / META_AGUA_ML) },
     besteira: !presencial ? { valor: 'Folga' }
       : { valor: `${reais(gastou)} / ${reais(LIMITE_BESTEIRA_DIA)}`, progresso: Math.min(1, gastou / LIMITE_BESTEIRA_DIA), ...(gastou > LIMITE_BESTEIRA_DIA && { acima: true }) }
-  };
-  return {
+  });
+  return comCorpo({
     treino: { valor: treinou ? 'Treinou' : ROTINA.treino.includes(wd) ? 'Dia de treino' : `Próximo: ${NOMES_SEMANA[proximo]}` },
     deficit: resta == null ? { valor: 'Sem pesagem' } : resta >= 0
       ? { valor: `${milhar(resta)} kcal restantes`, progresso: c.meta ? c.comido / c.meta : 0 }
@@ -166,7 +173,8 @@ function resumoDeHoje(D, hoje, passado = false) {
     agua: { valor: `${milhar(ml)} / ${milhar(META_AGUA_ML)} ml`, progresso: Math.min(1, ml / META_AGUA_ML) },
     besteira: !presencial ? { valor: `Próximo: ${NOMES_SEMANA[proximoPresencial]}` }
       : { valor: `${reais(gastou)} / ${reais(LIMITE_BESTEIRA_DIA)}`, progresso: Math.min(1, gastou / LIMITE_BESTEIRA_DIA), ...(gastou > LIMITE_BESTEIRA_DIA && { acima: true }) }
-  };
+
+  });
 }
 
 // Como estava no fim de um dia já passado (a tela inicial voltando para dias anteriores), pelos mesmos estados de

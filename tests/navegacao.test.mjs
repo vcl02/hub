@@ -93,7 +93,7 @@ test('entrou no hub: os apps abrem direto com a mesma sessão, sem login própri
   const { ctx, pg, faltando, erros } = await abrir(base);
   await entrar(pg, 'eu@teste.com', 'senha123');
   await pg.waitForSelector('#v-apps:not([hidden])');
-  assert.deepEqual(await pg.$$eval('.app-nome', s => s.map(x => x.textContent)), ['Treino', 'Déficit', 'Peso', 'Sono', 'Água', 'Besteira', 'Agenda', 'Anotações']);
+  assert.deepEqual(await pg.$$eval('.app-nome', s => s.map(x => x.textContent)), ['Treino', 'Alimentação', 'Corpo (Peso e Sono)', 'Água', 'Fin (Besteira)', 'Agenda', 'Anotações']);
   const larguras = await pg.$$eval('.doca .atalho', L => L.map(x => Math.round(x.getBoundingClientRect().width)));
   assert.equal(larguras.length, 2); assert.ok(Math.abs(larguras[0] - larguras[1]) <= 1, `atalhos dividem a doca ao meio: ${larguras}`);
   await pg.reload();                                                   // sessão salva: entra direto
@@ -130,9 +130,8 @@ test('hábitos com os dados dos apps: valor de hoje, ofensivas, dias perfeitos e
   await entrar(pg, 'eu@teste.com', 'senha123');
   await pg.waitForSelector('#v-apps:not([hidden])');
   const linha = id => pg.$eval(`[data-habito="${id}"]`, el => [el.querySelector('.hab-valor').textContent, el.querySelector('.hab-ofensiva b').textContent]);
-  await pg.waitForFunction(() => document.querySelector('[data-habito="peso"] .hab-valor').textContent === '100,4 kg');
-  assert.deepEqual(await linha('peso'), ['100,4 kg', '1']);                       // pesou só hoje
-  assert.deepEqual(await linha('sono'), ['7 h 30', '2']);                         // 25/10 (7 h) e hoje (7 h 30)
+  await pg.waitForFunction(() => document.querySelector('[data-habito="corpo"] .hab-valor').textContent === '100,4 kg · 7 h 30');
+  assert.deepEqual(await linha('corpo'), ['100,4 kg · 7 h 30', '1']);             // peso e sono só hoje (25/10 teve sono, sem peso)
   assert.deepEqual(await linha('agua'), ['400 / 1.000 ml', '2']);                  // 25 e 23/10, com 24/10 protegido
   assert.deepEqual(await linha('treino'), ['Próximo: qua', '2']);
   assert.deepEqual(await linha('deficit'), [(await linha('deficit'))[0], '1']);   // 700 kcal cabem na meta: hoje já conta
@@ -143,7 +142,7 @@ test('hábitos com os dados dos apps: valor de hoje, ofensivas, dias perfeitos e
   assert.equal(await pg.$$eval('[data-habito="agua"] .hab-dias i', L => L.map(i => i.className).join(' ')), 'pendente hoje futuro futuro futuro futuro futuro futuro');
   assert.equal(await pg.$$eval('[data-habito="treino"] .hab-dias i', L => L.map(i => i.className).join(' ')), 'folga hoje futuro futuro futuro futuro futuro futuro');
   assert.equal(await pg.$$eval('#h-semana li', L => L.map(li => li.textContent + (li.className.trim() ? ':' + li.className.trim() : '')).join(' ')), 'S:hoje T:futuro Q:futuro Q:futuro S:futuro S:futuro D:futuro');
-  assert.equal(await pg.$eval('[data-habito="peso"] .hab-ofensiva', el => el.classList.contains('acesa')), true);   // feito hoje: chama acesa
+  assert.equal(await pg.$eval('[data-habito="corpo"] .hab-ofensiva', el => el.classList.contains('acesa')), true);   // feito hoje: chama acesa
   // Dia anterior: arrastar para a direita volta um dia; tudo é do fim daquele dia e cada hábito abre o app nele (só leitura)
   assert.equal(await pg.getAttribute('[data-habito="agua"]', 'href'), 'agua/');
   assert.equal(await pg.isVisible('#h-hoje'), false);
@@ -156,8 +155,7 @@ test('hábitos com os dados dos apps: valor de hoje, ofensivas, dias perfeitos e
   await arrastar(150);                                                              // domingo 25/10
   assert.equal(await pg.textContent('#h-data'), 'domingo, 25 de outubro');           // sem "ontem"
   assert.deepEqual(await linha('agua'), ['1.000 / 1.000 ml', '2']);                // 23/10, 24/10 protegido e 25/10
-  assert.deepEqual(await linha('sono'), ['7 h', '1']);
-  assert.deepEqual(await linha('peso'), ['Sem pesagem', '0']);
+  assert.deepEqual(await linha('corpo'), ['Sem pesagem · 7 h', '0']);
   assert.equal(await pg.getAttribute('[data-habito="agua"]', 'href'), 'agua/?dia=2026-10-25');
   assert.equal(await pg.getAttribute('[data-habito="besteira"]', 'href'), 'fin/?dia=2026-10-25');   // o Fin no ciclo do dia, normal
   assert.equal(await pg.isVisible('#h-hoje'), true);
@@ -226,11 +224,10 @@ test('cada hábito entra no app no dia selecionado na tela inicial: num dia ante
   const diaNoApp = {
     treino: () => pg.evaluate(() => document.getElementById('v-fim').hidden ? 'hoje' : document.getElementById('f-data').textContent),
     deficit: () => pg.evaluate(() => document.getElementById('d-nome').textContent),
-    peso: () => pg.evaluate(() => document.getElementById('c-data').value),
-    sono: () => pg.evaluate(() => document.getElementById('c-data').value),
+    corpo: () => pg.evaluate(() => document.getElementById('c-data').value),
     agua: () => pg.evaluate(() => document.getElementById('dia-visto').hidden ? 'hoje' : document.getElementById('dia-nome').textContent),
   };
-  const pronto = { treino: '#v-inicio:not([hidden]), #v-fim:not([hidden])', deficit: '#v-dia:not([hidden])', peso: '#v-corpo:not([hidden])', sono: '#v-corpo:not([hidden])', agua: '#v-agua:not([hidden])' };
+  const pronto = { treino: '#v-inicio:not([hidden]), #v-fim:not([hidden])', deficit: '#v-dia:not([hidden])', corpo: '#v-corpo:not([hidden])', agua: '#v-agua:not([hidden])' };
   const entrarNo = async (id, dia) => {
     await pg.click(`[data-habito="${id}"]`);
     await pg.waitForURL(url => url.pathname !== '/hub/' && (!dia || url.search.includes(`dia=${dia}`) || url.search.includes('ciclo=')));
@@ -241,17 +238,17 @@ test('cada hábito entra no app no dia selecionado na tela inicial: num dia ante
   const voltarAoHub = async dia => { await pg.goto(base + (dia ? `?dia=${dia}` : '')); await pg.waitForSelector('#v-apps:not([hidden])'); };
   await pg.click('#h-anterior');                                                    // domingo, 25/10
   const ontem = {};
-  for (const id of ['treino', 'deficit', 'peso', 'sono', 'agua', 'besteira']) { ontem[id] = await entrarNo(id, '2026-10-25'); await voltarAoHub('2026-10-25'); }
+  for (const id of ['treino', 'deficit', 'corpo', 'agua', 'besteira']) { ontem[id] = await entrarNo(id, '2026-10-25'); await voltarAoHub('2026-10-25'); }
   assert.match(ontem.treino, /25 de outubro/);
   assert.equal(ontem.deficit, 'Ontem');                                             // mesmo sem nada lançado no al naquele dia
-  assert.deepEqual([ontem.peso, ontem.sono], ['2026-10-25', '2026-10-25']);
+  assert.equal(ontem.corpo, '2026-10-25');
   assert.match(ontem.agua, /25 de outubro/);
   assert.match(ontem.besteira, /fin\/\?dia=2026-10-25/);
   assert.equal(await pg.textContent('#h-data'), 'domingo, 25 de outubro');          // ao voltar, a tela inicial segue no dia escolhido
   await pg.click('#h-hoje');
   const hoje = {};
-  for (const id of ['treino', 'deficit', 'peso', 'sono', 'agua']) { hoje[id] = await entrarNo(id); await voltarAoHub(); }
-  assert.deepEqual(hoje, { treino: 'hoje', deficit: 'Hoje', peso: '2026-10-26', sono: '2026-10-26', agua: 'hoje' });
+  for (const id of ['treino', 'deficit', 'corpo', 'agua']) { hoje[id] = await entrarNo(id); await voltarAoHub(); }
+  assert.deepEqual(hoje, { treino: 'hoje', deficit: 'Hoje', corpo: '2026-10-26', agua: 'hoje' });
   await ctx.close();
 });
 

@@ -3,7 +3,7 @@
 // antes de eles se registrarem, pra este worker nunca servir arquivo a outro app. Os módulos compartilhados que a
 // página inicial carrega (corpo/perfil.js, agua/bebidas.js e al/gasto.js) ficam também neste cache, só para ela.
 const CACHE_ESTATICO = 'hub-estatico';
-const ARQUIVOS_ESTATICOS = ['./', './index.html', './base/tokens.css', './base/componentes.css', './hub.css', './hub.js', './habitos.js', './corpo/perfil.js', './agua/bebidas.js', './al/gasto.js', './supabase.js', './manifest.webmanifest', './icons/hub.svg', './icons/agenda.svg', './icons/anotacoes.svg', './icons/sono.svg', './icons/hub-32.png', './icons/hub-180.png', './icons/hub-192.png', './icons/hub-512.png'];
+const ARQUIVOS_ESTATICOS = ['./', './index.html', './base/tokens.css', './base/componentes.css', './hub.css', './hub.js', './habitos.js', './corpo/perfil.js', './agua/bebidas.js', './al/gasto.js', './supabase.js', './manifest.webmanifest', './icons/hub.svg', './icons/agenda.svg', './icons/anotacoes.svg', './icons/hub-32.png', './icons/hub-180.png', './icons/hub-192.png', './icons/hub-512.png'];
 const ENDERECOS = new Set(ARQUIVOS_ESTATICOS.map(arquivo => new URL(arquivo, self.location).href));
 
 self.addEventListener('install', evento => {
