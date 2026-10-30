@@ -10,6 +10,8 @@
 <link rel="icon" href="icons/agua-192.png">
 <link rel="apple-touch-icon" href="icons/agua-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../base/tokens.css">
+<link rel="stylesheet" href="../base/componentes.css">
 <link rel="stylesheet" href="css/agua.css">
 </head>
 <body>
@@ -30,11 +32,11 @@
 <!-- Hoje: total contra a meta, lembretes, beber (ml digitado ou botões das quantidades já usadas) e 7 dias. Tudo por js/telas.js. -->
 <section id="v-agua" class="view" hidden>
   <header class="topo">
-    <h1>Água</h1>
     <!-- Hub: volta à página inicial (../), que abre os outros apps -->
-    <a class="icon-btn" href="../" id="i-hub" title="Hub" aria-label="Hub">
+    <a class="bt-ic" href="../" id="i-hub" title="Hub" aria-label="Hub">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M9.9 9.9 6.6 6.6M14.1 9.9l3.3-3.3M9.9 14.1l-3.3 3.3M14.1 14.1l3.3 3.3"/><circle cx="5" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></svg>
     </a>
+    <h1>Água</h1>
   </header>
 
   <!-- ‹ › e arrastar de lado trocam o dia mostrado (para trás até o 1º dia com registro, para frente até hoje), como no al -->
@@ -45,41 +47,41 @@
   </nav>
 
   <!-- Dia anterior (pelos Últimos 7 dias ou pelo ?dia=, que acompanha o dia visto): só leitura; Hoje volta para hoje -->
-  <p class="so-leitura" id="dia-visto" hidden><span id="dia-nome"></span> · só leitura <button type="button" class="chip-bt" id="dia-hoje">Hoje</button></p>
+  <p class="so-leitura" id="dia-visto" hidden><span id="dia-nome"></span> · só leitura <button type="button" class="chip ativo" id="dia-hoje">Hoje</button></p>
 
   <!-- Total de hoje e a meta; no canto, se bateu -->
-  <div class="cartao total" id="total">
-    <p class="total-num"><b id="t-ml">0</b> <small id="t-meta">/ 1.000 ml</small><span class="bateu" id="t-bateu" hidden>Meta batida</span></p>
+  <div class="cartao destaque total" id="total">
+    <p class="grande"><b class="num" id="t-ml">0</b> <small id="t-meta">/ 1.000 ml</small><span class="bateu" id="t-bateu" hidden>Meta batida</span></p>
     <div class="barra" aria-hidden="true"><span id="t-barra"></span></div>
   </div>
 
   <!-- Lembretes do dia (só no app): feito, atrasado ou ainda não chegou; o da vez em destaque -->
   <div class="cartao lembretes" id="lembretes">
     <p class="lembrete-agora" id="l-agora" hidden></p>
-    <ul class="horas" id="l-horas" aria-label="Lembretes de hoje"></ul>
+    <ul class="chips horas" id="l-horas" aria-label="Lembretes de hoje"></ul>
     <!-- Notificação de verdade (Web Push) nos mesmos horários, mesmo com o app fechado -->
     <div class="notif" id="n-linha" hidden>
-      <button type="button" class="chip-bt" id="n-ativar">Ativar notificações</button>
+      <button type="button" class="chip ativo" id="n-ativar">Ativar notificações</button>
       <span id="n-ligadas" hidden>Notificações ligadas</span>
       <span id="n-negado" hidden>Notificações bloqueadas nas configurações do celular</span>
     </div>
   </div>
 
   <!-- Beber: a bebida (água, suco, refri, cappuccino, leite com Toddy ou leite: só a parte que é água conta), os ml (vira botão para as próximas vezes) ou um botão -->
-  <div class="tipos" id="b-tipos" role="group" aria-label="Bebida">
-    <button type="button" class="tipo" data-bebida="agua" aria-pressed="true">Água</button>
-    <button type="button" class="tipo" data-bebida="suco" aria-pressed="false">Suco</button>
-    <button type="button" class="tipo" data-bebida="refri" aria-pressed="false">Refri</button>
-    <button type="button" class="tipo" data-bebida="cappuccino" aria-pressed="false">Cappuccino</button>
-    <button type="button" class="tipo" data-bebida="toddy" aria-pressed="false">Leite com Toddy</button>
-    <button type="button" class="tipo" data-bebida="leite" aria-pressed="false">Leite</button>
+  <div class="chips" id="b-tipos" role="group" aria-label="Bebida">
+    <button type="button" class="chip" data-bebida="agua" aria-pressed="true">Água</button>
+    <button type="button" class="chip" data-bebida="suco" aria-pressed="false">Suco</button>
+    <button type="button" class="chip" data-bebida="refri" aria-pressed="false">Refri</button>
+    <button type="button" class="chip" data-bebida="cappuccino" aria-pressed="false">Cappuccino</button>
+    <button type="button" class="chip" data-bebida="toddy" aria-pressed="false">Leite com Toddy</button>
+    <button type="button" class="chip" data-bebida="leite" aria-pressed="false">Leite</button>
   </div>
-  <form id="b-form" class="beber" autocomplete="off">
-    <input id="b-ml" inputmode="numeric" placeholder="ml" aria-label="Quantos ml">
-    <button type="submit" class="bt-mais" title="Bebi" aria-label="Bebi"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+  <form id="b-form" class="linha beber" autocomplete="off">
+    <input id="b-ml" class="campo" inputmode="numeric" placeholder="ml" aria-label="Quantos ml">
+    <button type="submit" class="mais" title="Bebi" aria-label="Bebi"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
   </form>
-  <ul class="botoes" id="b-botoes" aria-label="Quantidades já usadas"></ul>
-  <ul class="eventos" id="b-lista" aria-label="Água de hoje"></ul>
+  <ul class="chips" id="b-botoes" aria-label="Quantidades já usadas"></ul>
+  <ul class="lista" id="b-lista" aria-label="Água de hoje"></ul>
 
   <h3 class="sec">Últimos 7 dias</h3>
   <div class="cartao" id="semana"></div>

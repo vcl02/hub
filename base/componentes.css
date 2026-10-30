@@ -1,8 +1,7 @@
 /* Base do hub — componentes: as mesmas peças em todos os módulos (cabeçalho, barra do dia com o "hoje", semana, cartão,
    lista, chips, botões, campos, avisos). Depende de tokens.css. O módulo só acrescenta o que é dele, sem redefinir isto.
-   Troca de módulo com transição (View Transitions entre páginas, onde o navegador tiver): o cabeçalho e o fundo não piscam. */
-@view-transition{navigation:auto}
-::view-transition-old(root),::view-transition-new(root){animation-duration:var(--medio)}
+   A transição entre páginas (View Transitions) entra no passo 3, ligada em todos os módulos de uma vez: com só uma das duas
+   páginas aceitando, o navegador cancela a transição com erro na página (visto em 30/10/2026). */
 
 /* ---------- Base ---------- */
 *{box-sizing:border-box}
@@ -77,6 +76,15 @@ h1{font-size:var(--t-xl)} h2{font-size:var(--t-lg)}
 .campo{width:100%;min-width:0;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg)}
 .campo:focus{outline:none;border-color:var(--cor)}
 .linha{display:flex;align-items:center;gap:var(--e-2)}
+
+/* ---------- Dia anterior (só leitura): "qua, 29/10 · só leitura" e o chip Hoje para voltar ---------- */
+.so-leitura{display:flex;align-items:center;gap:var(--e-2);flex-wrap:wrap;margin:0;color:var(--muted);font-size:var(--t-sm)}
+.so-leitura span::first-letter{text-transform:uppercase}
+
+/* ---------- Login próprio (só com o módulo servido fora do hub, nos testes) ---------- */
+.login fieldset{display:flex;flex-direction:column;gap:10px;margin:40px 0 0;padding:0;border:0}
+.login input{padding:14px 16px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.erro{color:var(--erro);font-size:var(--t-sm);min-height:1.2em}
 
 /* ---------- Avisos ---------- */
 .sync{font-size:var(--t-sm);color:var(--muted);text-align:center;margin-top:var(--e-3)}

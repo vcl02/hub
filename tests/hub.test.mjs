@@ -26,10 +26,10 @@ test('um hábito por linha (os de habitos.js, o Fin pela Besteira); cada um apon
 
 test('cada app volta para o hub (../)', () => {
   assert.match(ler('fin/index.html'), /<a id=voltarHub class=btIcone href="\.\.\/"/);
-  assert.match(ler('tr/index.html'), /<a class="icon-btn" href="\.\.\/" id="i-hub"/);
-  assert.match(ler('al/index.html'), /<a class="icon-btn" href="\.\.\/" id="i-hub"/);
-  assert.match(ler('corpo/index.html'), /<a class="icon-btn" href="\.\.\/" id="i-hub"/);
-  assert.match(ler('agua/index.html'), /<a class="icon-btn" href="\.\.\/" id="i-hub"/);
+  assert.match(ler('tr/index.html'), /<a class="(icon-btn|bt-ic)" href="\.\.\/" id="i-hub"/);   // bt-ic: o botão da base comum
+  assert.match(ler('al/index.html'), /<a class="(icon-btn|bt-ic)" href="\.\.\/" id="i-hub"/);   // bt-ic: o botão da base comum
+  assert.match(ler('corpo/index.html'), /<a class="(icon-btn|bt-ic)" href="\.\.\/" id="i-hub"/);   // bt-ic: o botão da base comum
+  assert.match(ler('agua/index.html'), /<a class="(icon-btn|bt-ic)" href="\.\.\/" id="i-hub"/);   // bt-ic: o botão da base comum
 });
 
 test('tema escuro único: hub, fin e tr com o mesmo fundo', () => {
@@ -38,7 +38,8 @@ test('tema escuro único: hub, fin e tr com o mesmo fundo', () => {
   assert.match(ler('tr/css/base.css'), /--bg:#1B1E21;/);
   assert.match(ler('al/css/al.css'), /--bg:#1B1E21;/);
   assert.match(ler('corpo/css/corpo.css'), /--bg:#1B1E21;/);
-  assert.match(ler('agua/css/agua.css'), /--bg:#1B1E21;/);
+  assert.match(ler('base/tokens.css'), /--bg:#1B1E21;/);   // módulo na base comum: o fundo vem de lá
+  assert.match(ler('agua/index.html'), /<link rel="stylesheet" href="\.\.\/base\/tokens\.css">/);
   for (const arquivo of ['index.html', 'fin/index.html', 'tr/index.html', 'al/index.html', 'corpo/index.html', 'agua/index.html']) assert.match(ler(arquivo), /<meta name=("theme-color"|theme-color) content="#1B1E21">/, arquivo);
   assert.match(html, /<meta name="color-scheme" content="dark">/);
 });
@@ -181,7 +182,8 @@ test('histórico no banco: toda tabela dos apps (menos o Fin, que tem o dele) co
 test('base comum: tokens e componentes existem, a referência carrega os dois e mostra cada módulo com a própria cor', () => {
   const tokens = ler('base/tokens.css'), comp = ler('base/componentes.css'), ref = ler('base/referencia.html');
   for (const t of ['--bg', '--surface', '--fg', '--muted', '--ok', '--erro', '--protegido', '--cor', '--cor-soft', '--on-cor', '--r', '--t-md']) assert.match(tokens, new RegExp(`${t}:`), t);
-  for (const c of ['.topo', '.dia-nav', '.semana', '.cartao', '.lista', '.chip', '.btn', '.toast', '@view-transition']) assert.ok(comp.includes(c), c);
+  for (const c of ['.topo', '.dia-nav', '.semana', '.cartao', '.lista', '.chip', '.btn', '.toast']) assert.ok(comp.includes(c), c);
+  assert.doesNotMatch(comp, /@view-transition\{/, 'transição só no passo 3, em todos os módulos de uma vez');
   assert.match(ref, /<link rel="stylesheet" href="tokens\.css">\n<link rel="stylesheet" href="componentes\.css">/);
   assert.deepEqual([...ref.matchAll(/<h1>([^<]+)<\/h1>/g)].map(m => m[1]), ['Alimentação', 'Água', 'Corpo', 'Treino', 'Fin']);
 });

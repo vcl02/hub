@@ -15,6 +15,7 @@ const textoAgua = a => a.bebida ? `${a.hora} · ${nomeBebida(a)} ${inteiro(a.vol
 function desenhar() {
   const dia = DIA || hoje(), x = doDia(dia), total = totalMl(dia);
   $('d-nome').textContent = nomeDoDia(dia);
+  $('d-nome').classList.toggle('hoje', dia === hoje());   // o hoje igual em todo módulo (pílula da cor, base)
   $('d-ant').disabled = dia <= primeiroDia();
   $('d-prox').disabled = dia >= hoje();
   $('dia-visto').hidden = !DIA;
@@ -30,12 +31,12 @@ function desenhar() {
   const L = lembretes(dia), vez = lembreteAgora(dia);
   $('l-agora').hidden = !vez;
   if (vez) $('l-agora').textContent = `Hora de beber água (${vez.hora})`;
-  $('l-horas').innerHTML = L.map(l => `<li class="${l.estado}${vez && l.hora === vez.hora ? ' vez' : ''}" title="${l.estado === 'feito' ? 'Bebeu' : l.estado === 'atrasado' ? 'Não bebeu' : 'Ainda não chegou'}">${l.hora}${l.estado === 'feito' ? ' ✓' : ''}</li>`).join('');
+  $('l-horas').innerHTML = L.map(l => `<li class="chip ${l.estado}${vez && l.hora === vez.hora ? ' vez' : ''}" title="${l.estado === 'feito' ? 'Bebeu' : l.estado === 'atrasado' ? 'Não bebeu' : 'Ainda não chegou'}">${l.hora}${l.estado === 'feito' ? ' ✓' : ''}</li>`).join('');
   // Beber: botões das quantidades já usadas e a lista de hoje
-  $('b-botoes').innerHTML = botoesMl().map(ml => `<li><button type="button" class="ml-bt" data-ml="${ml}">${inteiro(ml)} ml</button></li>`).join('');
+  $('b-botoes').innerHTML = botoesMl().map(ml => `<li><button type="button" class="chip" data-ml="${ml}">${inteiro(ml)} ml</button></li>`).join('');
   $('b-tipos').querySelectorAll('[data-bebida]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.bebida === bebida)));
-  $('b-lista').innerHTML = DIA ? x.aguas.map(a => `<li><span class="${a.bebida ? 'outra' : ''}">${textoAgua(a)}</span></li>`).join('')
-    : x.aguas.map((a, i) => `<li><button type="button" class="${a.bebida ? 'outra' : ''}" data-tirar-agua="${i}" title="Tirar (toque duplo)" aria-label="Tirar ${textoAgua(a)}">${textoAgua(a)} ×</button></li>`).join('');
+  // A lista do dia, a mesma peça de todo módulo (base): hora · bebida (e o volume e as kcal, se não é água) · ml de água · ×
+  $('b-lista').innerHTML = x.aguas.map((a, i) => `<li class="${a.bebida ? 'outra' : ''}"><span class="hora">${a.hora}</span> <span class="oque"><b>${a.bebida ? BEBIDAS[a.bebida].nome : 'Água'}</b>${a.bebida ? ` <small>${inteiro(a.volume)} ml · ${inteiro(nutrientesBebida(a).kcal)} kcal</small>` : ''}</span> <span class="valor">${inteiro(a.ml)} ml</span> ${DIA ? '<span></span>' : `<button type="button" class="bt-ic perigo" data-tirar-agua="${i}" title="Tirar (toque duplo)" aria-label="Tirar ${textoAgua(a)}">×</button>`}</li>`).join('');
   pintarSemana();
 }
 

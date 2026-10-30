@@ -13,6 +13,7 @@ const arrastar = (pg, sel, dx) => pg.evaluate(([sel, dx]) => {
 
 prepararApp();
 
+const linhas = pg => pg.$$eval('#b-lista li', L => L.map(li => li.textContent.replace(/\s+/g, ' ').trim()));   // a lista do dia (peça da base)
 const beber = async (pg, ml) => { await pg.fill('#b-ml', String(ml)); await pg.press('#b-ml', 'Enter'); };
 const etiquetas = (pg, sel) => pg.$$eval(`${sel} li`, L => L.map(x => x.textContent.trim()));
 
@@ -26,7 +27,7 @@ test('beber: ml digitado entra com o horário de agora e vira botão; botões pe
   await pg.clock.fastForward('01:00:00');
   await pg.click('[data-ml="300"]');
   await beber(pg, 500);
-  assert.deepEqual(await pg.$$eval('#b-lista button', B => B.map(b => b.textContent)), ['09:00 · 300 ml ×', '10:00 · 300 ml ×', '10:00 · 500 ml ×']);
+  assert.deepEqual(await linhas(pg), ['09:00 Água 300 ml ×', '10:00 Água 300 ml ×', '10:00 Água 500 ml ×']);
   assert.deepEqual(await pg.$$eval('#b-botoes button', B => B.map(b => b.textContent)), ['300 ml', '500 ml']);
   assert.equal(await texto(pg, '#t-ml'), '1.100');
   assert.equal(await pg.isVisible('#t-bateu'), true);                      // passou de 1.000 ml
@@ -52,13 +53,12 @@ test('outras bebidas (suco, refri, cappuccino, leite com Toddy, leite): só a pa
   await pg.click('[data-bebida="refri"]');
   await beber(pg, 350);                                                    // refri: 350 × 89% = 312
   await pg.click('[data-ml="300"]');                                       // o botão é o volume do copo; agora, água pura
-  assert.deepEqual(await pg.$$eval('#b-lista button', B => B.map(b => b.textContent)),
-    ['09:00 · suco 300 ml (264 ml de água · 120 kcal) ×', '09:00 · refri 350 ml (312 ml de água · 147 kcal) ×', '09:00 · 300 ml ×']);
+  assert.deepEqual(await linhas(pg), ['09:00 Suco 300 ml · 120 kcal 264 ml ×', '09:00 Refri 350 ml · 147 kcal 312 ml ×', '09:00 Água 300 ml ×']);
   assert.equal(await texto(pg, '#t-ml'), '876');                           // 264 + 312 + 300
   await pg.click('[data-bebida="toddy"]'); await beber(pg, 200);           // leite com Toddy: 200 × 82% = 164
   await pg.click('[data-bebida="cappuccino"]'); await beber(pg, 150);      // cappuccino: 150 × 88% = 132
   await pg.click('[data-bebida="leite"]'); await beber(pg, 250);           // leite integral: 250 × 88% = 220, 150 kcal
-  assert.deepEqual((await pg.$$eval('#b-lista button', B => B.map(b => b.textContent))).slice(3), ['09:00 · leite com toddy 200 ml (164 ml de água · 170 kcal) ×', '09:00 · cappuccino 150 ml (132 ml de água · 90 kcal) ×', '09:00 · leite 250 ml (220 ml de água · 150 kcal) ×']);
+  assert.deepEqual((await linhas(pg)).slice(3), ['09:00 Leite com Toddy 200 ml · 170 kcal 164 ml ×', '09:00 Cappuccino 150 ml · 90 kcal 132 ml ×', '09:00 Leite 250 ml · 150 kcal 220 ml ×']);
   assert.equal(await texto(pg, '#t-ml'), '1.392');
   await sincronizado(pg);
   assert.deepEqual(nuvem.tabelas.agua_dia[0].aguas, [
@@ -72,10 +72,10 @@ test('lembretes: em casa de hora em hora das 10 às 16; o atrasado da vez vira "
   const { ctx, pg } = await abrirApp({ relogio: new Date('2026-10-19T11:20:00-03:00') });   // segunda (casa)
   assert.deepEqual(await etiquetas(pg, '#l-horas'), ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00']);
   assert.equal(await texto(pg, '#l-agora'), 'Hora de beber água (11:00)');
-  assert.deepEqual(await pg.$$eval('#l-horas li', L => L.map(x => x.className)), ['atrasado', 'atrasado vez', 'depois', 'depois', 'depois', 'depois', 'depois']);
+  assert.deepEqual(await pg.$$eval('#l-horas li', L => L.map(x => x.className.replace(/^chip /, ''))), ['atrasado', 'atrasado vez', 'depois', 'depois', 'depois', 'depois', 'depois']);
   await beber(pg, 250);
   assert.equal(await pg.isVisible('#l-agora'), false);
-  assert.deepEqual(await pg.$$eval('#l-horas li', L => L.map(x => x.className)), ['atrasado', 'feito', 'depois', 'depois', 'depois', 'depois', 'depois']);
+  assert.deepEqual(await pg.$$eval('#l-horas li', L => L.map(x => x.className.replace(/^chip /, ''))), ['atrasado', 'feito', 'depois', 'depois', 'depois', 'depois', 'depois']);
   assert.equal(await texto(pg, '#l-horas li:nth-child(2)'), '11:00 ✓');
   await ctx.close();
 });
@@ -128,7 +128,7 @@ test('dia anterior (pela página inicial ou pelos últimos 7 dias): só leitura,
   assert.match(await texto(pg, '#dia-visto'), /^domingo, 18 de outubro · só leitura Hoje$/);
   for (const id of ['#lembretes', '#b-tipos', '#b-form', '#b-botoes']) assert.equal(await pg.isVisible(id), false, id);
   assert.equal(await pg.locator('#b-lista [data-tirar-agua]').count(), 0);                // nada para tirar
-  assert.deepEqual(await pg.$$eval('#b-lista li', L => L.map(li => li.textContent)), ['10:00 · 300 ml', '12:27 · suco 150 ml (132 ml de água · 60 kcal)']);
+  assert.deepEqual(await linhas(pg), ['10:00 Água 300 ml', '12:27 Suco 150 ml · 60 kcal 132 ml']);
   await pg.click('#dia-hoje');                                                             // Hoje: o app normal (o ?dia sai do endereço)
   await pg.waitForSelector('#b-form:not([hidden])');
   assert.equal(await texto(pg, '#t-ml'), '0');
