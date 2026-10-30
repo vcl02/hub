@@ -16,7 +16,7 @@
 | `index.html` · `hub.css` · `hub.js` | Página inicial: login, os hábitos (uma linha por hábito, que abre o app; o Fin pela Besteira) e os atalhos fixos embaixo (Agenda, Anotações). `hub.js` baixa os dados dos apps (só leitura) e desenha |
 | `habitos.js` | Regras dos hábitos, só funções puras: estado de cada dia, ofensivas, dias perfeitos, proteções e o resumo de hoje (testes em `tests/habitos.test.mjs`) |
 | `al/gasto.js` | Gasto e meta do dia (módulo do al), o mesmo no al e no hábito do déficit |
-| `agua/bebidas.js` | Bebidas da Água além da água (suco, refri, cappuccino, leite com Toddy): quanto é água e kcal/macros por 100 ml; a Água, o al e a página inicial carregam |
+| `agua/bebidas.js` | Bebidas da Água além da água (suco, refri, cappuccino, leite com Toddy, leite integral): quanto é água e kcal/macros por 100 ml; a Água, o al e a página inicial carregam |
 | `supabase.js` | `@supabase/supabase-js` (UMD), cópia byte a byte de `tr/supabase.js` (o teste confere); atualize os dois juntos. O al usa este (`../supabase.js`), sem cópia própria |
 | `sw.js` · `manifest.webmanifest` · `icons/` | Instalação e cache offline da página inicial |
 | `fin/` · `tr/` · `al/` · `corpo/` · `agua/` | Os apps, cada um com `index.html`, service worker e manifest próprios |

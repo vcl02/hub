@@ -32,7 +32,7 @@ test('beber: ml digitado entra com o horário de agora e vira botão; botões pe
   assert.deepEqual(erros, []); await ctx.close();
 });
 
-test('outras bebidas (suco, refri, cappuccino, leite com Toddy): só a parte que é água conta para a meta, marcados na lista; a escolha volta para água', async () => {
+test('outras bebidas (suco, refri, cappuccino, leite com Toddy, leite): só a parte que é água conta para a meta, marcados na lista; a escolha volta para água', async () => {
   const { ctx, pg, nuvem, erros } = await abrirApp();                     // segunda 19/10, 09:00
   assert.equal(await pg.getAttribute('[data-bebida="agua"]', 'aria-pressed'), 'true');
   await pg.click('[data-bebida="suco"]');
@@ -49,12 +49,14 @@ test('outras bebidas (suco, refri, cappuccino, leite com Toddy): só a parte que
   assert.equal(await texto(pg, '#t-ml'), '876');                           // 264 + 312 + 300
   await pg.click('[data-bebida="toddy"]'); await beber(pg, 200);           // leite com Toddy: 200 × 82% = 164
   await pg.click('[data-bebida="cappuccino"]'); await beber(pg, 150);      // cappuccino: 150 × 88% = 132
-  assert.deepEqual((await pg.$$eval('#b-lista button', B => B.map(b => b.textContent))).slice(3), ['09:00 · leite com toddy 200 ml (164 ml de água · 170 kcal) ×', '09:00 · cappuccino 150 ml (132 ml de água · 90 kcal) ×']);
-  assert.equal(await texto(pg, '#t-ml'), '1.172');
+  await pg.click('[data-bebida="leite"]'); await beber(pg, 250);           // leite integral: 250 × 88% = 220, 150 kcal
+  assert.deepEqual((await pg.$$eval('#b-lista button', B => B.map(b => b.textContent))).slice(3), ['09:00 · leite com toddy 200 ml (164 ml de água · 170 kcal) ×', '09:00 · cappuccino 150 ml (132 ml de água · 90 kcal) ×', '09:00 · leite 250 ml (220 ml de água · 150 kcal) ×']);
+  assert.equal(await texto(pg, '#t-ml'), '1.392');
   await sincronizado(pg);
   assert.deepEqual(nuvem.tabelas.agua_dia[0].aguas, [
     { hora: '09:00', ml: 264, bebida: 'suco', volume: 300 }, { hora: '09:00', ml: 312, bebida: 'refri', volume: 350 }, { hora: '09:00', ml: 300 },
-    { hora: '09:00', ml: 164, bebida: 'toddy', volume: 200 }, { hora: '09:00', ml: 132, bebida: 'cappuccino', volume: 150 }]);
+    { hora: '09:00', ml: 164, bebida: 'toddy', volume: 200 }, { hora: '09:00', ml: 132, bebida: 'cappuccino', volume: 150 },
+    { hora: '09:00', ml: 220, bebida: 'leite', volume: 250 }]);
   assert.deepEqual(erros, []); await ctx.close();
 });
 
