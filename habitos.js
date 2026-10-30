@@ -182,3 +182,31 @@ function ateODia(R, dia) {
   for (let d = dia; R.perfeito[d]; d = diaMais(d, -1)) perfeitos++;
   return { ofensiva: Object.fromEntries(HABITOS.map(h => [h.id, ofensiva(h.id)])), perfeitos };
 }
+
+// O que o al deste aparelho ainda não enviou à nuvem (al.db e al.base no localStorage, mesma origem): o al envia 0,8 s depois
+// de cada mudança, e voltar para cá antes disso (ou sem internet) deixaria a comida e a caminhada só no aparelho. Dia em que
+// a cópia do al difere da base dele (pendente) usa a cópia; os outros dias ficam com o que veio da nuvem.
+//   alDb = { registros: [{ data, hora, qtd, kcal }], dias: [{ data, caminhadas }] } · alBase = { al_registro: { id: linha }, al_dia: { data: linha } }
+function comPendentesDoAl(D, alDb, alBase) {
+  if (!alDb || !Array.isArray(alDb.registros) || !Array.isArray(alDb.dias)) return D;
+  const hora = h => /^\d{2}:\d{2}$/.test(h) ? h : '';
+  const comida = r => ({ hora: hora(r.hora), kcal: Math.min(Math.max(+r.kcal || 0, 0), 5000) * (+r.qtd > 0 ? Math.min(+r.qtd, 20) : 1) });
+  const trecho = t => ({ hora: hora(t?.hora), ...(+t?.minutos > 0 && +t.minutos <= 600 && { minutos: +t.minutos }), ...(+t?.km > 0 && +t.km <= 60 && { km: +t.km }) });
+  const porDia = (L, f) => L.reduce((o, x) => { (o[x.data] = o[x.data] || []).push(...f(x)); return o; }, {});
+  const chave = L => JSON.stringify(L.map(x => JSON.stringify(x)).sort());
+  const juntar = (atual, aqui, base) => {
+    const R = { ...atual };
+    for (const d of new Set([...Object.keys(aqui), ...Object.keys(base)])) {
+      if (chave(aqui[d] || []) === chave(base[d] || [])) continue;
+      if (aqui[d]?.length) R[d] = aqui[d]; else delete R[d];
+    }
+    return R;
+  };
+  const regs = L => porDia(L.filter(r => r && /^\d{4}-\d{2}-\d{2}$/.test(r.data)), r => [comida(r)]);
+  const dias = L => porDia(L.filter(x => x && /^\d{4}-\d{2}-\d{2}$/.test(x.data)), x => (Array.isArray(x.caminhadas) ? x.caminhadas : []).map(trecho));
+  return {
+    ...D,
+    comidas: juntar(D.comidas, regs(alDb.registros), regs(Object.values(alBase?.al_registro || {}))),
+    trechos: juntar(D.trechos, dias(alDb.dias), dias(Object.values(alBase?.al_dia || {})))
+  };
+}

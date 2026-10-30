@@ -162,6 +162,9 @@ function pintarSync() {
 }
 addEventListener('online', () => enviar());
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && temPendente()) enviar(); });
+// Saindo do app (ícone do hub, outra aba) antes dos 0,8 s: tenta enviar já. Se não der tempo, a página inicial lê a cópia do
+// aparelho (comPendentesDoAl, ../habitos.js) e envia na próxima vez que o al abrir.
+addEventListener('pagehide', () => { if (temPendente()) enviar(); });
 setInterval(() => { if (temPendente()) enviar(); }, 60000);
 
 // Valida e completa o db (cópia local antiga ou linhas do servidor)

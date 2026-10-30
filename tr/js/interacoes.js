@@ -59,3 +59,17 @@ document.addEventListener('keydown', ev => {
   else return;
   ev.preventDefault();
 });
+
+// ← → no computador fazem o que os ‹ › (e o arrastar de lado no celular) fazem na tela aberta, no mesmo sentido de todo o hub
+// (← = o anterior): semana na tela inicial, treino anterior ou seguinte no resumo e exercício anterior ou seguinte no exercício.
+// Com tela cheia aberta, edição na linha ou foco num campo, nada (as setas andam no texto).
+document.addEventListener('keydown', ev => {
+  if (!db || !['ArrowLeft', 'ArrowRight'].includes(ev.key) || ev.altKey || ev.ctrlKey || ev.metaKey) return;
+  if (ev.target.closest?.('input,textarea,select') || !$('agua').hidden || !$('parabens').hidden || editTreino) return;
+  const dir = ev.key === 'ArrowLeft' ? -1 : 1, tela = pilha[pilha.length - 1];
+  if (tela === 'inicio') { const b = $(dir < 0 ? 'i-sem-ant' : 'i-sem-prox'); if (!b.disabled) b.click(); }
+  else if (tela === 'fim') irParaDia(dir);
+  else if (tela === 'exercicio') trocarExercicio(dir);
+  else return;
+  ev.preventDefault();
+});

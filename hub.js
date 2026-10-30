@@ -135,12 +135,18 @@ let diaDesenhado = '';
 // hoje). Num dia passado tudo é do fim daquele dia, e cada hábito abre o app naquele dia (?dia=AAAA-MM-DD), só leitura;
 // o Fin (Besteira) abre no ciclo daquele dia, normal (o Fin não tem modo só leitura).
 let diaVisto = null;
+// Os dados com o que o al deste aparelho ainda não enviou (comPendentesDoAl, em habitos.js)
+function dadosComPendentes() {
+  let alDb = null, alBase = null;
+  try { alDb = JSON.parse(localStorage.getItem('al.db.' + conta)); alBase = JSON.parse(localStorage.getItem('al.base.' + conta)); } catch (e) {}
+  return comPendentesDoAl(dados, alDb, alBase);
+}
 function desenhar() {
   if (!dados || $('v-apps').hidden) return;
-  const hoje = diaDoInstante(Date.now()), R = calcularHabitos(dados, hoje);
+  const D = dadosComPendentes(), hoje = diaDoInstante(Date.now()), R = calcularHabitos(D, hoje);
   const primeiro = Object.keys(R.perfeito)[0] || hoje;
   if (diaVisto && (diaVisto >= hoje || diaVisto < primeiro)) diaVisto = diaVisto < primeiro && primeiro < hoje ? primeiro : null;
-  const dia = diaVisto || hoje, passado = dia < hoje, H = resumoDeHoje(dados, dia, passado), A = ateODia(R, dia);
+  const dia = diaVisto || hoje, passado = dia < hoje, H = resumoDeHoje(D, dia, passado), A = ateODia(R, dia);
   // A semana do dia visto, de segunda a domingo (como no Treino): os dias que ainda não chegaram ficam vazios (.futuro)
   const segunda = diaMais(dia, -((semanaDoDia(dia) + 6) % 7)), semana = [0, 1, 2, 3, 4, 5, 6].map(n => diaMais(segunda, n));
   diaDesenhado = hoje;
@@ -181,7 +187,7 @@ function desenhar() {
 function mudarDia(n) {
   if (!dados) return;
   const hoje = diaDoInstante(Date.now()), alvo = diaMais(diaVisto || hoje, n);
-  const primeiro = Object.keys(calcularHabitos(dados, hoje).perfeito)[0] || hoje;
+  const primeiro = Object.keys(calcularHabitos(dadosComPendentes(), hoje).perfeito)[0] || hoje;
   if (alvo > hoje || alvo < primeiro) return;
   diaVisto = alvo < hoje ? alvo : null;
   desenhar();

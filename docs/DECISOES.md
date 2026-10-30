@@ -77,3 +77,8 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md` (página inicial), `
 - Arrastar para a direita volta um dia (como virar a página para trás). No mesmo dia, a pedido do mantenedor, todo o hub passou a usar esse sentido: a semana e o resumo do Treino, que iam ao contrário, foram alinhados (regra em `../AGENTS.md`).
 - Cabeçalho: sem o "ontem", a data com largura fixa (pra nada pular) e o Hoje só como ícone, o mesmo botão do Sair (em roxo, a cor do dia anterior), que some em hoje. Os ‹ › só no computador: no celular não cabem ao lado da data fixa, do Hoje e do Sair.
 - Só leitura por `?dia=` em cada app, sem nada novo no banco. O Fin não tem modo só leitura, a pedido do mantenedor: com `?dia` ele só abre no ciclo daquele dia, editável como sempre.
+
+## Déficit com o que o al ainda não enviou (30/10/2026)
+
+- O mantenedor lançou uma caminhada no al, voltou para a página inicial e o Déficit não mudou: o al envia 0,8 s depois de cada mudança e a página fecha antes, então a caminhada só subia na próxima vez que o al abrisse.
+- A página inicial e o al são da mesma origem: a página lê a cópia do al no aparelho (`al.db` e `al.base`) e, nos dias em que ela difere da base (algo pendente), usa a cópia do aparelho para comida e caminhada (`comPendentesDoAl`, em `habitos.js`). Os outros dias ficam com a nuvem, para não esconder o que outro aparelho lançou. O al também tenta enviar no `pagehide`, mas sem garantia de terminar.

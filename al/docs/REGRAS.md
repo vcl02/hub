@@ -50,7 +50,7 @@
 
 ## Dias
 
-- O app começa no 1º dia com algo registrado (comida ou "Andei"); sem nada, hoje. ‹ › trocam o dia mostrado: ‹ para no 1º dia, › para em hoje. Tudo (saldo, macros, lista, "Andei") é do dia mostrado.
+- O app começa no 1º dia com algo registrado (comida ou "Andei"); sem nada, hoje. ‹ › trocam o dia mostrado: ‹ para no 1º dia, › para em hoje. O mesmo arrastando a tela de lado no celular (para a **direita**, o dia anterior, como em todo o hub; campo de texto não arrasta) e com ← → no computador (fora dos campos de texto, onde as setas andam no texto). Tudo (saldo, macros, lista, "Andei") é do dia mostrado.
 - **Dia passado é só leitura:** o campo de comida, as sugestões, as porções, apagar e a caminhada (campos, + e tirar trecho) ficam desativados; o campo diz "Dia fechado: só leitura". Só hoje aceita mudanças.
 - **Últimos 7 dias** (até hoje, sem dias antes do 1º dia do app): dia, kcal comidas e saldo final de cada dia fechado (verde déficit, vermelho superávit; sem comida, sem saldo). Hoje não tem saldo nem entra na média, porque ainda não fechou. Tocar abre o dia. Embaixo, a média do saldo dos dias fechados com comida registrada ("Média de 3 dias fechados: −480 kcal/dia").
 - Com o app aberto na virada do dia, ao voltar para ele "Hoje" passa a ser o dia novo.

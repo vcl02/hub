@@ -445,6 +445,33 @@ test('semanas, lista da tela inicial e resumo: para a direita o anterior, para a
   assert.deepEqual(erros, []); await ctx.close();
 });
 
+test('no computador, ← → fazem o que os ‹ › fazem: semana, treino anterior/seguinte no resumo e exercício', async () => {
+  const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-22T19:00:00') });   // quinta
+  await pg.evaluate(() => {
+    for (const d of ['2026-10-15', '2026-10-21']) db.treinos.push({ inicio: new Date(d + 'T18:00').getTime(), fim: new Date(d + 'T19:00').getTime(), fechado: true });
+    gravar(); mostrar('inicio');
+  });
+  await pg.keyboard.press('ArrowLeft');
+  assert.match(await pg.textContent('#i-msg'), /12\/10 a 18\/10/);
+  await pg.keyboard.press('ArrowRight');
+  assert.match(await pg.textContent('#i-msg'), /Hoje é dia de treino fixo/);
+  await pg.click('#i-semana [data-dia="2026-10-21"]');
+  await pg.waitForSelector('#v-fim:not([hidden])');
+  await pg.keyboard.press('ArrowLeft');
+  assert.match(await pg.textContent('#f-data'), /15 de outubro/);
+  await pg.keyboard.press('ArrowRight');
+  assert.match(await pg.textContent('#f-data'), /21 de outubro/);
+  await pg.click('#v-fim [data-ir="inicio"]');
+  await pg.tap('.slot >> nth=0');
+  await pg.keyboard.press('ArrowRight');
+  assert.equal(await pg.textContent('#e-nome'), 'Cadeira flexora');
+  await pg.keyboard.press('ArrowLeft');
+  assert.equal(await pg.textContent('#e-nome'), 'Leg press 45°');
+  await pg.focus('#e-carga'); await pg.keyboard.press('ArrowRight');     // digitando o peso: a seta anda no texto
+  assert.equal(await pg.textContent('#e-nome'), 'Leg press 45°');
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
 test('voltar as semanas até a do 1º treino', async () => {
   const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-22T19:00:00') });   // quinta
   await pg.evaluate(() => { db.treinos.push({ inicio: new Date('2026-10-08T18:00').getTime(), fim: new Date('2026-10-08T19:00').getTime(), fechado: true }); gravar(); mostrar('inicio'); });

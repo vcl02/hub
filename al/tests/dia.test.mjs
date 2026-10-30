@@ -385,6 +385,33 @@ test('dias anteriores: ‹ e os últimos 7 dias mostram o dia, com saldo e médi
   await ctx.close();
 });
 
+test('trocar o dia arrastando de lado (para a direita, o anterior) e com ← → no computador; no campo de texto as setas não trocam', async () => {
+  const nuvem = comTreino(novaNuvem());
+  nuvem.tabelas.al_registro.push({ user_id: 'x', id: 'r1', data: '2026-09-17', hora: '20:00', item_id: null, nome: 'Pizza', porcao: '4 fatias', qtd: '1', kcal: '1100', prot: '44', carb: '120', gord: '48' });
+  const { ctx, pg, erros } = await abrirApp({ nuvem });
+  const arrastar = async (x1, x2) => {
+    const b = await pg.locator('#saldo').boundingBox(), y = b.y + b.height / 2;   // sobre o saldo (campo de texto não arrasta)
+    const cdp = await ctx.newCDPSession(pg);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x1, y }] });
+    for (let i = 1; i <= 10; i++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x1 + (x2 - x1) * i / 10, y }] }); await pg.waitForTimeout(16); }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  };
+  await arrastar(60, 330);
+  assert.equal(await texto(pg, '#d-nome'), 'Ontem');
+  await arrastar(60, 330);                                                // 1º dia do app: para
+  assert.equal(await texto(pg, '#d-nome'), 'Ontem');
+  await arrastar(330, 60);
+  assert.equal(await texto(pg, '#d-nome'), 'Hoje');
+  await pg.locator('#d-nome').click();                                   // foco fora dos campos
+  await pg.keyboard.press('ArrowLeft');
+  assert.equal(await texto(pg, '#d-nome'), 'Ontem');
+  await pg.keyboard.press('ArrowRight');
+  assert.equal(await texto(pg, '#d-nome'), 'Hoje');
+  await pg.focus('#f-texto'); await pg.keyboard.press('ArrowLeft');     // digitando: a seta anda no texto
+  assert.equal(await texto(pg, '#d-nome'), 'Hoje');
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
 test('sem internet: abre com a cópia do aparelho e envia o que ficou pendente ao reconectar', async () => {
   const nuvem = novaNuvem();
   nuvem.ia = iaCom(OVO);

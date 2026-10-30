@@ -11,7 +11,7 @@ const RAIZ = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ler = arquivo => readFileSync(path.join(RAIZ, arquivo), 'utf8');
 const ctx = vm.createContext({});
 for (const f of ['corpo/perfil.js', 'al/gasto.js', 'habitos.js']) vm.runInContext(ler(f), ctx, { filename: f });
-const H = vm.runInContext('({ calcularHabitos, resumoDeHoje, ateODia, estadoNoDia, HABITOS, META_AGUA_ML, PROTECOES_MAX, LANCADO_NO_DIA_DESDE, LIMITE_BESTEIRA_DIA, gastoNoDia, metaKcal })', ctx);
+const H = vm.runInContext('({ comPendentesDoAl, calcularHabitos, resumoDeHoje, ateODia, estadoNoDia, HABITOS, META_AGUA_ML, PROTECOES_MAX, LANCADO_NO_DIA_DESDE, LIMITE_BESTEIRA_DIA, gastoNoDia, metaKcal })', ctx);
 const json = x => JSON.parse(JSON.stringify(x));
 
 // Instante local (o hub usa o relógio do celular): dia AAAA-MM-DD e hora
@@ -225,4 +225,22 @@ test('dia passado: o texto diz o que aconteceu, e a ofensiva e os dias perfeitos
   assert.equal(json(H.resumoDeHoje(D, '2026-11-03', true)).besteira.valor, 'Folga');   // terça: sem besteira
   assert.equal(json(H.resumoDeHoje(D, '2026-11-03', true)).treino.valor, 'Folga');
   assert.equal(json(H.resumoDeHoje(D, '2026-11-04')).treino.valor, 'Dia de treino');  // como hoje, o texto de antes
+});
+
+test('o que o al deste aparelho ainda não enviou (caminhada ou comida) já conta no déficit; dias sem pendência ficam com a nuvem', () => {
+  const D = vazio();
+  D.medidas = [{ data: HOJE, hora: '07:00', peso: 100 }];
+  D.comidas = { [HOJE]: [{ hora: '12:00', kcal: 1000 }], '2026-11-04': [{ hora: '12:00', kcal: 700 }] };
+  const base = { al_registro: { a: { id: 'a', data: HOJE, hora: '12:00', qtd: 1, kcal: 1000 } }, al_dia: {} };
+  const alDb = { registros: [{ id: 'a', data: HOJE, hora: '12:00', qtd: 1, kcal: 1000 }], dias: [{ data: HOJE, caminhadas: [{ hora: '18:00', minutos: 21, km: 1.8 }] }] };
+  const resta = X => +H.resumoDeHoje(X, HOJE).deficit.valor.replace(/\D/g, '');
+  const com = H.comPendentesDoAl(D, alDb, base);
+  assert.deepEqual(json(com.trechos[HOJE]), [{ hora: '18:00', minutos: 21, km: 1.8 }]);   // a caminhada que não subiu ainda
+  assert.equal(json(com.comidas['2026-11-04']).length, 1);                                // dia sem pendência: o da nuvem
+  assert.equal(resta(com) - resta(D), 71);                                                // 21 min a 1,8 km: +71 kcal na meta
+  alDb.registros.push({ id: 'b', data: HOJE, hora: '19:00', qtd: 2, kcal: 100 });          // comida ainda não enviada: conta
+  assert.equal(resta(H.comPendentesDoAl(D, alDb, base)), resta(com) - 200);
+  assert.equal(H.comPendentesDoAl(D, null, null), D);                                     // sem al no aparelho: só a nuvem
+  const tudoEnviado = H.comPendentesDoAl(D, { registros: alDb.registros.slice(0, 1), dias: [] }, base);
+  assert.deepEqual(json(tudoEnviado.comidas), json(D.comidas));
 });
