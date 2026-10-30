@@ -83,3 +83,10 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md` (página inicial), `
 
 - O mantenedor lançou uma caminhada no al, voltou para a página inicial e o Déficit não mudou: o al envia 0,8 s depois de cada mudança e a página fecha antes, então a caminhada só subia na próxima vez que o al abrisse.
 - A página inicial e o al são da mesma origem: a página lê a cópia do al no aparelho (`al.db` e `al.base`) e, nos dias em que ela difere da base (algo pendente), usa a cópia do aparelho para comida e caminhada (`comPendentesDoAl`, em `habitos.js`). Os outros dias ficam com a nuvem, para não esconder o que outro aparelho lançou. O al também tenta enviar no `pagehide`, mas sem garantia de terminar.
+
+## Base comum para todos os módulos (30/10/2026)
+
+- O mantenedor sentia a troca entre módulos pesada e desconexa: cada módulo é uma página com o próprio CSS (de 97 a 4.040 linhas), o "hoje" marcado de jeitos diferentes, cabeçalhos e listas diferentes, e o mesmo código (toast, confirmar, sincronização, login) copiado de 3 a 6 vezes.
+- Escolha: uma base comum (tokens, componentes e, depois, um núcleo de código), adotada módulo a módulo, em vez de virar uma página única (reescrever tudo, o Fin sozinho tem cerca de 8 mil linhas).
+- Ponto de partida: os tokens do Treino (o sistema mais completo), com as cores com significado dos hábitos (verde feito, vermelho falhou, azul protegido) e uma cor de destaque por módulo.
+- Plano e estado em `DIRETRIZES.md`, seção 8.

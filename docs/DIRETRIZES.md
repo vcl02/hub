@@ -161,6 +161,22 @@ Nenhum app, workflow ou script faz backup automático; mudar isso é decisão no
      O CORS das funções é `*` e não muda.
   5. Atualizar esta seção, os testes da Água e o `docs/DECISOES.md` da raiz.
 
+## 8. Base comum: o mesmo visual e o mesmo código em todos os módulos
+
+Todos os módulos (página inicial, Fin, Treino, Alimentação, Corpo e Água) são o mesmo app: as mesmas peças, só a cor de destaque, os dados e as funções mudam.
+Pedido do mantenedor em 30/10/2026, feito aos poucos, passo a passo, e sempre para o app todo.
+
+- **Visual:** `base/tokens.css` (cores, cores com significado, textos, espaços, raios, tempos) e `base/componentes.css` (cabeçalho do módulo, barra do dia com a pílula "Hoje" na cor do módulo, semana seg a dom, cartão, número grande, lista, chips, botões, campos, avisos).
+  O módulo carrega os dois antes do próprio CSS, define só `--cor` e acrescenta só o que é dele; nunca redefine uma peça da base.
+  Peça que falta e serve a mais de um módulo entra na base, não no módulo.
+- **Referência:** `base/referencia.html` mostra cada peça em cada módulo (`/hub/base/referencia.html`). Mudou a base, a referência acompanha.
+- **Ordem dos passos** (cada um vale para todos os módulos antes do próximo):
+  1. Base visual e referência: criadas em 30/10/2026, aguardando a aprovação do mantenedor antes do passo 2.
+  2. Cada módulo passa a carregar a base e troca as peças próprias pelas da base: Água, Corpo, Alimentação, Treino, página inicial e, por último, o Fin (o maior, que começa só renomeando os tokens próprios para os da base).
+  3. Navegação leve: transição entre páginas (já na base: `@view-transition`), pré-carregar os módulos a partir da página inicial e um service worker só, na raiz.
+  4. Núcleo de código comum (`base/nucleo.js`): cliente do Supabase com limite de tempo, login e volta ao hub, armazenamento, toast, confirmar, repetido, datas, barra do dia e o motor de sincronização (diferença, mescla e voo), testados uma vez; os módulos migram na mesma ordem do passo 2.
+- Página única (cada módulo uma rota) fica fora por enquanto: seria reescrever tudo; os passos 1 a 4 dão quase a mesma sensação com bem menos risco.
+
 ## 7. Pendências
 
 Nenhuma em aberto.

@@ -1,0 +1,25 @@
+/* Base do hub — tokens: as mesmas cores, textos, espaços, raios e tempos em todos os módulos (página inicial, Fin, Treino,
+   Alimentação, Corpo e Água). Cada módulo só escolhe a cor de destaque (--cor) e o resto vem daqui.
+   Cores com significado, iguais em todos: verde = feito · vermelho = falhou/erro · azul = protegido · destaque = o módulo.
+   Hierarquia: números e títulos em condensada negrito · nomes em semi-negrito · rótulos em texto normal · horas e dicas em
+   cinza. Tema escuro sempre, mesmo com o celular no modo claro. */
+:root{
+  /* Fundo e superfícies */
+  --bg:#1B1E21; --surface:#24272B; --surface-2:#2A2E33; --line:#3B4147; --line-strong:#4A5158;
+  --fg:#E9ECEF; --muted:#AAB1B8; --shadow:rgba(0,0,0,.35);
+  /* Significado */
+  --ok:#4CCB78; --ok-soft:#1E392A; --erro:#F06A61; --erro-soft:#402624; --protegido:#6E9BFF; --protegido-soft:#22304A;
+  /* Destaque do módulo: cada um troca só --cor (ex.: :root{--cor:#4CC9F0}); o suave e o texto sobre ele saem dela */
+  --cor:#AAB1B8;
+  --cor-soft:color-mix(in srgb, var(--cor) 16%, var(--bg));
+  --on-cor:#14171A;
+  /* Texto */
+  --display:'Barlow Condensed','Arial Narrow','Roboto Condensed',sans-serif;
+  --body:'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --t-xs:.75rem; --t-sm:.875rem; --t-md:1rem; --t-lg:1.25rem; --t-xl:1.75rem; --t-2xl:2.25rem; --t-3xl:3.25rem;
+  /* Espaço, raio e tempo */
+  --e-1:4px; --e-2:8px; --e-3:12px; --e-4:16px; --e-5:24px;
+  --r-sm:8px; --r:12px; --r-lg:16px; --r-pill:999px;
+  --rapido:150ms; --medio:250ms;
+  color-scheme:dark;
+}

@@ -1,0 +1,86 @@
+/* Base do hub — componentes: as mesmas peças em todos os módulos (cabeçalho, barra do dia com o "hoje", semana, cartão,
+   lista, chips, botões, campos, avisos). Depende de tokens.css. O módulo só acrescenta o que é dele, sem redefinir isto.
+   Troca de módulo com transição (View Transitions entre páginas, onde o navegador tiver): o cabeçalho e o fundo não piscam. */
+@view-transition{navigation:auto}
+::view-transition-old(root),::view-transition-new(root){animation-duration:var(--medio)}
+
+/* ---------- Base ---------- */
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg);color:var(--fg)}
+body{margin:0;font-family:var(--body);font-size:var(--t-md);line-height:1.4;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--cor);outline-offset:2px}
+p{margin:0}
+b{font-weight:600}
+.wrap{max-width:560px;margin:0 auto;overflow-x:clip;padding:max(var(--e-3),env(safe-area-inset-top,0px)) max(var(--e-4),env(safe-area-inset-right,0px)) 48px max(var(--e-4),env(safe-area-inset-left,0px))}
+.view{display:flex;flex-direction:column;gap:var(--e-3)}
+
+/* ---------- Texto ---------- */
+h1,h2{font-family:var(--display);font-weight:700;line-height:1.05;margin:0}
+h1{font-size:var(--t-xl)} h2{font-size:var(--t-lg)}
+.sec{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:500;margin:var(--e-2) 0 0}
+.num{font-family:var(--display);font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+
+/* ---------- Cabeçalho do módulo: ícone do hub (volta), nome do módulo e ações ---------- */
+.topo{display:flex;align-items:center;gap:var(--e-3);min-height:44px;view-transition-name:topo}
+.topo h1{flex:1;min-width:0}
+.topo h1::before{content:'';display:inline-block;width:10px;height:10px;margin-right:var(--e-2);border-radius:50%;background:var(--cor);vertical-align:.12em}
+.bt-ic{display:grid;place-items:center;flex:none;width:40px;height:40px;padding:0;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);color:var(--fg);text-decoration:none}
+.bt-ic:disabled{opacity:.35}
+.bt-ic.perigo.armado{border-color:var(--erro);background:var(--erro);color:var(--bg)}
+
+/* ---------- Barra do dia: ‹ dia › — hoje sempre igual em todo módulo: "Hoje" com a pílula da cor do módulo ---------- */
+.dia-nav{display:flex;align-items:center;justify-content:space-between;gap:var(--e-2);view-transition-name:dia}
+.dia-nav b{font-weight:600;text-transform:capitalize}
+.dia-nav .hoje{display:inline-block;padding:2px 10px;border-radius:var(--r-pill);background:var(--cor);color:var(--on-cor);font-weight:700}
+
+/* ---------- Semana (seg a dom): feito, falhou, protegido, hoje (anel da cor), folga, antes, ainda não chegou ---------- */
+.semana{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--e-1);list-style:none;margin:0;padding:0}
+.semana li{display:flex;flex-direction:column;align-items:center;gap:var(--e-1);font-size:var(--t-xs);color:var(--muted)}
+.semana i{display:block;width:100%;height:8px;border-radius:var(--r-pill);background:var(--line)}
+.semana .feito i{background:var(--ok)} .semana .falhou i{background:var(--erro)} .semana .protegido i{background:var(--protegido)}
+.semana .folga i{height:3px;margin:2.5px 0} .semana .antes i,.semana .depois i{opacity:.3}
+.semana .hoje{color:var(--fg);font-weight:700}
+.semana .hoje i{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--cor)}
+
+/* ---------- Cartão e número grande ---------- */
+.cartao{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--e-4)}
+.cartao.destaque{border-color:var(--cor);background:linear-gradient(160deg,var(--cor-soft),var(--surface) 70%)}
+.grande{display:flex;align-items:baseline;gap:var(--e-2)}
+.grande .num{font-size:var(--t-3xl);color:var(--cor)}
+.grande small{color:var(--muted)}
+.barra{height:8px;border-radius:var(--r-pill);background:var(--line);overflow:hidden}
+.barra span{display:block;height:100%;background:var(--cor);transition:width var(--medio)}
+
+/* ---------- Lista: hora · o quê (nome e detalhe) · valor · ação ---------- */
+.lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--e-2)}
+.lista li{display:grid;grid-template-columns:3em 1fr auto auto;align-items:center;gap:var(--e-2);min-height:52px;padding:var(--e-2) var(--e-2) var(--e-2) var(--e-3);background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.lista .hora{color:var(--muted);font-size:var(--t-sm);font-variant-numeric:tabular-nums}
+.lista .oque{display:flex;flex-direction:column;min-width:0}
+.lista .oque small{color:var(--muted);font-size:var(--t-sm);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lista .valor{font-weight:600;color:var(--cor);font-variant-numeric:tabular-nums}
+.lista li.de-outro{border-style:dashed}   /* vem de outro módulo: só para ver */
+
+/* ---------- Chips (horários, quantidades, escolhas) e botões ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:var(--e-2);list-style:none;margin:0;padding:0}
+.chip{border:1px solid var(--line);border-radius:var(--r-pill);background:transparent;padding:6px 12px;font-size:var(--t-sm);color:var(--fg);font-variant-numeric:tabular-nums}
+.chip[aria-pressed="true"],.chip.ativo{border-color:var(--cor);background:var(--cor-soft);color:var(--cor);font-weight:600}
+.chip.armado{border-color:var(--erro);background:var(--erro);color:var(--bg)}
+.btn{min-height:48px;padding:12px 16px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);font-weight:600}
+.btn.primario{border-color:var(--cor);background:var(--cor);color:var(--on-cor)}
+.mais{display:grid;place-items:center;flex:none;width:48px;height:48px;border:0;border-radius:var(--r);background:var(--cor);color:var(--on-cor);font-size:var(--t-lg);font-weight:700}
+
+/* ---------- Campos ---------- */
+.campo{width:100%;min-width:0;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg)}
+.campo:focus{outline:none;border-color:var(--cor)}
+.linha{display:flex;align-items:center;gap:var(--e-2)}
+
+/* ---------- Avisos ---------- */
+.sync{font-size:var(--t-sm);color:var(--muted);text-align:center;margin-top:var(--e-3)}
+.sync.erro{color:var(--erro)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:calc(100% - 32px);padding:10px 16px;border:1px solid var(--line);border-radius:var(--r);background:#30353A;box-shadow:0 10px 30px var(--shadow);font-size:var(--t-sm);z-index:10;overflow-wrap:anywhere}
+.toast.erro{border-color:var(--erro);color:var(--erro)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1B1E21">
+<meta name="color-scheme" content="dark">
+<title>Base do hub · referência</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="componentes.css">
+<style>
+  /* Só desta página: os módulos lado a lado (no celular, um embaixo do outro) */
+  .modulos{display:flex;flex-wrap:wrap;gap:24px;justify-content:center;padding:16px}
+  .modulos>.wrap{flex:1 1 360px;max-width:390px;margin:0;padding-bottom:16px;border:1px solid var(--line);border-radius:24px}
+</style>
+</head>
+<body>
+<!-- Referência visual da base comum (tokens.css + componentes.css): o mesmo esqueleto em cada módulo, só a cor de destaque
+     muda. Serve para aprovar o visual antes de trocar os módulos, e depois como catálogo das peças. -->
+<div class="modulos">
+
+  <section class="wrap" style="--cor:#FFD43B">
+    <div class="view">
+      <header class="topo"><a class="bt-ic" href="#" aria-label="Página inicial">⌂</a><h1>Alimentação</h1></header>
+      <nav class="dia-nav"><button class="bt-ic" aria-label="Dia anterior">‹</button><b class="hoje">Hoje</b><button class="bt-ic" disabled aria-label="Próximo dia">›</button></nav>
+      <div class="cartao destaque">
+        <p class="grande"><b class="num">622</b><small>kcal restantes</small></p>
+        <div class="barra" style="margin-top:12px"><span style="width:62%"></span></div>
+      </div>
+      <h3 class="sec">Semana</h3>
+      <ul class="semana"><li class="feito"><i></i>seg</li><li class="falhou"><i></i>ter</li><li class="protegido"><i></i>qua</li><li class="hoje"><i></i>qui</li><li class="depois"><i></i>sex</li><li class="depois"><i></i>sáb</li><li class="depois"><i></i>dom</li></ul>
+      <div class="linha"><input class="campo" placeholder="O que você comeu?"><button class="mais" aria-label="Adicionar">+</button></div>
+      <ul class="chips"><li><button class="chip">Arroz · 1 colher</button></li><li><button class="chip">Feijão · 1 concha</button></li><li><button class="chip">Ovo</button></li></ul>
+      <h3 class="sec">Comidas</h3>
+      <ul class="lista">
+        <li><span class="hora">12:10</span><span class="oque"><b>Arroz branco</b><small>6 × 1 colher de sopa (~25 g)</small></span><span class="valor">187</span><button class="bt-ic perigo" aria-label="Apagar">×</button></li>
+        <li class="de-outro"><span class="hora">12:27</span><span class="oque"><b>Suco</b><small>150 ml · da Água</small></span><span class="valor">60</span><span></span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="wrap" style="--cor:#4CC9F0">
+    <div class="view">
+      <header class="topo"><a class="bt-ic" href="#" aria-label="Página inicial">⌂</a><h1>Água</h1></header>
+      <nav class="dia-nav"><button class="bt-ic" aria-label="Dia anterior">‹</button><b>Ontem</b><button class="bt-ic" aria-label="Próximo dia">›</button></nav>
+      <div class="cartao destaque">
+        <p class="grande"><b class="num">864</b><small>/ 1.000 ml</small></p>
+        <div class="barra" style="margin-top:12px"><span style="width:86%"></span></div>
+      </div>
+      <ul class="chips"><li><button class="chip ativo" aria-pressed="true">Água</button></li><li><button class="chip">Suco</button></li><li><button class="chip">Refri</button></li><li><button class="chip">Leite</button></li></ul>
+      <div class="linha"><input class="campo" placeholder="ml"><button class="mais" aria-label="Bebi">+</button></div>
+      <h3 class="sec">Hoje</h3>
+      <ul class="lista">
+        <li><span class="hora">13:42</span><span class="oque"><b>Água</b><small>150 ml</small></span><span class="valor">150</span><button class="bt-ic perigo" aria-label="Tirar">×</button></li>
+        <li><span class="hora">15:30</span><span class="oque"><b>Suco</b><small>300 ml · 264 ml de água · 120 kcal</small></span><span class="valor">264</span><button class="bt-ic perigo" aria-label="Tirar">×</button></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="wrap" style="--cor:#3DD6B5">
+    <div class="view">
+      <header class="topo"><a class="bt-ic" href="#" aria-label="Página inicial">⌂</a><h1>Corpo</h1></header>
+      <nav class="dia-nav"><button class="bt-ic" aria-label="Dia anterior">‹</button><b class="hoje">Hoje</b><button class="bt-ic" disabled aria-label="Próximo dia">›</button></nav>
+      <div class="cartao destaque"><p class="grande"><b class="num">100,4</b><small>kg · IMC 31,7</small></p></div>
+      <div class="cartao view">
+        <div class="linha"><span style="flex:1">Sono</span><input class="campo" style="width:5em;text-align:right" value="7,5"><small class="muted">h</small></div>
+        <div class="linha"><span style="flex:1">Xixi <b class="num" style="color:var(--cor);font-size:var(--t-lg)">3</b></span><button class="chip ativo">+1</button></div>
+        <ul class="chips"><li><button class="chip">06:00 ×</button></li><li><button class="chip">10:00 ×</button></li><li><button class="chip armado">12:27 ×</button></li></ul>
+      </div>
+      <button class="btn primario">Salvar</button>
+    </div>
+  </section>
+
+  <section class="wrap" style="--cor:#6E9BFF">
+    <div class="view">
+      <header class="topo"><a class="bt-ic" href="#" aria-label="Página inicial">⌂</a><h1>Treino</h1></header>
+      <nav class="dia-nav"><button class="bt-ic" aria-label="Semana anterior">‹</button><b class="hoje">Hoje</b><button class="bt-ic" disabled aria-label="Próxima semana">›</button></nav>
+      <ul class="semana"><li class="folga"><i></i>seg</li><li class="folga"><i></i>ter</li><li class="feito"><i></i>qua</li><li class="hoje"><i></i>qui</li><li class="depois"><i></i>sex</li><li class="depois"><i></i>sáb</li><li class="depois"><i></i>dom</li></ul>
+      <ul class="lista">
+        <li><span class="hora">1</span><span class="oque"><b>Supino reto</b><small>4 × 10 · 40 kg</small></span><span class="valor">✓</span><span></span></li>
+        <li><span class="hora">2</span><span class="oque"><b>Puxada frente</b><small>3 × 12 · 50 kg</small></span><span class="valor">—</span><span></span></li>
+      </ul>
+      <button class="btn primario">Começar treino</button>
+    </div>
+  </section>
+
+  <section class="wrap" style="--cor:#A78BFA">
+    <div class="view">
+      <header class="topo"><a class="bt-ic" href="#" aria-label="Página inicial">⌂</a><h1>Fin</h1></header>
+      <div class="cartao destaque"><p class="grande"><b class="num">R$ 12</b><small>/ R$ 22 de besteira hoje</small></p><div class="barra" style="margin-top:12px"><span style="width:55%"></span></div></div>
+      <ul class="lista">
+        <li><span class="hora">30/10</span><span class="oque"><b>Café</b><small>Besteira · crédito</small></span><span class="valor">−12,00</span><button class="bt-ic perigo" aria-label="Apagar">×</button></li>
+        <li><span class="hora">29/10</span><span class="oque"><b>Mercado</b><small>Alimentação · débito</small></span><span class="valor">−86,40</span><button class="bt-ic perigo" aria-label="Apagar">×</button></li>
+      </ul>
+    </div>
+  </section>
+
+</div>
+<p class="toast" role="status">Assim fica o aviso de qualquer módulo</p>
+</body>
+</html>

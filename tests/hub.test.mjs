@@ -177,3 +177,11 @@ test('histórico no banco: toda tabela dos apps (menos o Fin, que tem o dele) co
   assert.match(sql, /revoke all on public\.hub_historico from anon, authenticated;/);
   assert.match(sql, /create policy hub_historico_so_victor on public\.hub_historico for select to authenticated\n  using \(\(select auth\.uid\(\)\) = '32f70255-30a0-4e2b-ad76-31d7a1bf54f7'::uuid\);/);
 });
+
+test('base comum: tokens e componentes existem, a referência carrega os dois e mostra cada módulo com a própria cor', () => {
+  const tokens = ler('base/tokens.css'), comp = ler('base/componentes.css'), ref = ler('base/referencia.html');
+  for (const t of ['--bg', '--surface', '--fg', '--muted', '--ok', '--erro', '--protegido', '--cor', '--cor-soft', '--on-cor', '--r', '--t-md']) assert.match(tokens, new RegExp(`${t}:`), t);
+  for (const c of ['.topo', '.dia-nav', '.semana', '.cartao', '.lista', '.chip', '.btn', '.toast', '@view-transition']) assert.ok(comp.includes(c), c);
+  assert.match(ref, /<link rel="stylesheet" href="tokens\.css">\n<link rel="stylesheet" href="componentes\.css">/);
+  assert.deepEqual([...ref.matchAll(/<h1>([^<]+)<\/h1>/g)].map(m => m[1]), ['Alimentação', 'Água', 'Corpo', 'Treino', 'Fin']);
+});

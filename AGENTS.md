@@ -12,6 +12,7 @@
 
 | Caminho | O que é |
 |---|---|
+| `base/` | Base comum de todos os módulos: `tokens.css`, `componentes.css` e a página `referencia.html` com cada peça em cada módulo (plano e estado em `docs/DIRETRIZES.md`, seção 8) |
 | `docs/` | `DIRETRIZES.md` (diretrizes gerais de todos os projetos), `REGRAS.md` (comportamento visível da página inicial: login, hábitos e atalhos) e `DECISOES.md` (o porquê das escolhas do hub) |
 | `index.html` · `hub.css` · `hub.js` | Página inicial: login, os hábitos (uma linha por hábito, que abre o app; o Fin pela Besteira) e os atalhos fixos embaixo (Agenda, Anotações). `hub.js` baixa os dados dos apps (só leitura) e desenha |
 | `habitos.js` | Regras dos hábitos, só funções puras: estado de cada dia, ofensivas, dias perfeitos, proteções e o resumo de hoje (testes em `tests/habitos.test.mjs`) |
