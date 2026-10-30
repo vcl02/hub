@@ -3,6 +3,14 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { prepararApp, abrirApp, novaNuvem, sincronizado, texto, DONO } from './helpers/app.mjs';
 
+// Arrasto de lado com o dedo (eventos de toque na tela do app): dx > 0 = para a direita
+const arrastar = (pg, sel, dx) => pg.evaluate(([sel, dx]) => {
+  const el = document.querySelector(sel), toque = x => [new Touch({ identifier: 1, target: el, clientX: x, clientY: 300 })];
+  el.dispatchEvent(new TouchEvent('touchstart', { touches: toque(150), changedTouches: toque(150), bubbles: true }));
+  el.dispatchEvent(new TouchEvent('touchmove', { touches: toque(150 + dx), changedTouches: toque(150 + dx), bubbles: true }));
+  el.dispatchEvent(new TouchEvent('touchend', { touches: [], changedTouches: toque(150 + dx), bubbles: true }));
+}, [sel, dx]);
+
 prepararApp();
 
 const beber = async (pg, ml) => { await pg.fill('#b-ml', String(ml)); await pg.press('#b-ml', 'Enter'); };
@@ -135,6 +143,28 @@ test('dia anterior (pela página inicial ou pelos últimos 7 dias): só leitura,
   await pg.waitForFunction(() => document.getElementById('t-ml').textContent === '432');
   await pg.reload(); await pg.waitForSelector('#v-agua:not([hidden])');                    // recarregar mantém o dia
   await pg.waitForFunction(() => document.getElementById('t-ml').textContent === '432');
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
+test('‹ › e arrastar de lado trocam o dia (até o 1º dia com água e até hoje), como no al; ← → no computador', async () => {
+  const nuvem = novaNuvem();
+  nuvem.tabelas.agua_dia.push({ user_id: DONO, data: '2026-10-17', aguas: [{ hora: '10:00', ml: 500 }] });
+  const { ctx, pg, erros } = await abrirApp({ nuvem });                    // segunda 19/10
+  await pg.waitForFunction(() => db.dias.length === 1);
+  assert.equal(await texto(pg, '#d-nome'), 'Hoje');
+  assert.equal(await pg.isDisabled('#d-prox'), true);
+  await pg.click('#d-ant');
+  assert.equal(await texto(pg, '#d-nome'), 'Ontem');
+  assert.equal(await pg.isVisible('#b-form'), false);                    // dia anterior: só leitura
+  await arrastar(pg, '#v-agua', 150);                                    // para a direita: o dia anterior
+  assert.deepEqual([await texto(pg, '#d-nome'), await texto(pg, '#t-ml')], ['sábado, 17/10', '500']);
+  assert.equal(await pg.isDisabled('#d-ant'), true);                     // 1º dia com água
+  assert.equal(await pg.evaluate(() => location.search), '?dia=2026-10-17');
+  await arrastar(pg, '#v-agua', -150);                                   // para a esquerda: o seguinte
+  assert.equal(await texto(pg, '#d-nome'), 'Ontem');
+  await pg.keyboard.press('ArrowRight');
+  assert.equal(await texto(pg, '#d-nome'), 'Hoje');
+  assert.equal(await pg.isVisible('#b-form'), true);
   assert.deepEqual(erros, []); await ctx.close();
 });
 

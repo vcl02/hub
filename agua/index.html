@@ -37,6 +37,13 @@
     </a>
   </header>
 
+  <!-- ‹ › e arrastar de lado trocam o dia mostrado (para trás até o 1º dia com registro, para frente até hoje), como no al -->
+  <nav class="dia-nav" aria-label="Dia">
+    <button type="button" class="bt-ic" id="d-ant" title="Dia anterior" aria-label="Dia anterior"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <b id="d-nome">Hoje</b>
+    <button type="button" class="bt-ic" id="d-prox" title="Próximo dia" aria-label="Próximo dia"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+  </nav>
+
   <!-- Dia anterior (pelos Últimos 7 dias ou pelo ?dia=, que acompanha o dia visto): só leitura; Hoje volta para hoje -->
   <p class="so-leitura" id="dia-visto" hidden><span id="dia-nome"></span> · só leitura <button type="button" class="chip-bt" id="dia-hoje">Hoje</button></p>
 

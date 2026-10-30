@@ -70,7 +70,11 @@ function desenhar() {
   pintarHistorico();
   if (passado()) $('c-hora').value = m?.hora || '';
   travarPassado();
-  diaNaUrl($('c-data').value, false);
+  const dia = $('c-data').value;
+  $('d-nome').textContent = dataOk(dia) ? nomeDoDia(dia) : '';
+  $('d-ant').disabled = !dataOk(dia) || dia <= primeiroDia();
+  $('d-prox').disabled = !dataOk(dia) || dia >= hoje();
+  diaNaUrl(dia, false);
 }
 
 // O dia do formulário: sono (dormi e acordei, as horas e BOM, OK ou RUIM) e evacuações (quantas e os horários) e há quanto tempo foi a última evacuação.
@@ -212,6 +216,13 @@ function verDia(dia, empilhar = true) {
   diaNaUrl(dia, empilhar); desenhar();
 }
 $('c-data').addEventListener('change', () => verDia($('c-data').value));
+// ‹ › e arrastar de lado (fora dos gráficos, que usam o dedo para a dica): para trás até o 1º dia com registro (ou o pedido
+// pelo ?dia ao abrir), para frente até hoje, como no al
+const DIA_PEDIDO = diaDaUrl();
+const primeiroDia = () => [hoje(), DIA_PEDIDO || hoje(), ...db.medidas.map(m => m.data), ...db.dias.map(x => x.data)].reduce((a, b) => b < a ? b : a);
+$('d-ant').addEventListener('click', () => { const d = $('c-data').value; if (d > primeiroDia()) verDia(somaDias(d, -1)); });
+$('d-prox').addEventListener('click', () => { const d = $('c-data').value; if (d < hoje()) verDia(somaDias(d, 1)); });
+arrastarDias($('v-corpo'), dir => $(dir < 0 ? 'd-ant' : 'd-prox').click(), 'input,textarea,select,.chart');
 $('dia-hoje').addEventListener('click', () => verDia(hoje()));
 addEventListener('popstate', () => { if (db) verDia(diaDaUrl() || hoje(), false); });
 document.querySelectorAll('[data-passo]').forEach(b => b.addEventListener('click', () => {   // − / +: peso de 0,1 em 0,1 kg, barriga de 0,5 cm

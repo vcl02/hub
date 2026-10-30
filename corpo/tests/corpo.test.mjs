@@ -3,6 +3,14 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { prepararApp, abrirApp, novaNuvem, sincronizado, texto, DONO } from './helpers/app.mjs';
 
+// Arrasto de lado com o dedo (eventos de toque na tela do app): dx > 0 = para a direita
+const arrastar = (pg, sel, dx) => pg.evaluate(([sel, dx]) => {
+  const el = document.querySelector(sel), toque = x => [new Touch({ identifier: 1, target: el, clientX: x, clientY: 300 })];
+  el.dispatchEvent(new TouchEvent('touchstart', { touches: toque(150), changedTouches: toque(150), bubbles: true }));
+  el.dispatchEvent(new TouchEvent('touchmove', { touches: toque(150 + dx), changedTouches: toque(150 + dx), bubbles: true }));
+  el.dispatchEvent(new TouchEvent('touchend', { touches: [], changedTouches: toque(150 + dx), bubbles: true }));
+}, [sel, dx]);
+
 prepararApp();
 
 // Sono do dia escolhido: dormi e acordei (vazio tira)
@@ -246,6 +254,27 @@ test('aberto pela página inicial num dia anterior (?dia=): o dia dele, só leit
   await pg.waitForFunction(() => !location.search && document.getElementById('c-data').value === '2026-10-22');
   assert.equal(await pg.isVisible('#dia-visto'), false);
   assert.equal(await pg.isDisabled('#x-mais'), false);
+  assert.deepEqual(erros, []); await ctx.close();
+});
+
+test('‹ › e arrastar de lado trocam o dia (até o 1º dia com registro e até hoje), como no al; ← → no computador', async () => {
+  const nuvem = novaNuvem();
+  nuvem.tabelas.corpo_medida.push({ user_id: DONO, data: '2026-10-20', hora: '07:10', peso: 99.5, cintura: null });
+  const { ctx, pg, erros } = await abrirApp({ nuvem });                    // 22/10
+  await pg.waitForFunction(() => db.medidas.length === 1);
+  assert.equal(await texto(pg, '#d-nome'), 'Hoje');
+  assert.equal(await pg.isDisabled('#d-prox'), true);                    // não passa de hoje
+  await pg.click('#d-ant');
+  assert.deepEqual([await texto(pg, '#d-nome'), await pg.inputValue('#c-data')], ['Ontem', '2026-10-21']);
+  await arrastar(pg, '#v-corpo', 150);                                   // para a direita: o dia anterior
+  assert.deepEqual([await texto(pg, '#d-nome'), await pg.inputValue('#c-peso')], ['terça, 20/10', '99,5']);
+  assert.equal(await pg.isDisabled('#d-ant'), true);                     // 20/10 é o 1º dia com registro
+  assert.equal(await pg.evaluate(() => location.search), '?dia=2026-10-20');
+  await arrastar(pg, '#v-corpo', -150);                                  // para a esquerda: o seguinte
+  assert.equal(await pg.inputValue('#c-data'), '2026-10-21');
+  await pg.keyboard.press('ArrowRight');
+  assert.equal(await texto(pg, '#d-nome'), 'Hoje');
+  assert.equal(await pg.isDisabled('#x-mais'), false);                   // hoje: lança de novo
   assert.deepEqual(erros, []); await ctx.close();
 });
 

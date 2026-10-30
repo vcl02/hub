@@ -4,6 +4,9 @@ let bebida = 'agua';   // a bebida do próximo lançamento; volta para água dep
 // Dia anterior (tocado nos Últimos 7 dias ou aberto pelo ?dia=, que acompanha o dia visto como o ?ciclo do Fin): a tela é daquele
 // dia, só leitura (sem lembretes, beber nem tirar). null = hoje.
 let DIA = diaDaUrl();
+// ‹ › e arrastar de lado: para trás até o 1º dia com água (ou o pedido pelo ?dia ao abrir), para frente até hoje, como no al
+const DIA_PEDIDO = DIA;
+const primeiroDia = () => [hoje(), DIA_PEDIDO || hoje(), ...db.dias.map(x => x.data)].reduce((a, b) => b < a ? b : a);
 function verDia(dia, empilhar = true) { DIA = dia && dia < hoje() ? dia : null; diaNaUrl(DIA, empilhar); desenhar(); window.scrollTo(0, 0); }
 const nomeBebida = a => BEBIDAS[a.bebida]?.nome.toLowerCase() || '';
 // "10:00 · 300 ml" ou "10:00 · suco 300 ml (264 ml de água · 120 kcal)": as kcal entram no Alimentação
@@ -11,6 +14,9 @@ const textoAgua = a => a.bebida ? `${a.hora} · ${nomeBebida(a)} ${inteiro(a.vol
 
 function desenhar() {
   const dia = DIA || hoje(), x = doDia(dia), total = totalMl(dia);
+  $('d-nome').textContent = nomeDoDia(dia);
+  $('d-ant').disabled = dia <= primeiroDia();
+  $('d-prox').disabled = dia >= hoje();
   $('dia-visto').hidden = !DIA;
   if (DIA) $('dia-nome').textContent = deIso(DIA).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
   for (const id of ['lembretes', 'b-tipos', 'b-form', 'b-botoes']) $(id).hidden = !!DIA;
@@ -76,6 +82,9 @@ $('b-lista').addEventListener('click', ev => {
 // Tocar num dia dos Últimos 7 dias abre ele (anterior: só leitura); Hoje e o Voltar do navegador voltam
 $('semana').addEventListener('click', ev => { const b = ev.target.closest('[data-dia]'); if (b) verDia(b.dataset.dia); });
 $('dia-hoje').addEventListener('click', () => verDia(null));
+$('d-ant').addEventListener('click', () => { const d = DIA || hoje(); if (d > primeiroDia()) verDia(somaDias(d, -1)); });
+$('d-prox').addEventListener('click', () => { const d = DIA || hoje(); if (d < hoje()) verDia(somaDias(d, 1)); });
+arrastarDias($('v-agua'), dir => $(dir < 0 ? 'd-ant' : 'd-prox').click());
 addEventListener('popstate', () => { if (db) verDia(diaDaUrl(), false); });
 // O app aberto acompanha o relógio: o lembrete da vez aparece sozinho (e o dia vira à meia-noite)
 setInterval(() => { if (db && !$('v-agua').hidden) desenhar(); }, 60000);

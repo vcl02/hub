@@ -14,6 +14,15 @@ const hoje = () => iso(new Date());
 const diaDaUrl = () => { const d = new URLSearchParams(location.search).get('dia'); return d && /^\d{4}-\d{2}-\d{2}$/.test(d) && d < hoje() ? d : null; };
 // O dia no endereço, como o ?ciclo do Fin: ?dia=AAAA-MM-DD num dia anterior, nada em hoje. Trocar de dia empilha no histórico
 // (o Voltar do navegador volta ao dia visto antes); empilhar = false só substitui. Os outros parâmetros ficam.
+// Nome do dia na barra ‹ ›, como no al: Hoje, Ontem ou "quarta, 21/10"
+const NOME_DIA = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+function nomeDoDia(d) {
+  const n = Math.round((deIso(hoje()) - deIso(d)) / 864e5);
+  if (n === 0) return 'Hoje';
+  if (n === 1) return 'Ontem';
+  const [, m, dia] = d.split('-');
+  return NOME_DIA[deIso(d).getDay()] + ', ' + dia + '/' + m;
+}
 function diaNaUrl(dia, empilhar = true) {
   const url = new URL(location.href);
   if (dia && dia < hoje()) url.searchParams.set('dia', dia); else url.searchParams.delete('dia');
@@ -109,6 +118,32 @@ function grafico(box, P, unidade, rotulo) {   // P = [{ data, valor, hora? }] em
   svg.addEventListener('pointermove', mostrar);
   svg.addEventListener('pointerdown', mostrar);
   svg.addEventListener('pointerleave', () => dica.setAttribute('visibility', 'hidden'));
+}
+
+// Arrastar de lado (celular) e ← → (computador) trocam o dia, como ‹ ›, no mesmo sentido de todo o hub: para a direita (ou ←),
+// o dia anterior. Só gesto claramente horizontal, longo ou rápido (80 px, ou 40 px rápido); campo (e o que estiver em fora, ex.:
+// gráfico) não arrasta, e as setas dentro de um campo andam no texto. trocar(-1) = dia anterior · trocar(1) = o seguinte.
+function arrastarDias(tela, trocar, fora = 'input,textarea,select') {
+  let x0 = 0, y0 = 0, t0 = 0, ativo = false, eixo = null;
+  tela.addEventListener('touchstart', ev => {
+    ativo = ev.touches.length === 1 && !ev.target.closest(fora); eixo = null;
+    if (ativo) { x0 = ev.touches[0].clientX; y0 = ev.touches[0].clientY; t0 = Date.now(); }
+  }, { passive: true });
+  tela.addEventListener('touchmove', ev => {
+    if (!ativo || eixo) return;
+    const dx = ev.touches[0].clientX - x0, dy = ev.touches[0].clientY - y0;
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) eixo = Math.abs(dx) > Math.abs(dy) * 1.3 ? 'x' : 'y';
+  }, { passive: true });
+  tela.addEventListener('touchend', ev => {
+    if (!ativo) return; ativo = false;
+    const dx = ev.changedTouches[0].clientX - x0, rapido = Date.now() - t0 < 300;
+    if (eixo === 'x' && (Math.abs(dx) > 80 || (rapido && Math.abs(dx) > 40))) trocar(dx > 0 ? -1 : 1);
+  });
+  tela.addEventListener('touchcancel', () => { ativo = false; });
+  document.addEventListener('keydown', ev => {
+    if (tela.hidden || !['ArrowLeft', 'ArrowRight'].includes(ev.key) || ev.altKey || ev.ctrlKey || ev.metaKey || ev.target.closest?.('input,textarea,select')) return;
+    ev.preventDefault(); trocar(ev.key === 'ArrowLeft' ? -1 : 1);
+  });
 }
 
 // ===== Esc =====
