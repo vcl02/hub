@@ -15,9 +15,14 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--e-3);
-  max-width: 640px;
+  max-width: var(--largura);
   margin: 0 auto;
   padding: max(var(--e-3), env(safe-area-inset-top, 0px)) max(var(--e-4), env(safe-area-inset-right, 0px)) calc(96px + env(safe-area-inset-bottom, 0px)) max(var(--e-4), env(safe-area-inset-left, 0px));
+}
+
+/* A marca no lugar do ícone do hub dos módulos (aqui não é link: já é a página inicial), pra o título ficar no mesmo lugar */
+.topo .marca-topo {
+  color: var(--cor);
 }
 
 /* ---------- Barra do dia: a data com largura fixa (a mais longa do ano, "segunda-feira, 30 de novembro", cabe), pra ‹ › e o resto
@@ -320,7 +325,7 @@ body {
   grid-auto-columns: 1fr;
   grid-auto-flow: column;
   gap: var(--e-2);
-  max-width: 640px;
+  max-width: var(--largura);
   margin: 0 auto;
   padding: 10px max(var(--e-4), env(safe-area-inset-right, 0px)) max(var(--e-3), env(safe-area-inset-bottom, 0px)) max(var(--e-4), env(safe-area-inset-left, 0px));
   border-top: 1px solid var(--line);

@@ -21,6 +21,8 @@
   --e-1:4px; --e-2:8px; --e-3:12px; --e-4:16px; --e-5:24px;
   --r-sm:8px; --r:12px; --r-lg:16px; --r-pill:999px;
   --rapido:150ms; --medio:250ms;
+  /* Largura do conteúdo, a mesma em todo módulo (página inicial inclusive): trocar de módulo não muda a coluna */
+  --largura:560px;
   color-scheme:dark;
 }
 /* Cor trocada num pedaço da página (style="--cor:…", como cada hábito na página inicial): o suave sai da cor dali, não da do módulo */
