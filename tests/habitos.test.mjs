@@ -206,10 +206,11 @@ test('resumo de hoje: valor curto de cada hábito e o progresso das metas', () =
   assert.equal(r.deficit.valor, '400 kcal restantes');
   D.comidas[HOJE].push({ hora: '20:00', kcal: 1650 });
   r = json(H.resumoDeHoje(D, HOJE));
-  assert.deepEqual([r.deficit.valor, r.deficit.acima], ['Superávit de 750 kcal', true]);   // meta + 1.250 = gasto + 750: só o superávit
+  assert.deepEqual([r.deficit.valor, r.deficit.acima, r.deficit.bom], ['750 kcal', true, undefined]);   // meta + 1.250 = gasto + 750: superávit, vermelho
   D.comidas[HOJE] = [{ hora: '12:00', kcal: meta + 300 }];                                                   // passou da meta, mas abaixo do gasto
-  assert.equal(json(H.resumoDeHoje(D, HOJE)).deficit.valor, '300 kcal acima · déficit de 200');
-  assert.equal(json(H.resumoDeHoje(D, HOJE, true)).deficit.valor, '300 kcal acima · déficit de 200');        // dia fechado: o mesmo
+  r = json(H.resumoDeHoje(D, HOJE));
+  assert.deepEqual([r.deficit.valor, r.deficit.acima, r.deficit.bom], ['200 kcal', undefined, true]);         // ainda em déficit: verde
+  assert.deepEqual(json(H.resumoDeHoje(D, HOJE, true)).deficit, r.deficit);                                  // dia fechado: o mesmo
   assert.equal(json(H.resumoDeHoje(D, '2026-11-02')).treino.valor, 'Próximo: qua');
   assert.equal(json(H.resumoDeHoje(vazio(), HOJE)).deficit.valor, 'Sem pesagem');
 });

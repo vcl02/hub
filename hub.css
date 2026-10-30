@@ -421,6 +421,11 @@ h1 span {
   color: var(--red);
 }
 
+/* Déficit acima da meta, mas o dia ainda em déficit: só o número, em verde */
+.hab-valor.bom {
+  color: var(--verde);
+}
+
 .habito.feito .hab-valor {
   color: var(--verde);
 }

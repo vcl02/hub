@@ -182,6 +182,7 @@ function desenhar() {
     el.setAttribute('href', passado ? `${el.dataset.pasta}?dia=${dia}` : el.dataset.pasta);
     el.querySelector('.hab-valor').textContent = r.valor;
     el.querySelector('.hab-valor').classList.toggle('acima', !!r.acima);
+    el.querySelector('.hab-valor').classList.toggle('bom', !!r.bom);
     const barra = el.querySelector('.hab-barra');
     barra.hidden = r.progresso == null;
     if (r.progresso != null) barra.firstElementChild.style.width = Math.round(Math.min(1, Math.max(0, r.progresso)) * 100) + '%';

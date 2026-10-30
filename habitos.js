@@ -132,9 +132,9 @@ const milhar = n => Math.round(n).toLocaleString('pt-BR');
 const decimal = n => (Math.round(n * 10) / 10).toLocaleString('pt-BR');
 const horasTxt = h => { const m = Math.round(h * 60); return `${Math.floor(m / 60)} h${m % 60 ? ' ' + pad2(m % 60) : ''}`; };   // 7,5 → "7 h 30"
 const pad2 = n => String(n).padStart(2, '0');
-// Passou da meta (gasto − 500): o dia ainda em déficit (comido abaixo do gasto do dia inteiro), só menor que o planejado
-// ("300 kcal acima · déficit de 200"), ou já em superávit, e aí só ele ("Superávit de 750 kcal")
-const acimaTxt = c => { const d = c.gasto - c.comido; return d >= 0 ? `${milhar(c.comido - c.meta)} kcal acima · déficit de ${milhar(d)}` : `Superávit de ${milhar(-d)} kcal`; };
+// Passou da meta (gasto − 500): só o número do saldo pelo gasto do dia inteiro, e a cor diz o que é: verde, o dia ainda em
+// déficit (só menor que o planejado, "200 kcal"); vermelho, já em superávit ("750 kcal")
+const acimaDaMeta = c => { const d = c.gasto - c.comido; return { valor: `${milhar(Math.abs(d))} kcal`, progresso: 1, ...(d >= 0 ? { bom: true } : { acima: true }) }; };
 // passado: um dia que já fechou (a tela inicial voltando para dias anteriores): o texto diz o que aconteceu, não o que fazer
 function resumoDeHoje(D, hoje, passado = false) {
   const wd = semanaDoDia(hoje);
@@ -149,7 +149,7 @@ function resumoDeHoje(D, hoje, passado = false) {
     treino: { valor: treinou ? 'Treinou' : ROTINA.treino.includes(wd) ? 'Não treinou' : 'Folga', ...(!treinou && ROTINA.treino.includes(wd) && { acima: true }) },
     deficit: !c.comidas.length ? { valor: 'Nada lançado', acima: true } : resta == null ? { valor: 'Sem pesagem' } : resta >= 0
       ? { valor: `${milhar(resta)} kcal abaixo da meta`, progresso: c.meta ? c.comido / c.meta : 0 }
-      : { valor: acimaTxt(c), progresso: 1, acima: true },
+      : acimaDaMeta(c),
     peso: { valor: m ? `${decimal(m.peso)} kg` : 'Sem pesagem' },
     sono: { valor: s && s.sono != null ? horasTxt(s.sono) : SONO_FOLGA.includes(wd) ? 'Folga' : 'Sem sono', ...(s && s.sono != null && s.sono < SONO_MIN_H && { acima: true }) },
     agua: { valor: `${milhar(ml)} / ${milhar(META_AGUA_ML)} ml`, progresso: Math.min(1, ml / META_AGUA_ML) },
@@ -160,7 +160,7 @@ function resumoDeHoje(D, hoje, passado = false) {
     treino: { valor: treinou ? 'Treinou' : ROTINA.treino.includes(wd) ? 'Dia de treino' : `Próximo: ${NOMES_SEMANA[proximo]}` },
     deficit: resta == null ? { valor: 'Sem pesagem' } : resta >= 0
       ? { valor: `${milhar(resta)} kcal restantes`, progresso: c.meta ? c.comido / c.meta : 0 }
-      : { valor: acimaTxt(c), progresso: 1, acima: true },
+      : acimaDaMeta(c),
     peso: { valor: m ? `${decimal(m.peso)} kg` : 'Pesar hoje' },
     sono: { valor: s && s.sono != null ? horasTxt(s.sono) : SONO_FOLGA.includes(wd) ? 'Folga hoje' : 'Registrar sono', ...(s && s.sono != null && s.sono < SONO_MIN_H && { acima: true }) },
     agua: { valor: `${milhar(ml)} / ${milhar(META_AGUA_ML)} ml`, progresso: Math.min(1, ml / META_AGUA_ML) },
