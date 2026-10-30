@@ -184,3 +184,44 @@ test('lembrar com trecho: grava só a parte escolhida; trecho curto ou fora do n
     assert.match(corpo.aviso, /fora do nome/);
     assert.equal(corpo.lembrado, true);
 });
+
+test('débito Nubank: Débito pago, sem fatura e sempre 1 parcela (mesmo com atalho parcelado)', async () => {
+    const atalhos = [{ chave: 'emv cmt', nome: 'Metrô', categ: 'Transporte', parcelas: 3 }];
+    const { handler, chamadas } = carregaFuncao(undefined, bancoFalso({ atalhos }));
+    const corpo = await (await handler(pedido(TOKEN, { metodo: 'POST', caminho: '', corpo: compra({ tipo: 'despesa_debito', valor: '5.90', estab: 'EMV CMT*156596385', auto: true }) }))).json();
+    assert.equal(corpo.lancado, true);
+    assert.equal(corpo.forma, 'débito');
+    const linhas = JSON.parse(chamadas.find(c => c.url.endsWith('/rest/v1/fin')).opcoes.body);
+    assert.equal(linhas.length, 1);
+    assert.deepEqual((({ valor, nome, categ, cred, pago, fatura }) => ({ valor, nome, categ, cred, pago, fatura }))(linhas[0]),
+        { valor: -5.9, nome: 'Metrô', categ: 'Transporte', cred: false, pago: true, fatura: null });
+    // Parcelas mandadas pelo Tasker também não valem no débito.
+    const { handler: h2, chamadas: c2 } = carregaFuncao(undefined, bancoFalso());
+    await h2(pedido(TOKEN, { metodo: 'POST', caminho: '', corpo: compra({ tipo: 'despesa_debito', parcelas: '3', nome: 'X' }) }));
+    assert.equal(JSON.parse(c2.find(c => c.url.endsWith('/rest/v1/fin')).opcoes.body).length, 1);
+});
+
+test('crédito Mercado Pago: fatura vence dia 13 e fecha dia 6; sem cartão (ou outro) é Nubank, fecha dia 5 e vence dia 12', async () => {
+    const fatura = async (data, cartao) => {
+        const { handler, chamadas } = carregaFuncao(undefined, bancoFalso());
+        const ts = Math.floor(new Date(`${data}T12:00:00-03:00`).getTime() / 1000);
+        const corpo = await (await handler(pedido(TOKEN, { metodo: 'POST', caminho: '', corpo: compra({ ts, cartao, nome: 'X', categ: 'Y' }) }))).json();
+        return { corpo, linha: JSON.parse(chamadas.find(c => c.url.endsWith('/rest/v1/fin')).opcoes.body)[0] };
+    };
+    // Mês passado: sempre no passado e a menos de 60 dias (a função troca data fora disso por agora).
+    const hoje = new Date();
+    const mes = (a, m) => `${a + Math.floor((m - 1) / 12)}-${String(((m - 1) % 12 + 12) % 12 + 1).padStart(2, '0')}`;
+    const [a, m] = [hoje.getFullYear(), hoje.getMonth()];   // getMonth() = número do mês passado (1-12), 0 em janeiro
+    const passado = m === 0 ? mes(a - 1, 12) : mes(a, m), atual = mes(a, m + 1);
+    let { corpo, linha } = await fatura(`${passado}-05`, 'mp');
+    assert.equal(linha.fatura, `${passado}-13`);
+    assert.equal(linha.cred, true);
+    assert.equal(corpo.forma, 'Mercado Pago');
+    ({ linha } = await fatura(`${passado}-06`, 'mp'));
+    assert.equal(linha.fatura, `${atual}-13`);
+    ({ linha } = await fatura(`${passado}-05`, undefined));
+    assert.equal(linha.fatura, `${atual}-12`);
+    ({ corpo, linha } = await fatura(`${passado}-04`, 'outro'));
+    assert.equal(linha.fatura, `${passado}-12`);
+    assert.equal(corpo.forma, 'Nubank');
+});

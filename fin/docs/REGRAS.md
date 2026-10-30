@@ -356,6 +356,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Dia 13 é **Mercado Pago**; qualquer outro dia é **Nubank**, que fica com todo o histórico (vence dia 12).
   Crédito ou antecipação sem `fatura` é Nubank.
   Nomes e categorias não identificam cartão.
+  A captura do celular (Tasker + `captura-nubank`) segue a mesma regra: compra no Mercado Pago grava a fatura do dia 13 (fecha dia 6, suposição a confirmar), no Nubank a do dia 12 (fecha dia 5), e compra no débito do Nubank entra no Débito, paga, sem fatura e em 1 parcela.
   Na tela continua existindo uma única tabela de Crédito por ciclo, com as compras dos dois cartões juntas e o total somado; compra do Mercado Pago tem a linha inteira num fundo azul (o do cartão) bem claro e apagado, com contorno suave, sem selo "MP" (a cor de seleção sobressai por cima); a antecipação do Mercado Pago continua com "MP" na tag `↳ Fat.`, e o Nubank fica sem marca.
   O bloco Crédito mostra só a quantidade de registros ("17 registros"), sem as datas das faturas.
   No Débito, a linha calculada de fatura vira uma por cartão — **Fatura Nubank** e **Fatura Mercado Pago**, cada uma no próprio vencimento e líquida das antecipações do próprio cartão —, e o saldo por dia e o gráfico de evolução seguem as mesmas duas linhas.

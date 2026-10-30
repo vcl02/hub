@@ -9,10 +9,16 @@
 			<code>129</code>
 			<se>false</se>
 			<Str sr="arg0" ve="3">var s = (local("evtprm2") || "") + " | " + (local("evtprm3") || "");
-var tipo = "", valor = "", estab = "", parcelas = "1", m;
+var tipo = "", valor = "", estab = "", parcelas = "1", cartao = "nubank", m;
 
 if (m = s.match(/Compra de R\$\s?([\d.]+,\d{2}) APROVADA em (.+?) para o cartão com final (\d{4})/)) {
   tipo = "despesa_credito"; valor = m[1]; estab = m[2];
+} else if (/débito/i.test(s) &amp;&amp; (m = s.match(/Compra de R\$\s?([\d.]+,\d{2}) em (.+?)\.?\s*$/))) {
+  // Débito Nubank: "Compra no débito aprovada | Compra de R$ 5,90 em EMV CMT*156596385"
+  tipo = "despesa_debito"; valor = m[1]; estab = m[2];
+} else if (m = s.match(/Você pagou R\$\s?([\d.]+,\d{2}) a (.+?)\.?\s*\|.*fatura do seu Cartão Mercado Pago/i)) {
+  // Crédito Mercado Pago (perfil do app Mercado Pago). Sem a frase da fatura (saldo, Pix) não é do cartão.
+  tipo = "despesa_credito"; valor = m[1]; estab = m[2]; cartao = "mp";
 } else if (m = s.match(/R\$\s?([\d.]+,\d{2}) em (\d+)x no crédito.*?APROVADO em (.+?)\.?$/)) {
   tipo = "despesa_nupay"; valor = m[1]; parcelas = m[2]; estab = m[3];
 } else if (m = s.match(/cobrança paga de R\$\s?([\d.]+,\d{2})/)) {
@@ -24,7 +30,8 @@ valor = valor.replace(/\./g, "").replace(",", ".");
 setLocal("tipo", tipo || "nenhum");
 setLocal("valor", valor);
 setLocal("estab", estab);
-setLocal("parcelas", parcelas);</Str>
+setLocal("parcelas", parcelas);
+setLocal("cartao", cartao);</Str>
 			<Str sr="arg1" ve="3"/>
 			<Int sr="arg2" val="1"/>
 			<Int sr="arg3" val="45"/>
@@ -119,12 +126,12 @@ setLocal("parcelas", parcelas);</Str>
 					<RegexText-type>java.lang.Boolean</RegexText-type>
 					<RegexTitle>false</RegexTitle>
 					<RegexTitle-type>java.lang.Boolean</RegexTitle-type>
-					<Text>aprovad</Text>
+					<Text>Compra</Text>
 					<Text-type>java.lang.String</Text-type>
 					<Title>&lt;null&gt;</Title>
 					<Title-type>java.lang.String</Title-type>
 					<com.twofortyfouram.locale.intent.extra.BLURB>Notification Apps: Nubank
-Notification Text: aprovad (case ins)</com.twofortyfouram.locale.intent.extra.BLURB>
+Notification Text: Compra (case ins)</com.twofortyfouram.locale.intent.extra.BLURB>
 					<com.twofortyfouram.locale.intent.extra.BLURB-type>java.lang.String</com.twofortyfouram.locale.intent.extra.BLURB-type>
 					<net.dinglisch.android.tasker.RELEVANT_VARIABLES>&lt;StringArray sr=""&gt;&lt;_array_net.dinglisch.android.tasker.RELEVANT_VARIABLES0&gt;%err
 Error Code
@@ -148,19 +155,112 @@ Only available if you select &amp;lt;b&amp;gt;Continue Task After Error&amp;lt;/
 			<Str sr="arg2" ve="3">com.joaomgcd.autonotification.activity.ActivityConfigCancelNotification</Str>
 			<Int sr="arg3" val="20"/>
 			<Int sr="arg4" val="1"/>
+			<ConditionList sr="if">
+				<Condition sr="c0" ve="3">
+					<lhs>%cartao</lhs>
+					<op>2</op>
+					<rhs>nubank</rhs>
+				</Condition>
+			</ConditionList>
 		</Action>
 		<Action sr="act4" ve="7">
+			<code>2046367074</code>
+			<Bundle sr="arg0">
+				<Vals sr="val">
+					<App>&lt;null&gt;</App>
+					<App-type>java.lang.String</App-type>
+					<CancelAll>false</CancelAll>
+					<CancelAll-type>java.lang.Boolean</CancelAll-type>
+					<CancelPersistent>false</CancelPersistent>
+					<CancelPersistent-type>java.lang.Boolean</CancelPersistent-type>
+					<CaseinsensitiveApp>false</CaseinsensitiveApp>
+					<CaseinsensitiveApp-type>java.lang.Boolean</CaseinsensitiveApp-type>
+					<CaseinsensitivePackage>false</CaseinsensitivePackage>
+					<CaseinsensitivePackage-type>java.lang.Boolean</CaseinsensitivePackage-type>
+					<CaseinsensitiveText>true</CaseinsensitiveText>
+					<CaseinsensitiveText-type>java.lang.Boolean</CaseinsensitiveText-type>
+					<CaseinsensitiveTitle>false</CaseinsensitiveTitle>
+					<CaseinsensitiveTitle-type>java.lang.Boolean</CaseinsensitiveTitle-type>
+					<ExactApp>false</ExactApp>
+					<ExactApp-type>java.lang.Boolean</ExactApp-type>
+					<ExactPackage>false</ExactPackage>
+					<ExactPackage-type>java.lang.Boolean</ExactPackage-type>
+					<ExactText>false</ExactText>
+					<ExactText-type>java.lang.Boolean</ExactText-type>
+					<ExactTitle>false</ExactTitle>
+					<ExactTitle-type>java.lang.Boolean</ExactTitle-type>
+										<InvertApp>false</InvertApp>
+					<InvertApp-type>java.lang.Boolean</InvertApp-type>
+					<InvertPackage>false</InvertPackage>
+					<InvertPackage-type>java.lang.Boolean</InvertPackage-type>
+					<InvertText>false</InvertText>
+					<InvertText-type>java.lang.Boolean</InvertText-type>
+					<InvertTitle>false</InvertTitle>
+					<InvertTitle-type>java.lang.Boolean</InvertTitle-type>
+					<OtherId>&lt;null&gt;</OtherId>
+					<OtherId-type>java.lang.String</OtherId-type>
+					<OtherPackage>&lt;null&gt;</OtherPackage>
+					<OtherPackage-type>java.lang.String</OtherPackage-type>
+					<OtherTag>&lt;null&gt;</OtherTag>
+					<OtherTag-type>java.lang.String</OtherTag-type>
+					<PackageName>&lt;null&gt;</PackageName>
+					<PackageName-type>java.lang.String</PackageName-type>
+					<RegexApp>false</RegexApp>
+					<RegexApp-type>java.lang.Boolean</RegexApp-type>
+					<RegexPackage>false</RegexPackage>
+					<RegexPackage-type>java.lang.Boolean</RegexPackage-type>
+					<RegexText>false</RegexText>
+					<RegexText-type>java.lang.Boolean</RegexText-type>
+					<RegexTitle>false</RegexTitle>
+					<RegexTitle-type>java.lang.Boolean</RegexTitle-type>
+					<Text>Cartão Mercado Pago</Text>
+					<Text-type>java.lang.String</Text-type>
+					<Title>&lt;null&gt;</Title>
+					<Title-type>java.lang.String</Title-type>
+					<com.twofortyfouram.locale.intent.extra.BLURB>Notification Text: Cartão Mercado Pago (case ins)</com.twofortyfouram.locale.intent.extra.BLURB>
+					<com.twofortyfouram.locale.intent.extra.BLURB-type>java.lang.String</com.twofortyfouram.locale.intent.extra.BLURB-type>
+					<net.dinglisch.android.tasker.RELEVANT_VARIABLES>&lt;StringArray sr=""&gt;&lt;_array_net.dinglisch.android.tasker.RELEVANT_VARIABLES0&gt;%err
+Error Code
+Only available if you select &amp;lt;b&amp;gt;Continue Task After Error&amp;lt;/b&amp;gt; and the action ends in error&lt;/_array_net.dinglisch.android.tasker.RELEVANT_VARIABLES0&gt;&lt;_array_net.dinglisch.android.tasker.RELEVANT_VARIABLES1&gt;%errmsg
+Error Message
+Only available if you select &amp;lt;b&amp;gt;Continue Task After Error&amp;lt;/b&amp;gt; and the action ends in error&lt;/_array_net.dinglisch.android.tasker.RELEVANT_VARIABLES1&gt;&lt;/StringArray&gt;</net.dinglisch.android.tasker.RELEVANT_VARIABLES>
+					<net.dinglisch.android.tasker.RELEVANT_VARIABLES-type>[Ljava.lang.String;</net.dinglisch.android.tasker.RELEVANT_VARIABLES-type>
+					<net.dinglisch.android.tasker.extras.VARIABLE_REPLACE_KEYS>InterceptApps Text plugininstanceid plugintypeid </net.dinglisch.android.tasker.extras.VARIABLE_REPLACE_KEYS>
+					<net.dinglisch.android.tasker.extras.VARIABLE_REPLACE_KEYS-type>java.lang.String</net.dinglisch.android.tasker.extras.VARIABLE_REPLACE_KEYS-type>
+					<net.dinglisch.android.tasker.subbundled>true</net.dinglisch.android.tasker.subbundled>
+					<net.dinglisch.android.tasker.subbundled-type>java.lang.Boolean</net.dinglisch.android.tasker.subbundled-type>
+					<notificaitionid>&lt;null&gt;</notificaitionid>
+					<notificaitionid-type>java.lang.String</notificaitionid-type>
+					<plugininstanceid>a494cc92-3865-5a26-a1f0-dc17cd88b929</plugininstanceid>
+					<plugininstanceid-type>java.lang.String</plugininstanceid-type>
+					<plugintypeid>com.joaomgcd.autonotification.intent.IntentCancelNotification</plugintypeid>
+					<plugintypeid-type>java.lang.String</plugintypeid-type>
+				</Vals>
+			</Bundle>
+			<Str sr="arg1" ve="3">com.joaomgcd.autonotification</Str>
+			<Str sr="arg2" ve="3">com.joaomgcd.autonotification.activity.ActivityConfigCancelNotification</Str>
+			<Int sr="arg3" val="20"/>
+			<Int sr="arg4" val="1"/>
+			<ConditionList sr="if">
+				<Condition sr="c0" ve="3">
+					<lhs>%cartao</lhs>
+					<op>2</op>
+					<rhs>mp</rhs>
+				</Condition>
+			</ConditionList>
+		</Action>
+		<Action sr="act5" ve="7">
 			<code>129</code>
 			<Str sr="arg0" ve="3">// Lança sozinho se o estabelecimento tem atalho (fin_atalho): a Edge Function responde lancado.
 var agora = Math.floor(Date.now() / 1000);
 setLocal("agora", String(agora));
 setLocal("body", JSON.stringify({ tipo: local("tipo"), valor: local("valor"), estab: local("estab"),
-  parcelas: local("parcelas"), ts: String(agora), auto: true }));</Str>
+  parcelas: local("parcelas"), cartao: local("cartao"), ts: String(agora), auto: true }));</Str>
 			<Str sr="arg1" ve="3"/>
 			<Int sr="arg2" val="1"/>
 			<Int sr="arg3" val="45"/>
 		</Action>
-		<Action sr="act5" ve="7">
+		<Action sr="act6" ve="7">
 			<code>339</code>
 			<se>false</se>
 			<Bundle sr="arg0">
@@ -195,19 +295,19 @@ x-fin-token:%FINTOKEN</Str>
 			<Int sr="arg8" val="20"/>
 			<Int sr="arg9" val="0"/>
 		</Action>
-		<Action sr="act6" ve="7">
+		<Action sr="act7" ve="7">
 			<code>129</code>
 			<Str sr="arg0" ve="3">// Sem resposta, erro ou sem atalho: segue o fluxo de sempre (notificação pra tocar).
 var r = {};
 try { r = JSON.parse(local("http_data") || "{}"); } catch (e) {}
 var ok = String(local("http_response_code") || "").charAt(0) === "2" &amp;&amp; r.lancado === true;
 setLocal("lancado", ok ? "sim" : "nao");
-if (ok) setLocal("aviso", r.nome + " R$ " + local("valor").replace(".", ",") + " · " + String(r.categ || ""));</Str>
+if (ok) setLocal("aviso", r.nome + " R$ " + local("valor").replace(".", ",") + " · " + String(r.categ || "") + (r.forma ? " · " + r.forma : ""));</Str>
 			<Str sr="arg1" ve="3"/>
 			<Int sr="arg2" val="1"/>
 			<Int sr="arg3" val="45"/>
 		</Action>
-		<Action sr="act7" ve="7">
+		<Action sr="act8" ve="7">
 			<code>523</code>
 			<Str sr="arg0" ve="3">%aviso</Str>
 			<Str sr="arg1" ve="3">Lançado sozinho</Str>
@@ -235,7 +335,7 @@ if (ok) setLocal("aviso", r.nome + " R$ " + local("valor").replace(".", ",") + "
 				</Condition>
 			</ConditionList>
 		</Action>
-		<Action sr="act8" ve="7">
+		<Action sr="act9" ve="7">
 			<code>137</code>
 			<Int sr="arg0" val="0"/>
 			<Str sr="arg1" ve="3"/>
@@ -247,7 +347,7 @@ if (ok) setLocal("aviso", r.nome + " R$ " + local("valor").replace(".", ",") + "
 				</Condition>
 			</ConditionList>
 		</Action>
-		<Action sr="act9" ve="7">
+		<Action sr="act10" ve="7">
 			<code>129</code>
 			<Str sr="arg0" ve="3">var agora = parseInt(local("agora"), 10) || Math.floor(Date.now() / 1000);
 var d = new Date();
@@ -263,14 +363,14 @@ var titulo = base, n = 2;
 while (pend[titulo]) { titulo = base + " #" + n++; }
 
 pend[titulo] = { tipo: local("tipo"), valor: local("valor"), estab: local("estab"),
-                 parcelas: local("parcelas"), ts: agora };
+                 parcelas: local("parcelas"), cartao: local("cartao"), ts: agora };
 setGlobal("FINPEND", JSON.stringify(pend));
 setLocal("titulo", titulo);</Str>
 			<Str sr="arg1" ve="3"/>
 			<Int sr="arg2" val="1"/>
 			<Int sr="arg3" val="45"/>
 		</Action>
-		<Action sr="act10" ve="7">
+		<Action sr="act11" ve="7">
 			<code>523</code>
 			<Str sr="arg0" ve="3">%titulo</Str>
 			<Str sr="arg1" ve="3"/>

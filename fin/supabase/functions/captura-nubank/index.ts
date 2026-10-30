@@ -3,6 +3,8 @@
 // Supabase, nunca no código nem no repositório, que é público). Sem o secret, recusa tudo.
 // GET ?acao=categorias -> lista de categorias distintas (texto, separadas por vírgula; vírgula interna vira " + ")
 // POST -> insere lançamento (com parcelas)
+//   tipo: despesa_credito (cartão: cartao = "mp" é o Mercado Pago, senão Nubank), despesa_nupay (crédito
+//         Nubank parcelado) ou despesa_debito (conta Nubank: Débito, pago, sem fatura e sempre 1 parcela)
 //   auto: true -> só lança se o estabelecimento tem atalho (fin_atalho, migration 42), com o nome, a
 //                 categoria e as parcelas dele; sem atalho, responde lancado: false e não grava nada.
 //                 O atalho vale se o trecho dele está em qualquer parte do estabelecimento (a maquininha
@@ -11,8 +13,14 @@
 //                 do estabelecimento que identifica o lugar (vazio, curto ou fora do nome: o nome inteiro)
 import "jsr:@supabase/functions-js@2.118.0/edge-runtime.d.ts";
 
-const DIA_FECHAMENTO = 5; // compras a partir deste dia vão para a fatura do mês seguinte (inferido dos dados)
-const DIA_VENCIMENTO = 12;
+// Cada cartão: compras a partir do dia de fechamento vão para a fatura do mês seguinte, que vence no
+// dia de vencimento. O vencimento identifica o cartão no app (12 Nubank, 13 Mercado Pago, ver
+// cartaoDaFatura em js/shared.js). Fechamento do Nubank inferido dos dados; o do Mercado Pago é
+// suposição do mantenedor (7 dias antes do vencimento, como o Nubank), confirmar numa fatura real.
+const CARTOES: Record<string, { fechamento: number; vencimento: number }> = {
+  nubank: { fechamento: 5, vencimento: 12 },
+  mp: { fechamento: 6, vencimento: 13 },
+};
 const MAX_PARCELAS = 24;
 const CATEG_PADRAO = "A classificar";
 const SEP_INTERNO = " + "; // representa a vírgula de categorias compostas ("Lazer, Isabella") na lista do Tasker
@@ -62,10 +70,11 @@ function somaMeses(data: string, k: number) {
   return `${a}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
 
-function calcFatura(data: string) {
+function calcFatura(data: string, cartao = "nubank") {
+  const { fechamento, vencimento } = CARTOES[cartao] ?? CARTOES.nubank;
   let [a, m, d] = data.split("-").map(Number);
-  if (d >= DIA_FECHAMENTO) { m += 1; if (m > 12) { m = 1; a += 1; } }
-  return `${a}-${String(m).padStart(2, "0")}-${String(DIA_VENCIMENTO).padStart(2, "0")}`;
+  if (d >= fechamento) { m += 1; if (m > 12) { m = 1; a += 1; } }
+  return `${a}-${String(m).padStart(2, "0")}-${String(vencimento).padStart(2, "0")}`;
 }
 
 function supa() {
@@ -157,7 +166,10 @@ Deno.serve(async (req) => {
   const tipo = String(b.tipo ?? "");
   if (!tipo.startsWith("despesa")) return json({ ok: true, ignorado: `tipo ${tipo || "vazio"}` });
 
-  const parcelasRecebidas = parseInt(String(b.parcelas ?? "1"), 10) || 1;
+  // Débito (conta Nubank) não tem fatura nem parcelas; crédito vai pro cartão da notificação.
+  const debito = tipo === "despesa_debito";
+  const cartao = debito ? null : b.cartao === "mp" ? "mp" : "nubank";
+  const parcelasRecebidas = debito ? 1 : parseInt(String(b.parcelas ?? "1"), 10) || 1;
   if (parcelasRecebidas < 1 || parcelasRecebidas > MAX_PARCELAS) return json({ erro: "parcelas invalidas", recebido: b.parcelas }, 400);
 
   const valor = parseFloat(String(b.valor ?? "").replace(",", "."));
@@ -177,7 +189,7 @@ Deno.serve(async (req) => {
     try { atalho = await atalhoDo(estab); } catch (e) { return json({ erro: "falha ao ler atalho", detalhe: String(e) }, 500); }
     if (!atalho) return json({ ok: true, lancado: false });
   }
-  const parcelas = atalho && parcelasRecebidas == 1 ? atalho.parcelas : parcelasRecebidas;
+  const parcelas = !debito && atalho && parcelasRecebidas == 1 ? atalho.parcelas : parcelasRecebidas;
   const nome = atalho?.nome || limpa(b.nome) || estab || "Sem nome";
   const categRecebida = limpa(b.categ).split(/\s*\+\s*/).filter(Boolean).join(", ");
   const categ = atalho?.categ || categRecebida || MAPA_CATEG.find(([re]) => re.test(estab))?.[1] || CATEG_PADRAO;
@@ -198,9 +210,9 @@ Deno.serve(async (req) => {
       nome: parcelas > 1 ? `${nome} (${i + 1}/${parcelas})` : nome,
       categ,
       freq: null,
-      cred: true,
+      cred: !debito,
       pago: true,
-      fatura: calcFatura(dataParcela),
+      fatura: debito ? null : calcFatura(dataParcela, cartao!),
       obs: parcelas > 1 ? `auto:tasker parc ${i + 1}/${parcelas}` : "auto:tasker",
     };
   });
@@ -216,7 +228,8 @@ Deno.serve(async (req) => {
   const txt = await r.text();
   if (!r.ok) return json({ erro: "falha ao inserir", status: r.status, detalhe: txt }, 500);
   const ins = JSON.parse(txt) as Array<{ id: number }>;
-  const resposta: Record<string, unknown> = { ok: true, lancado: true, ids: ins.map((x) => x.id), data_origem: origem, parcelas, nome, categ };
+  const forma = debito ? "débito" : cartao === "mp" ? "Mercado Pago" : "Nubank";
+  const resposta: Record<string, unknown> = { ok: true, lancado: true, ids: ins.map((x) => x.id), data_origem: origem, parcelas, nome, categ, forma };
   // "Sempre assim?" = Sim no Tasker: o lançamento já entrou, então falhar aqui vira aviso, não erro
   // (erro faria o Tasker tentar de novo e duplicar o lançamento).
   if (sim(b.lembrar)) {

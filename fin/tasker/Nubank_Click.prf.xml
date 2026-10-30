@@ -28,7 +28,8 @@ var titulo = "";
 for (var i = 1; i &lt;= 5; i++) { var v = local("evtprm" + i); if (v &amp;&amp; pend[v]) { titulo = v; break; } }
 if (titulo) { var p = pend[titulo]; setLocal("titulo", titulo); setLocal("tipo", p.tipo);
   setLocal("valor", p.valor); setLocal("estab", p.estab);
-  setLocal("parcelas", p.parcelas); setLocal("ts", String(p.ts)); }
+  setLocal("parcelas", p.parcelas); setLocal("ts", String(p.ts));
+  setLocal("cartao", p.cartao || "nubank"); }
 setLocal("achou", titulo ? "sim" : "nao");</Str>
 			<Str sr="arg1" ve="3"/>
 			<Int sr="arg2" val="1"/>
@@ -334,7 +335,7 @@ setLocal("nome", nome);
 setLocal("body", JSON.stringify({
   tipo: local("tipo"), valor: local("valor"), estab: local("estab"),
   parcelas: local("parcelas"), nome: local("nome"),
-  categ: local("categ"), ts: local("ts"),
+  categ: local("categ"), ts: local("ts"), cartao: local("cartao"),
   lembrar: local("ld_selected") === "Sim",
   trecho: local("ld_selected") === "Sim" ? local("trecho") : ""
 }));</Str>
@@ -399,6 +400,7 @@ delete pend[local("titulo")]; setGlobal("FINPEND", JSON.stringify(pend));</Str>
 var r = {};
 try { r = JSON.parse(local("http_data") || "{}"); } catch (e) {}
 var t = local("nome") + " R$ " + local("valor");
+if (r.forma) t += " · " + r.forma;
 if (r.lembrado) t += " · atalho: " + r.atalho;
 if (r.aviso) t += " · " + r.aviso;
 setLocal("fim", t);</Str>
