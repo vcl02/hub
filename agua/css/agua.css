@@ -76,7 +76,9 @@ h3.sec{font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(
 .chip-bt{min-width:64px;border:1px solid var(--cyan);border-radius:999px;background:var(--cyan-soft);padding:8px 14px;color:var(--cyan);font-weight:700}
 
 /* ---------- 7 dias ---------- */
-.sem-lista li{display:grid;grid-template-columns:1fr auto;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:.9rem}
+.sem-lista li{border-bottom:1px solid var(--line);font-size:.9rem}
+.sem-lista button{display:grid;grid-template-columns:1fr auto;gap:8px;width:100%;padding:6px 0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.sem-lista li.visto button>span:first-child{font-weight:700;color:var(--cyan)}
 .sem-lista li:last-child{border-bottom:0}
 .sem-lista .ok{color:var(--green);font-weight:600}
 

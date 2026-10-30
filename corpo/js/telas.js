@@ -29,14 +29,16 @@ const horaHabitual = () => {
 };
 let editando = null;
 
-// Aberto pela página inicial num dia anterior (?dia=): o formulário e o cartão do dia ficam naquele dia, e nada grava (mudar não
-// faz nada; campos e botões desativados, inclusive editar e apagar no histórico)
-const DIA = diaDaUrl();
-function travarSeDia() {
-  $('dia-visto').hidden = !DIA;
-  if (!DIA) return;
-  $('dia-nome').textContent = deIso(DIA).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-  for (const el of document.querySelectorAll('#c-form input, #c-form button, #ev-cartao input, #ev-cartao button, #c-historico button')) el.disabled = true;
+// Dia anterior (escolhido no formulário ou aberto pelo ?dia=, que acompanha o dia do formulário): só leitura. Só hoje aceita
+// lançar: no dia passado, campos e botões desativados (a data não, para voltar), e no histórico só a medida de hoje se edita ou
+// apaga.
+const passado = () => $('c-data').value < hoje();
+function travarPassado() {
+  const p = passado();
+  $('dia-visto').hidden = !p;
+  if (p) $('dia-nome').textContent = deIso($('c-data').value).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  for (const el of document.querySelectorAll('#c-form input:not(#c-data), #c-form button, #ev-cartao input, #ev-cartao button')) el.disabled = p;
+  for (const el of document.querySelectorAll('#c-historico [data-editar], #c-historico [data-apagar]')) el.disabled = (el.dataset.editar || el.dataset.apagar) !== hoje();
 }
 function desenhar() {
   const L = recentes(), P = L.filter(m => m.peso), C = L.filter(m => m.cintura), u = P[0], prim = P[P.length - 1];
@@ -66,8 +68,9 @@ function desenhar() {
   grafico($('c-grafico'), janela(P).map(x => ({ data: x.data, hora: x.hora, valor: x.peso })), 'kg', 'Evolução do peso');
   grafico($('c-grafico-cint'), janela(C).map(x => ({ data: x.data, hora: x.hora, valor: x.cintura })), 'cm', 'Evolução da barriga');
   pintarHistorico();
-  if (DIA) $('c-hora').value = m?.hora || '';
-  travarSeDia();
+  if (passado()) $('c-hora').value = m?.hora || '';
+  travarPassado();
+  diaNaUrl($('c-data').value, false);
 }
 
 // O dia do formulário: sono (dormi e acordei, as horas e BOM, OK ou RUIM) e evacuações (quantas e os horários) e há quanto tempo foi a última evacuação.
@@ -131,6 +134,7 @@ function pintarBexiga() {
 function mudarDia(acao) {
   const dia = $('c-data').value;
   if (!dataOk(dia) || dia > hoje()) { toast('Data inválida', true); return; }
+  if (dia < hoje()) return;   // dia anterior: só leitura
   mudar(() => {
     let x = db.dias.find(d => d.data === dia);
     if (!x) { x = { data: dia, evacuacoes: [], xixis: [] }; db.dias.push(x); }
@@ -147,7 +151,7 @@ function avisoHorario() {   // só recomenda o horário de sempre: qualquer hor�
 function pintarHistorico() {
   const L = recentes();
   $('c-historico').innerHTML = L.length ? L.map(m => m.data === editando
-    ? `<li class="editando"><span class="ed-inline"><input type="date" id="em-data" value="${m.data}" max="${hoje()}" aria-label="Data"><input type="time" id="em-hora" value="${m.hora}" aria-label="Horário"><input id="em-peso" inputmode="decimal" value="${m.peso ? virgula(m.peso) : ''}" placeholder="kg" title="Peso (kg)" aria-label="Peso em kg"><input id="em-cint" inputmode="decimal" value="${m.cintura ? virgula(m.cintura) : ''}" placeholder="cm" title="Barriga (cm, linha do umbigo)" aria-label="Barriga em cm"></span><span class="ed-acoes">${btIcone('x', 'Cancelar', 'data-cancelar')}${btIcone('ok', 'Salvar', `data-salvar="${m.data}"`, 'ok')}</span></li>`
+    ? `<li class="editando"><span class="ed-inline"><input type="date" id="em-data" value="${m.data}" min="${hoje()}" max="${hoje()}" aria-label="Data"><input type="time" id="em-hora" value="${m.hora}" aria-label="Horário"><input id="em-peso" inputmode="decimal" value="${m.peso ? virgula(m.peso) : ''}" placeholder="kg" title="Peso (kg)" aria-label="Peso em kg"><input id="em-cint" inputmode="decimal" value="${m.cintura ? virgula(m.cintura) : ''}" placeholder="cm" title="Barriga (cm, linha do umbigo)" aria-label="Barriga em cm"></span><span class="ed-acoes">${btIcone('x', 'Cancelar', 'data-cancelar')}${btIcone('ok', 'Salvar', `data-salvar="${m.data}"`, 'ok')}</span></li>`
     : `<li class="medida"><i class="h-d">${dataCurta(m.data)}${m.hora ? ' <br>' + m.hora : ''}</i> <span class="h-v">${[m.peso && fmt(m.peso) + '\u00a0kg', m.cintura && fmt(m.cintura) + '\u00a0cm'].filter(Boolean).join(' · ')}${m.peso ? `<small class="h-sub"> · IMC ${fmt(imc(m.peso))}</small>` : ''}</span> <span class="ed-acoes">${btIcone('lapis', 'Editar', `data-editar="${m.data}"`)}${btIcone('lixo', 'Apagar', `data-apagar="${m.data}"`, 'perigo')}</span></li>`).join('')
     : '<li class="vazio">Nenhuma medida ainda.</li>';
 }
@@ -166,7 +170,7 @@ function lerValores(peso, cintura) {
 const pesoLancado = (antes, v) => !v.peso ? {} : antes?.peso ? (antes.pesoEm ? { pesoEm: antes.pesoEm } : {}) : { pesoEm: new Date().toISOString() };
 
 // ===== Interações =====
-function mudar(acao) { if (DIA) return; acao(); gravar(); desenhar(); }
+function mudar(acao) { acao(); gravar(); desenhar(); }
 
 $('c-hora').addEventListener('input', avisoHorario);
 // +1: evacuação com o horário de agora (o do celular, fuso de São Paulo); tocar num horário (duas vezes) tira
@@ -201,7 +205,15 @@ for (const id of ['d-dormiu', 'd-acordou']) $(id).addEventListener('change', () 
     if (h == null) { delete x.sono; delete x.sonoEm; } else { if (x.sono == null) x.sonoEm = new Date().toISOString(); x.sono = h; }
   });
 });
-$('c-data').addEventListener('change', () => { $('c-peso').value = ''; $('c-cintura').value = ''; desenhar(); });
+// Trocar o dia: o ?dia do endereço acompanha (Voltar do navegador volta ao dia de antes); Hoje volta direto
+function verDia(dia, empilhar = true) {
+  $('c-data').value = dia; $('c-peso').value = ''; $('c-cintura').value = '';
+  if (dia === hoje()) $('c-hora').value = agoraHHMM();
+  diaNaUrl(dia, empilhar); desenhar();
+}
+$('c-data').addEventListener('change', () => verDia($('c-data').value));
+$('dia-hoje').addEventListener('click', () => verDia(hoje()));
+addEventListener('popstate', () => { if (db) verDia(diaDaUrl() || hoje(), false); });
 document.querySelectorAll('[data-passo]').forEach(b => b.addEventListener('click', () => {   // − / +: peso de 0,1 em 0,1 kg, barriga de 0,5 cm
   const inp = $(b.dataset.passo === 'peso' ? 'c-peso' : 'c-cintura'), d = b.dataset.passo === 'peso' ? .1 : .5;
   const atual = num(inp.value), ref = isFinite(atual) ? atual : num(inp.placeholder) || 0;
@@ -212,6 +224,7 @@ $('c-form').addEventListener('submit', ev => {
   ev.preventDefault();
   const data = $('c-data').value, v = lerValores($('c-peso').value, $('c-cintura').value);
   if (!dataOk(data) || data > hoje()) { toast('Data inválida', true); return; }
+  if (data < hoje()) return;   // dia anterior: só leitura
   if (v.erro) { toast(v.erro, true); return; }
   mudar(() => {
     const antes = db.medidas.find(m => m.data === data);
@@ -231,6 +244,7 @@ $('c-historico').addEventListener('click', ev => {
   else if (d.salvar) {
     const data = $('em-data').value, v = lerValores($('em-peso').value, $('em-cint').value);
     if (!dataOk(data) || data > hoje()) { toast('Data inválida', true); return; }
+    if (data < hoje() || d.salvar < hoje()) { toast('Dia anterior: só leitura', true); return; }
     if (v.erro) { toast(v.erro, true); return; }
     if (data !== d.salvar && db.medidas.some(x => x.data === data)) { toast('Já tem medida em ' + dataCurta(data), true); return; }   // 1 por dia
     editando = null;
@@ -238,6 +252,6 @@ $('c-historico').addEventListener('click', ev => {
     mudar(() => { db.medidas = db.medidas.filter(m => m.data !== d.salvar); db.medidas.push({ data, hora: $('em-hora').value, ...v, ...pesoLancado(antes, v) }); db = preparar(db); });
     toast('Medida atualizada');
   }
-  else if (d.apagar && confirmar(b)) mudar(() => { db.medidas = db.medidas.filter(m => m.data !== d.apagar); });
+  else if (d.apagar && d.apagar === hoje() && confirmar(b)) mudar(() => { db.medidas = db.medidas.filter(m => m.data !== d.apagar); });
 });
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && editando) { editando = null; pintarHistorico(); } });

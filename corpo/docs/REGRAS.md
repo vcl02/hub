@@ -5,7 +5,7 @@
 - Só a conta do Victor. Dentro do hub, sem sessão vai para o login do hub (`../?volta=corpo/`) e volta depois de entrar; login próprio só fora do hub (testes). Outra conta: "Esta conta não tem acesso." Sem botão de sair.
 - Abre na hora com a cópia do aparelho, inclusive sem internet; depois envia o que estava pendente e traz a nuvem.
 - **Rede ruim (metrô):** cada pedido ao Supabase tem limite de 15 s; estourou, conta como sem internet (fica salvo no aparelho e envia na próxima tentativa), e o envio nunca fica preso. Envio que chegou à nuvem mas cuja resposta se perdeu não é somado de novo na tentativa seguinte (a mesma evacuação ou o mesmo xixi não entra duas vezes).
-- **Aberto pela página inicial num dia anterior** (`?dia=AAAA-MM-DD`): o formulário e o cartão do dia (sono, evacuações e xixis) ficam naquele dia, com o que foi lançado nele, e nada grava: campos e botões desativados, inclusive editar e apagar no histórico. Em cima, o dia e **Hoje**, que volta ao app normal. Hoje, futuro ou texto inválido em `?dia`: o app normal.
+- **Dia anterior é só leitura** (escolhido na data do formulário ou aberto pela página inicial): o formulário e o cartão do dia (sono, evacuações e xixis) mostram o que foi lançado nele, com campos e botões desativados (a data não, para voltar). Em cima, o dia e **Hoje**, que volta para hoje. No histórico, só a medida de hoje se edita (horário, peso e barriga; o dia não muda) ou apaga. O dia fica no endereço (`?dia=AAAA-MM-DD`, como o `?ciclo` do Fin; em hoje, sem): recarregar mantém, e o Voltar do navegador volta ao dia de antes. Hoje, futuro ou texto inválido em `?dia`: hoje.
 
 ## Perfil (só em código, `perfil.js`)
 
@@ -15,7 +15,7 @@
 ## Medida do dia
 
 - 1 por dia, em `corpo_medida`: peso (kg) e/ou barriga (cm, na linha do umbigo; coluna `cintura`), com o horário. Pelo menos um dos dois.
-- Formulário: dia (hoje por padrão; até hoje, nunca futuro), horário (vem a hora de agora, livre), peso e barriga com − / + (peso de 0,1 em 0,1 kg; barriga de 0,5 em 0,5 cm). O dia escolhido já mostra o que foi medido nele; "Salvar" troca a medida desse dia.
+- Formulário: dia (hoje por padrão; até hoje, nunca futuro; dia anterior só para ver), horário (vem a hora de agora, livre), peso e barriga com − / + (peso de 0,1 em 0,1 kg; barriga de 0,5 em 0,5 cm). O dia escolhido já mostra o que foi medido nele; "Salvar" (só hoje) troca a medida do dia.
 - Peso de 30 a 300 kg; barriga maior que zero (sem trava baixa). Vazio = não medido.
 - **Quando o peso foi lançado** (`peso_em`, migration 03): o instante em que o dia ganhou um peso, pelo relógio do celular (no formulário ou no lápis do histórico). Corrigir o peso do mesmo dia mantém o primeiro lançamento; mudar a medida de dia pelo lápis é lançamento novo no dia de destino; só barriga não tem. Os hábitos da página inicial do hub só contam pesagem lançada no próprio dia (a partir de 27/10/2026).
 - **Horário de sempre:** a mediana dos horários das últimas 7 pesagens com horário (com número par, o mais cedo dos dois do meio): uma pesagem fora da rotina não muda a referência. Mais de 1 h longe dele: aviso (só recomenda, salva igual).

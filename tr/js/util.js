@@ -15,6 +15,15 @@ const deIso = d => { const [a, m, dia] = d.split('-').map(Number); return new Da
 const hoje = () => iso(new Date());
 // ?dia=AAAA-MM-DD: a página inicial abriu o app num dia anterior, só leitura (hoje, futuro ou inválido: o app normal)
 const diaDaUrl = () => { const d = new URLSearchParams(location.search).get('dia'); return d && /^\d{4}-\d{2}-\d{2}$/.test(d) && d < hoje() ? d : null; };
+// O dia no endereço, como o ?ciclo do Fin: ?dia=AAAA-MM-DD num dia anterior, nada em hoje. Trocar de dia empilha no histórico
+// (o Voltar do navegador volta ao dia visto antes); empilhar = false só substitui. Os outros parâmetros ficam.
+function diaNaUrl(dia, empilhar = true) {
+  const url = new URL(location.href);
+  if (dia && dia < hoje()) url.searchParams.set('dia', dia); else url.searchParams.delete('dia');
+  const destino = url.pathname + url.search + url.hash;
+  if (destino === location.pathname + location.search + location.hash) return;
+  if (empilhar) history.pushState(history.state, '', destino); else history.replaceState(history.state, '', destino);
+}
 const num = s => parseFloat(String(s ?? '').replace(',', '.'));
 const fmt = n => (Math.round(n * 100) / 100).toLocaleString('pt-BR');
 const virgula = n => String(n).replace('.', ',');
@@ -85,6 +94,7 @@ function mostrar(nome) {
   document.querySelectorAll('section.view').forEach(v => { v.hidden = v.id !== 'v-' + nome; });
   $('agua').hidden = true; $('parabens').hidden = true;   // telas cheias: cada tela mostra a sua de novo se precisar
   telas[nome]?.();
+  if (nome !== 'inicio' && nome !== 'fim') diaNaUrl(null, false);   // ?dia só no resumo e na lista de um dia anterior
   salvarSessao();
   window.scrollTo(0, 0);
   aplicarAtualizacao();

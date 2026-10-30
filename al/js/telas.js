@@ -16,6 +16,7 @@ function desenhar() {
   $('d-prox').disabled = diaVisto >= hoje();
   $('f-texto').placeholder = passado() ? 'Dia fechado: só leitura' : 'O que você comeu?';
   pintarSaldo(); pintarMacros(); pintarSugestoes(); pintarPrevia(); pintarLista(); pintarSemana();
+  diaNaUrl(diaVisto, false);   // o dia pode ter sido ajustado (antes do 1º dia, virou o dia)
 }
 
 // Gastei: no dia fechado, o gasto do dia inteiro; hoje, o que já foi até agora (a rotina na proporção das horas já passadas,
@@ -147,9 +148,12 @@ function pintarSemana() {
 // ===== Interações =====
 function mudar(acao) { if (passado()) return; acao(); gravar(); desenhar(); }   // dia passado: só leitura
 
-$('d-ant').addEventListener('click', () => { if (diaVisto > inicio()) { diaVisto = somaDias(diaVisto, -1); previa = null; desenhar(); } });
-$('d-prox').addEventListener('click', () => { if (diaVisto < hoje()) { diaVisto = somaDias(diaVisto, 1); previa = null; desenhar(); } });
-$('semana').addEventListener('click', ev => { const b = ev.target.closest('[data-dia]'); if (b) { diaVisto = b.dataset.dia; previa = null; desenhar(); } });
+// Trocar o dia: o ?dia do endereço acompanha, como o ?ciclo do Fin (Voltar do navegador volta ao dia de antes)
+function verDia(dia) { diaVisto = dia; previa = null; diaNaUrl(dia); desenhar(); }
+$('d-ant').addEventListener('click', () => { if (diaVisto > inicio()) verDia(somaDias(diaVisto, -1)); });
+$('d-prox').addEventListener('click', () => { if (diaVisto < hoje()) verDia(somaDias(diaVisto, 1)); });
+$('semana').addEventListener('click', ev => { const b = ev.target.closest('[data-dia]'); if (b) verDia(b.dataset.dia); });
+addEventListener('popstate', () => { if (!db) return; diaVisto = diaDaUrl() || hoje(); previa = null; desenhar(); });
 
 // Andei +: cada caminhada do dia é um trecho (horário de agora; em dia passado, sem horário) com tempo e/ou distância
 // opcionais (vazios = 20 min). Toque duplo no trecho tira; sem trecho, o dia sai (nem conta como dia com registro).

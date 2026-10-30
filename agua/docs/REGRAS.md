@@ -5,7 +5,7 @@
 - Só a conta do Victor. Dentro do hub, sem sessão vai para o login do hub (`../?volta=agua/`) e volta depois de entrar; login próprio só fora do hub (testes). Sem botão de sair.
 - Abre na hora com a cópia do aparelho, inclusive sem internet; depois envia o que estava pendente e traz a nuvem. Sem a cópia e sem a nuvem (ou sem a tabela ainda criada), abre vazio.
 - **Rede ruim (metrô):** cada pedido ao Supabase tem limite de 15 s; estourou, conta como sem internet (fica salvo no aparelho e envia na próxima tentativa), e o envio nunca fica preso. Envio que chegou à nuvem mas cuja resposta se perdeu não é somado de novo na tentativa seguinte (o mesmo copo não entra duas vezes).
-- **Aberto pela página inicial num dia anterior** (`?dia=AAAA-MM-DD`): a tela é daquele dia, só leitura: total, meta e o que foi bebido (sem tirar), sem lembretes, sem beber; em cima, o dia e **Hoje**, que volta ao app normal. Hoje, futuro ou texto inválido em `?dia`: o app normal.
+- **Dia anterior** (tocado nos Últimos 7 dias ou aberto pela página inicial): a tela é daquele dia, só leitura: total, meta e o que foi bebido (sem tirar), sem lembretes, sem beber; em cima, o dia e **Hoje**, que volta para hoje. O dia fica no endereço (`?dia=AAAA-MM-DD`, como o `?ciclo` do Fin; em hoje, sem): recarregar mantém, e o Voltar do navegador volta ao dia de antes. Hoje, futuro ou texto inválido em `?dia`: hoje.
 
 ## Hoje
 
@@ -34,4 +34,4 @@
 
 ## Últimos 7 dias
 
-- Dia e ml (verde quando bateu a meta).
+- Dia e ml (verde quando bateu a meta). Tocar num dia abre ele (anterior: só leitura); o dia visto fica em destaque.

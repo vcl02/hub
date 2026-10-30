@@ -21,3 +21,7 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md`; o jeito de trabalha
 ## Gráficos
 
 - 26/10/2026: evolução só dos últimos 90 dias, eixo pela data, com data e valor do ponto ao passar o mouse ou o dedo; 27/10/2026: o horário da medida também.
+
+## Dia anterior só leitura (30/10/2026)
+
+- Com o dia no endereço (`?dia=`) em todos os apps, o mantenedor escolheu que dia anterior seja só leitura também no Corpo, como no al. Antes dava para lançar ou corrigir peso, sono, evacuações e xixis de dias passados pelo formulário e pelo lápis do histórico; agora só hoje aceita lançar, e no histórico só a medida de hoje se edita ou apaga. Corrigir um dia passado fica para o DataGrip.

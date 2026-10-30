@@ -7,7 +7,7 @@ function telaLogin(erro = '') {
 }
 function abrirCorpo() {
   $('v-login').hidden = true; $('v-corpo').hidden = false;
-  if (DIA) $('c-data').value = DIA;   // ?dia=: aquele dia, só leitura
+  if (diaDaUrl()) $('c-data').value = diaDaUrl();   // ?dia=: aquele dia (anterior: só leitura)
   else if (!$('c-data').value) { $('c-data').value = hoje(); $('c-hora').value = agoraHHMM(); }   // horário livre: vem a hora de agora
   $('c-data').max = hoje();
   desenhar();

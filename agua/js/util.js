@@ -12,6 +12,15 @@ const deIso = d => { const [a, m, dia] = d.split('-').map(Number); return new Da
 const hoje = () => iso(new Date());
 // ?dia=AAAA-MM-DD: a página inicial abriu o app num dia anterior, só leitura (hoje, futuro ou inválido: o app normal)
 const diaDaUrl = () => { const d = new URLSearchParams(location.search).get('dia'); return d && /^\d{4}-\d{2}-\d{2}$/.test(d) && d < hoje() ? d : null; };
+// O dia no endereço, como o ?ciclo do Fin: ?dia=AAAA-MM-DD num dia anterior, nada em hoje. Trocar de dia empilha no histórico
+// (o Voltar do navegador volta ao dia visto antes); empilhar = false só substitui. Os outros parâmetros ficam.
+function diaNaUrl(dia, empilhar = true) {
+  const url = new URL(location.href);
+  if (dia && dia < hoje()) url.searchParams.set('dia', dia); else url.searchParams.delete('dia');
+  const destino = url.pathname + url.search + url.hash;
+  if (destino === location.pathname + location.search + location.hash) return;
+  if (empilhar) history.pushState(history.state, '', destino); else history.replaceState(history.state, '', destino);
+}
 const dataOk = d => /^\d{4}-\d{2}-\d{2}$/.test(d);
 const agoraHHMM = () => { const d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
 const minutos = h => { const [a, b] = h.split(':').map(Number); return a * 60 + b; };

@@ -112,7 +112,7 @@ test('dois aparelhos no mesmo dia: o envio mescla com a nuvem (nada do outro apa
   assert.deepEqual(erros, []); await ctx.close();
 });
 
-test('aberto pela página inicial num dia anterior (?dia=): aquele dia, só leitura; Hoje volta ao app normal', async () => {
+test('dia anterior (pela página inicial ou pelos últimos 7 dias): só leitura, com o ?dia no endereço; Hoje e o Voltar voltam', async () => {
   const nuvem = novaNuvem();
   nuvem.tabelas.agua_dia.push({ user_id: DONO, data: '2026-10-18', aguas: [{ hora: '10:00', ml: 300 }, { hora: '12:27', ml: 132, bebida: 'suco', volume: 150 }] });
   const { ctx, pg, erros } = await abrirApp({ nuvem, busca: '?dia=2026-10-18' });
@@ -121,10 +121,20 @@ test('aberto pela página inicial num dia anterior (?dia=): aquele dia, só leit
   for (const id of ['#lembretes', '#b-tipos', '#b-form', '#b-botoes']) assert.equal(await pg.isVisible(id), false, id);
   assert.equal(await pg.locator('#b-lista [data-tirar-agua]').count(), 0);                // nada para tirar
   assert.deepEqual(await pg.$$eval('#b-lista li', L => L.map(li => li.textContent)), ['10:00 · 300 ml', '12:27 · suco 150 ml (132 ml de água · 60 kcal)']);
-  await pg.click('#dia-visto a');                                                          // Hoje: o app normal
+  await pg.click('#dia-hoje');                                                             // Hoje: o app normal (o ?dia sai do endereço)
   await pg.waitForSelector('#b-form:not([hidden])');
   assert.equal(await texto(pg, '#t-ml'), '0');
   assert.equal(await pg.isVisible('#dia-visto'), false);
+  assert.equal(await pg.evaluate(() => location.search), '');
+  await pg.click('#semana [data-dia="2026-10-18"]');                                       // os Últimos 7 dias abrem o dia, com o ?dia
+  assert.equal(await texto(pg, '#t-ml'), '432');
+  assert.equal(await pg.evaluate(() => location.search), '?dia=2026-10-18');
+  await pg.goBack();                                                                       // Voltar do navegador: hoje
+  await pg.waitForFunction(() => document.getElementById('t-ml').textContent === '0');
+  await pg.goForward();
+  await pg.waitForFunction(() => document.getElementById('t-ml').textContent === '432');
+  await pg.reload(); await pg.waitForSelector('#v-agua:not([hidden])');                    // recarregar mantém o dia
+  await pg.waitForFunction(() => document.getElementById('t-ml').textContent === '432');
   assert.deepEqual(erros, []); await ctx.close();
 });
 

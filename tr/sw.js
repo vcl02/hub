@@ -22,7 +22,13 @@ self.addEventListener('activate', evento => evento.waitUntil(
 self.addEventListener('fetch', evento => {
   if (evento.request.method !== 'GET') return;
   const url = new URL(evento.request.url);
-  if (url.origin !== self.location.origin || url.search) return;   // ?v=... é a checagem de versão (js/bootstrap.js): direto na rede
+  if (url.origin !== self.location.origin) return;
+  // Com busca: ?dia=… (o dia no endereço, como o ?ciclo do Fin) abre a mesma página; sem internet, a do cache. Outras
+  // buscas (ex.: ?v=…, a checagem de versão) vão direto à rede, sem cache.
+  if (url.search) {
+    if (evento.request.mode === 'navigate') evento.respondWith(fetch(evento.request).catch(() => caches.match('./').then(r => r || caches.match('./index.html'))));
+    return;
+  }
   evento.respondWith(fetch(evento.request, { cache: 'no-cache' }).then(async resposta => {
     // Cache é só uma cópia de segurança da última versão que a rede entregou.
     if (resposta.ok) await (await caches.open(CACHE_ESTATICO)).put(evento.request, resposta.clone());

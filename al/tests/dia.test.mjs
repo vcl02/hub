@@ -350,6 +350,13 @@ test('aberto pela página inicial num dia anterior (?dia=): abre nele, só leitu
   await pg.click('#d-prox');
   assert.equal(await texto(pg, '#d-nome'), 'Hoje');
   assert.equal(await pg.isDisabled('#f-texto'), false);
+  assert.equal(await pg.evaluate(() => location.search), '');                // hoje: sem ?dia
+  await pg.click('#d-ant');                                                  // trocar o dia põe o ?dia, como o ?ciclo do Fin
+  assert.equal(await pg.evaluate(() => location.search), '?dia=2026-09-17');
+  await pg.goBack();                                                         // Voltar do navegador: o dia visto antes
+  await pg.waitForFunction(() => document.getElementById('d-nome').textContent === 'Hoje');
+  await pg.reload(); await pg.waitForSelector('#v-dia:not([hidden])');
+  assert.equal(await texto(pg, '#d-nome'), 'Hoje');
   assert.deepEqual(erros, []); await ctx.close();
   const hojeMesmo = await abrirApp({ nuvem: comTreino(novaNuvem()), busca: '?dia=2026-09-18' });   // hoje (ou futuro): o app normal
   assert.equal(await texto(hojeMesmo.pg, '#d-nome'), 'Hoje');
