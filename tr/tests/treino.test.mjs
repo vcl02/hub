@@ -367,8 +367,10 @@ test('aberto pela página inicial num dia anterior (?dia=): resumo daquele dia, 
   assert.match(await pg.textContent('#f-tiles'), /54 min/);
   assert.equal(await pg.locator('#f-treino [data-editar-treino]').count(), 0);                // só leitura: sem Editar
   assert.equal(await pg.locator('#f-cardio [data-apagar-cardio]').count(), 0);                // nem apagar o cardio
+  assert.equal(await pg.evaluate(() => location.search), '?dia=2026-10-21');                 // o dia no endereço
   await pg.click('#f-prox');                                                                  // › depois do último: a lista de hoje
   await pg.waitForSelector('#v-inicio:not([hidden])');
+  assert.equal(await pg.evaluate(() => location.search), '');                                 // hoje: sem ?dia
   assert.deepEqual(erros, []); await ctx.close();
 });
 

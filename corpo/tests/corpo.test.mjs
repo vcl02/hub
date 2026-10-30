@@ -10,6 +10,8 @@ const sono = async (pg, dormiu, acordou) => {
   await pg.fill('#d-dormiu', dormiu); await pg.dispatchEvent('#d-dormiu', 'change');
   await pg.fill('#d-acordou', acordou); await pg.dispatchEvent('#d-acordou', 'change');
 };
+// Medidas de dias anteriores (na tela, só leitura): entram direto na cópia do aparelho, como se tivessem vindo da nuvem
+const semear = (pg, L) => pg.evaluate(L => { db.medidas.push(...L); db = preparar(db); gravar(); desenhar(); }, L);
 const salvar = async (pg, { peso, cintura, hora, data } = {}) => {
   if (data) { await pg.fill('#c-data', data); await pg.dispatchEvent('#c-data', 'change'); }
   if (hora) await pg.fill('#c-hora', hora);
@@ -38,26 +40,31 @@ test('pesagem de hoje: horário livre (vem a hora de agora), 1 por dia, e só re
 test('horário de sempre: a mediana das últimas 7 pesagens com horário; uma fora da rotina não muda', async () => {
   const { ctx, pg, erros } = await abrirApp();                           // 22/10, 08:00
   const aviso = async h => { await pg.fill('#c-hora', h); await pg.dispatchEvent('#c-hora', 'input'); return pg.isVisible('#c-aviso') ? texto(pg, '#c-aviso') : ''; };
-  for (const [d, h] of [['14', '06:50'], ['15', '07:10'], ['16', '07:00'], ['17', '07:05'], ['18', '06:55'], ['19', '07:00'], ['20', '21:00']]) await salvar(pg, { data: `2026-10-${d}`, hora: h, peso: '90' });
-  await pg.fill('#c-data', '2026-10-22'); await pg.dispatchEvent('#c-data', 'change');
+  await semear(pg, [['14', '06:50'], ['15', '07:10'], ['16', '07:00'], ['17', '07:05'], ['18', '06:55'], ['19', '07:00'], ['20', '21:00']].map(([d, hora]) => ({ data: `2026-10-${d}`, hora, peso: 90 })));
   assert.equal(await pg.evaluate(() => horaHabitual()), '07:00');                             // a das 21:00 (a mais recente) não muda
   assert.equal(await aviso('07:30'), '');
   assert.match(await aviso('09:00'), /Fora do seu horário de sempre \(07:00\)/);
-  for (const d of ['21', '22']) await salvar(pg, { data: `2026-10-${d}`, hora: '21:10', peso: '90' });
-  for (const d of ['12', '13']) await salvar(pg, { data: `2026-10-${d}`, hora: '21:05', peso: '90' });   // antigas: fora das últimas 7
+  await semear(pg, [{ data: '2026-10-21', hora: '21:10', peso: 90 }, { data: '2026-10-12', hora: '21:05', peso: 90 }, { data: '2026-10-13', hora: '21:05', peso: 90 }]);   // 12 e 13: antigas, fora das últimas 7
+  await salvar(pg, { hora: '21:10', peso: '90' });
   assert.equal(await pg.evaluate(() => horaHabitual()), '07:05');                              // 06:55 07:00 07:00 [07:05] 21:00 21:10 21:10: 3 noites ainda não viram a rotina
   assert.deepEqual(erros, []); await ctx.close();
 });
 
-test('barriga sem peso (e peso sem barriga) num dia; outro dia pela data; não deixa salvar vazio nem dia futuro', async () => {
+test('barriga sem peso (e peso sem barriga) num dia; outro dia pela data, só leitura (?dia= acompanha); não deixa salvar vazio nem dia futuro', async () => {
   const { ctx, pg, nuvem } = await abrirApp();
   await salvar(pg);
   assert.equal(await texto(pg, '#toast'), 'Informe o peso ou a barriga');
   await salvar(pg, { cintura: '101,5' });
   assert.match(await texto(pg, '#c-historico'), /22\/10 08:00 101,5 cm/);
-  await salvar(pg, { data: '2026-10-20', peso: '91' });
+  await semear(pg, [{ data: '2026-10-20', hora: '07:00', peso: 91 }]);
+  await pg.fill('#c-data', '2026-10-20'); await pg.dispatchEvent('#c-data', 'change');
   assert.equal(await pg.inputValue('#c-peso'), '91');                                          // o dia escolhido mostra o que já foi medido
-  await pg.fill('#c-data', '2026-10-22'); await pg.dispatchEvent('#c-data', 'change');
+  assert.equal(await pg.isDisabled('#c-form button[type=submit]'), true);                      // dia anterior: só leitura
+  assert.equal(await pg.isDisabled('#c-data'), false);                                         // a data troca, para voltar
+  assert.equal(await pg.evaluate(() => location.search), '?dia=2026-10-20');                   // o dia no endereço, como o ?ciclo do Fin
+  await pg.goBack();                                                                           // Voltar do navegador: o dia de antes
+  await pg.waitForFunction(() => document.getElementById('c-data').value === '2026-10-22');
+  assert.equal(await pg.evaluate(() => location.search), '');
   assert.equal(await pg.inputValue('#c-peso'), ''); assert.equal(await pg.inputValue('#c-cintura'), '101,5');
   assert.equal(await pg.getAttribute('#c-data', 'max'), '2026-10-22');
   await sincronizado(pg);
@@ -91,7 +98,7 @@ test('gráficos só com 2 medidas ou mais (sem caixa vazia nem título)', async 
     assert.equal(await pg.isVisible(id), false, id);
     assert.equal(await pg.isVisible(`h3.sec:has(+ ${id})`), false, id);
   }
-  await salvar(pg, { data: '2026-10-21', peso: '103' });
+  await semear(pg, [{ data: '2026-10-21', hora: '07:00', peso: 103 }]);
   assert.equal(await pg.isVisible('#c-grafico svg'), true);
   assert.equal(await pg.isVisible('#c-grafico-cint'), false);                                   // barriga só em 1 dia
   await ctx.close();
@@ -128,24 +135,25 @@ test('evolução: só os últimos 90 dias, eixo pela data, 3 datas embaixo e 3 v
   await ctx.close();
 });
 
-test('histórico: editar data, horário, peso e barriga (1 por dia), apagar com toque duplo', async () => {
+test('histórico: só a medida de hoje se edita (horário, peso e barriga) ou apaga com toque duplo; as anteriores, só leitura', async () => {
   const nuvem = novaNuvem();
   nuvem.tabelas.corpo_medida.push({ user_id: DONO, data: '2026-10-15', hora: '07:00', peso: 91, cintura: null });
   const { ctx, pg } = await abrirApp({ nuvem });
   await salvar(pg, { peso: '90' });
+  assert.equal(await pg.isDisabled('[data-editar="2026-10-15"]'), true);
+  assert.equal(await pg.isDisabled('[data-apagar="2026-10-15"]'), true);
   await pg.click('[data-editar="2026-10-22"]');
-  await pg.fill('#em-data', '2026-10-15'); await pg.click('[data-salvar]');
-  assert.equal(await texto(pg, '#toast'), 'Já tem medida em 15/10');
-  await pg.fill('#em-data', '2026-10-20'); await pg.fill('#em-cint', '101,5'); await pg.click('[data-salvar]');
-  assert.match(await texto(pg, '#c-historico'), /20\/10 08:00 90 kg · 101,5 cm · IMC/);
-  await pg.click('[data-editar="2026-10-20"]'); await pg.keyboard.press('Escape');
+  assert.deepEqual([await pg.getAttribute('#em-data', 'min'), await pg.getAttribute('#em-data', 'max')], ['2026-10-22', '2026-10-22']);   // o dia não muda
+  await pg.fill('#em-hora', '07:30'); await pg.fill('#em-cint', '101,5'); await pg.click('[data-salvar]');
+  assert.match(await texto(pg, '#c-historico'), /22\/10 07:30 90 kg · 101,5 cm · IMC/);
+  await pg.click('[data-editar="2026-10-22"]'); await pg.keyboard.press('Escape');
   assert.equal(await pg.locator('#c-historico li.editando').count(), 0);
-  await pg.click('[data-apagar="2026-10-15"]');
+  await pg.click('[data-apagar="2026-10-22"]');
   assert.equal(await pg.locator('#c-historico li').count(), 2);                                 // 1º toque só arma
-  await pg.click('[data-apagar="2026-10-15"]');
+  await pg.click('[data-apagar="2026-10-22"]');
   assert.equal(await pg.locator('#c-historico li').count(), 1);
   await sincronizado(pg);
-  assert.deepEqual(nuvem.tabelas.corpo_medida.map(m => [m.data, m.peso, m.cintura]), [['2026-10-20', 90, 101.5]]);
+  assert.deepEqual(nuvem.tabelas.corpo_medida.map(m => [m.data, m.peso, m.cintura]), [['2026-10-15', 91, null]]);
   await ctx.close();
 });
 
@@ -167,12 +175,14 @@ test('evacuação: +1 grava com o horário de agora, conta, tira com toque duplo
   assert.equal(await texto(pg, '#ev-total'), '2');                       // 1º toque só arma
   await pg.click('[data-tirar-ev="0"]');
   assert.deepEqual(await pg.$$eval('#ev-horas button', B => B.map(b => b.textContent)), ['14:30 ×']);
-  await pg.fill('#c-data', '2026-10-20'); await pg.dispatchEvent('#c-data', 'change');   // outro dia: também o horário de agora
-  await pg.fill('#c-hora', '21:15'); await pg.click('#ev-mais');
-  assert.deepEqual(await pg.$$eval('#ev-horas button', B => B.map(b => b.textContent)), ['14:30 ×']);
+  await pg.fill('#c-data', '2026-10-19'); await pg.dispatchEvent('#c-data', 'change');   // dia anterior: só leitura
+  assert.equal(await pg.isDisabled('#ev-mais'), true);
+  assert.equal(await pg.$$eval('#ev-horas button', B => B.every(b => b.disabled)), true);
+  await pg.evaluate(() => mudarDia(x => { x.evacuacoes.push('21:15'); }));             // nem por baixo grava
+  await pg.click('#dia-hoje');                                                         // Hoje volta
   await sincronizado(pg);
   assert.deepEqual(nuvem.tabelas.corpo_dia.map(x => [x.data, x.evacuacoes, x.evacuou]).sort(),
-    [['2026-10-19', [''], null], ['2026-10-20', ['14:30'], null], ['2026-10-22', ['14:30'], null]]);
+    [['2026-10-19', [''], null], ['2026-10-22', ['14:30'], null]]);
   assert.equal(nuvem.tabelas.corpo_medida.length, 0);                     // não mexe nas pesagens
   assert.deepEqual(erros, []); await ctx.close();
 });
@@ -227,12 +237,13 @@ test('aberto pela página inicial num dia anterior (?dia=): o dia dele, só leit
   assert.match(await texto(pg, '#dia-visto'), /^terça-feira, 20 de outubro · só leitura Hoje$/);
   assert.deepEqual([await pg.inputValue('#c-data'), await pg.inputValue('#c-hora'), await pg.inputValue('#c-peso')], ['2026-10-20', '07:10', '99,5']);
   assert.equal(await texto(pg, '#ev-total'), '1');
-  for (const sel of ['#c-data', '#c-peso', '#ev-mais', '#x-mais', '#d-dormiu', '#c-form button[type="submit"]']) assert.equal(await pg.isDisabled(sel), true, sel);
+  for (const sel of ['#c-peso', '#ev-mais', '#x-mais', '#d-dormiu', '#c-form button[type="submit"]']) assert.equal(await pg.isDisabled(sel), true, sel);
+  assert.equal(await pg.isDisabled('#c-data'), false);
   assert.equal(await pg.$$eval('#c-historico button', L => L.every(b => b.disabled)), true);
   await pg.evaluate(() => mudarDia(x => { x.xixis.push('12:00'); }));                   // nem por baixo grava
   assert.equal(await texto(pg, '#x-total'), '2');
-  await pg.click('#dia-visto a');                                                       // Hoje: o app normal
-  await pg.waitForFunction(() => !location.search && document.getElementById('c-data').value === '2026-10-22');   // a página nova já aberta
+  await pg.click('#dia-hoje');                                                          // Hoje: o app normal (o ?dia sai do endereço)
+  await pg.waitForFunction(() => !location.search && document.getElementById('c-data').value === '2026-10-22');
   assert.equal(await pg.isVisible('#dia-visto'), false);
   assert.equal(await pg.isDisabled('#x-mais'), false);
   assert.deepEqual(erros, []); await ctx.close();
@@ -327,12 +338,12 @@ test('cópia do aparelho da versão anterior (base só com pesagens) continua si
 
 test('a cópia para os outros apps (corpo.medidas.<conta>) acompanha cada mudança, e pesoNoDia lê dela', async () => {
   const { ctx, pg } = await abrirApp();
-  await salvar(pg, { data: '2026-10-20', peso: '91' });
-  await salvar(pg, { data: '2026-10-22', cintura: '100' });
+  await semear(pg, [{ data: '2026-10-20', hora: '08:00', peso: 91 }]);
+  await salvar(pg, { peso: '90', cintura: '100' });
   const L = await pg.evaluate(id => medidasGuardadas(id), DONO);
-  assert.match(L[0].pesoEm, /^2026-10-22T11:00/);                                             // quando o peso foi lançado
-  assert.deepEqual(L, [{ data: '2026-10-20', hora: '08:00', peso: 91, pesoEm: L[0].pesoEm }, { data: '2026-10-22', hora: '08:00', cintura: 100 }]);
-  assert.deepEqual(await pg.evaluate(L => [pesoNoDia(L, '2026-10-19'), pesoNoDia(L, '2026-10-22'), pesoNoDia([], '2026-10-22')], L), [91, 91, null]);
+  assert.match(L[1].pesoEm, /^2026-10-22T11:00/);                                             // quando o peso foi lançado
+  assert.deepEqual(L, [{ data: '2026-10-20', hora: '08:00', peso: 91 }, { data: '2026-10-22', hora: '08:00', peso: 90, cintura: 100, pesoEm: L[1].pesoEm }]);
+  assert.deepEqual(await pg.evaluate(L => [pesoNoDia(L, '2026-10-19'), pesoNoDia(L, '2026-10-22'), pesoNoDia([], '2026-10-22')], L), [91, 90, null]);
   await ctx.close();
 });
 
@@ -342,19 +353,17 @@ test('quando o peso e o sono foram lançados (peso_em, sono_em): o primeiro lan�
   await salvar(pg, { peso: '90' });                                                            // 08:00 de 22/10 (11:00 UTC)
   await pg.clock.fastForward('02:00:00');
   await salvar(pg, { peso: '89,8' });                                                          // corrigir mantém o 1º lançamento
-  await salvar(pg, { data: '2026-10-20', peso: '91' });                                        // dia passado lançado agora
-  await pg.fill('#c-data', '2026-10-22'); await pg.dispatchEvent('#c-data', 'change');
   await sono(pg, '00:00', '07:30');
   await sono(pg, '00:00', '08:00');                                                            // corrigir o sono também mantém
   await sincronizado(pg);
   const minuto = t => t?.slice(0, 16);   // o relógio do teste anda: compara até o minuto
   const M = Object.fromEntries(nuvem.tabelas.corpo_medida.map(m => [m.data, minuto(m.peso_em)]));
-  assert.deepEqual(M, { '2026-10-20': '2026-10-22T13:00', '2026-10-22': '2026-10-22T11:00' });
+  assert.deepEqual(M, { '2026-10-22': '2026-10-22T11:00' });
   assert.deepEqual(nuvem.tabelas.corpo_dia.map(x => [x.data, x.sono, minuto(x.sono_em)]), [['2026-10-22', 8, '2026-10-22T13:00']]);
   await sono(pg, '', '');                                                                      // tirar o sono tira o lançamento
   assert.equal(await pg.evaluate(() => db.dias.length), 0);
   await pg.reload(); await pg.waitForSelector('#v-corpo:not([hidden])');                       // volta da nuvem com os lançamentos
-  assert.deepEqual(await pg.evaluate(() => db.medidas.map(m => m.pesoEm?.slice(0, 16))), ['2026-10-22T13:00', '2026-10-22T11:00']);
+  assert.deepEqual(await pg.evaluate(() => db.medidas.map(m => m.pesoEm?.slice(0, 16))), ['2026-10-22T11:00']);
   assert.deepEqual(erros, []); await ctx.close();
 });
 
@@ -364,13 +373,13 @@ test('sem internet: abre com a cópia do aparelho e envia ao reconectar', async 
   await sincronizado(pg);
   nuvem.online = false;
   await pg.reload(); await pg.waitForSelector('#v-corpo:not([hidden])');
-  await salvar(pg, { data: '2026-10-21', peso: '90,8' });
+  await salvar(pg, { cintura: '101' });
   await pg.waitForSelector('#sync:not([hidden])');
   assert.match(await texto(pg, '#sync'), /Sem internet/);
   nuvem.online = true;
   await pg.evaluate(() => enviar());
   await sincronizado(pg);
-  assert.equal(nuvem.tabelas.corpo_medida.length, 2);
+  assert.deepEqual(nuvem.tabelas.corpo_medida.map(m => [m.peso, m.cintura]), [[90, 101]]);
   await ctx.close();
 });
 

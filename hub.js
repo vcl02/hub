@@ -134,7 +134,18 @@ let diaDesenhado = '';
 // Dia visto: null = hoje. Arrastar para a direita volta um dia (até o 1º dia com registro), para a esquerda avança (até
 // hoje). Num dia passado tudo é do fim daquele dia, e cada hábito abre o app naquele dia (?dia=AAAA-MM-DD), só leitura;
 // o Fin (Besteira) abre no ciclo daquele dia, normal (o Fin não tem modo só leitura).
-let diaVisto = null;
+// O dia visto fica no endereço como o ?ciclo do Fin (?dia=AAAA-MM-DD, nada em hoje): recarregar mantém, e o Voltar do navegador
+// volta ao dia visto antes. ?volta (login) e os outros parâmetros ficam.
+const diaDaUrl = () => { const d = new URLSearchParams(location.search).get('dia'); return d && dataOk(d) && d < diaDoInstante(Date.now()) ? d : null; };
+let diaVisto = diaDaUrl();
+function diaNaUrl(empilhar) {
+  const url = new URL(location.href);
+  if (diaVisto) url.searchParams.set('dia', diaVisto); else url.searchParams.delete('dia');
+  const destino = url.pathname + url.search + url.hash;
+  if (destino === location.pathname + location.search + location.hash) return;
+  if (empilhar) history.pushState(history.state, '', destino); else history.replaceState(history.state, '', destino);
+}
+addEventListener('popstate', () => { diaVisto = diaDaUrl(); desenhar(); });
 // Os dados com o que o al deste aparelho ainda não enviou (comPendentesDoAl, em habitos.js)
 function dadosComPendentes() {
   let alDb = null, alBase = null;
@@ -183,6 +194,7 @@ function desenhar() {
     el.classList.toggle('feito', estado === 'feito');
     el.querySelector('.hab-dias').innerHTML = semana.map(x => `<i class="${x > hoje ? 'futuro' : h.dias[x] || 'antes'}${x === dia ? ' hoje' : ''}"></i>`).join('');
   }
+  diaNaUrl(false);   // o dia pode ter sido ajustado (antes do 1º registro, virou o dia)
 }
 function mudarDia(n) {
   if (!dados) return;
@@ -190,6 +202,7 @@ function mudarDia(n) {
   const primeiro = Object.keys(calcularHabitos(dadosComPendentes(), hoje).perfeito)[0] || hoje;
   if (alvo > hoje || alvo < primeiro) return;
   diaVisto = alvo < hoje ? alvo : null;
+  diaNaUrl(true);
   desenhar();
 }
 // Arrastar de lado na tela dos hábitos (como no Treino: só gesto claramente horizontal, longo ou rápido); no computador,
@@ -219,7 +232,7 @@ addEventListener('keydown', ev => {
 });
 $('h-anterior').addEventListener('click', () => mudarDia(-1));
 $('h-proximo').addEventListener('click', () => mudarDia(1));
-$('h-hoje').addEventListener('click', () => { diaVisto = null; desenhar(); });
+$('h-hoje').addEventListener('click', () => { diaVisto = null; diaNaUrl(true); desenhar(); });
 // Voltou de um app: busca de novo. Passou da meia-noite com a tela aberta: redesenha o dia novo.
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') atualizarHabitos(); });
 addEventListener('online', () => atualizarHabitos());
@@ -274,7 +287,7 @@ $('sair').addEventListener('click', async () => {
   }
   clearTimeout(armado); botao.classList.remove('armado');
   await sairDaConta();
-  conta = null; dados = null; diaVisto = null;
+  conta = null; dados = null; diaVisto = null; diaNaUrl(false);
   $('l-usuario').value = ''; $('l-senha').value = '';
   mostrar(false);
 });

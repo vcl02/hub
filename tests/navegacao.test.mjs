@@ -168,12 +168,19 @@ test('hábitos com os dados dos apps: valor de hoje, ofensivas, dias perfeitos e
   const largura = () => pg.$eval('#h-data', el => el.getBoundingClientRect().width);
   const antes = await largura();
   assert.equal(await pg.$$eval('#h-semana li', L => L.findIndex(li => li.classList.contains('hoje'))), 6);   // domingo da semana de 19 a 25/10
+  assert.equal(await pg.evaluate(() => location.search), '?dia=2026-10-25');      // o dia no endereço, como o ?ciclo do Fin
+  await pg.reload(); await pg.waitForSelector('#v-apps:not([hidden])');             // recarregar mantém o dia
+  await pg.waitForFunction(() => document.getElementById('h-data').textContent === 'domingo, 25 de outubro');
   await pg.keyboard.press('ArrowLeft');                                             // no computador, as setas
   assert.match(await pg.textContent('#h-data'), /^sábado, 24 de outubro$/);
   assert.deepEqual(await linha('agua'), ['0 / 1.000 ml', '1']);
+  await pg.goBack();                                                                // Voltar do navegador: o dia visto antes
+  await pg.waitForFunction(() => document.getElementById('h-data').textContent === 'domingo, 25 de outubro');
+  await pg.keyboard.press('ArrowLeft');
   await arrastar(-150);                                                             // para a esquerda avança
   assert.equal(await pg.textContent('#h-data'), 'domingo, 25 de outubro');
   await pg.click('#h-hoje');                                                        // Hoje volta direto
+  assert.equal(await pg.evaluate(() => location.search), '');                       // hoje: sem ?dia
   assert.equal(await largura(), antes);
   assert.equal(await pg.isVisible('#h-hoje'), false);                                // some em hoje
   assert.match(await pg.textContent('#h-data'), /^segunda-feira, 26 de outubro$/);

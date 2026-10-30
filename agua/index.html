@@ -37,8 +37,8 @@
     </a>
   </header>
 
-  <!-- Aberto pela página inicial num dia anterior (?dia=): aquele dia, só leitura; Hoje volta ao app normal -->
-  <p class="so-leitura" id="dia-visto" hidden><span id="dia-nome"></span> · só leitura <a class="chip-bt" href="./">Hoje</a></p>
+  <!-- Dia anterior (pelos Últimos 7 dias ou pelo ?dia=, que acompanha o dia visto): só leitura; Hoje volta para hoje -->
+  <p class="so-leitura" id="dia-visto" hidden><span id="dia-nome"></span> · só leitura <button type="button" class="chip-bt" id="dia-hoje">Hoje</button></p>
 
   <!-- Total de hoje e a meta; no canto, se bateu -->
   <div class="cartao total" id="total">

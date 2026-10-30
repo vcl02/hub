@@ -1,8 +1,10 @@
 'use strict';
 // Tela de hoje: total e meta, lembretes, beber (bebida, campo de ml e botões das quantidades já usadas) e 7 dias.
 let bebida = 'agua';   // a bebida do próximo lançamento; volta para água depois de cada outra bebida
-// Aberto pela página inicial num dia anterior (?dia=): a tela é daquele dia, só leitura (sem lembretes, beber nem tirar)
-const DIA = diaDaUrl();
+// Dia anterior (tocado nos Últimos 7 dias ou aberto pelo ?dia=, que acompanha o dia visto como o ?ciclo do Fin): a tela é daquele
+// dia, só leitura (sem lembretes, beber nem tirar). null = hoje.
+let DIA = diaDaUrl();
+function verDia(dia, empilhar = true) { DIA = dia && dia < hoje() ? dia : null; diaNaUrl(DIA, empilhar); desenhar(); window.scrollTo(0, 0); }
 const nomeBebida = a => BEBIDAS[a.bebida]?.nome.toLowerCase() || '';
 // "10:00 · 300 ml" ou "10:00 · suco 300 ml (264 ml de água · 120 kcal)": as kcal entram no Alimentação
 const textoAgua = a => a.bebida ? `${a.hora} · ${nomeBebida(a)} ${inteiro(a.volume)} ml (${inteiro(a.ml)} ml de água · ${inteiro(nutrientesBebida(a).kcal)} kcal)` : `${a.hora} · ${inteiro(a.ml)} ml`;
@@ -35,7 +37,7 @@ function pintarSemana() {
   const dias = Array.from({ length: 7 }, (_, i) => somaDias(hoje(), -i));
   $('semana').innerHTML = `<ul class="sem-lista">${dias.map(d => {
     const ml = totalMl(d);
-    return `<li><span>${d === hoje() ? 'Hoje' : d === somaDias(hoje(), -1) ? 'Ontem' : dataCurta(d)}</span> <span class="${ml >= META_ML ? 'ok' : ''}">${ml ? inteiro(ml) + ' ml' : '—'}</span></li>`;
+    return `<li class="${d === (DIA || hoje()) ? 'visto' : ''}"><button type="button" data-dia="${d}"><span>${d === hoje() ? 'Hoje' : d === somaDias(hoje(), -1) ? 'Ontem' : dataCurta(d)}</span> <span class="${ml >= META_ML ? 'ok' : ''}">${ml ? inteiro(ml) + ' ml' : '—'}</span></button></li>`;
   }).join('')}</ul>`;
 }
 
@@ -71,6 +73,10 @@ $('b-lista').addEventListener('click', ev => {
   const b = ev.target.closest('[data-tirar-agua]');
   if (b && !DIA && confirmar(b)) mudarHoje(x => { x.aguas.splice(+b.dataset.tirarAgua, 1); });
 });
+// Tocar num dia dos Últimos 7 dias abre ele (anterior: só leitura); Hoje e o Voltar do navegador voltam
+$('semana').addEventListener('click', ev => { const b = ev.target.closest('[data-dia]'); if (b) verDia(b.dataset.dia); });
+$('dia-hoje').addEventListener('click', () => verDia(null));
+addEventListener('popstate', () => { if (db) verDia(diaDaUrl(), false); });
 // O app aberto acompanha o relógio: o lembrete da vez aparece sozinho (e o dia vira à meia-noite)
 setInterval(() => { if (db && !$('v-agua').hidden) desenhar(); }, 60000);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && db) desenhar(); });
