@@ -227,6 +227,9 @@ test('dia passado: o texto diz o que aconteceu, e a ofensiva e os dias perfeitos
   assert.deepEqual([r.treino.valor, r.treino.acima], ['Não treinou', true]);
   assert.deepEqual([r.peso.valor, r.sono.valor, r.deficit.valor, r.agua.valor], ['Sem pesagem', 'Folga', 'Nada lançado', '0 / 1.000 ml']);
   assert.equal(json(H.resumoDeHoje(D, '2026-11-03', true)).besteira.valor, 'Folga');   // terça: sem besteira
+  const dentro = json(H.resumoDeHoje({ ...D, medidas: [{ data: '2026-11-01', peso: 100 }], comidas: { '2026-11-03': [{ hora: '12:00', kcal: 1000 }] } }, '2026-11-03', true)).deficit;
+  assert.match(dentro.valor, /^[\d.]+ kcal$/);                               // dentro da meta: só as kcal, sem "abaixo da meta"
+  assert.equal(dentro.bom, true);                                             // em verde
   assert.equal(json(H.resumoDeHoje(D, '2026-11-03', true)).treino.valor, 'Folga');
   assert.equal(json(H.resumoDeHoje(D, '2026-11-04')).treino.valor, 'Dia de treino');  // como hoje, o texto de antes
 });

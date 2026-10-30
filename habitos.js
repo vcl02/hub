@@ -148,7 +148,7 @@ function resumoDeHoje(D, hoje, passado = false) {
   if (passado) return {
     treino: { valor: treinou ? 'Treinou' : ROTINA.treino.includes(wd) ? 'Não treinou' : 'Folga', ...(!treinou && ROTINA.treino.includes(wd) && { acima: true }) },
     deficit: !c.comidas.length ? { valor: 'Nada lançado', acima: true } : resta == null ? { valor: 'Sem pesagem' } : resta >= 0
-      ? { valor: `${milhar(resta)} kcal abaixo da meta`, progresso: c.meta ? c.comido / c.meta : 0 }
+      ? { valor: `${milhar(resta)} kcal`, progresso: c.meta ? c.comido / c.meta : 0, bom: true }   // dentro da meta: só o que sobrou, em verde
       : acimaDaMeta(c),
     peso: { valor: m ? `${decimal(m.peso)} kg` : 'Sem pesagem' },
     sono: { valor: s && s.sono != null ? horasTxt(s.sono) : SONO_FOLGA.includes(wd) ? 'Folga' : 'Sem sono', ...(s && s.sono != null && s.sono < SONO_MIN_H && { acima: true }) },
