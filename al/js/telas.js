@@ -15,6 +15,7 @@ function desenhar() {
   if (!previa) previaMarmita = null;
   ['f-texto', 'f-enviar', 'c-min', 'c-km', 'c-mais'].forEach(id => { $(id).disabled = passado(); });
   $('d-nome').textContent = nomeDoDia(diaVisto);
+  $('d-nome').classList.toggle('hoje', !passado());   // o hoje igual em todo módulo (pílula da cor, base)
   $('d-ant').disabled = diaVisto <= inicio();
   $('d-prox').disabled = diaVisto >= hoje();
   $('f-texto').placeholder = passado() ? 'Dia fechado: só leitura' : 'O que você comeu?';
@@ -69,7 +70,7 @@ function pintarSaldo() {
   $('c-kcal').textContent = cam ? `−${inteiro(cam.kcal)} kcal` : '';
   $('c-lista').innerHTML = (cam?.trechos || []).map((t, i) => {
     const quanto = [t.minutos && `${valor(t.minutos)} min`, t.km && `${valor(t.km)} km`].filter(Boolean).join(' · ') || `${CAMINHADA_MIN_PADRAO} min`;
-    return `<li><button type="button" data-tirar-trecho="${i}" aria-label="Tirar trecho"${passado() ? ' disabled' : ''}>${t.hora ? `${t.hora} · ` : ''}${quanto}${passado() ? '' : ' ×'}</button></li>`;
+    return `<li><button type="button" class="chip" data-tirar-trecho="${i}" aria-label="Tirar trecho"${passado() ? ' disabled' : ''}>${t.hora ? `${t.hora} · ` : ''}${quanto}${passado() ? '' : ' ×'}</button></li>`;
   }).join('');
 }
 
@@ -94,7 +95,7 @@ function pintarMarmitas() {
 // Sugestões enquanto digita (comidas salvas parecidas); com o campo vazio, as mais usadas.
 function pintarSugestoes() {
   const t = $('f-texto').value.trim(), L = previa || passado() ? [] : t ? sugestoes(t) : frequentes();
-  $('f-sugestoes').innerHTML = L.map(i => `<li><button type="button" class="sug" data-item="${i.id}"><b>${esc(i.nome)}</b> <span>${esc(i.porcao)}</span> <i>${inteiro(i.kcal)} kcal</i></button></li>`).join('');
+  $('f-sugestoes').innerHTML = L.map(i => `<li><button type="button" class="chip sug" data-item="${i.id}"><b>${esc(i.nome)}</b> <span>${esc(i.porcao)}</span> <i>${inteiro(i.kcal)} kcal</i></button></li>`).join('');
 }
 
 // Prévia editável: nome, quantas porções × a porção, e o total comido (kcal e gramas) de cada item antes de adicionar
@@ -130,19 +131,19 @@ function pintarLista() {
     .sort((a, b) => (a.hora || '99').localeCompare(b.hora || '99'));
   $('h-comidas').hidden = !L.length;
   $('lista').innerHTML = L.map(r => r.daAgua ? linhaBebida(r) : `<li>
-    <span class="l-hora">${r.hora || ''}</span>
-    <span class="l-txt"><b>${esc(r.nome)}</b> <small>${r.qtd !== 1 ? fmtQtd(r.qtd) + ' × ' : ''}${esc(r.porcao)}</small> <small class="l-mac">P ${umaCasa(r.prot * r.qtd)} · C ${umaCasa(r.carb * r.qtd)} · G ${umaCasa(r.gord * r.qtd)}</small></span>
-    <span class="l-kcal">${inteiro(r.kcal * r.qtd)} <small>kcal</small></span>
+    <span class="hora">${r.hora || ''}</span>
+    <span class="oque"><b>${esc(r.nome)}</b> <small>${r.qtd !== 1 ? fmtQtd(r.qtd) + ' × ' : ''}${esc(r.porcao)}</small> <small class="l-mac">P ${umaCasa(r.prot * r.qtd)} · C ${umaCasa(r.carb * r.qtd)} · G ${umaCasa(r.gord * r.qtd)}</small></span>
+    <span class="valor l-kcal">${inteiro(r.kcal * r.qtd)} <small>kcal</small></span>
     <span class="l-acoes"><select data-qtd="${r.id}" title="Porções" aria-label="Porções"${passado() ? ' disabled' : ''}>${[...new Set([...QTDS, r.qtd])].sort((a, b) => a - b).map(q => `<option value="${q}"${q === r.qtd ? ' selected' : ''}>${fmtQtd(q)}×</option>`).join('')}</select>${btIcone('lixo', 'Apagar', `data-apagar="${r.id}"${passado() ? ' disabled' : ''}`, 'perigo')}</span>
   </li>`).join('');
 }
 
 function linhaBebida(b) {
   const n = nutrientesBebida(b);
-  return `<li class="da-agua">
-    <span class="l-hora">${b.hora || ''}</span>
-    <span class="l-txt"><b>${esc(BEBIDAS[b.bebida].nome)}</b> <small>${inteiro(b.volume)} ml · da Água</small> <small class="l-mac">P ${umaCasa(n.prot)} · C ${umaCasa(n.carb)} · G ${umaCasa(n.gord)}</small></span>
-    <span class="l-kcal">${inteiro(n.kcal)} <small>kcal</small></span>
+  return `<li class="de-outro da-agua">
+    <span class="hora">${b.hora || ''}</span>
+    <span class="oque"><b>${esc(BEBIDAS[b.bebida].nome)}</b> <small>${inteiro(b.volume)} ml · da Água</small> <small class="l-mac">P ${umaCasa(n.prot)} · C ${umaCasa(n.carb)} · G ${umaCasa(n.gord)}</small></span>
+    <span class="valor l-kcal">${inteiro(n.kcal)} <small>kcal</small></span>
     <span class="l-acoes"></span>
   </li>`;
 }

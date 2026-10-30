@@ -32,14 +32,12 @@ test('cada app volta para o hub (../)', () => {
   assert.match(ler('agua/index.html'), /<a class="(icon-btn|bt-ic)" href="\.\.\/" id="i-hub"/);   // bt-ic: o botão da base comum
 });
 
-test('tema escuro único: hub, fin e tr com o mesmo fundo', () => {
+test('tema escuro único: hub, fin, tr e os módulos na base com o mesmo fundo', () => {
   assert.match(ler('hub.css'), /--bg: #1B1E21;/);
   assert.match(ler('fin/css/base.css'), /--bg: #1B1E21;/);
   assert.match(ler('tr/css/base.css'), /--bg:#1B1E21;/);
-  assert.match(ler('al/css/al.css'), /--bg:#1B1E21;/);
-  assert.match(ler('corpo/index.html'), /<link rel="stylesheet" href="\.\.\/base\/tokens\.css">/);   // na base comum
+  for (const app of ['al', 'corpo', 'agua']) assert.match(ler(`${app}/index.html`), /<link rel="stylesheet" href="\.\.\/base\/tokens\.css">/, app);   // na base comum
   assert.match(ler('base/tokens.css'), /--bg:#1B1E21;/);   // módulo na base comum: o fundo vem de lá
-  assert.match(ler('agua/index.html'), /<link rel="stylesheet" href="\.\.\/base\/tokens\.css">/);
   for (const arquivo of ['index.html', 'fin/index.html', 'tr/index.html', 'al/index.html', 'corpo/index.html', 'agua/index.html']) assert.match(ler(arquivo), /<meta name=("theme-color"|theme-color) content="#1B1E21">/, arquivo);
   assert.match(html, /<meta name="color-scheme" content="dark">/);
 });
@@ -189,7 +187,7 @@ test('base comum: tokens e componentes existem, a referência carrega os dois e 
 });
 
 test('módulos na base comum só usam as cores da base (nada de --teal, --cyan, --green… que deixaram de existir)', () => {
-  for (const app of ['agua', 'corpo']) {
+  for (const app of ['agua', 'corpo', 'al']) {
     const arquivos = [`${app}/index.html`, ...readdirSync(path.join(RAIZ, app, 'js')).map(n => `${app}/js/${n}`), ...readdirSync(path.join(RAIZ, app, 'css')).map(n => `${app}/css/${n}`)];
     for (const f of arquivos) assert.doesNotMatch(ler(f), /var\(--(teal|cyan|yellow|blue|green|red|on-teal|on-cyan)[a-z-]*\)/, f);
   }

@@ -10,6 +10,8 @@
 <link rel="icon" href="icons/al-192.png">
 <link rel="apple-touch-icon" href="icons/al-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../base/tokens.css">
+<link rel="stylesheet" href="../base/componentes.css">
 <link rel="stylesheet" href="css/al.css">
 </head>
 <body>
@@ -30,11 +32,11 @@
 <!-- O dia: saldo (déficit ou superávit), macros, o que comer agora e o que já foi comido. Tudo preenchido por js/telas.js. -->
 <section id="v-dia" class="view" hidden>
   <header class="topo">
-    <h1>Alimentação</h1>
     <!-- Hub: volta à página inicial (../), que abre os outros apps -->
-    <a class="icon-btn" href="../" id="i-hub" title="Hub" aria-label="Hub">
+    <a class="bt-ic" href="../" id="i-hub" title="Hub" aria-label="Hub">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M9.9 9.9 6.6 6.6M14.1 9.9l3.3-3.3M9.9 14.1l-3.3 3.3M14.1 14.1l3.3 3.3"/><circle cx="5" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></svg>
     </a>
+    <h1>Alimentação</h1>
   </header>
 
   <!-- ‹ › trocam o dia mostrado (para frente, até hoje) -->
@@ -46,7 +48,7 @@
 
   <!-- Saldo do dia: comido − gasto; negativo = déficit (verde), positivo = superávit (vermelho) -->
   <div class="cartao saldo" id="saldo">
-    <p class="saldo-num"><b id="s-valor">—</b> <small id="s-rotulo">kcal</small></p>
+    <p class="grande saldo-num"><b class="num" id="s-valor">—</b> <small id="s-rotulo">kcal</small></p>
     <!-- Hoje acima da meta: o dia ainda em déficit (comido abaixo do gasto do dia inteiro) ou já em superávit -->
     <p class="saldo-ainda" id="s-ainda" hidden></p>
     <p class="saldo-conta" id="s-conta"></p>
@@ -61,12 +63,12 @@
     <div class="andei" id="andei" hidden>
       <div class="andei-campos">
         <span>Andei</span>
-        <label><input id="c-min" inputmode="decimal" placeholder="20" aria-label="Minutos deste trecho"><small>min</small></label>
-        <label><input id="c-km" inputmode="decimal" placeholder="—" aria-label="Quilômetros deste trecho"><small>km</small></label>
-        <button type="button" class="chip-bt" id="c-mais" aria-label="Marcar caminhada">+</button>
+        <label><input id="c-min" class="campo" inputmode="decimal" placeholder="20" aria-label="Minutos deste trecho"><small>min</small></label>
+        <label><input id="c-km" class="campo" inputmode="decimal" placeholder="—" aria-label="Quilômetros deste trecho"><small>km</small></label>
+        <button type="button" class="chip ativo" id="c-mais" aria-label="Marcar caminhada">+</button>
         <b id="c-kcal"></b>
       </div>
-      <ul class="trechos" id="c-lista" aria-label="Caminhadas do dia"></ul>
+      <ul class="chips trechos" id="c-lista" aria-label="Caminhadas do dia"></ul>
     </div>
   </div>
 
@@ -74,13 +76,13 @@
   <div class="cartao macros" id="macros"></div>
 
   <!-- O que comi: texto livre vai para a IA; nome de comida salva adiciona direto -->
-  <form id="f-comer" class="comer" autocomplete="off">
-    <input id="f-texto" type="text" enterkeyhint="send" maxlength="500" placeholder="O que você comeu?" aria-label="O que você comeu?">
-    <button type="submit" class="bt-enviar" id="f-enviar" title="Adicionar" aria-label="Adicionar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+  <form id="f-comer" class="linha comer" autocomplete="off">
+    <input id="f-texto" class="campo" type="text" enterkeyhint="send" maxlength="500" placeholder="O que você comeu?" aria-label="O que você comeu?">
+    <button type="submit" class="mais" id="f-enviar" title="Adicionar" aria-label="Adicionar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
   </form>
   <!-- Marmitas guardadas: tocar abre a prévia com os itens (aplicar gasta uma); × com toque duplo joga fora -->
   <ul class="marmitas" id="marmitas" aria-label="Marmitas"></ul>
-  <ul class="sugestoes" id="f-sugestoes" aria-label="Comidas salvas"></ul>
+  <ul class="chips sugestoes" id="f-sugestoes" aria-label="Comidas salvas"></ul>
   <p class="carregando" id="f-carregando" role="status" hidden><span class="spin" aria-hidden="true"></span>Estimando…</p>
 
   <!-- Prévia do que a IA estimou (ou digitação à mão): dá pra corrigir antes de adicionar; o corrigido vai para as salvas -->
@@ -92,7 +94,7 @@
     </div>
     <!-- Ou guardar como marmita: não entra na conta hoje; aplica no dia em que comer -->
     <div class="p-guardar" id="p-guardar">
-      <input id="p-m-nome" maxlength="60" placeholder="Nome da marmita" aria-label="Nome da marmita">
+      <input id="p-m-nome" class="campo" maxlength="60" placeholder="Nome da marmita" aria-label="Nome da marmita">
       <label><input id="p-m-qtd" inputmode="numeric" value="1" aria-label="Quantas marmitas"><small>×</small></label>
       <button type="button" class="btn" id="p-marmita">Guardar como marmita</button>
     </div>

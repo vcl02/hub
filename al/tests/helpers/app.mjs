@@ -20,7 +20,7 @@ export function prepararApp() {
   before(async () => {
     servidor = http.createServer((req, res) => {
       const u = decodeURIComponent(req.url.split('?')[0]);
-      let p = ['/corpo/perfil.js', '/supabase.js', '/agua/bebidas.js'].includes(u) ? path.join(HUB, u) : path.join(RAIZ, u);
+      let p = (['/corpo/perfil.js', '/supabase.js', '/agua/bebidas.js'].includes(u) || u.startsWith('/base/')) ? path.join(HUB, u) : path.join(RAIZ, u);
       if (p.endsWith(path.sep)) p += 'index.html';
       fs.readFile(p, (e, d) => {
         if (e) { res.writeHead(404); res.end(); return; }
