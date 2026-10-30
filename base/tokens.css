@@ -23,3 +23,5 @@
   --rapido:150ms; --medio:250ms;
   color-scheme:dark;
 }
+/* Cor trocada num pedaço da página (style="--cor:…", como cada hábito na página inicial): o suave sai da cor dali, não da do módulo */
+[style*="--cor"]{--cor-soft:color-mix(in srgb, var(--cor) 16%, var(--bg))}

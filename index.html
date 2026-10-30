@@ -13,12 +13,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&family=Barlow:wght@400;500;600&display=swap">
+<!-- Base comum de todos os módulos (tokens e peças), depois o que é só da página inicial -->
+<link rel="stylesheet" href="base/tokens.css">
+<link rel="stylesheet" href="base/componentes.css">
 <link rel="stylesheet" href="hub.css">
 </head>
 <body>
-<!-- Brilhos do fundo, nas cores dos apps (só decoração). -->
-<div class="brilho" aria-hidden="true"><i></i><i></i></div>
-
 <!-- Login (Supabase Auth), antes de tudo: a sessão fica salva e vale para todos os apps.
      hub.js mostra esta tela ou a dos apps; até decidir, as duas ficam escondidas. -->
 <main class="entrar" id="v-login" hidden>
@@ -34,32 +34,28 @@
 </main>
 
 <main class="hub" id="v-apps" hidden>
+  <!-- Cabeçalho da base, como em todo módulo: o nome (a página inicial é o módulo Hábitos), Hoje (só num dia anterior; volta
+       direto, só o ícone de calendário) e Sair (encerra a sessão neste aparelho, vale para todos os apps; toque duplo). -->
   <header class="topo">
-    <div>
-      <!-- O dia visto (hoje ou um anterior): arrastar de lado (e, no computador, ‹ ›) troca o dia. A data tem largura fixa,
-           pra nada pular quando ela muda. hub.js preenche. -->
-      <div class="dia-nav">
-        <button type="button" class="dia-seta" id="h-anterior" title="Dia anterior" aria-label="Dia anterior"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
-        <p class="hoje" id="h-data"></p>
-        <button type="button" class="dia-seta" id="h-proximo" title="Dia seguinte" aria-label="Dia seguinte" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
-      </div>
-      <h1><span>hub</span></h1>
-    </div>
-    <div class="topo-acoes">
-      <!-- Hoje: só num dia anterior; volta direto para hoje. Mesmo botão do Sair, em roxo (a cor do dia anterior). -->
-      <button type="button" class="sair voltar-hoje" id="h-hoje" title="Hoje" aria-label="Hoje" hidden>
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M16 3v4M8 3v4M4 10h16"/><circle cx="12" cy="15.5" r="1.6" fill="currentColor" stroke="none"/></svg>
-      </button>
-      <!-- Sair: encerra a sessão neste aparelho (vale para todos os apps); toque duplo. -->
-      <button type="button" class="sair" id="sair" title="Sair" aria-label="Sair">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v9"/><path d="M6.4 6.4a8 8 0 1 0 11.2 0"/></svg>
-      </button>
-    </div>
+    <h1>Hábitos</h1>
+    <button type="button" class="bt-ic ok" id="h-hoje" title="Hoje" aria-label="Hoje" hidden>
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M16 3v4M8 3v4M4 10h16"/><circle cx="12" cy="15.5" r="1.6" fill="currentColor" stroke="none"/></svg>
+    </button>
+    <button type="button" class="bt-ic perigo" id="sair" title="Sair" aria-label="Sair">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v9"/><path d="M6.4 6.4a8 8 0 1 0 11.2 0"/></svg>
+    </button>
   </header>
+  <!-- Barra do dia da base: ‹ dia › (e arrastar de lado). A data tem largura fixa, pra nada pular quando ela muda; em hoje, a
+       pílula da cor. hub.js preenche. -->
+  <nav class="dia-nav">
+    <button type="button" class="bt-ic" id="h-anterior" title="Dia anterior" aria-label="Dia anterior"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <b class="dia-data" id="h-data"></b>
+    <button type="button" class="bt-ic" id="h-proximo" title="Dia seguinte" aria-label="Dia seguinte" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+  </nav>
 
   <!-- Dias perfeitos seguidos (todos os hábitos do dia feitos), os últimos 7 dias e as proteções guardadas.
        hub.js preenche com habitos.js. -->
-  <section class="perfeito" aria-label="Dias perfeitos">
+  <section class="perfeito cartao" aria-label="Dias perfeitos">
     <div class="perfeito-topo">
       <p class="perfeito-num"><svg class="chama" viewBox="0 0 24 24" width="34" height="34" fill="currentColor" aria-hidden="true"><path d="M12 2.5c.6 3.1-1 5-2.6 6.8C7.8 11 6.5 12.6 6.5 15a5.5 5.5 0 0 0 11 0c0-2.2-1-4-2.3-5.4.1 1.6-.4 2.8-1.5 3.4.3-3.8-.6-7.6-1.7-10.5z"/></svg><b id="h-perfeitos">0</b><span>dias perfeitos</span></p>
       <p class="protecoes" id="h-protecoes" title="Proteções: 1 a cada semana de treino perfeita"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/></svg><b>0</b></p>

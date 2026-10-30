@@ -164,6 +164,7 @@ function desenhar() {
   const [a, m, d] = dia.split('-').map(Number);
   const data = new Date(a, m - 1, d).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
   $('h-data').textContent = data;
+  $('h-data').classList.toggle('hoje', !passado);   // hoje: a pílula da cor, como em todo módulo (base)
   $('v-apps').classList.toggle('passado', passado);
   $('h-hoje').hidden = !passado;
   $('h-anterior').disabled = dia <= primeiro;
