@@ -58,3 +58,9 @@ function comer(item, dia, qtd = 1) {
   item.usos += 1;
   db.registros.push({ id: novoId(), data: dia, hora: dia === hoje() ? agoraHHMM() : '', item: item.id, nome: item.nome, porcao: item.porcao, qtd, ...macros(item) });
 }
+// Marmita: os itens da prévia (1 porção + quantas, como as comidas salvas) guardados para aplicar outro dia, sem entrar na
+// conta agora; restam = quantas iguais foram preparadas
+function guardarMarmita(itens, nome, quantas) {
+  db.marmitas.push({ id: novoId(), nome, restam: quantas, itens: itens.map(x => { const q = x.qtd > 0 ? x.qtd : 1; return { ...porPorcao(x, q), qtd: q }; }) });
+}
+const kcalMarmita = m => m.itens.reduce((s, i) => s + i.kcal * i.qtd, 0);

@@ -36,7 +36,7 @@ export function prepararApp() {
 
 // Supabase falso (auth + PostgREST em memória + a Edge Function al-estimar): nada sai para a rede.
 // nuvem.ia(texto) responde pela IA: { status, corpo }. nuvem.chamadasIA conta as chamadas.
-export const CHAVES = { al_item: ['id'], al_registro: ['id'], al_dia: ['data'], corpo_medida: ['data'], tr_treino: ['inicio'], agua_dia: ['data'] };
+export const CHAVES = { al_item: ['id'], al_registro: ['id'], al_dia: ['data'], corpo_medida: ['data'], tr_treino: ['inicio'], agua_dia: ['data'], al_marmita: ['id'] };
 export const novaNuvem = () => ({ online: true, chamadasIA: 0, ia: () => ({ status: 200, corpo: { itens: [] } }), tabelas: Object.fromEntries(Object.keys(CHAVES).map(t => [t, []])) });
 const b64u = o => Buffer.from(JSON.stringify(o)).toString('base64url');
 export async function fakeSupabase(ctx, nuvem, id = DONO) {

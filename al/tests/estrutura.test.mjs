@@ -60,8 +60,8 @@ test('migrations no formato do DataGrip e RLS só do Victor em todas as tabelas 
     for (const linha of s.split('\n').filter(l => l.trim().startsWith('--'))) assert.ok(!linha.includes(';'), `; em comentário: ${linha}`);
     assert.match(s, /^begin;$/m); assert.match(s, /^commit;$/m);
   }
-  const tabelas = [...tudo.matchAll(/create table public\.(al_\w+)/g)].map(m => m[1]);
-  assert.deepEqual(tabelas, ['al_item', 'al_registro', 'al_dia', 'al_uso']);
+  const tabelas = [...tudo.matchAll(/create table (?:if not exists )?public\.(al_\w+)/g)].map(m => m[1]);
+  assert.deepEqual(tabelas, ['al_item', 'al_registro', 'al_dia', 'al_uso', 'al_marmita']);
   for (const t of tabelas) {
     assert.match(tudo, new RegExp(`alter table public\\.${t} enable row level security`), t);
     assert.match(tudo, new RegExp(`revoke all on public\\.${t} from anon`), t);

@@ -1,7 +1,7 @@
 // Estrutura da página inicial do hub (sem navegador): hábitos e atalhos, PWA, service workers e workflows da raiz.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -168,8 +168,11 @@ test('histórico no banco: toda tabela dos apps (menos o Fin, que tem o dele) co
   const sql = ler('migrations/00-historico-apps.sql');
   assert.match(sql, /^begin;$/m); assert.match(sql, /^commit;$/m); assert.doesNotMatch(sql, /^do \$\$/m);
   for (const linha of sql.split('\n').filter(l => l.trim().startsWith('--'))) assert.ok(!linha.includes(';'), `; em comentário: ${linha}`);
-  const comGatilho = [...sql.matchAll(/create trigger hub_historico after insert or update or delete on public\.(\w+) for each row execute function public\.registrar_historico_hub\(\);/g)].map(m => m[1]);
-  assert.deepEqual(comGatilho.sort(), ['agua_dia', 'al_dia', 'al_item', 'al_registro', 'corpo_dia', 'corpo_medida', 'tr_exercicio', 'tr_registro', 'tr_treino', 'tr_variacao']);
+  // As migrations da raiz juntas (00 e as que acrescentam tabela nova, como a 01 das marmitas), só reaproveitando a função da 00
+  const todas = readdirSync(path.join(RAIZ, 'migrations')).sort().map(n => ler(`migrations/${n}`));
+  for (const m of todas.slice(1)) { assert.match(m, /^begin;$/m); assert.match(m, /^commit;$/m); assert.doesNotMatch(m, /\$\$/, 'tabela nova não cria função'); }
+  const comGatilho = todas.flatMap(m => [...m.matchAll(/create trigger hub_historico after insert or update or delete on public\.(\w+) for each row execute function public\.registrar_historico_hub\(\);/g)].map(x => x[1]));
+  assert.deepEqual(comGatilho.sort(), ['agua_dia', 'al_dia', 'al_item', 'al_marmita', 'al_registro', 'corpo_dia', 'corpo_medida', 'tr_exercicio', 'tr_registro', 'tr_treino', 'tr_variacao']);
   assert.match(sql, /security definer\nset search_path = ''/);
   assert.match(sql, /revoke all on public\.hub_historico from anon, authenticated;/);
   assert.match(sql, /create policy hub_historico_so_victor on public\.hub_historico for select to authenticated\n  using \(\(select auth\.uid\(\)\) = '32f70255-30a0-4e2b-ad76-31d7a1bf54f7'::uuid\);/);

@@ -10,10 +10,10 @@ Pedido explícito do mantenedor vence tudo.
 
 | Projeto | Pasta | Endereço | Tabelas próprias | Migrations | Edge Function |
 |---|---|---|---|---|---|
-| Hub (página inicial) | raiz | `/hub/` | `hub_historico` (as dos apps, só lê) | `migrations/` 00 | — |
+| Hub (página inicial) | raiz | `/hub/` | `hub_historico` (as dos apps, só lê) | `migrations/` 00 a 01 | — |
 | Fin | `fin/` | `/hub/fin/` | `fin`, `fin_ciclo`, `fin_meta`, `fin_historico` | 00 a 41 | `captura-nubank` |
 | Treino | `tr/` | `/hub/tr/` | `tr_exercicio`, `tr_variacao`, `tr_registro`, `tr_treino` | 00 a 07 | — |
-| Alimentação | `al/` | `/hub/al/` | `al_item`, `al_registro`, `al_dia`, `al_uso` | 00 a 02 | `al-estimar` |
+| Alimentação | `al/` | `/hub/al/` | `al_item`, `al_registro`, `al_dia`, `al_marmita`, `al_uso` | 00 a 03 | `al-estimar` |
 | Corpo | `corpo/` | `/hub/corpo/` | `corpo_medida`, `corpo_dia` | 00 a 05 | — |
 | Água | `agua/` | `/hub/agua/` | `agua_dia`, `push_inscricao`, `push_chave`, `push_agendado`, `push_ultimo` | 00 a 02 | `agua-lembrete` |
 

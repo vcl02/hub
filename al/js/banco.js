@@ -3,7 +3,7 @@
 // Cada mudança grava a cópia local na hora e, 0,8 s depois, envia ao Supabase só as linhas que mudaram
 // (diferença para "base", a última versão confirmada pelo servidor). Sem internet, fica pendente e envia ao reconectar.
 // Tabelas (todas com user_id e RLS "só o dono"): chave de cada linha entre colchetes.
-const TABELAS = { al_item: ['id'], al_registro: ['id'], al_dia: ['data'] };
+const TABELAS = { al_item: ['id'], al_registro: ['id'], al_dia: ['data'], al_marmita: ['id'] };
 const ORDEM = Object.keys(TABELAS);
 // Rede ruim (metrô): sem teto, um pedido que perde o sinal no meio pode ficar pendente por minutos, e o que espera por ele
 // (o envio, a busca) fica preso até ele cair. Todo pedido ao Supabase, inclusive a leitura da resposta, tem limite; estourou,
@@ -25,6 +25,8 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { global: { fetch: 
 const K_LOCAL = id => 'al.db.' + id, K_BASE = id => 'al.base.' + id, K_TR = id => 'al.tr.' + id, K_BEBIDAS = id => 'al.bebidas.' + id, K_VOO = id => 'al.voo.' + id;
 // bebidas = { dia: [{ hora, bebida, volume }] }: suco, refri e as outras lançadas na Água (agua_dia, só leitura); contam como comido
 let bebidas = {};
+// al_marmita ainda não criada (migration 03 não aplicada): o app segue sem marmitas (o botão some e nada é enviado)
+let semMarmita = false;
 let db = null, tr = { treinos: [] }, medidas = [], usuario = null, base = null, enviando = false, tEnvio = null, erroSync = '';
 
 const macros = x => ({ kcal: x.kcal, prot: x.prot, carb: x.carb, gord: x.gord });
@@ -34,13 +36,15 @@ function linhas(d) {   // db → { tabela: { chave: linha } }
   d.itens.forEach(i => por('al_item', { id: i.id, nome: i.nome, porcao: i.porcao, ...macros(i), usos: i.usos }));
   d.registros.forEach(r => por('al_registro', { id: r.id, data: r.data, hora: r.hora, item_id: r.item || null, nome: r.nome, porcao: r.porcao, qtd: r.qtd, ...macros(r) }));
   d.dias.forEach(x => por('al_dia', { data: x.data, caminhadas: x.caminhadas.map(t => ({ ...t })) }));   // cópia: editar o dia não mexe na base
+  (d.marmitas || []).forEach(m => por('al_marmita', { id: m.id, nome: m.nome, itens: m.itens.map(i => ({ ...i })), restam: m.restam }));
   return L;
 }
 function deLinhas(R) {   // linhas do servidor → db (numeric chega como texto ou número)
   return preparar({
     itens: R.al_item,
     registros: R.al_registro.map(r => ({ ...r, item: r.item_id })),
-    dias: R.al_dia
+    dias: R.al_dia,
+    marmitas: R.al_marmita || []
   });
 }
 // Base guardada no aparelho passa pela mesma limpeza do db antes de comparar: depois de uma mudança de formato, a base
@@ -78,7 +82,7 @@ async function enviar() {
   if (!ORDEM.some(t => mud.up[t].length || mud.del[t].length) && !Object.keys(voo).length) { erroSync = ''; pintarSync(); return; }
   enviando = true;
   try {
-    const porId = ORDEM.filter(t => t !== 'al_dia');
+    const porId = ORDEM.filter(t => t !== 'al_dia' && !(t === 'al_marmita' && semMarmita));
     for (const t of porId) if (mud.up[t].length) {
       const { error } = await sb.from(t).upsert(mud.up[t].map(l => ({ user_id: usuario.id, ...l })), { onConflict: ['user_id', ...TABELAS[t]].join(',') });
       if (error) throw error;
@@ -128,7 +132,10 @@ async function todas(tabela, colunas = '*') {
 }
 async function baixar() {
   const R = {};
-  for (const t of ORDEM) R[t] = await todas(t);
+  for (const t of ORDEM) {
+    if (t !== 'al_marmita') { R[t] = await todas(t); continue; }
+    try { R[t] = await todas(t); semMarmita = false; } catch (e) { if (!/fetch|network|rede/i.test(e.message || '')) { semMarmita = true; R[t] = []; } else throw e; }
+  }
   return R;
 }
 // Treinos do Treino e pesagens do Corpo (só leitura): ficam no aparelho para a conta do gasto abrir sem internet.
@@ -187,5 +194,11 @@ function preparar(d) {
     data: x.data,
     caminhadas: (Array.isArray(x.caminhadas) ? x.caminhadas : x.andou === true ? [x] : []).map(trecho).sort((a, b) => a.hora.localeCompare(b.hora)).slice(0, TRECHOS_MAX)
   })).filter(x => x.caminhadas.length);
-  return { itens, registros, dias };
+  // Marmitas: itens com a quantidade e os valores de 1 porção; acabou (restam 0) ou sem item, sai
+  const marmitas = (d?.marmitas || []).filter(m => m && m.id && txt(m.nome, 60)).map(m => ({
+    id: String(m.id), nome: txt(m.nome, 60), restam: Math.min(Math.max(parseInt(m.restam, 10) || 0, 0), MARMITAS_MAX),
+    itens: (Array.isArray(m.itens) ? m.itens : []).filter(i => i && txt(i.nome, 60)).slice(0, 20)
+      .map(i => ({ nome: txt(i.nome, 60), porcao: txt(i.porcao, 60), qtd: num(i.qtd) > 0 ? Math.min(num(i.qtd), 20) : 1, ...valores(i) }))
+  })).filter(m => m.restam > 0 && m.itens.length);
+  return { itens, registros, dias, marmitas };
 }

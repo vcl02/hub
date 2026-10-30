@@ -26,6 +26,14 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md`; o jeito de trabalha
 - 27/10/2026: dia passado é só leitura na tela, e o que é lançado em outro dia é gravado sem hora, para o hábito "lançado no dia" da página inicial.
 - 27/10/2026: as bebidas da Água com calorias contam como comido, lidas de `agua_dia` (só leitura).
 
+## Marmitas (30/10/2026)
+
+- Para refeições montadas antes (à noite, para o almoço do dia seguinte): a prévia vira marmita em vez de entrar na conta, e aplicar lança tudo no dia em que for comida.
+- Várias iguais com contador (`restam`), não uma por vez nem um modelo permanente: é o jeito de quem prepara a semana; a última aplicada apaga a linha.
+- Aplicar abre a prévia (um toque a mais), para ajustar o que de fato foi comido; entrar direto obrigaria a corrigir na lista depois.
+- Tabela própria (`al_marmita`, migration 03), por id como `al_item`: aplicar em dois aparelhos ao mesmo tempo pode contar errado o `restam` (o último a enviar vence); o histórico (`01` da raiz) guarda o anterior.
+- Sem a tabela, o app segue sem marmitas (mesma ideia do Corpo sem `corpo_dia`).
+
 ## Fora do al
 
 - Água e outros hábitos (sem doce etc.) não entram aqui: são módulos próprios (a Água já existe).

@@ -78,6 +78,8 @@
     <input id="f-texto" type="text" enterkeyhint="send" maxlength="500" placeholder="O que você comeu?" aria-label="O que você comeu?">
     <button type="submit" class="bt-enviar" id="f-enviar" title="Adicionar" aria-label="Adicionar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
   </form>
+  <!-- Marmitas guardadas: tocar abre a prévia com os itens (aplicar gasta uma); × com toque duplo joga fora -->
+  <ul class="marmitas" id="marmitas" aria-label="Marmitas"></ul>
   <ul class="sugestoes" id="f-sugestoes" aria-label="Comidas salvas"></ul>
   <p class="carregando" id="f-carregando" role="status" hidden><span class="spin" aria-hidden="true"></span>Estimando…</p>
 
@@ -87,6 +89,12 @@
     <div class="linha">
       <button type="button" class="btn" id="p-cancelar">Cancelar</button>
       <button type="button" class="btn primario" id="p-adicionar">Adicionar</button>
+    </div>
+    <!-- Ou guardar como marmita: não entra na conta hoje; aplica no dia em que comer -->
+    <div class="p-guardar" id="p-guardar">
+      <input id="p-m-nome" maxlength="60" placeholder="Nome da marmita" aria-label="Nome da marmita">
+      <label><input id="p-m-qtd" inputmode="numeric" value="1" aria-label="Quantas marmitas"><small>×</small></label>
+      <button type="button" class="btn" id="p-marmita">Guardar como marmita</button>
     </div>
   </div>
 

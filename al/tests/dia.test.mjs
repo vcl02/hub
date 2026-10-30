@@ -206,6 +206,67 @@ test('bebidas lançadas na Água (suco, refri…) contam como comido: na lista, 
   await ctx.close();
 });
 
+test('marmita: guarda a prévia sem entrar na conta; aplicar abre a prévia com as quantidades e gasta uma; a última some', async () => {
+  const nuvem = comTreino(novaNuvem());
+  nuvem.ia = iaCom({ nome: 'Arroz branco', porcao: '1 colher de sopa (~25 g)', qtd: 6, kcal: 192, prot: 3.6, carb: 42, gord: 0.6 },
+    { nome: 'Frango grelhado', porcao: '100 g', qtd: 1.5, kcal: 240, prot: 48, carb: 0, gord: 4.5 });
+  const { ctx, pg, erros } = await abrirApp({ nuvem });
+  await descrever(pg, 'marmita: 6 colheres de arroz e 150 g de frango');
+  await pg.waitForSelector('#previa:not([hidden])');
+  await pg.fill('#p-m-nome', 'Almoço'); await pg.fill('#p-m-qtd', '2');
+  await pg.click('#p-marmita');
+  assert.equal(await texto(pg, '#toast'), 'Marmita guardada (2): Almoço');
+  assert.equal(await pg.isVisible('#previa'), false);
+  assert.equal(await pg.locator('#lista li').count(), 0);                // não entrou na conta
+  assert.equal(await texto(pg, '#s-valor'), '2.106');
+  assert.match(await texto(pg, '#marmitas li'), /^Almoço 2 itens · restam 2 432 kcal/);
+  await sincronizado(pg);
+  const linha = nuvem.tabelas.al_marmita[0];
+  assert.deepEqual([linha.nome, linha.restam, linha.itens.map(i => [i.nome, i.qtd, i.kcal])], ['Almoço', 2, [['Arroz branco', 6, 32], ['Frango grelhado', 1.5, 160]]]);   // por porção
+  // No dia seguinte (aqui, já): aplicar abre a prévia com os itens; comeu só metade do arroz
+  await pg.click('[data-marmita]');
+  await pg.waitForSelector('#previa:not([hidden])');
+  assert.equal(await pg.isVisible('#p-guardar'), false);                 // aplicando, não guarda outra
+  assert.deepEqual(await pg.$$eval('#p-lista [data-campo="qtd"]', L => L.map(x => x.value)), ['6', '1,5']);
+  await pg.fill('#p-lista li:first-child [data-campo="qtd"]', '3');
+  await pg.click('#p-adicionar');
+  assert.equal(await texto(pg, '#toast'), 'Almoço aplicada (restam 1)');
+  assert.equal(await pg.locator('#lista li').count(), 2);
+  assert.equal(await texto(pg, '#s-valor'), '1.770');                    // 2106 − 96 (3 colheres) − 240
+  await sincronizado(pg);
+  assert.equal(nuvem.tabelas.al_marmita[0].restam, 1);
+  await pg.click('[data-marmita]'); await pg.click('#p-adicionar');       // a última: some (e sai da nuvem)
+  assert.equal(await pg.locator('#marmitas li').count(), 0);
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.al_marmita, []);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test('marmita: × com toque duplo joga fora; sem a tabela (migration 03 pendente), o app segue sem marmitas', async () => {
+  const nuvem = comTreino(novaNuvem());
+  nuvem.tabelas.al_marmita.push({ user_id: 'x', id: 'm1', nome: 'Janta', restam: 3, itens: [{ nome: 'Sopa', porcao: '1 concha', qtd: 2, kcal: 90, prot: 4, carb: 12, gord: 3 }] });
+  const a = await abrirApp({ nuvem });
+  await a.pg.click('[data-jogar="m1"]');
+  assert.equal(await a.pg.locator('#marmitas li').count(), 1);           // 1º toque só arma
+  await a.pg.click('[data-jogar="m1"]');
+  await sincronizado(a.pg);
+  assert.deepEqual(nuvem.tabelas.al_marmita, []);
+  await a.ctx.close();
+  const sem = comTreino(novaNuvem()); delete sem.tabelas.al_marmita;
+  sem.ia = iaCom(PAO);
+  const b = await abrirApp({ nuvem: sem });
+  await descrever(b.pg, 'pão');
+  await b.pg.waitForSelector('#previa:not([hidden])');
+  assert.equal(await b.pg.isVisible('#p-guardar'), false);
+  await b.pg.click('#p-adicionar');
+  await sincronizado(b.pg);
+  assert.equal(sem.tabelas.al_registro.length, 1);                       // o resto segue normal
+  assert.equal(await b.pg.isVisible('#sync'), false);
+  assert.deepEqual(b.erros, []);
+  await b.ctx.close();
+});
+
 test('hoje passou da meta mas ainda abaixo do gasto: diz que ainda está em déficit (menor que os 500 planejados)', async () => {
   const nuvem = comTreino(novaNuvem());
   nuvem.ia = iaCom({ nome: 'Marmita', porcao: '1', kcal: 2300, prot: 100, carb: 250, gord: 80 });

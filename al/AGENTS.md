@@ -33,10 +33,10 @@
 
 Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para todos fica lá).
 
-- **Migrations:** `migrations/` 00 a 02, formato DataGrip, RLS só do Victor em todas as `al_*`; conferido em `tests/estrutura.test.mjs`, numeração em `../tests/documentacao.test.mjs`.
+- **Migrations:** `migrations/` 00 a 03 (`03` marmitas; o histórico delas é a `01` da raiz), formato DataGrip, RLS só do Victor em todas as `al_*`; conferido em `tests/estrutura.test.mjs`, numeração em `../tests/documentacao.test.mjs`.
 - **Testes:** navegador em `tests/dia.test.mjs` (Playwright do `tr/`, Supabase e IA falsos em `tests/helpers/app.mjs`); a Edge Function em `tests/funcao.test.mjs` (SDK e rede simulados); estrutura em `tests/estrutura.test.mjs`. As contas de `gasto.js` também são conferidas pelos hábitos da raiz.
 - **Pacotes:** sem `package.json`. `../supabase.js` da raiz; a função usa `npm:@anthropic-ai/sdk@0.133.0` (versão exata, conferida em `tests/funcao.test.mjs`) e os tipos `jsr:@supabase/functions-js@2.118.0`; Playwright do `tr/`.
-- **Backups:** cópia no aparelho (`al.db.<conta>`, base em `al.base.<conta>`) e `hub_historico` com `al_dia`, `al_item` e `al_registro`. `al_uso` (contador de consultas à IA) fica fora: não é dado a recuperar.
+- **Backups:** cópia no aparelho (`al.db.<conta>`, base em `al.base.<conta>`) e `hub_historico` com `al_dia`, `al_item`, `al_registro` e `al_marmita`. `al_uso` (contador de consultas à IA) fica fora: não é dado a recuperar.
 - **Domínio:** `/hub/al/`. Externos: o Supabase (inclusive `functions/v1/al-estimar`); a função chama a API da Anthropic.
 
 ## Como concluir uma mudança

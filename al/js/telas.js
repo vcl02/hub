@@ -1,6 +1,6 @@
 'use strict';
 // Tela do dia: saldo, macros, campo "o que comi" (sugestões, IA e prévia), lista do dia e os últimos 7 dias.
-let diaVisto = diaDaUrl() || hoje(), previa = null;   // aberto pela página inicial num dia anterior: aquele dia (só leitura)
+let diaVisto = diaDaUrl() || hoje(), previa = null, previaMarmita = null;   // previaMarmita: id da marmita sendo aplicada   // aberto pela página inicial num dia anterior: aquele dia (só leitura)
 // 1º dia do app: o mais antigo com comida ou caminhada registrada (sem nada, hoje). Antes dele não há o que ver.
 // O 1º dia que dá para ver: o 1º com algo lançado, ou o dia pedido pela página inicial (?dia= ao abrir), se for antes dele
 const DIA_PEDIDO = diaDaUrl();
@@ -12,12 +12,13 @@ function desenhar() {
   if (diaVisto > hoje()) diaVisto = hoje();
   if (diaVisto < inicio()) diaVisto = inicio();
   if (passado()) previa = null;
+  if (!previa) previaMarmita = null;
   ['f-texto', 'f-enviar', 'c-min', 'c-km', 'c-mais'].forEach(id => { $(id).disabled = passado(); });
   $('d-nome').textContent = nomeDoDia(diaVisto);
   $('d-ant').disabled = diaVisto <= inicio();
   $('d-prox').disabled = diaVisto >= hoje();
   $('f-texto').placeholder = passado() ? 'Dia fechado: só leitura' : 'O que você comeu?';
-  pintarSaldo(); pintarMacros(); pintarSugestoes(); pintarPrevia(); pintarLista(); pintarSemana();
+  pintarSaldo(); pintarMacros(); pintarMarmitas(); pintarSugestoes(); pintarPrevia(); pintarLista(); pintarSemana();
   diaNaUrl(diaVisto, false);   // o dia pode ter sido ajustado (antes do 1º dia, virou o dia)
 }
 
@@ -85,6 +86,11 @@ function pintarMacros() {
   }).join('');
 }
 
+// Marmitas guardadas (só hoje e sem prévia aberta): tocar abre a prévia com os itens; × com toque duplo joga fora
+function pintarMarmitas() {
+  const L = passado() || previa || semMarmita ? [] : db.marmitas;
+  $('marmitas').innerHTML = L.map(m => `<li><button type="button" class="marmita" data-marmita="${m.id}"><b>${esc(m.nome)}</b> <span>${m.itens.length === 1 ? '1 item' : m.itens.length + ' itens'} · restam ${m.restam}</span> <i>${inteiro(kcalMarmita(m))} kcal</i></button>${btIcone('x', 'Jogar fora', `data-jogar="${m.id}"`, 'perigo')}</li>`).join('');
+}
 // Sugestões enquanto digita (comidas salvas parecidas); com o campo vazio, as mais usadas.
 function pintarSugestoes() {
   const t = $('f-texto').value.trim(), L = previa || passado() ? [] : t ? sugestoes(t) : frequentes();
@@ -100,6 +106,7 @@ function itemDaPrevia(x) {
 }
 function pintarPrevia() {
   $('previa').hidden = !previa;
+  $('p-guardar').hidden = !!previaMarmita || semMarmita;   // aplicando uma marmita, não guarda outra
   if (!previa) { $('p-lista').innerHTML = ''; return; }
   $('p-lista').innerHTML = previa.map((x, i) => `<li data-i="${i}">
     <div class="p-nome"><input data-campo="nome" value="${esc(x.nome)}" maxlength="60" placeholder="Comida" aria-label="Comida">${btIcone('x', 'Tirar', `data-tirar="${i}"`)}<span class="p-porcao"><input data-campo="qtd" inputmode="decimal" value="${String(x.qtd ?? 1).replace('.', ',')}" aria-label="Quantas porções"><small>×</small><input data-campo="porcao" value="${esc(x.porcao)}" maxlength="60" placeholder="1 porção" aria-label="Uma porção"></span></div>
@@ -268,9 +275,36 @@ $('p-adicionar').addEventListener('click', () => {
   const validos = previa.filter(x => x.nome);
   if (!validos.length) { toast('Dê um nome à comida.', true); return; }
   // Hoje entra o total comido (porção × qtd); a comida salva para as próximas vezes fica por 1 porção (o total ÷ qtd)
-  mudar(() => { for (const x of validos) { const q = x.qtd > 0 ? x.qtd : 1; comer(salvarItem(porPorcao(x, q)), diaVisto, q); } previa = null; });
+  const m = db.marmitas.find(x => x.id === previaMarmita);
+  mudar(() => {
+    for (const x of validos) { const q = x.qtd > 0 ? x.qtd : 1; comer(salvarItem(porPorcao(x, q)), diaVisto, q); }
+    if (m) { m.restam--; if (m.restam <= 0) db.marmitas = db.marmitas.filter(x => x !== m); }   // aplicou: gasta uma
+    previa = null;
+  });
   $('f-texto').value = ''; pintarSugestoes();
-  toast(validos.length === 1 ? `${validos[0].nome} adicionado` : `${validos.length} itens adicionados`);
+  toast(m ? `${m.nome} aplicada${m.restam > 0 ? ` (restam ${m.restam})` : ''}` : validos.length === 1 ? `${validos[0].nome} adicionado` : `${validos.length} itens adicionados`);
+});
+// Guardar como marmita: os itens da prévia ficam guardados (não entram na conta hoje); nome vazio = os nomes dos itens
+$('p-marmita').addEventListener('click', () => {
+  if (!previa) return;
+  lerPrevia();
+  const validos = previa.filter(x => x.nome);
+  if (!validos.length) { toast('Dê um nome à comida.', true); return; }
+  const nome = ($('p-m-nome').value.trim() || validos.map(x => x.nome).join(' + ')).slice(0, 60);
+  const quantas = Math.min(Math.max(parseInt($('p-m-qtd').value, 10) || 1, 1), MARMITAS_MAX);
+  mudar(() => { guardarMarmita(validos, nome, quantas); previa = null; });
+  $('f-texto').value = ''; $('p-m-nome').value = ''; $('p-m-qtd').value = '1'; pintarSugestoes();
+  toast(`Marmita guardada${quantas > 1 ? ` (${quantas})` : ''}: ${nome}`);
+});
+// Aplicar: abre a prévia com os itens e as quantidades da marmita (dá para ajustar antes de adicionar)
+$('marmitas').addEventListener('click', ev => {
+  const j = ev.target.closest('[data-jogar]');
+  if (j) { if (confirmar(j)) mudar(() => { db.marmitas = db.marmitas.filter(m => m.id !== j.dataset.jogar); }); return; }
+  const b = ev.target.closest('[data-marmita]'), m = b && db.marmitas.find(x => x.id === b.dataset.marmita);
+  if (!m) return;
+  previa = m.itens.map(i => itemDaPrevia({ ...i, kcal: i.kcal * i.qtd, prot: i.prot * i.qtd, carb: i.carb * i.qtd, gord: i.gord * i.qtd }));
+  previaMarmita = m.id;
+  desenhar();
 });
 
 $('lista').addEventListener('change', ev => {

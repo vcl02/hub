@@ -23,7 +23,7 @@
 | `corpo/perfil.js` | Dados sobre mim para todos os apps: perfil (altura, nascimento, sexo), rotina da semana (`ROTINA`: dias de treino e presenciais), `idadeEm`/`tmb`, calorias do treino e da esteira (`kcalTreino`, `kcalEsteira`) e a leitura das pesagens (`lerMedidas`, `medidasGuardadas`, `pesoNoDia`); tr, al e agua carregam com `../corpo/perfil.js` |
 | `tests/` | Estrutura do hub (`hub.test.mjs`), documentação e migrations de todos os projetos (`documentacao.test.mjs`), regras dos hábitos (`habitos.test.mjs`) e, no Chromium com o Supabase falso do tr, login no hub, os hábitos com os dados dos apps e os apps abrindo com a mesma sessão (`navegacao.test.mjs`) |
 | `scripts/check.mjs` | Validação completa: raiz, `fin/`, `tr/`, `al/`, `corpo/` e `agua/` |
-| `migrations/` | Migrations do hub inteiro (não de um app só): `00` histórico de mudanças das tabelas dos apps (`hub_historico`) |
+| `migrations/` | Migrations do hub inteiro (não de um app só): `00` histórico de mudanças das tabelas dos apps (`hub_historico`), `01` o histórico das marmitas do al |
 | `.github/workflows/` | Validação em todo push e e-mail de publicação do Pages (só funcionam na raiz) |
 | `.claude/settings.json` · `.claude/hooks/session-start.sh` | Sessões do Claude Code na nuvem: instalam o Playwright do tr ao começar, pra validação completa rodar sempre |
 
@@ -63,7 +63,7 @@ Valem para todos os apps. O comportamento visível da página inicial (login, h�
 
 Resolução da página inicial para cada item de `docs/DIRETRIZES.md`.
 
-- **Migrations:** `migrations/` da raiz, só o que cruza apps. `00` cria `hub_historico` e os gatilhos nas tabelas da Água, do Corpo, do al e do Treino; tem corpo `plpgsql` (exceção de gatilho: vai pelo SQL Editor do Supabase, ver as diretrizes). Tabela nova de app entra no histórico por migration nova aqui (`01`, …), só com `create trigger` reaproveitando `registrar_historico_hub` (formato DataGrip). O formato é conferido em `tests/hub.test.mjs` e a numeração em `tests/documentacao.test.mjs`.
+- **Migrations:** `migrations/` da raiz, só o que cruza apps. `00` cria `hub_historico` e os gatilhos nas tabelas da Água, do Corpo, do al e do Treino; tem corpo `plpgsql` (exceção de gatilho: vai pelo SQL Editor do Supabase, ver as diretrizes). Tabela nova de app entra no histórico por migration nova aqui (`01`: `al_marmita`; a próxima, `02`), só com `create trigger` reaproveitando `registrar_historico_hub` (formato DataGrip). O formato é conferido em `tests/hub.test.mjs` e a numeração em `tests/documentacao.test.mjs`.
 - **Testes:** funções em `tests/habitos.test.mjs` (estado do dia, ofensivas, proteções); estrutura em `tests/hub.test.mjs` (lista de hábitos, PWA, service workers, workflows, `perfil.js`, migration da raiz); navegador em `tests/navegacao.test.mjs` (Chromium com o Supabase falso de `tr/tests/helpers/app.mjs`: login, hábitos com os dados dos apps e os apps abrindo com a mesma sessão); documentação em `tests/documentacao.test.mjs`. `node scripts/check.mjs` roda tudo isso e a validação de cada app; o mesmo roda no GitHub Actions.
 - **Pacotes:** `supabase.js` (2.118.0, cópia de `tr/supabase.js`) e o Playwright de `tr/`. Nenhum `package.json` na raiz.
 - **Backups:** a página inicial só lê; não tem dado próprio além da cópia `hub-habitos.<conta>`, que se refaz dos dados dos apps. Guarda o histórico dos apps em `hub_historico`.
