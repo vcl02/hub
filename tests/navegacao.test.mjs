@@ -213,6 +213,48 @@ test('dia anterior: o hábito abre o app naquele dia, só leitura (a Água)', as
   await ctx.close();
 });
 
+test('cada hábito entra no app no dia selecionado na tela inicial: num dia anterior, naquele dia; em hoje, em hoje', async () => {
+  const nuvem = novaNuvem();
+  nuvem.tabelas.agua_dia.push({ data: '2026-10-25', aguas: [{ hora: '10:00', ml: 700 }], xixis: [] });   // só a Água tem algo no domingo
+  nuvem.tabelas.al_item = [];                                                       // o al abre só com as tabelas dele
+  const { ctx, pg } = await abrir(base, { nuvem });
+  await pg.clock.install({ time: new Date('2026-10-26T12:00:00-03:00') });
+  await pg.reload();
+  await entrar(pg, 'eu@teste.com', 'senha123');
+  await pg.waitForSelector('#v-apps:not([hidden])');
+  // O que cada app mostra ao abrir: o dia em que ele entrou
+  const diaNoApp = {
+    treino: () => pg.evaluate(() => document.getElementById('v-fim').hidden ? 'hoje' : document.getElementById('f-data').textContent),
+    deficit: () => pg.evaluate(() => document.getElementById('d-nome').textContent),
+    peso: () => pg.evaluate(() => document.getElementById('c-data').value),
+    sono: () => pg.evaluate(() => document.getElementById('c-data').value),
+    agua: () => pg.evaluate(() => document.getElementById('dia-visto').hidden ? 'hoje' : document.getElementById('dia-nome').textContent),
+  };
+  const pronto = { treino: '#v-inicio:not([hidden]), #v-fim:not([hidden])', deficit: '#v-dia:not([hidden])', peso: '#v-corpo:not([hidden])', sono: '#v-corpo:not([hidden])', agua: '#v-agua:not([hidden])' };
+  const entrarNo = async (id, dia) => {
+    await pg.click(`[data-habito="${id}"]`);
+    await pg.waitForURL(url => url.pathname !== '/hub/' && (!dia || url.search.includes(`dia=${dia}`) || url.search.includes('ciclo=')));
+    if (id === 'besteira') return pg.url();
+    await pg.waitForSelector(pronto[id]);
+    return diaNoApp[id]();
+  };
+  const voltarAoHub = async dia => { await pg.goto(base + (dia ? `?dia=${dia}` : '')); await pg.waitForSelector('#v-apps:not([hidden])'); };
+  await pg.click('#h-anterior');                                                    // domingo, 25/10
+  const ontem = {};
+  for (const id of ['treino', 'deficit', 'peso', 'sono', 'agua', 'besteira']) { ontem[id] = await entrarNo(id, '2026-10-25'); await voltarAoHub('2026-10-25'); }
+  assert.match(ontem.treino, /25 de outubro/);
+  assert.equal(ontem.deficit, 'Ontem');                                             // mesmo sem nada lançado no al naquele dia
+  assert.deepEqual([ontem.peso, ontem.sono], ['2026-10-25', '2026-10-25']);
+  assert.match(ontem.agua, /25 de outubro/);
+  assert.match(ontem.besteira, /fin\/\?dia=2026-10-25/);
+  assert.equal(await pg.textContent('#h-data'), 'domingo, 25 de outubro');          // ao voltar, a tela inicial segue no dia escolhido
+  await pg.click('#h-hoje');
+  const hoje = {};
+  for (const id of ['treino', 'deficit', 'peso', 'sono', 'agua']) { hoje[id] = await entrarNo(id); await voltarAoHub(); }
+  assert.deepEqual(hoje, { treino: 'hoje', deficit: 'Hoje', peso: '2026-10-26', sono: '2026-10-26', agua: 'hoje' });
+  await ctx.close();
+});
+
 test('Sair no hub pede toque duplo e encerra a sessão dos apps também', async () => {
   const { ctx, pg } = await abrir(base);
   await entrar(pg, 'eu@teste.com', 'senha123');

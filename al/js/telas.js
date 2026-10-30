@@ -2,7 +2,9 @@
 // Tela do dia: saldo, macros, campo "o que comi" (sugestões, IA e prévia), lista do dia e os últimos 7 dias.
 let diaVisto = diaDaUrl() || hoje(), previa = null;   // aberto pela página inicial num dia anterior: aquele dia (só leitura)
 // 1º dia do app: o mais antigo com comida ou caminhada registrada (sem nada, hoje). Antes dele não há o que ver.
-const inicio = () => [hoje(), ...db.registros.map(r => r.data), ...db.dias.map(x => x.data)].reduce((a, b) => b < a ? b : a);
+// O 1º dia que dá para ver: o 1º com algo lançado, ou o dia pedido pela página inicial (?dia= ao abrir), se for antes dele
+const DIA_PEDIDO = diaDaUrl();
+const inicio = () => [hoje(), DIA_PEDIDO || hoje(), ...db.registros.map(r => r.data), ...db.dias.map(x => x.data)].reduce((a, b) => b < a ? b : a);
 
 // Dia passado é só leitura: nada da tela muda o que já fechou (comida, porções, apagar, caminhada)
 const passado = () => diaVisto !== hoje();

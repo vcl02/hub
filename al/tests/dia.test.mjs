@@ -373,6 +373,10 @@ test('aberto pela página inicial num dia anterior (?dia=): abre nele, só leitu
   await pg.reload(); await pg.waitForSelector('#v-dia:not([hidden])');
   assert.equal(await texto(pg, '#d-nome'), 'Hoje');
   assert.deepEqual(erros, []); await ctx.close();
+  const semNada = await abrirApp({ nuvem: comTreino(novaNuvem()), busca: '?dia=2026-09-10' });   // dia antes de qualquer lançamento no al: abre nele mesmo
+  assert.notEqual(await texto(semNada.pg, '#d-nome'), 'Hoje');
+  assert.equal(await semNada.pg.evaluate(() => [diaVisto, location.search].join(' ')), '2026-09-10 ?dia=2026-09-10');
+  await semNada.ctx.close();
   const hojeMesmo = await abrirApp({ nuvem: comTreino(novaNuvem()), busca: '?dia=2026-09-18' });   // hoje (ou futuro): o app normal
   assert.equal(await texto(hojeMesmo.pg, '#d-nome'), 'Hoje');
   await hojeMesmo.ctx.close();
