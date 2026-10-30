@@ -14,14 +14,14 @@ function pintarInicio() {
     e.ativo = variacaoAtiva(e);
     const rDia = passado ? registroDe(e, dia) : null, iv = rDia ? e.variacoes.findIndex(x => x.id === rDia.variacao) : e.ativo;
     const v = e.variacoes[iv], u = passado ? rDia : ultimo(v.id), feito = passado ? !!rDia : !!registroHoje(e); if (feito) feitos++;
-    const chips = passado
-      ? (feito ? '<span class="chip ok">✓ Feito</span>' : '<span class="chip">Não feito</span>')
-      : (feito ? '<span class="chip ok">✓ Feito hoje</span>' : trav ? '<span class="chip">Sem séries salvas hoje</span>' : '') + (completo(u, e) && !semPeso(v) ? '<span class="chip acao">↑ Subir carga</span>' : '');
+    const selos = passado
+      ? (feito ? '<span class="selo ok">✓ Feito</span>' : '<span class="selo">Não feito</span>')
+      : (feito ? '<span class="selo ok">✓ Feito hoje</span>' : trav ? '<span class="selo">Sem séries salvas hoje</span>' : '') + (completo(u, e) && !semPeso(v) ? '<span class="selo cor">↑ Subir carga</span>' : '');
     const p = !passado && PLANOS[e.id] && etapaDoPlano(PLANOS[e.id], dia), un = semPeso(v) ? medidaSemPeso(v) : unidadeTxt(v);
     return `<li><button type="button" class="slot" data-ex="${e.id}">
       <span class="slot-main"><span class="eyebrow">${esc(e.grupo)}${p ? ` · <i>mês ${p.k + 1}</i>` : iv > 0 ? ` · <i>${TIPOS[iv].toLowerCase()}</i>` : ''}${v.equip ? ` · nº ${esc(v.equip)}` : ''}</span>
       <span class="name">${esc(v.nome)}</span><span class="r">${semPeso(v) ? `${e.series} × ${alvoReps(e, 0)} ${medidaSemPeso(v)}` : `${Array.from({ length: e.series }, (_, i) => alvoReps(e, i)).join(' → ')} reps`} · ${e.descanso} s</span>
-      <span class="chips">${chips}${u?.series.some(s => s.falha) ? `<span class="chip falha">✗ Falhou${passado ? '' : ' na última'}</span>` : ''}</span></span>
+      <span class="selos">${selos}${u?.series.some(s => s.falha) ? `<span class="selo erro">✗ Falhou${passado ? '' : ' na última'}</span>` : ''}</span></span>
       <span class="slot-load">${u ? `<span class="w">${fmt(topo(u))}<small>${esc(un)}</small></span><span class="r">${repsTxt(u)} · <i>${passado ? dataCurta(u.data) : quando(u.data)}</i></span>` : `<span class="r">${passado ? '—' : 'sem registro'}</span>`}</span>
     </button></li>`;
   }).join('');

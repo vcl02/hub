@@ -10,7 +10,9 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
-<!-- Estilos em ordem de cascata (ver AGENTS.md) -->
+<!-- Base comum de todos os módulos (tokens e peças), depois os estilos do Treino em ordem de cascata (ver AGENTS.md) -->
+<link rel="stylesheet" href="../base/tokens.css">
+<link rel="stylesheet" href="../base/componentes.css">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/inicio.css">
 <link rel="stylesheet" href="css/telas.css">
@@ -30,46 +32,44 @@
       <input id="l-senha" type="password" autocomplete="current-password" placeholder="Senha" aria-label="Senha" required>
     </fieldset>
     <p id="l-carregando" class="carregando" role="status" hidden><span class="spin" aria-hidden="true"></span>Entrando…</p>
-    <p id="l-erro" class="err" role="alert"></p>
+    <p id="l-erro" class="erro" role="alert"></p>
     <button id="l-btn" type="submit" hidden>Entrar</button>
   </form>
 </section>
 
 <!-- Início: semana + lista de exercícios -->
 <section id="v-inicio" class="view" hidden>
-  <header class="top">
-    <div class="titulo"><h1>Full body</h1></div>
-    <div class="acoes-topo">
-      <!-- Hub: volta à página inicial (../), que abre os outros apps -->
-      <a class="icon-btn" href="../" id="i-hub" title="Hub" aria-label="Hub">
+  <!-- Cabeçalho da base: hub (volta à página inicial, ../), nome do módulo e a engrenagem (editar exercícios) -->
+  <header class="topo">
+    <a class="bt-ic" href="../" id="i-hub" title="Hub" aria-label="Hub">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M9.9 9.9 6.6 6.6M14.1 9.9l3.3-3.3M9.9 14.1l-3.3 3.3M14.1 14.1l3.3 3.3"/><circle cx="5" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></svg>
       </a>
-      <button class="icon-btn" type="button" data-ir="editar" title="Editar exercícios" aria-label="Editar exercícios">
+    <h1>Treino</h1>
+    <button class="bt-ic" type="button" data-ir="editar" title="Editar exercícios" aria-label="Editar exercícios">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
-    </div>
   </header>
+  <!-- ‹ › trocam a semana mostrada: para trás até a do 1º treino, para frente até a atual (barra do dia da base) -->
+  <nav class="dia-nav week-msg"><button type="button" class="bt-ic" id="i-sem-ant" title="Semana anterior" aria-label="Semana anterior"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><span id="i-msg"></span><b id="i-cont-semana"></b><button type="button" class="bt-ic" id="i-sem-prox" title="Próxima semana" aria-label="Próxima semana"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button></nav>
   <ul id="i-semana" class="week" aria-label="Dias de treino desta semana"></ul>
-  <!-- ‹ › trocam a semana mostrada: para trás até a do 1º treino, para frente até a atual -->
-  <p class="week-msg"><button type="button" class="bt-ic sem-nav" id="i-sem-ant" title="Semana anterior" aria-label="Semana anterior"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><span id="i-msg"></span><b id="i-cont-semana"></b><button type="button" class="bt-ic sem-nav" id="i-sem-prox" title="Próxima semana" aria-label="Próxima semana"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button></p>
   <button type="button" class="game" data-ir="conquistas">
     <span class="g-top"><b id="g-nivel">Nível 1</b><span id="g-pts">0 pts</span></span>
-    <span class="track"><span id="g-barra"></span></span>
+    <span class="barra"><span id="g-barra"></span></span>
     <span class="g-info" id="g-info"></span>
   </button>
-  <p class="muted small" id="i-sync" role="status" hidden></p>
+  <p class="sync" id="i-sync" role="status" hidden></p>
   <p class="treino-tempo" id="i-treino"></p>
   <div class="progress">
     <!-- Dia mostrado na lista: hoje, ou um treino anterior (arrastar a lista); "Hoje" volta -->
-    <div class="progress-row"><span id="i-cont-l">Registrados hoje</span><button type="button" class="link hoje" id="i-hoje" hidden>Hoje</button><b id="i-cont">0/6</b></div>
-    <div class="track"><span id="i-barra"></span></div>
+    <div class="progress-row"><span id="i-cont-l">Registrados hoje</span><button type="button" class="chip ativo" id="i-hoje" hidden>Hoje</button><b id="i-cont">0/6</b></div>
+    <div class="barra"><span id="i-barra"></span></div>
   </div>
   <ul id="i-lista" class="slots"></ul>
 </section>
 
 <!-- Exercício: variação, pirâmide, descanso e histórico (arraste para trocar) -->
 <section id="v-exercicio" class="view" hidden>
-  <div class="bar nav"><button class="back" type="button" data-voltar title="Voltar" aria-label="Voltar"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <div class="topo nav"><button class="bt-ic back" type="button" data-voltar title="Voltar" aria-label="Voltar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
     <div class="pn"><span class="tempo" id="e-tempo"></span><b id="e-pos">1/6</b></div></div>
   <div class="trilha" id="e-trilha" aria-hidden="true"></div>
   <div class="travado-box" id="e-travado" hidden><p id="e-travado-msg"></p><button type="button" class="btn sm" data-reabrir>Reabrir treino de hoje</button></div>
@@ -109,7 +109,7 @@
   <p class="last" id="e-ultima"></p>
   <div class="log">
     <div class="field">
-      <div class="lbl-row"><label for="e-carga" id="e-carga-l">Peso da 1ª série</label><button type="button" class="tog" id="e-lados" aria-pressed="false">por lado</button></div>
+      <div class="lbl-row"><label for="e-carga" id="e-carga-l">Peso da 1ª série</label><button type="button" class="chip" id="e-lados" aria-pressed="false">por lado</button></div>
       <div class="stepper">
         <button type="button" data-passo="carga" data-dir="-1" aria-label="Diminuir 1">−</button>
         <div class="mid"><input id="e-carga" inputmode="decimal" autocomplete="off" placeholder="0"><button type="button" class="unit" id="e-unidade" aria-label="Trocar unidade (kg ↔ lb)">kg</button></div>
@@ -127,13 +127,13 @@
     </div>
   </div>
 
-  <div class="box timer">
+  <div class="cartao timer">
     <div class="t-top"><div class="modos" id="t-modos" role="radiogroup" aria-label="Tipo de pirâmide"></div></div>
     <ol class="plano" id="t-plano"></ol>
     <p class="t-ajuste" id="t-ajuste" role="status" hidden>Se ajuste</p>
     <div class="t-clock" id="t-relogio" role="timer">1:15</div>
     <p class="t-note" id="t-nota"></p>
-    <div class="row" id="t-parado"><button type="button" class="btn primary big" id="t-feita">Série feita · descansar</button></div>
+    <div class="row" id="t-parado"><button type="button" class="btn primario big" id="t-feita">Série feita · descansar</button></div>
     <div class="row" id="t-rodando" hidden>
       <button type="button" class="btn" id="t-menos">−15 s</button>
       <button type="button" class="btn" id="t-mais">+15 s</button>
@@ -155,7 +155,7 @@
 <section id="v-fim" class="view" hidden>
   <div class="fim-top">
     <!-- ‹ › e arrastar para o lado: treino anterior / seguinte (dias treinados) -->
-    <p class="eyebrow f-nav"><button type="button" class="bt-ic sem-nav" id="f-ant" title="Treino anterior" aria-label="Treino anterior"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><span id="f-data"></span><button type="button" class="bt-ic sem-nav" id="f-prox" title="Próximo treino" aria-label="Próximo treino"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button></p>
+    <p class="eyebrow f-nav"><button type="button" class="bt-ic" id="f-ant" title="Treino anterior" aria-label="Treino anterior"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><span id="f-data"></span><button type="button" class="bt-ic" id="f-prox" title="Próximo treino" aria-label="Próximo treino"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button></p>
     <h1 id="f-titulo">Treino concluído!</h1>
     <p class="hint" id="f-msg"></p>
   </div>
@@ -166,44 +166,41 @@
   <div id="f-cardio" hidden></div>
   <h3 class="sec">O que você fez</h3>
   <ul class="hist" id="f-lista"></ul>
-  <button type="button" class="btn primary big wide" data-ir="inicio">Voltar ao início</button>
+  <button type="button" class="btn primario big wide" data-ir="inicio">Voltar ao início</button>
 </section>
 
 <!-- Cardio na esteira depois do treino: duração, velocidade e inclinação; depois, o anel da contagem regressiva -->
 <section id="v-cardio" class="view" hidden>
-  <div class="bar"><button class="back" type="button" data-voltar title="Voltar" aria-label="Voltar"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button></div>
-  <h2>Cardio · esteira</h2>
+  <header class="topo"><button class="bt-ic back" type="button" data-voltar title="Voltar" aria-label="Voltar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h1>Cardio · esteira</h1></header>
   <div class="cd-anel" id="cd-anel">
     <svg viewBox="0 0 200 200" aria-hidden="true"><circle class="cd-trilho" cx="100" cy="100" r="90"/><circle class="cd-arco" id="cd-arco" cx="100" cy="100" r="90" pathLength="100"/></svg>
     <div class="cd-centro"><b id="cd-relogio" role="timer">20:00</b><span id="cd-sub"></span></div>
   </div>
   <p class="cd-info" id="cd-info"></p>
   <div class="cd-ajustes" id="cd-ajustes"></div>
-  <div class="row" id="cd-parado"><button type="button" class="btn primary big" id="cd-comecar">Começar</button></div>
+  <div class="row" id="cd-parado"><button type="button" class="btn primario big" id="cd-comecar">Começar</button></div>
   <div class="row" id="cd-rodando" hidden>
-    <button type="button" class="btn primary" id="cd-pausar">Pausar</button>
+    <button type="button" class="btn primario" id="cd-pausar">Pausar</button>
     <button type="button" class="btn" id="cd-mais">+5 min</button>
     <button type="button" class="btn" id="cd-encerrar">Encerrar</button>
   </div>
-  <button type="button" class="btn primary big wide" id="cd-resumo" hidden>Ver resumo</button>
+  <button type="button" class="btn primario big wide" id="cd-resumo" hidden>Ver resumo</button>
 </section>
 
 <!-- Pontos e conquistas -->
 <section id="v-conquistas" class="view" hidden>
-  <div class="bar"><button class="back" type="button" data-voltar title="Voltar" aria-label="Voltar"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button></div>
-  <h2>Conquistas</h2>
-  <div class="box" id="q-resumo"></div>
+  <header class="topo"><button class="bt-ic back" type="button" data-voltar title="Voltar" aria-label="Voltar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h1>Conquistas</h1></header>
+  <div class="cartao" id="q-resumo"></div>
   <ul class="conq" id="q-lista"></ul>
-  <div class="box"><p><b>Como ganhar pontos</b></p><ul class="q-pontos" id="q-pontos"></ul></div>
+  <div class="cartao"><p><b>Como ganhar pontos</b></p><ul class="q-pontos" id="q-pontos"></ul></div>
 </section>
 
 <section id="v-editar" class="view" hidden>
-  <div class="bar"><button class="back" type="button" data-voltar title="Voltar" aria-label="Voltar"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button></div>
-  <h2>Exercícios</h2>
+  <header class="topo"><button class="bt-ic back" type="button" data-voltar title="Voltar" aria-label="Voltar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h1>Exercícios</h1></header>
   <form id="ed-form" class="view">
     <div id="ed-lista" class="view"></div>
     <button type="button" class="btn" id="ed-novo">+ Adicionar exercício</button>
-    <div class="sticky"><button type="submit" class="btn primary big">Salvar exercícios</button></div>
+    <div class="sticky"><button type="submit" class="btn primario big">Salvar exercícios</button></div>
   </form>
   <button type="button" class="btn" id="a-instalar" hidden>Instalar na tela inicial</button>
   <p class="muted small" id="a-info"></p>
@@ -220,7 +217,7 @@
   <ul id="parabens-ganhos"></ul>
   <button type="button" class="btn big" id="parabens-ok">Ver resumo</button>
 </div>
-<div id="toast" role="status" hidden><span id="toast-msg"></span><button type="button" id="toast-desfazer" hidden>Desfazer</button></div>
+<div id="toast" class="toast" role="status" hidden><span id="toast-msg"></span><button type="button" id="toast-desfazer" hidden>Desfazer</button></div>
 <button type="button" id="mini" hidden><span id="mini-t">0:00</span><span id="mini-n"></span><span>Abrir ›</span></button>
 <!-- Scripts clássicos em ordem de dependência (ver AGENTS.md) -->
 <script src="supabase.js"></script>

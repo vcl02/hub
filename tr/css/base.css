@@ -1,80 +1,34 @@
-/* Treino — Tokens de cor e tipografia, base, superfícies, controles e cabeçalhos.
-   Cores com significado: azul = app e ações · verde = feito/sucesso · vermelho = erro/abaixo da meta · preto e branco = conteúdo.
+/* Treino — o que é só dele por cima da base comum (../base/tokens.css e ../base/componentes.css, carregadas antes): a cor do
+   módulo, superfícies próprias (registro do peso, gráfico, histórico, dicas, jogo), botões e cabeçalhos das telas internas.
+   Cores com significado (da base): azul = o módulo e as ações · verde = feito/sucesso · vermelho = erro/abaixo da meta.
    Hierarquia: números e títulos em condensada negrito · nomes em semi-negrito · rótulos em texto normal · datas e dicas em itálico. */
-:root{
-  --bg:#1B1E21; --surface:#24272B; --line:#3B4147; --line-strong:#4A5158; --fg:#E9ECEF; --muted:#AAB1B8;
-  --blue:#6E9BFF; --blue-soft:#22304A; --on-blue:#0F1724;
-  --green:#4CCB78; --green-soft:#1E392A; --on-green:#0F2418;
-  --red:#F06A61; --red-soft:#402624; --on-red:#1B1E21;
-  --shadow:rgba(0,0,0,.35);
-  --display:'Barlow Condensed','Arial Narrow','Roboto Condensed',sans-serif;
-  --body:'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
-  --r:14px;
-  --t-xs:.75rem; --t-sm:.875rem; --t-md:1rem; --t-lg:1.25rem; --t-xl:1.75rem; --t-2xl:2.25rem; --t-3xl:4.25rem;
-  color-scheme:dark;   /* só tema escuro (o do hub e do fin), mesmo com o celular no modo claro */
-}
-/* ---------- Base ---------- */
-*{box-sizing:border-box}
-[hidden]{display:none!important}
-:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-html,body{background:var(--bg);color:var(--fg)}
-body{margin:0;font-family:var(--body);font-size:var(--t-md);font-weight:400;line-height:1.4;-webkit-tap-highlight-color:transparent}
-button,input,select,textarea{font:inherit;color:inherit}
-button{cursor:pointer}
-:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
-p{margin:0}
+:root{--cor:#6E9BFF}
 i,em{font-style:italic}
-b{font-weight:600}
-.wrap{max-width:560px;margin:0 auto;overflow-x:clip;padding-block:12px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.view{display:flex;flex-direction:column;gap:14px}
 
 /* ---------- Tipografia ---------- */
-h1,h2{font-family:var(--display);font-weight:700;letter-spacing:.01em;line-height:1.05;margin:0;text-wrap:balance}
-h1{font-size:var(--t-2xl)} h2{font-size:var(--t-xl)}
-h3.sec{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:500;margin:10px 0 0}
 .eyebrow{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:500}
 .eyebrow i{text-transform:none;letter-spacing:0;font-size:var(--t-sm)}
-.muted{color:var(--muted)}
 .small{font-size:var(--t-sm)}
 .hint,.t-note{font-style:italic;color:var(--muted);font-size:var(--t-sm)}
 .hint b{font-style:normal;color:var(--fg)}
 
 /* ---------- Superfícies e controles ---------- */
-.box,.log,.chart,.hist,.menu,.dicas,.game,.treino-tempo,.slot,.ed{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
-.box{padding:14px;display:flex;flex-direction:column;gap:10px}
-.log{padding:14px;display:flex;flex-direction:column;gap:12px}
-.btn{border-radius:12px;border:1px solid var(--line);background:var(--surface);padding:12px 16px;font-weight:600;min-height:48px}
-.btn.primary{background:var(--blue);border-color:var(--blue);color:var(--on-blue)}
-.btn.danger{background:var(--red);border-color:var(--red);color:var(--on-red)}
+.log,.chart,.hist,.menu,.dicas,.game,.treino-tempo,.slot,.ed{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg)}
+.cartao{display:flex;flex-direction:column;gap:10px}
+.log{padding:var(--e-4);display:flex;flex-direction:column;gap:var(--e-3)}
 .btn.big{min-height:56px;font-size:1.05rem}
 .btn.wide{width:100%}
 .btn:disabled{opacity:.55}
-.link{background:none;border:0;color:var(--blue);padding:8px 0;font-weight:600}
-.row{display:flex;gap:8px;flex-wrap:wrap}
+.link{background:none;border:0;color:var(--cor);padding:8px 0;font-weight:600}
+.row{display:flex;gap:var(--e-2);flex-wrap:wrap}
 .row .btn{flex:1 1 0}
-.chip{font-size:var(--t-xs);font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
-.chip.ok{background:var(--green-soft);color:var(--green)}
-.chip.acao{background:var(--blue-soft);color:var(--blue)}
-.chip.falha{background:var(--red-soft);color:var(--red)}
-.chip:not(.ok):not(.acao):not(.falha){background:var(--line);color:var(--muted)}
 .slots.travado .slot{opacity:.6}
-.del{border:1px solid var(--line);background:transparent;border-radius:9px;padding:6px 10px;font-size:var(--t-sm);color:var(--muted)}
-.del.armed{border-color:var(--red);background:var(--red);color:var(--on-red);font-weight:600}
-.err{color:var(--red);font-size:var(--t-sm);min-height:1.2em}
-.track{display:block;height:6px;border-radius:6px;background:var(--line);overflow:hidden}
-.track span{display:block;height:100%;width:0;background:var(--green);transition:width .3s}
+.del{border:1px solid var(--line);background:transparent;border-radius:var(--r-sm);padding:6px 10px;font-size:var(--t-sm);color:var(--muted)}
+.del.armado{border-color:var(--erro);background:var(--erro);color:var(--bg);font-weight:600}
+.barra{height:6px}
 
-/* ---------- Cabeçalhos e navegação ---------- */
-.top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-top:6px}
-.titulo{min-width:0}
-.titulo h1{font-size:1.8rem;white-space:nowrap}
-.icon-btn{text-decoration:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-size:1.4rem;line-height:1;flex:none;display:grid;place-items:center;padding:0}
-.acoes-topo{display:flex;gap:6px}
-.acoes-topo .icon-btn{width:40px;height:40px}
-/* Sair como no fin: vermelho; 1º toque com dados sem enviar só arma (borda cheia) */
-.bar{display:flex;align-items:center;min-height:44px}
-.nav{justify-content:space-between;gap:8px}
-.back{background:none;border:0;padding:0;margin-left:-8px;width:44px;height:44px;display:grid;place-items:center;color:var(--blue)}   /* só a seta "<" */
+/* ---------- Telas internas: ‹ (volta uma tela) e, no exercício, o tempo e a posição à direita ---------- */
+.nav{justify-content:space-between}
 .pn{display:flex;align-items:center;gap:6px}
 .pn b{font-variant-numeric:tabular-nums;font-size:var(--t-sm);color:var(--muted);font-weight:500;min-width:2.4em;text-align:center}
-.tempo{font-size:var(--t-sm);font-weight:600;color:var(--blue);font-variant-numeric:tabular-nums;margin-right:4px;white-space:nowrap}
+.tempo{font-size:var(--t-sm);font-weight:600;color:var(--cor);font-variant-numeric:tabular-nums;margin-right:4px;white-space:nowrap}

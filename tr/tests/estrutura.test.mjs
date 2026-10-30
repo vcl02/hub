@@ -94,7 +94,7 @@ test('higiene textual do .editorconfig (scripts/check-style.mjs)', () => {
 });
 
 test('hub: marca do hub na tela inicial volta para ../ e o service worker só apaga os próprios caches', () => {
-  assert.match(html, /<a class="icon-btn" href="\.\.\/" id="i-hub" title="Hub" aria-label="Hub">/);
+  assert.match(html, /<a class="bt-ic" href="\.\.\/" id="i-hub" title="Hub" aria-label="Hub">/);
   assert.ok(html.indexOf('id="i-hub"') < html.indexOf('data-ir="editar"'));
   assert.doesNotMatch(html, /id="(i-corpo|v-corpo)"/);                                        // pesagem é do app Corpo
   // fin e a página inicial do hub dividem a origem (e os caches) com o tr.

@@ -5,13 +5,13 @@
 .cd-anel circle{fill:none;stroke-width:12}
 .cd-trilho{stroke:var(--line)}
 /* pathLength 100: o traço visível é a fração que falta (stroke-dashoffset = 100 − %) */
-.cd-arco{stroke:var(--blue);stroke-linecap:round;stroke-dasharray:100;stroke-dashoffset:0;transition:stroke-dashoffset .25s linear,stroke .3s;filter:drop-shadow(0 0 6px rgba(110,155,255,.35))}
+.cd-arco{stroke:var(--cor);stroke-linecap:round;stroke-dasharray:100;stroke-dashoffset:0;transition:stroke-dashoffset .25s linear,stroke .3s;filter:drop-shadow(0 0 6px color-mix(in srgb,var(--cor) 35%,transparent))}
 .cd-anel.pausado .cd-arco{stroke:var(--muted);filter:none}
 .cd-anel.pausado #cd-relogio{animation:pulso 1.2s ease-in-out infinite}
-.cd-anel.feito .cd-arco{stroke:var(--green);filter:drop-shadow(0 0 6px rgba(76,203,120,.35))}
-.cd-anel.feito #cd-relogio{color:var(--green)}
+.cd-anel.feito .cd-arco{stroke:var(--ok);filter:drop-shadow(0 0 6px color-mix(in srgb,var(--ok) 35%,transparent))}
+.cd-anel.feito #cd-relogio{color:var(--ok)}
 .cd-centro{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
-#cd-relogio{font-family:var(--display);font-weight:700;font-size:var(--t-3xl);line-height:1;font-variant-numeric:tabular-nums}
+#cd-relogio{font-family:var(--display);font-weight:700;font-size:4.25rem;line-height:1;font-variant-numeric:tabular-nums}
 #cd-sub{font-size:var(--t-sm);color:var(--muted);font-style:italic;min-height:1.2em}
 .cd-info{text-align:center;font-weight:600;font-variant-numeric:tabular-nums}
 
@@ -22,5 +22,5 @@
 .cd-aj b{min-width:4.6em;text-align:center;font-family:var(--display);font-size:var(--t-xl);line-height:1;font-variant-numeric:tabular-nums}
 .cd-aj b small{font-family:var(--body);font-size:var(--t-xs);font-weight:500;color:var(--muted);margin-left:3px}
 .cd-aj button{width:44px;height:44px;flex:none;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-size:1.3rem;line-height:1;padding:0}
-#cd-encerrar.armed{background:var(--red);border-color:var(--red);color:var(--on-red)}
+#cd-encerrar.armado{background:var(--erro);border-color:var(--erro);color:var(--bg)}
 @media (prefers-reduced-motion:reduce){.cd-anel.pausado #cd-relogio{animation:none}}

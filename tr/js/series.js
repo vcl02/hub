@@ -90,7 +90,7 @@ function pintarDescanso(e) {
         ${semPeso(v) ? '' : `<span>Peso <button type="button" data-aj="kg" data-d="-1" aria-label="Menos 1">−</button><input data-aj-in="kg" inputmode="decimal" value="${kg > 0 ? virgula(kg) : ''}" aria-label="Peso da ${s.nome}"><button type="button" data-aj="kg" data-d="1" aria-label="Mais 1">+</button></span>`}
         ${outra ? `<span>≈ <button type="button" data-aj="conv" data-d="-1" aria-label="Menos 1 ${outra}">−</button><input data-aj-in="conv" inputmode="decimal" value="${kg > 0 ? virgula(naOutra(kg, v)) : ''}" aria-label="Peso da ${s.nome} em ${outra}"><button type="button" data-aj="conv" data-d="1" aria-label="Mais 1 ${outra}">+</button> ${outra}</span>` : ''}
         <span>${v.unidade === 's' ? 'Segundos' : 'Reps'} <button type="button" data-aj="reps" data-d="-1" aria-label="Menos 1">−</button><input data-aj-in="reps" inputmode="numeric" value="${reps}" aria-label="${v.unidade === 's' ? 'Segundos' : 'Reps'} da ${s.nome}"><button type="button" data-aj="reps" data-d="1" aria-label="Mais 1">+</button></span>
-        ${feito ? `<button type="button" class="tog falha" data-aj="falha" aria-pressed="${!!falhou}" title="Não completou a série (as reps ficam como o alvo)">${falhou ? '✗ Falhei' : 'Falhei'}</button>` : ''}
+        ${feito ? `<button type="button" class="chip falha" data-aj="falha" aria-pressed="${!!falhou}" title="Não completou a série (as reps ficam como o alvo)">${falhou ? '✗ Falhei' : 'Falhei'}</button>` : ''}
       </div>` : ''}</li>`;
   }).join('');
   $('t-zerar').hidden = n === 0;

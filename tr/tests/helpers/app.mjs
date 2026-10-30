@@ -15,9 +15,10 @@ let servidor;
 export function prepararApp() {
   before(async () => {
     servidor = http.createServer((req, res) => {
-      // Fora do hub o tr fica na raiz do servidor: ../corpo/perfil.js (módulo do app Corpo) chega como /corpo/perfil.js.
+      // Fora do hub o tr fica na raiz do servidor: ../corpo/perfil.js (módulo do app Corpo) chega como /corpo/perfil.js e a
+      // base comum (../base/) como /base/.
       const u = decodeURIComponent(req.url.split('?')[0]);
-      let p = u === '/corpo/perfil.js' ? path.join(RAIZ, '..', 'corpo', 'perfil.js') : path.join(RAIZ, u);
+      let p = u === '/corpo/perfil.js' || u.startsWith('/base/') ? path.join(RAIZ, '..', u) : path.join(RAIZ, u);
       if (p.endsWith(path.sep)) p += 'index.html';
       fs.readFile(p, (e, d) => {
         if (e) { res.writeHead(404); res.end(); return; }

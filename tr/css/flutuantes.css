@@ -1,24 +1,24 @@
 /* Avisos flutuantes, barra do cronômetro, movimento e espaço de uso. */
 /* ---------- Avisos flutuantes ---------- */
 /* Garrafinha: tela cheia azul, acima de tudo, até tocar em "Já peguei" */
-#agua,#parabens{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:24px;background:var(--blue);color:var(--on-blue);text-align:center;overflow-y:auto}
+#agua,#parabens{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:24px;background:var(--cor);color:var(--on-cor);text-align:center;overflow-y:auto}
 .agua-ico{font-size:6rem;line-height:1}
 #agua p,#parabens p{font-family:var(--display);font-weight:700;font-size:var(--t-2xl);line-height:1.1;max-width:14ch}
-#agua .btn,#parabens .btn{background:var(--on-blue);color:var(--blue);border:0;min-width:12rem}
+#agua .btn,#parabens .btn{background:var(--on-cor);color:var(--cor);border:0;min-width:12rem}
 /* Parabéns: verde = feito/sucesso */
-#parabens{background:var(--green);color:var(--on-green)}
-#parabens .btn{color:var(--green)}
+#parabens{background:var(--ok);color:var(--on-cor)}
+#parabens .btn{color:var(--ok)}
 #parabens-info{font-weight:600}
 /* X no canto superior direito das telas cheias */
 .fechar{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));width:44px;height:44px;display:grid;place-items:center;padding:0;border:0;border-radius:12px;background:rgba(0,0,0,.14);color:inherit}
 #parabens-ganhos{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;width:100%;max-width:22rem}
 #parabens-ganhos li{background:rgba(0,0,0,.14);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column}
 #parabens-ganhos small{opacity:.85}
-#toast{position:fixed;z-index:20;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));bottom:calc(84px + env(safe-area-inset-bottom,0px));margin-inline:auto;width:fit-content;max-width:520px;display:flex;align-items:center;gap:12px;background:var(--fg);color:var(--bg);padding:12px 16px;border-radius:14px;font-weight:600;font-size:var(--t-sm);line-height:1.3}
-#toast.erro{background:var(--red);color:var(--on-red)}
+/* Aviso: o da base (.toast), com o Desfazer e acima da barra do cronômetro */
+#toast{display:flex;align-items:center;gap:12px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:20}
 #toast-msg{flex:1;min-width:0}
 #toast-desfazer{background:none;border:0;color:inherit;font-weight:700;text-decoration:underline;padding:4px 2px;flex:none}
-#mini{position:fixed;left:0;right:0;bottom:0;z-index:15;border:0;width:100%;display:flex;align-items:center;gap:12px;text-align:left;background:var(--blue);color:var(--on-blue);padding-block:12px calc(12px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));font-weight:600}
+#mini{position:fixed;left:0;right:0;bottom:0;z-index:15;border:0;width:100%;display:flex;align-items:center;gap:12px;text-align:left;background:var(--cor);color:var(--on-cor);padding-block:12px calc(12px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));font-weight:600}
 #mini.ajuste{animation:pulso 1s ease-in-out infinite}   /* "Se ajuste": a faixa pisca (keyframes em telas.css) */
 #mini-t{font-family:var(--display);font-size:1.8rem;line-height:1;font-variant-numeric:tabular-nums}
 #mini-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--t-sm)}
@@ -32,6 +32,6 @@
 .wrap{padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))}   /* espaço para a barra do cronômetro */
 button,a,summary{touch-action:manipulation}
 .salvo{font-size:var(--t-sm);padding:12px 14px;border-radius:12px;border:1px dashed var(--line);color:var(--muted);text-align:center}
-.salvo.ok{border-style:solid;border-color:var(--green);background:var(--green-soft);color:var(--green)}
-.salvo.ok b{color:var(--green)}
-.salvo.erro{border-style:solid;border-color:var(--red);background:var(--red-soft);color:var(--red);font-weight:600}
+.salvo.ok{border-style:solid;border-color:var(--ok);background:var(--ok-soft);color:var(--ok)}
+.salvo.ok b{color:var(--ok)}
+.salvo.erro{border-style:solid;border-color:var(--erro);background:var(--erro-soft);color:var(--erro);font-weight:600}

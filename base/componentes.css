@@ -70,6 +70,9 @@ h1{font-size:var(--t-xl)} h2{font-size:var(--t-lg)}
 .chip{border:1px solid var(--line);border-radius:var(--r-pill);background:transparent;padding:6px 12px;font-size:var(--t-sm);color:var(--fg);font-variant-numeric:tabular-nums}
 .chip[aria-pressed="true"],.chip.ativo{border-color:var(--cor);background:var(--cor-soft);color:var(--cor);font-weight:600}
 .chip.armado{border-color:var(--erro);background:var(--erro);color:var(--bg)}
+/* Selo: estado curto ao lado de um nome (só leitura, não é botão): neutro, feito, ação do módulo, falhou */
+.selo{display:inline-block;padding:2px 8px;border-radius:var(--r-pill);background:var(--line);color:var(--muted);font-size:var(--t-xs);font-weight:600;white-space:nowrap}
+.selo.ok{background:var(--ok-soft);color:var(--ok)} .selo.cor{background:var(--cor-soft);color:var(--cor)} .selo.erro{background:var(--erro-soft);color:var(--erro)}
 .btn{min-height:48px;padding:12px 16px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);font-weight:600}
 .btn.primario{border-color:var(--cor);background:var(--cor);color:var(--on-cor)}
 .mais{display:grid;place-items:center;flex:none;width:48px;height:48px;border:0;border-radius:var(--r);background:var(--cor);color:var(--on-cor);font-size:var(--t-lg);font-weight:700}
@@ -91,6 +94,6 @@ h1{font-size:var(--t-xl)} h2{font-size:var(--t-lg)}
 /* ---------- Avisos ---------- */
 .sync{font-size:var(--t-sm);color:var(--muted);text-align:center;margin-top:var(--e-3)}
 .sync.erro{color:var(--erro)}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:calc(100% - 32px);padding:10px 16px;border:1px solid var(--line);border-radius:var(--r);background:#30353A;box-shadow:0 10px 30px var(--shadow);font-size:var(--t-sm);z-index:10;overflow-wrap:anywhere}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:max-content;max-width:min(520px,calc(100% - 32px));padding:10px 16px;border:1px solid var(--line);border-radius:var(--r);background:#30353A;box-shadow:0 10px 30px var(--shadow);font-size:var(--t-sm);z-index:10;overflow-wrap:anywhere}
 .toast.erro{border-color:var(--erro);color:var(--erro)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}

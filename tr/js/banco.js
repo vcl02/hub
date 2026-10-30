@@ -100,7 +100,7 @@ function pintarSync() {
   const txt = !p ? 'Tudo salvo na nuvem.' : erroSync && !off ? 'Erro ao enviar para a nuvem: ' + erroSync
     : off ? 'Sem internet: salvo no aparelho, envia para a nuvem quando conectar.' : 'Enviando para a nuvem…';
   $('i-sync').hidden = !p || (!erroSync && !off); $('i-sync').textContent = txt;
-  $('i-sync').classList.toggle('err', !!erroSync && !off);
+  $('i-sync').classList.toggle('erro', !!erroSync && !off);
   return txt;
 }
 addEventListener('online', () => enviar());

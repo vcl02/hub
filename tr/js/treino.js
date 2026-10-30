@@ -84,7 +84,7 @@ function pintarResumo() {
   $('f-faltou').hidden = !r.regs.length || !faltou.length;
   $('f-faltou').innerHTML = `Ficou de fora: <b>${faltou.map(esc).join(', ')}</b>.`;
   const rec = recordesAte(dia);
-  $('f-lista').innerHTML = r.regs.map(x => { const v = va.get(x.variacao); return `<li><span class="h-v">${esc(v?.nome || '')}${rec.has(x) ? ' <span class="chip ok">Recorde</span>' : ''}</span><span class="h-d">${v ? registroTxt(x, v).replace(/<\/?b>/g, '') : ''}</span></li>`; }).join('') || '<li class="empty">Nada registrado.</li>';
+  $('f-lista').innerHTML = r.regs.map(x => { const v = va.get(x.variacao); return `<li><span class="h-v">${esc(v?.nome || '')}${rec.has(x) ? ' <span class="selo ok">Recorde</span>' : ''}</span><span class="h-d">${v ? registroTxt(x, v).replace(/<\/?b>/g, '') : ''}</span></li>`; }).join('') || '<li class="empty">Nada registrado.</li>';
   pintarLinhaTreino(t);
   pintarCardioResumo(dia, t);
   diaNaUrl(diaVisto, false);   // o dia do resumo no endereço (só substitui: as telas já usam o histórico do navegador)

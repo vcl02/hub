@@ -9,7 +9,7 @@
 ## Arquitetura
 
 - O Treino mora em `tr/` do repositório `vcl02/hub`, publicado junto com a página inicial do hub e os outros apps (guia geral em `../AGENTS.md`). Dentro de `tr/`, `tr/index.html` é o único documento: cada tela é uma `<section class="view">`. Não crie outras páginas HTML nesta pasta nem introduza framework sem decisão explícita.
-- Os estilos são carregados nesta ordem (cascata): `css/base.css`, `inicio.css`, `telas.css`, `flutuantes.css`, `exercicio.css`, `resumo.css`, `cardio.css`.
+- Os estilos são carregados nesta ordem (cascata): a base comum do hub (`../base/tokens.css`, `../base/componentes.css`; ver `docs/DIRETRIZES.md` da raiz, seção 8), depois `css/base.css`, `inicio.css`, `telas.css`, `flutuantes.css`, `exercicio.css`, `resumo.css`, `cardio.css`.
 - Os scripts clássicos são carregados nesta ordem, depois de `supabase.js` e do módulo do app Corpo (`../corpo/perfil.js`: `PERFIL`, `idadeEm`, `tmb`, `kcalTreino`, `kcalEsteira`, `medidasGuardadas`, `lerMedidas`, `pesoNoDia`; o Treino só lê as pesagens, nunca grava): `config`, `util`, `piramide`, `banco`, `login`, `pontos`, `inicio`, `exercicio`, `treino`, `cardio`, `series`, `interacoes`, `ajustes`, `bootstrap`. Eles compartilham o escopo global: código que roda ao carregar (não dentro de função) só pode usar o que veio de um arquivo anterior. Preserve a responsabilidade de cada módulo, descrita na 1ª linha dele.
 - Arquivo novo em `css/` ou `js/` entra no `index.html` e no `ARQUIVOS_ESTATICOS` do `sw.js`; o teste `tests/estrutura.test.mjs` confere.
 - `supabase.js` é o `@supabase/supabase-js` copiado byte a byte (UMD) para funcionar offline: atualize versão e arquivo juntos, de preferência para uma versão publicada há pelo menos duas semanas.

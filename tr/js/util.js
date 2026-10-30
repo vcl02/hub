@@ -59,9 +59,9 @@ const ICONES = {
 };
 const btIcone = (icone, titulo, attrs, classe = '') => `<button type="button" class="bt-ic ${classe}" ${attrs} title="${titulo}" aria-label="${titulo}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${ICONES[icone]}</svg></button>`;
 function confirmar(btn) {   // toque duplo: o 1º só deixa o botão vermelho (3 s), o 2º confirma. Sem aviso escrito.
-  if (btn.classList.contains('armed')) return true;
-  btn.classList.add('armed');
-  setTimeout(() => btn.classList.remove('armed'), 3000);
+  if (btn.classList.contains('armado')) return true;
+  btn.classList.add('armado');
+  setTimeout(() => btn.classList.remove('armado'), 3000);
   return false;
 }
 
@@ -123,9 +123,9 @@ function grafico(box, P, unidade, rotulo) {   // P = [{ data, valor }] em ordem 
     <line x1="${l}" x2="${W - r}" y1="${y(lo)}" y2="${y(lo)}" stroke="var(--line)" stroke-dasharray="3 3"/>
     <text x="${l - 6}" y="${y(hi) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${fmt(hi)}</text>
     <text x="${l - 6}" y="${y(lo) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${fmt(lo)}</text>
-    <path d="M${x(0)},${H - b} L${pts.join(' L')} L${x(P.length - 1)},${H - b} Z" fill="var(--blue)" fill-opacity=".12"/>
-    <polyline points="${pts.join(' ')}" fill="none" stroke="var(--blue)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-    <circle cx="${x(P.length - 1)}" cy="${y(fim.valor)}" r="4.5" fill="var(--blue)"/>
+    <path d="M${x(0)},${H - b} L${pts.join(' L')} L${x(P.length - 1)},${H - b} Z" fill="var(--cor)" fill-opacity=".12"/>
+    <polyline points="${pts.join(' ')}" fill="none" stroke="var(--cor)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${x(P.length - 1)}" cy="${y(fim.valor)}" r="4.5" fill="var(--cor)"/>
     <text x="${l}" y="${H - 5}" font-size="11" fill="var(--muted)">${dataCurta(P[0].data)}</text>
     <text x="${W - r}" y="${H - 5}" text-anchor="end" font-size="11" fill="var(--muted)">${dataCurta(fim.data)} · ${fmt(fim.valor)} ${esc(unidade)}</text>
   </svg>`;

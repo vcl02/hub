@@ -55,7 +55,7 @@ telas.exercicio = () => {
   $('e-foto-rm').hidden = !store.get('carga.foto.' + v.id);
   const fl = falhas(v.id);   // onde você vem falhando: ✗ nas séries e quantos dos últimos treinos
   $('e-ultima').innerHTML = u
-    ? `<span>Última vez: ${registroTxt(u, v)} · <i>${quando(u.data)}</i></span>${completo(u, e) ? (semPeso(v) ? '<span class="chip ok">✓ Bateu a meta</span>' : '<span class="chip acao">↑ Completou: suba a carga</span>') : ''}${fl.treinos ? `<span class="chip falha">✗ Falhou em ${fl.treinos} de ${fl.de} · ${fl.series.length === 1 ? 'série' : 'séries'} ${fl.series.join(', ')}</span>` : ''}`
+    ? `<span>Última vez: ${registroTxt(u, v)} · <i>${quando(u.data)}</i></span>${completo(u, e) ? (semPeso(v) ? '<span class="selo ok">✓ Bateu a meta</span>' : '<span class="selo cor">↑ Completou: suba a carga</span>') : ''}${fl.treinos ? `<span class="selo erro">✗ Falhou em ${fl.treinos} de ${fl.de} · ${fl.series.length === 1 ? 'série' : 'séries'} ${fl.series.join(', ')}</span>` : ''}`
     : '';
   const rs = rascunho[v.id];   // valor digitado e ainda não salvo tem prioridade
   $('e-carga').value = rs ? rs.carga : u ? virgula(u.series[0].kg) : '';

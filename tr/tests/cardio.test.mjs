@@ -20,7 +20,7 @@ test('cardio depois do treino: ajusta, conta para trás, pausa, +5 min e grava n
   await treinarEFinalizar(pg);
   const bt = pg.locator('#f-cardio [data-ir="cardio"]');
   assert.equal(await bt.textContent(), 'Cardio na esteira');
-  assert.match(await bt.getAttribute('class'), /primary/);                                   // segunda: em destaque
+  assert.match(await bt.getAttribute('class'), /primario/);                                   // segunda: em destaque
   await bt.click();
   assert.equal(await pg.textContent('#cd-relogio'), '20:00');                                 // sem cardio anterior: 20 min, 6 km/h, plano
   assert.deepEqual(await pg.locator('.cd-aj b').allTextContents(), ['20min', '6km/h', '0%']);
@@ -71,7 +71,7 @@ test('cardio depois do treino: ajusta, conta para trás, pausa, +5 min e grava n
 test('cardio continua com o app fechado e, se acabou nesse meio-tempo, grava ao abrir', async () => {
   const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-21T19:00:00') });   // quarta
   await treinarEFinalizar(pg);
-  assert.doesNotMatch(await pg.getAttribute('#f-cardio [data-ir="cardio"]', 'class'), /primary/);   // fora da segunda, sem destaque
+  assert.doesNotMatch(await pg.getAttribute('#f-cardio [data-ir="cardio"]', 'class'), /primario/);   // fora da segunda, sem destaque
   await pg.click('#f-cardio [data-ir="cardio"]'); await pg.click('#cd-comecar');            // 20 min
   await pg.clock.fastForward('05:00');
   await pg.reload(); await pg.waitForSelector('#v-inicio:not([hidden])');
