@@ -65,3 +65,62 @@ test('compra parcelada: as 12 parcelas gravam num pedido só, com o mesmo númer
     assert.deepEqual(erros, []);
     await ctx.close();
 });
+
+test('Data na própria célula: digitar o dia "19" grava 19 (não 1), uma vez só', async () => {
+    const { ctx, pg, erros, dados, escritas } = await abrirFin();
+    await pg.click(`${linha(2)} [data-tog-data]`);
+    const campo = `${linha(2)} input[type=date]`;
+    await pg.waitForSelector(campo);
+    // O que o campo de data faz ao digitar "1" e "9" no dia: com o "1", a data já é válida e ele dispara change (01/10);
+    // com o "9", input e change de novo (19/10). A ordem dos segmentos depende do idioma do navegador, então os eventos
+    // vão direto, os mesmos e na mesma ordem.
+    const digitar = (valor, ...eventos) => pg.$eval(campo, (i, [v, ev]) => { i.value = v; ev.forEach(e => i.dispatchEvent(new Event(e, { bubbles: true }))); }, [valor, eventos]);
+    await digitar('2026-10-01', 'input', 'change');
+    await new Promise(ok => setTimeout(ok, 100));
+    await digitar('2026-10-19', 'input', 'change');
+    await pg.waitForFunction(() => document.querySelector('#out tr[data-sid="2"]')?.textContent.includes('19/10/2026'));
+    await new Promise(ok => setTimeout(ok, 600));                               // passou a espera de 450 ms: só um pedido
+    assert.deepEqual(escritas, [['PATCH', 'fin']]);
+    assert.equal(dados.fin.find(l => l.id === '2').data, '2026-10-19');
+    assert.deepEqual(erros, []);
+    await ctx.close();
+});
+
+test('Excluir com várias linhas marcadas: apaga todas as reais (uma confirmação) e ignora a sintética marcada junto', async () => {
+    const { ctx, pg, erros, dados, escritas } = await abrirFin();
+    const dialogos = [];
+    pg.on('dialog', d => { dialogos.push(d.message()); d.accept(); });
+    const sintetica = await pg.$$eval('#out tbody tr[data-sid]', L => L.find(tr => /Saldo do mês anterior/.test(tr.textContent))?.dataset.sid);
+    for (const sid of ['1', '2', sintetica].filter(Boolean)) await pg.click(`${linha(sid)} td:last-child`);
+    await pg.waitForSelector('#seldel', { state: 'visible' });
+    await pg.click('#seldel');
+    await pg.waitForFunction(() => !/Mercado|Salário/.test(document.getElementById('out').textContent));
+    assert.equal(dialogos.length, 1);
+    assert.match(dialogos[0], /2 lançamentos/);
+    assert.deepEqual(escritas.filter(([m]) => m === 'DELETE').length, 2);
+    assert.deepEqual(dados.fin.map(l => l.nome), ['Aluguel']);
+    assert.deepEqual(erros, []);
+    await ctx.close();
+});
+
+test('comparar dois ciclos: as colunas dizem onde acabou e onde começou; o botão Todas/Diferentes só liga com 2 ciclos e filtra', async () => {
+    const { ctx, pg, erros } = await abrirFin();
+    assert.equal(await pg.isDisabled('#btSomenteDif'), true);                    // sem comparar: desativado
+    const valor = nome => pg.$$eval('#compDe option', (L, n) => L.find(o => o.text.startsWith(n))?.value, nome);
+    await pg.selectOption('#compDe', await valor('Set')); await pg.selectOption('#compAte', await valor('Out'));
+    await pg.waitForFunction(() => !document.getElementById('btSomenteDif').disabled);
+    const categorias = async () => +(await textoDaTabela(pg)).match(/(\d+) Categorias/)[1];
+    const t = await textoDaTabela(pg);
+    assert.match(t, /Acabou em Setembro/); assert.match(t, /Começou em Outubro/);
+    const todas = await categorias();
+    assert.ok(todas >= 3, `categorias: ${todas}`);
+    await pg.click('#btSomenteDif');
+    assert.equal(await pg.getAttribute('#btSomenteDif', 'aria-pressed'), 'true');
+    assert.ok(await categorias() < todas);                                       // Diferentes: menos linhas
+    await pg.click('#btSomenteDif');
+    assert.equal(await categorias(), todas);                                      // Todas de novo
+    await pg.selectOption('#compAte', '');                                        // um ciclo só: desativa
+    await pg.waitForFunction(() => document.getElementById('btSomenteDif').disabled);
+    assert.deepEqual(erros, []);
+    await ctx.close();
+});

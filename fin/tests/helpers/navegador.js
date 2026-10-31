@@ -74,7 +74,7 @@ const dadosDeExemplo = () => ({
 
 // celular: viewport de 390 × 844 com toque (gestos); sem ele, a mesma largura sem toque
 async function abrirFin(busca = '', dados = dadosDeExemplo(), atraso = 0, { celular = false } = {}) {
-    const ctx = await navegador.newContext({ serviceWorkers: 'block', viewport: { width: 390, height: 844 }, ...(celular && { isMobile: true, hasTouch: true }) });
+    const ctx = await navegador.newContext({ serviceWorkers: 'block', locale: 'pt-BR', timezoneId: 'America/Sao_Paulo', viewport: { width: 390, height: 844 }, ...(celular && { isMobile: true, hasTouch: true }) });
     await ctx.route(u => !u.href.startsWith(base), r => r.abort());
     await falso.fakeSupabase(ctx, falso.novaNuvem());
     const supabaseLocal = fs.readFileSync(path.join(HUB, 'supabase.js'));

@@ -188,51 +188,22 @@ test('indicadores financeiros ficam no cabeçalho, entre a navegação e os bot�
     assert.doesNotMatch(interacoes, /mostraComFade\('(fgraf|fevol|fReserva)'/);
 });
 
-test('edição inline de data no desktop não confirma a cada dígito antes do segundo dígito do segmento', () => {
-    // input type=date dispara 'change' assim que o valor fica completo, mesmo com um só
-    // dígito do dia (ambíguo: "1" já é valor válido antes do "9" de "19" chegar). O
-    // commit precisa esperar um instante e ser cancelado se outro 'input' chegar logo
-    // depois, senão "19" vira "1" sem esperar Enter.
-    assert.match(interacoes, /input\.addEventListener\('input', \(\) => clearTimeout\(timerConfirma\)\);/);
-    assert.match(interacoes, /input\.addEventListener\('change', \(\) => \{\s*clearTimeout\(timerConfirma\);\s*timerConfirma = setTimeout\(confirma, 450\);\s*\}\);/);
-    assert.match(interacoes, /ev\.key == 'Enter'.*clearTimeout\(timerConfirma\); confirma\(\);/);
-});
-
 test('edição inline de data não apaga a data ao perder o foco com dígito incompleto', () => {
+    // Fica conferido no código: no navegador do teste, o Chromium completa sozinho o segmento incompleto ("0" vira "01")
+    // depois de ~1 s e dispara change, então o caso não se reproduz na tela de forma confiável (e não se sabe se o Chrome
+    // do celular ou do computador faz igual). O "19 não vira 1" está na tela em navegador-linhas.test.js.
     // "0" sozinho no dia nao e' um dia valido: o navegador marca badInput e deixa
     // input.value vazio, igual a quando a data e' apagada de proposito. Sem essa checagem,
     // perder o foco no meio da digitacao mandaria o lancamento pro Backlog sem querer.
     assert.match(interacoes, /if \(input\.validity && input\.validity\.badInput\) \{ desenhar\(\); return; \}/);
 });
 
-test('botão Excluir aceita várias linhas reais selecionadas, ignorando sintéticas misturadas', () => {
-    // Antes só existia excluir UMA linha ([...Estado.selecionados.keys()][0]); agora o botão
-    // fica visível com qualquer quantidade de linhas reais marcadas, e linhas sintéticas (ex.:
-    // Saldo do mês anterior) na mesma seleção são ignoradas, pois não existem no banco.
-    assert.match(interacoes, /const chavesReaisSelecionadas = chaves\.filter\(c => !ehSintetica\(c\)\);/);
-    assert.match(interacoes, /el\('seldel'\)\.hidden = !chavesReaisSelecionadas\.length;/);
-    assert.doesNotMatch(formulario, /const chave = \[\.\.\.Estado\.selecionados\.keys\(\)\]\[0\];\s*\n\s*const i = Estado\.lancamentos\.findIndex\(x => String\(x\.id\) == chave\);\s*\n\s*if \(i < 0\) return;/);
-    assert.match(formulario, /const linhas = \[\.\.\.Estado\.selecionados\.keys\(\)\]/);
-    assert.match(formulario, /for \(const r of linhas\) \{/);
-    assert.match(formulario, /lista = linhas\.map\(r => `- \$\{r\.nome \?\? ''\}/);
+test('Excluir com várias linhas marcadas (regra documentada; na tela em navegador-linhas.test.js)', () => {
     assert.match(regras, /o botão Excluir da barra de seleção aceita quantas linhas reais estiverem marcadas/);
 });
 
-test('comparar mantém apenas todas ou diferentes confirmados sem recorrência duplicada', () => {
-    assert.match(pagina, /id=somenteDif>[\s\S]*?<option value=N>Todas[\s\S]*?<option value=D>Diferentes/);
-    // O select virou estado interno; o controle visível é o ícone depois de Visualizações.
-    assert.match(pagina, /<label class=f id=fdif hidden>/);
-    const nav = pagina.slice(pagina.indexOf('<div class=acoesCabecalho>'), pagina.indexOf('id=toggleSimulacao'));
-    assert.ok(nav.indexOf('id=btSomenteDif') < nav.indexOf('id=btGrafico'));
-    assert.match(nav, /<button type=button id=btSomenteDif class=btIcone title="Mostrar só as linhas diferentes"\s*\n\s*aria-label="Mostrar só as linhas diferentes" aria-pressed=false disabled>/);
-    // Sempre visível: nada de classe que esconda o botão fora da comparação.
-    assert.doesNotMatch(fs.readFileSync('css/dashboard.css', 'utf8'), /\.btIcone\.reservado/);
-    assert.doesNotMatch(pagina, /<option value=S>Diferentes/);
-    assert.doesNotMatch(pagina, /Diferentes \(ignorar repetidas\)/);
-    assert.match(visoes, /const somenteDif = comparacao2Periodos && modoLinhas == 'D';/);
-    assert.match(visoes, /Acabou em \$\{nomeMes1\}/);
-    assert.match(visoes, /Começou em \$\{nomeMes2\}/);
-    assert.match(visoes, /Único em \$\{nomeMes2\}/);
+test('comparar: Todas ou Diferentes entre dois ciclos (regra documentada; na tela em navegador-linhas.test.js)', () => {
+    assert.match(pagina, /id=somenteDif>[\s\S]*?<option value=N>Todas[\s\S]*?<option value=D>Diferentes/);   // o estado do filtro
     assert.match(regras, /dois ciclos seguintes/);
 });
 
