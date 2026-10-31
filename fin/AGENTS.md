@@ -49,6 +49,7 @@ Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para
 5. Depois de os testes passarem, faça commit e push para `origin/main` do `vcl02/hub` por padrão, salvo pedido contrário do usuário. Nunca inclua alterações alheias no commit.
 6. Trabalhe sempre no checkout principal, direto na branch `main`: este é um projeto pessoal, sem fluxo de PR. Nunca crie git worktree, branch auxiliar nem peça revisão antes de puxar pra `main` — pedido explícito do mantenedor.
 - **Sem prints de tela:** não tire nem abra capturas de tela (screenshot) para conferir visual, a pedido do mantenedor (gastam muito do limite de uso). Confira pelos testes e por medidas no navegador (posição, tamanho, texto, classes) e diga o que não foi visto.
+- **Testes: função primeiro, tela pouco, regex quase nunca:** 1) a função do código rodando (sem navegador); 2) Playwright só em poucos casos estratégicos; nunca regex no código, só onde o objeto é texto (SQL, docs, configuração, segredos). Detalhes e exceções em `../docs/DIRETRIZES.md`, seção 3.
 
 ## Preferências do mantenedor
 
