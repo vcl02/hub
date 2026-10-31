@@ -1,5 +1,6 @@
 // Modal de um cartão (botões Nubank/Mercado Pago do cabeçalho): roda o htmlModalCartao real
-// de js/cycle-views.js sobre os dados que vCiclo guarda em Estado.cartoesDoCiclo.
+// de js/cycle-views.js sobre os dados que vCiclo guarda em Estado.cartoesDoCiclo. O comportamento na tela (botão desativado
+// sem dados, foco, fechar tocando fora, ← → e arrastar, Aprovado gravado no ciclo) está em navegador-cartao.test.js.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
@@ -65,14 +66,10 @@ test('limite com Aprovado editável e sem Garantido no Mercado Pago', () => {
 test('modal limpo: sem lista de compras e sem botão de fechar', () => {
     const html = carrega()(dados, 'mp');
     assert.doesNotMatch(html, /cartaoCompras|Compras da fatura|<summary>/);
-    assert.doesNotMatch(pagina, /id=fechaCartao/);
     // Sem o ×, o 1º foco seria o campo Aprovado (teclado no celular, Esc só desfaria o campo).
     assert.match(pagina, /<dialog id=modalCartao tabindex=-1>/);
-    assert.match(interacoes, /el\('modalCartao'\)\.showModal\(\);\s*\n(\s*\/\/.*\n)*\s*el\('modalCartao'\)\.focus\(\);/);
-    assert.doesNotMatch(interacoes, /fechaCartao/);
     assert.doesNotMatch(fs.readFileSync('css/forms.css', 'utf8'), /fechaCartao|cartaoCompras|#modalCartao \.modalHead/);
     // Continua fechando com Esc (nativo do <dialog>) e com o clique fora do cartão.
-    assert.match(interacoes, /if \(e\.target == el\('modalCartao'\) && Date\.now\(\) - ultimoArrasteCartao > 300\) el\('modalCartao'\)\.close\(\);/);
     assert.match(regras, /sem botão de fechar: o cartão começa no topo do modal, que fecha com Esc ou tocando fora dele/);
     assert.match(regras, /a lista de compras não entra no modal, elas ficam só na tabela Crédito/);
 });
@@ -93,7 +90,6 @@ test('botões no cabeçalho, desativados sem dados; modal refeito a cada desenho
     assert.match(pagina, /<dialog id=modalCartao tabindex=-1>/);
     // Sem título visível: o nome do cartão fica só pra leitor de tela.
     assert.match(pagina, /<h2 id=tituloCartao class=srOnly>Cartão<\/h2>/);
-    assert.match(interacoes, /el\(id\)\.disabled = !Estado\.cartoesDoCiclo\?\.cartoes\?\.\[cartao\];/);
     assert.match(interacoes, /if \(el\('modalCartao'\)\.open\) preencherModalCartao\(\);/);
     assert.match(interacoes, /Estado\.cartoesDoCiclo = null;/);
     assert.match(interacoes, /alinharResumosDosTitulos\(\);\s*\n\s*atualizarCartoes\(\);/);
@@ -178,13 +174,7 @@ test('deslizar anda um ciclo pelo navegaCiclo, nunca para o Backlog nem além do
 });
 
 test('gestos: arrasto (toque/mouse), trackpad e setas; arrasto não fecha o modal', () => {
-    assert.match(interacoes, /const DISTANCIA_MINIMA_DESLIZE = 50;/);
-    assert.match(interacoes, /Math\.abs\(dx\) >= DISTANCIA_MINIMA_DESLIZE && Math\.abs\(dx\) > Math\.abs\(dy\) \* 1\.5/);
-    assert.match(interacoes, /deslizarFatura\(dx < 0 \? 1 : -1\);/);
-    assert.match(interacoes, /if \(e\.pointerType == 'mouse' && !e\.target\.closest\('\.cartaoArte'\)\) return;/);
     assert.match(interacoes, /addEventListener\('wheel', e => \{[\s\S]*?deslizarFatura\(rolagemHorizontal > 0 \? 1 : -1\);[\s\S]*?\}, \{ passive: false \}\);/);
-    assert.match(interacoes, /e\.key == 'ArrowRight' \|\| e\.key == 'ArrowLeft'/);
-    assert.match(interacoes, /Date\.now\(\) - ultimoArrasteCartao > 300\) el\('modalCartao'\)\.close\(\);/);
     const formularios = fs.readFileSync('css/forms.css', 'utf8');
     assert.match(formularios, /#modalCartao \{\s*\n\s*touch-action: pan-y;/);
     assert.match(formularios, /@media \(prefers-reduced-motion: reduce\)/);

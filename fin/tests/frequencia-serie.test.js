@@ -1,7 +1,8 @@
 // Regressão: Frequência no cadastro gera a série da 1ª ocorrência até 31/12/2032 (Vezes
 // fica desativado mostrando a contagem) e, no Crédito, só pede a 1ª fatura — as seguintes
 // avançam mês a mês a partir dela. Sem Frequência, Vezes volta a ser editável e cada
-// parcela escolhe sua fatura.
+// parcela escolhe sua fatura. Na tela (Vezes desativado e só a 1ª fatura, data exigida, a série até dez/2032 e o cadastro
+// voltando ao normal): navegador-marcas.test.js.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
@@ -68,10 +69,6 @@ test('Frequência vem antes de Vezes; a regra fica só num hover do rótulo, sem
 });
 
 test('com Frequência, Vezes fica desativado e só existe o seletor da 1ª fatura; Vezes não muda mais a Frequência', () => {
-    assert.match(formulario, /el\('parcelasLinha'\)\.hidden = !!modalNovo\.dataset\.editandoId;/);
-    assert.match(formulario, /if \(vezes\.disabled !== !!freq\) \{\s*\n\s*vezes\.disabled = !!freq;\s*\n\s*animaTrocaDeEstado\(vezes\);/);
-    assert.match(formulario, /const parcelas = freq \? 1 : \(\+el\('fParcelas'\)\.value \|\| 1\);/);
-    assert.match(formulario, /const tituloPrincipal = freq \? '1ª fatura' :/);
     assert.doesNotMatch(formulario, /el\('fFreq'\)\.value = 'Mensal'/);
     // Duplicar/Editar herdam a Frequência: a abertura do modal reflete isso no Vezes e nas
     // faturas, sem congelar a sugestão automática como se fosse escolha manual.
@@ -79,11 +76,7 @@ test('com Frequência, Vezes fica desativado e só existe o seletor da 1ª fatur
 });
 
 test('ao salvar com Frequência: exige data, conta a série até o limite e expande a 1ª fatura', () => {
-    assert.match(formulario, /if \(freq && !data\) \{\s*\n\s*el\('erroNovo'\)\.textContent = 'Escolha a data da 1ª ocorrência\.';/);
-    assert.match(formulario, /const parcelas = freq \? ocorrenciasAteLimite\(data, freq, DATA_LIMITE_RECORRENCIA\)\s*\n\s*: valorTotal \? \+el\('fParcelas'\)\.value : 1;/);
     assert.match(formulario, /const valores = !valorTotal \? Array\(freq \? parcelas : 1\)\.fill\(null\)/);
-    assert.match(formulario, /const faturasEsperadas = freq \? 1 : parcelas;/);
-    assert.match(formulario, /faturaDaOcorrencia\(faturaIds\[0\], data, dataDaOcorrencia\(data, p, freq\)\)\)/);
     assert.match(formulario, /salvaLancamentoParceladoNoBanco\(\{[^}]*faturaIds: faturasDaSerie \}\);/);
 });
 
@@ -110,7 +103,6 @@ test('Frequência é um campo comum; Vezes e Dividir ficam numa linha fixa logo 
 });
 
 test('depois de salvar, a Frequência volta a "sem recorrência" e Vezes volta a ser editável', () => {
-    assert.match(formulario, /el\('fData'\)\.value = hojeISO\(\);\s*\n(\s*\/\/.*\n)*\s*el\('fFreq'\)\.value = '';\s*\n\s*atualizaModoFrequencia\(\);\s*\n\s*atualizarFaturasDoFormulario\(idsFaturasDoFormulario\(false\)\);/);
     assert.match(regras, /Depois de salvar, a Frequência volta a "sem recorrência" \(e Vezes volta a ser editável, com o valor que tinha antes da Frequência\)/);
     assert.match(regras, /abre marcado no Crédito, desmarcado no Débito, sempre alternável/);
 });

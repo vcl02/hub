@@ -4,7 +4,7 @@
 // confirmação e Comprar abre o cadastro da compra e, ao salvar, marca a meta como comprada.
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const { prepararNavegador, abrirFin, dadosDeExemplo } = require('./helpers/navegador');
+const { prepararNavegador, abrirFin, dadosDeExemplo, esperar } = require('./helpers/navegador');
 
 prepararNavegador();
 
@@ -29,20 +29,23 @@ const campo = c => `#corpoMetas [data-meta="7"] [data-campo="${c}"]`;
 const mudar = (pg, c, valor) => pg.$eval(campo(c), (i, v) => { i.value = v; i.dispatchEvent(new Event('change', { bubbles: true })); }, valor);
 // Depois de gravar, o Fin recarrega em segundo plano e redesenha o modal: o próximo passo espera isso acabar
 const patches = (escritas) => escritas.filter(([m, t]) => m === 'PATCH' && t === 'fin_meta').length;
+// Espera a gravação chegar ao banco falso (o Fin pede o token antes de mandar) e a recarga em segundo plano terminar
+async function gravou(escritas, ocioso, n) {
+    for (let i = 0; i < 100 && patches(escritas) < n; i++) await new Promise(ok => setTimeout(ok, 50));
+    await ocioso();
+}
 
 test('campos da meta: cada mudança grava; o mês com o ano pela metade não grava; valor inválido avisa e não grava', async () => {
-    const { ctx, pg, erros, dados, escritas } = await abrirMetas();
-    await mudar(pg, 'nome', 'Mesa de jantar');
-    await pg.waitForFunction(() => document.querySelector('#corpoMetas [data-meta="7"] [data-campo="nome"]')?.value === 'Mesa de jantar');
+    const { ctx, pg, erros, dados, escritas, ocioso } = await abrirMetas();
+    await mudar(pg, 'nome', 'Mesa de jantar'); await gravou(escritas, ocioso, 1);
     assert.equal(dados.fin_meta[0].nome, 'Mesa de jantar');
-    await mudar(pg, 'mes', '0202-01');                                           // o navegador manda o ano a cada dígito
-    await new Promise(ok => setTimeout(ok, 300));
+    await mudar(pg, 'mes', '0202-01'); await new Promise(ok => setTimeout(ok, 300)); await ocioso();   // o navegador manda o ano a cada dígito
     assert.equal(patches(escritas), 1);
-    await mudar(pg, 'mes', '2027-01');
-    await pg.waitForFunction(() => document.querySelector('#corpoMetas [data-meta="7"] [data-campo="mes"]')?.value === '2027-01');
+    await mudar(pg, 'mes', '2027-01'); await gravou(escritas, ocioso, 2);
     assert.equal(dados.fin_meta[0].mes, '2027-01-01');
     await mudar(pg, 'valor', '0,00');                                            // valor total zero não vale
-    await pg.waitForFunction(() => /Valor inválido/.test(document.getElementById('toasts').textContent));
+    await pg.waitForFunction(() => [...document.querySelectorAll('#toasts .toast strong')].some(t => t.textContent === 'Valor inválido'));
+    await ocioso();
     assert.equal(dados.fin_meta[0].valor, 1500);
     assert.equal(patches(escritas), 2);
     assert.deepEqual(erros, []);
@@ -55,10 +58,13 @@ test('parcelado: Vezes mostra até quando vão as parcelas enquanto digita; entr
     const antes = await pg.textContent(fim);
     await pg.fill(campo('parcelas'), '20');
     await pg.waitForFunction(([s, a]) => document.querySelector(s).textContent !== a, [fim, antes]);
-    assert.equal(patches(escritas), 0);
+    assert.equal(patches(escritas), 0);                                          // digitando, ainda não grava
+    await pg.press(campo('parcelas'), 'Tab');                                    // saiu do campo: grava
+    await gravou(escritas, ocioso, 1);
+    assert.equal(dados.fin_meta[0].parcelas, 20);
     await mudar(pg, 'entrada', '1.000,00');
+    await gravou(escritas, ocioso, 2);
     await pg.waitForFunction(() => document.querySelector('#corpoMetas [data-meta="7"] [data-campo="mes_entrada"]'));
-    await ocioso();
     assert.deepEqual([dados.fin_meta[0].entrada, dados.fin_meta[0].meses_ate_parcela], [1000, 1]);   // 1 mês antes da 1ª parcela
     const n = patches(escritas);
     await mudar(pg, 'mes_entrada', '2027-03');                                   // depois de novembro/2026: não vale
@@ -124,7 +130,7 @@ test('meta que não cabe: diz que não cabe; Mínimo usa as vezes que cabem; as 
     assert.deepEqual(await pg.$$eval(`${campo('forma')} option`, L => L.map(o => o.textContent.trim())), ['À vista', 'Parcelado Crédito', 'Parcelado Débito']);
     const minimo = await pg.getAttribute('#corpoMetas [data-acao=usarVezes]', 'data-vezes');
     await pg.click('#corpoMetas [data-acao=usarVezes]');
-    await ocioso();
+    await esperar(() => dados.fin_meta[0].parcelas !== 3); await ocioso();
     assert.equal(dados.fin_meta[0].parcelas, +minimo);
     assert.deepEqual(erros, []);
     await ctx.close();
@@ -135,7 +141,7 @@ test('meta que não cabe: "Cabe começando em …" muda o mês da meta para o qu
     const mes = await pg.getAttribute('#corpoMetas [data-acao=usarMes]', 'data-mes');
     assert.ok(mes > '2026-12-01', mes);
     await pg.click('#corpoMetas [data-acao=usarMes]');
-    await ocioso();
+    await esperar(() => dados.fin_meta[0].mes !== '2026-12-01'); await ocioso();
     assert.equal(dados.fin_meta[0].mes, mes);
     assert.deepEqual(erros, []);
     await ctx.close();

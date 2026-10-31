@@ -103,4 +103,13 @@ async function abrirFin(busca = '', dados = dadosDeExemplo(), atraso = 0, { celu
 }
 const textoDaTabela = pg => pg.$eval('#out', el => el.textContent.replace(/\s+/g, ' '));
 
-module.exports = { HOJE, prepararNavegador, abrirFin, dadosDeExemplo, textoDaTabela };
+// Espera uma condição do lado do teste (ex.: o dado chegar ao banco falso): o Fin pede o token antes de gravar, então a
+// rede pode parecer quieta por um instante antes do pedido sair
+async function esperar(condicao, ms = 5000) {
+    for (const fim = Date.now() + ms; !condicao();) {
+        if (Date.now() > fim) throw Error('esperar: a condição não aconteceu em ' + ms + ' ms');
+        await new Promise(ok => setTimeout(ok, 50));
+    }
+}
+
+module.exports = { HOJE, prepararNavegador, abrirFin, dadosDeExemplo, textoDaTabela, esperar };
