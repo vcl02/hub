@@ -1,42 +1,20 @@
 // Regressão do botão "Consolidar tudo": repete materializar/consolidar ciclo a ciclo sem
-// abrir um por um, reaproveitando a mesma regra de aporte/resgate já usada na linha única.
+// abrir um por um, reaproveitando a mesma regra de aporte/resgate já usada na linha única. O caminho na tela (Recarregar
+// consolida do ciclo de hoje ao último com lançamento, resumo ciclo a ciclo, não duplica, sem rede não consolida) está em
+// navegador-consolidar.test.js; aqui, as regras rodando no código e a documentação.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
 
-const pagina = fs.readFileSync('index.html', 'utf8');
 const formulario = fs.readFileSync('js/form.js', 'utf8');
-const financeiro = fs.readFileSync('js/finance.js', 'utf8');
-const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const estilosMobile = fs.readFileSync('css/mobile.css', 'utf8');
 const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 
 test('Consolidar tudo não tem botão próprio: roda no clique do Recarregar', () => {
-    assert.doesNotMatch(pagina, /btConsolidarTudo/);
     assert.match(fs.readFileSync('js/bootstrap.js', 'utf8'), /await consolidarTudo\(bt, voltarAoCicloAtualELimpar\);/);
     // .tool tem paridade total com o desktop: fica sempre visível, em qualquer largura —
     // sem regra própria escondendo este botão no mobile.
-    assert.doesNotMatch(estilosMobile, /\.tool\s*\{\s*display:\s*none;/);
-});
-
-test('materializar/consolidar foi extraído pra uma função única, reaproveitada pelas duas ações', () => {
-    assert.match(formulario, /async function materializaOuConsolidaAjuste\(idx, ehAporte, categ, valorAjuste\)/);
-    assert.match(formulario, /await materializaOuConsolidaAjuste\(indiceDoAjuste\(chave\), ehAporte, ajuste\.categ, valorAjuste\);/);
-    assert.match(formulario, /const ehAporte = ajuste\.tipo == 'aporte';\s*\n\s*const resultado = await materializaOuConsolidaAjuste\(idx, ehAporte, ajuste\.categ, ajuste\.v\);/);
-    // a função usa o fim do próprio ciclo (Estado.ciclos[idx].fat), não mais ajuste.data de
-    // uma linha renderizada — ela tem que funcionar pra ciclo nenhum estar na tela.
-    assert.match(formulario, /const data = dataDeFechamentoDoCiclo\(Estado\.ciclos\[idx\]\) \|\| null;/);
-});
-
-test('consolidar tudo varre do ciclo atual até o último com lançamento, nunca o passado', () => {
-    assert.match(formulario, /async function consolidarTudo\(botao, depoisDaCarga = \(\) => \{\}, \{ silencioso = false \} = \{\}\) \{\s*\n\s*if \(botao\.disabled\) return;[\s\S]*?Estado\.gravandoAjuste = true;\s*\n\s*Estado\.ultimaConsolidacao = Date\.now\(\);/);
-    // Hoje fora de qualquer ciclo: não varre nada (checado depois da recarga, que pode mudar o dia).
-    assert.match(formulario, /\/\/ Hoje fora de qualquer ciclo: não há de onde partir a varredura\.\s*\n\s*if \(Estado\.idxHoje < 0\) return;/);
-    assert.match(formulario, /const ultimoCicloAntesDaCorrecao = Estado\.lancamentos\.reduce\(\s*\(max, r\) => r\.periodoIdx != null && r\.periodoIdx > max \? r\.periodoIdx : max,\s*Estado\.idxHoje\s*\);/);
-    assert.match(formulario, /const ultimoCicloComDados = Estado\.lancamentos\.reduce\(\s*\(max, r\) => r\.periodoIdx != null && r\.periodoIdx > max \? r\.periodoIdx : max,\s*ultimoCicloAntesDaCorrecao\s*\);/);
-    assert.match(formulario, /for \(let idx = Estado\.idxHoje; idx <= ultimoCicloComDados; idx\+\+\) \{/);
-    assert.match(formulario, /const ajuste = ajusteDoCiclo\(idx\);\s*\n\s*if \(!ajuste\) continue;/);
 });
 
 test('botão fica desabilitado e com texto "Consolidando…" durante a varredura, bloqueando clique duplo', () => {
@@ -75,21 +53,6 @@ test('consolidar tudo corrige recorrências duplicadas ANTES de materializar/con
     assert.match(formulario, /return \{ corrigidos, log \};/);
 });
 
-test('cada ciclo limpa os caches financeiros antes do próximo, pois o guardado disponível muda', () => {
-    assert.match(formulario, /const resultado = await materializaOuConsolidaAjuste\(idx, ehAporte, ajuste\.categ, ajuste\.v\);/);
-    assert.match(formulario, /if \(resultado == 'consolidado'\) consolidados\+\+; else materializados\+\+;/);
-    assert.match(formulario, /logAjustes\.push\(`[\s\S]*?`\);\s*\n\s*limparCachesFinanceiros\(\);/);
-    assert.match(financeiro, /function limparCachesFinanceiros\(\) \{/);
-    assert.match(financeiro, /Object\.keys\(_cacheSaldo\)\.forEach\(k => delete _cacheSaldo\[k\]\);/);
-    assert.match(financeiro, /_baseFiltrada = _abatFiltrada = null;/);
-    // desenhar() passou a reaproveitar a mesma função, em vez de repetir as 5 linhas.
-    assert.match(interacoes, /function desenhar\(\) \{\s*Estado\.redesenhoPendente = false;[^\n]*\n\s*limparCachesFinanceiros\(\);/);
-});
-
-test('núcleo retorna consolidado/materializado pro resumo contar cada tipo separadamente', () => {
-    assert.match(formulario, /return existente \? 'consolidado' : 'materializado';/);
-});
-
 test('conclusão sempre aparece em toast, juntando materialização/consolidação e correção de datas num só resumo', () => {
     const inicio = formulario.indexOf("async function consolidarTudo(botao, depoisDaCarga = () => {}, { silencioso = false } = {}) {");
     const trecho = formulario.slice(inicio, formulario.indexOf('\n}\n', inicio) + 3);
@@ -109,10 +72,6 @@ test('também abre um modal com o detalhe ciclo a ciclo — resposta direta ao c
     // Só abre quando algo foi gravado; sem nada a fazer, fica só o toast.
     assert.match(trecho, /if \(partes\.length\) mostrarResultadoConsolidarTudo\(resumo, \[\.\.\.logPraSempre, \.\.\.logDatas, \.\.\.logAjustes\]\);/);
     assert.equal((trecho.match(/mostrarResultadoConsolidarTudo\(/g) || []).length, 1);
-
-    assert.match(pagina, /<dialog id=modalConsolidarTudo>/);
-    assert.match(pagina, /<p class=meta id=textoConsolidarTudo><\/p>/);
-    assert.match(pagina, /<ul class=listaDiagnostico id=listaConsolidarTudo><\/ul>/);
 
     const dadosUi = fs.readFileSync('js/data-ui.js', 'utf8');
     assert.match(dadosUi, /function mostrarResultadoConsolidarTudo\(resumo, log\) \{/);

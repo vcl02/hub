@@ -48,7 +48,8 @@ function tabelasDoFin(dados, atraso = 0) {
         if (u.pathname.endsWith('/rpc/proxima_recorrencia')) return json(++recorrencia);   // a sequência das séries (migration 28)
         if (!L) return json({ message: 'tabela?' }, 404);
         const id = (u.searchParams.get('id') || '').replace(/^(eq|gt)\./, ''), depois = /^gt\./.test(u.searchParams.get('id') || '');
-        if (req.method() === 'GET') return json(depois ? L.filter(l => String(l.id) > id) : id ? L.filter(l => String(l.id) === id) : L);
+        if (req.method() === 'GET' && dados._semRede) return route.abort('failed');   // o teste corta a rede no meio
+    if (req.method() === 'GET') return json(depois ? L.filter(l => String(l.id) > id) : id ? L.filter(l => String(l.id) === id) : L);
         escritas.push([req.method(), t]);
         if (atraso) await new Promise(ok => setTimeout(ok, atraso));
         if (req.method() === 'POST') { const novas = [].concat(req.postDataJSON()).map(l => ({ id: proximo++, ...PADROES[t], ...l })); L.push(...novas); return json(novas, 201); }
