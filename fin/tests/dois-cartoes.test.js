@@ -1,6 +1,7 @@
 // Regressão: dois cartões de crédito sem coluna nova no banco — o dia do vencimento da
 // fatura decide o cartão (dia 13 = Mercado Pago; qualquer outro = Nubank, todo o histórico).
-// Roda as regras reais de js/domain.js, js/shared.js e js/finance.js no mesmo contexto.
+// Roda as regras reais de js/domain.js, js/shared.js e js/finance.js no mesmo contexto. Na tela (vencimentos dos dois no
+// cadastro, sugestão das parcelas pelo cartão da 1ª, uma fatura por cartão no débito): navegador-cartoes.test.js.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
@@ -118,14 +119,10 @@ test('preferência local separada por cartão; a do Nubank mantém a chave antig
 });
 
 test('Mercado Pago só entra no título depois da 1ª compra nele; com dois, cada faixa tem nome', () => {
-    assert.match(visoes, /const cartoesNoTitulo = CARTOES\.filter\(cartao => cartao === CARTAO_NUBANK \|\|\s*\n\s*Estado\.lancamentos\.some\(r => r\.cred && cartaoDaFatura\(r\.fatura\) === cartao\)\);/);
     assert.match(visoes, /const nomeNoTitulo = cartao => cartoesNoTitulo\.length > 1/);
 });
 
 test('Débito, saldo diário e gráfico usam uma linha de fatura por cartão', () => {
-    assert.match(visoes, /const linhasFatura = faturasLiquidasDoCiclo\(visiveis, abatido, i\)/);
-    assert.match(visoes, /const sid = f\.atrasada \? `fat:\$\{i\}:atr:\$\{f\.cicloOrigem\}:\$\{f\.cartao\}`\s*\n\s*: f\.cartao === CARTAO_NUBANK \? `fat:\$\{i\}` : `fat:\$\{i\}:\$\{f\.cartao\}`;/);
-    assert.match(visoes, /nome: `Fatura \$\{NOME_CARTAO\[f\.cartao\]\}`/);
     assert.match(ler('js/finance.js'), /faturasLiquidasDoCiclo\(base, abat, idx\)\.forEach/);
     assert.match(graficos, /faturasLiquidasDoCiclo\(base, abat, i\)\.forEach/);
     assert.doesNotMatch(visoes + graficos, /'Fatura do cartão'/);
@@ -154,15 +151,6 @@ test('cadastro oferece os vencimentos dos dois cartões, do mês passado até de
     assert.deepEqual(vencimentos.slice(-2), ['2032-12-12', '2032-12-13']);
     // Virada de ano no mês anterior.
     assert.deepEqual(Array.from(carregaVencimentosPrevistos()('2027-01-05')).slice(0, 2), ['2026-12-12', '2026-12-13']);
-    assert.match(formulario, /const faturasSet = new Set\(vencimentosPrevistosDosCartoes\(\)\);/);
-    assert.match(formulario, /`\$\{nomeFatura\(\{ vencimento \}\)\} · \$\{NOME_CARTAO\[cartaoDaFatura\(vencimento\)\]\}`/);
-});
-
-test('sugestão de fatura fica no cartão da 1ª parcela escolhida (Nubank por padrão)', () => {
-    assert.match(formulario, /const cartaoDaSugestao = idsSelecionados\[0\] \? cartaoDaFatura\(idsSelecionados\[0\]\) : cartaoPadrao;/);
-    assert.match(formulario, /function atualizarFaturasDoFormulario\(idsSelecionados = idsFaturasDoFormulario\(\), cartaoPadrao = CARTAO_NUBANK\)/);
-    assert.match(formulario, /faturasSugeridasParaParcelas\(el\('fData'\)\.value, parcelas, freq, cartaoDaSugestao\)/);
-    assert.match(formulario, /if \(parcela === 0\) atualizarFaturasDoFormulario\(idsFaturasDoFormulario\(false\)\);/);
 });
 
 test('regra e decisão documentadas', () => {
