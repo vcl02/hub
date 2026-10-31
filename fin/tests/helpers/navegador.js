@@ -82,6 +82,12 @@ async function abrirFin(busca = '', dados = dadosDeExemplo(), atraso = 0, { celu
     const fin = tabelasDoFin(dados, atraso);
     await ctx.route(/\/rest\/v1\/(fin|fin_ciclo|fin_meta|rpc\/proxima_recorrencia)(\?|$)/, fin.rota);   // registrada depois: vence o falso do tr
     const pg = await ctx.newPage(), erros = [], faltando = [];
+    // ocioso(): espera nenhum pedido ao Supabase no ar por 150 ms (gravar dispara uma recarga em segundo plano, que redesenha)
+    let noAr = 0, ultimo = Date.now();
+    pg.on('request', r => { if (/\/rest\/v1\//.test(r.url())) { noAr++; ultimo = Date.now(); } });
+    const fim = r => { if (/\/rest\/v1\//.test(r.url())) { noAr--; ultimo = Date.now(); } };
+    pg.on('requestfinished', fim); pg.on('requestfailed', fim);
+    const ocioso = async () => { while (noAr > 0 || Date.now() - ultimo < 150) await new Promise(ok => setTimeout(ok, 30)); };
     pg.on('pageerror', e => erros.push(e.message));
     pg.on('response', r => { if (r.url().startsWith(base) && r.status() >= 400) faltando.push(`${r.status()} ${r.url()}`); });
     await pg.clock.install({ time: new Date(`${HOJE}T12:00:00-03:00`) });
@@ -91,7 +97,7 @@ async function abrirFin(busca = '', dados = dadosDeExemplo(), atraso = 0, { celu
     await pg.goto(base + 'fin/' + busca);
     await pg.waitForFunction(() => getComputedStyle(document.getElementById('app')).display === 'block');
     await pg.waitForFunction(() => document.getElementById('out').textContent.trim().length > 0);
-    return { ctx, pg, erros, faltando, dados, escritas: fin.escritas };
+    return { ctx, pg, erros, faltando, dados, escritas: fin.escritas, ocioso };
 }
 const textoDaTabela = pg => pg.$eval('#out', el => el.textContent.replace(/\s+/g, ' '));
 
