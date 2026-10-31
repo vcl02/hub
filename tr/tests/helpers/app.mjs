@@ -86,6 +86,8 @@ export async function arrastar(ctx, pg, x1, x2, y = 600) {
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x1, y }] });
   for (let i = 1; i <= 10; i++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x1 + (x2 - x1) * i / 10, y }] }); await pg.waitForTimeout(16); }
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  await pg.waitForTimeout(450);
+  // Espera o gesto acabar, sem tempo fixo: a tela do exercício sai deslizando, troca e volta (transform vazio e nenhuma
+  // animação rodando); as outras telas trocam na hora
+  await pg.waitForFunction(() => !document.getElementById('v-exercicio').style.transform && !document.getAnimations().some(a => a.playState === 'running'));
 }
 export const linhas = async pg => (await pg.locator('#t-plano li').allTextContents()).map(s => s.replace(/\s+/g, ' ').replace(/[−+✎✓]/g, '').trim());

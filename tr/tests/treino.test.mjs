@@ -211,7 +211,7 @@ test('nº do aparelho e anotações ficam salvos', async () => {
   const { ctx, pg } = await abrirApp();
   await pg.tap('.slot >> nth=2');
   await pg.fill('#e-equip', '12'); await pg.click('#e-dicas summary'); await pg.fill('#e-nota', 'banco no furo 4');
-  await pg.waitForTimeout(700);
+  await pg.waitForFunction(() => db.exercicios[2].variacoes[0].equip === '12' && db.exercicios[2].variacoes[0].nota === 'banco no furo 4');   // salvou (0,5 s depois de parar de digitar)
   await pg.reload(); await pg.waitForSelector('#v-exercicio:not([hidden])');
   assert.equal(await pg.inputValue('#e-equip'), '12');
   assert.equal(await pg.inputValue('#e-nota'), 'banco no furo 4');
@@ -238,7 +238,7 @@ test('anotação digitada fica no exercício certo mesmo trocando rápido', asyn
   const { ctx, pg } = await abrirApp();
   await pg.tap('.slot >> nth=0'); await pg.fill('#e-equip', '7');
   await pg.evaluate(() => trocarExercicio(1));                                               // troca antes de 0,5 s
-  await pg.waitForTimeout(700);
+  await pg.waitForFunction(() => db.exercicios[0].variacoes[0].equip === '7');                // salvou no exercício em que foi digitado
   const r = await pg.evaluate(() => db.exercicios.map(e => e.variacoes[0].equip || ''));
   assert.deepEqual(r.slice(0, 2), ['7', '']);
   await ctx.close();
