@@ -83,3 +83,28 @@ test('corpo: horas de sono passando da meia-noite; BOM com 8 h, OK de 7 a 8, RUI
   assert.deepEqual([C.horasDeSono('23:30', '07:00'), C.horasDeSono('01:00', '08:15'), C.horasDeSono('22:00', '22:00'), C.horasDeSono('', '07:00')], [7.5, 7.25, 0, null]);
   assert.deepEqual([8, 7.99, 7, 6.98].map(h => C.nivelSono(h).txt), ['BOM', 'OK', 'OK', 'RUIM']);
 });
+
+// ---------- Treino ----------
+const P = carregar('tr/js/piramide.js', ['arred', 'outraUnidade', 'fatorUnidade', 'naOutra', 'daOutra', 'umAUm', 'alvoReps', 'alvoKg', 'plano', 'completo'],
+  { ...carregar('tr/js/config.js', ['LB', 'semPeso']) });
+test('treino: pirâmide crescente, invertida e reta (reps −2 por série, peso ~10% ao passo); aquecimento com metade e 15 reps', () => {
+  const v = { unidade: 'kg', passo: 2.5, lados: 1 }, e = modo => ({ modo, series: 3, reps: 12 });
+  const so = L => json(L.map(s => [s.nome, s.kg, s.reps]));
+  assert.deepEqual(so(P.plano(e('crescente'), v, 40, true)), [['Aquecimento', 20, 15], ['Série 1', 40, 12], ['Série 2', 45, 10], ['Série 3', 50, 8]]);   // 10% de 40 = 4 → 5 no passo de 2,5
+  assert.deepEqual(so(P.plano(e('invertida'), v, 40, false)), [['Série 1', 40, 8], ['Série 2', 35, 10], ['Série 3', 30, 12]]);
+  assert.deepEqual(so(P.plano(e('reta'), v, 40, false)), [['Série 1', 40, 12], ['Série 2', 40, 12], ['Série 3', 40, 12]]);
+  assert.deepEqual(so(P.plano(e('crescente'), v, 0, true)).map(s => s[1]), [null, null, null, null]);   // sem peso ainda: só as reps
+  assert.deepEqual(so(P.plano(e('crescente'), v, 40, false, { 1: { kg: 41, reps: 9 } }))[1], ['Série 2', 41, 9]);   // ajuste da série vence
+  assert.deepEqual(so(P.plano(e('crescente'), { unidade: 'corpo' }, 0, true)), [['Série 1', 0, 12], ['Série 2', 0, 10], ['Série 3', 0, 8]]);   // peso do corpo: sem aquecimento
+  assert.equal(P.alvoReps({ modo: 'crescente', series: 8, reps: 12 }, 7), 1);   // nunca menos de 1
+});
+
+test('treino: completo só com todas as séries no alvo e sem falha; kg ↔ lb; ± de 1 em 1 arredonda primeiro', () => {
+  const e = { modo: 'crescente', series: 3, reps: 12 }, r = (...reps) => ({ series: reps.map(x => typeof x === 'number' ? { kg: 40, reps: x } : { kg: 40, reps: 12, falha: true }) });
+  assert.equal(P.completo(r(12, 10, 8), e), true);
+  assert.equal(P.completo(r(12, 10, 7), e), false);                              // uma abaixo do alvo
+  assert.equal(P.completo(r(12, 10, 'f'), e), false);                           // falhou numa série
+  assert.equal(P.completo(r(12, 10), e), false);                                // faltou série
+  assert.deepEqual(json([P.naOutra(100, { unidade: 'kg' }), P.daOutra(220.5, { unidade: 'kg' }), P.naOutra(10, { unidade: 'nível' })]), [220.5, 100.02, 10]);
+  assert.deepEqual([P.umAUm(40, 1), P.umAUm(40.5, 1), P.umAUm(40.5, -1), P.umAUm(0, -1)], [41, 41, 40, 0]);
+});

@@ -75,7 +75,7 @@ Todo projeto tem os três (o teste `tests/documentacao.test.mjs` confere):
   1. **Funções** (sem navegador, milissegundos): regras e contas puras, com a função tirada do próprio arquivo publicado (sem copiar código para o teste). Pega erro de lógica com precisão.
      Ex.: `tests/habitos.test.mjs`, `fin/tests/*.test.js` (carga em `fin/tests/helpers/carregar-funcoes.js`), o `perfil.js` em `tests/hub.test.mjs`.
      **Funções repetidas entre apps** (`tests/repetidas.test.mjs`, com `tests/funcoes.mjs`): cada cópia de `mesclar`, `diferenca`, `diaDaUrl` e `repetido` sai do arquivo do app e passa pelos mesmos casos (dois aparelhos, cópia velha, dois iguais, dia inválido, toque repetido). Até irem para `base/nucleo.js` (seção 8, passo 4), cópia que divergir falha aqui.
-     **Regras próprias dos apps** (`tests/regras-apps.test.mjs`): as contas com números fixos, tiradas dos arquivos dos apps — gasto e meta do dia (`al/gasto.js` com `corpo/perfil.js`: basal, caminhada, treino previsto e feito), lembretes e limpeza do db da Água (formato antigo, bebidas), horas e nível de sono do Corpo.
+     **Regras próprias dos apps** (`tests/regras-apps.test.mjs`): as contas com números fixos, tiradas dos arquivos dos apps — gasto e meta do dia (`al/gasto.js` com `corpo/perfil.js`: basal, caminhada, treino previsto e feito), lembretes e limpeza do db da Água (formato antigo, bebidas), horas e nível de sono do Corpo, a pirâmide do Treino (peso e reps por série, aquecimento, completo, kg ↔ lb).
   2. **Navegador** (Playwright + Chromium, segundos): o app servido localmente com o Supabase falso, clicando como no celular. Pega o que só a tela mostra (botão escondido, script fora de ordem, fluxo quebrado).
      Cobre login, cópia local, envio por diferença e, onde há lista no dia, os casos "dois aparelhos", "formato antigo" e "metrô" (envio sem resposta).
   3. **Estrutura** (`estrutura.test.mjs` ou equivalente): cabeçalhos, HTML/CSS balanceados, ordem de carga igual no `index.html` e no service worker, PWA, migrations no formato e com RLS, nenhum segredo (`service_role`, `sb_secret_`, chave da Anthropic), a base comum carregada e sem as cores antigas.
@@ -86,7 +86,7 @@ Todo projeto tem os três (o teste `tests/documentacao.test.mjs` confere):
   |---|---|---|---|---|
   | Página inicial | `tests/habitos.test.mjs`, `tests/repetidas.test.mjs`, `tests/regras-apps.test.mjs` | `tests/navegacao.test.mjs` (login, hábitos com os dados dos apps, cada app abrindo com a mesma sessão e no dia escolhido) | `tests/hub.test.mjs`, `tests/documentacao.test.mjs` | — |
   | Fin | `tests/*.test.js` (a maior parte) | `tests/navegador.test.js` (abrir no ciclo, trocar de ciclo, lançar e apagar uma vez só) | `tests/estrutura-*.test.js`, `tests/pwa.test.js` e outros | `tests/captura-nubank.test.js` |
-  | Treino | pela raiz (`repetidas`) | `tests/treino`, `ajustes`, `calistenia`, `cardio`, `nuvem`, `pontos` | `tests/estrutura.test.mjs` | — |
+  | Treino | pela raiz (`repetidas`, `regras-apps`: pirâmide) | `tests/treino`, `dias`, `ajustes`, `calistenia`, `cardio`, `nuvem`, `pontos` | `tests/estrutura.test.mjs` | — |
   | Alimentação | pela raiz (`repetidas`, `regras-apps`: gasto e meta) | `tests/dia.test.mjs` | `tests/estrutura.test.mjs` | `tests/funcao.test.mjs` (`al-estimar`) |
   | Corpo | pela raiz (`repetidas`, `regras-apps`: sono) | `tests/corpo.test.mjs` | `tests/estrutura.test.mjs` | — |
   | Água | pela raiz (`repetidas`, `regras-apps`: lembretes, limpeza do db) | `tests/agua.test.mjs`, `tests/notificacoes.test.mjs` | `tests/estrutura.test.mjs` | `tests/funcao.test.mjs` (`agua-lembrete`) |
@@ -95,7 +95,7 @@ Todo projeto tem os três (o teste `tests/documentacao.test.mjs` confere):
   Os outros carregam de lá: `createRequire(path.join(HUB, 'tr', 'package.json'))('playwright')` (o Fin também, em `tests/navegador.test.js`).
   Não crie `package.json` em outro projeto só para testar.
 - `node scripts/check.mjs` em cada projeto: sintaxe (`node --check`), higiene textual do `.editorconfig` (sem tab, sem espaço no fim, newline final), testes e `git diff --check`.
-  Na raiz roda tudo, **os testes da raiz e os cinco apps ao mesmo tempo** (cada um com o próprio servidor numa porta livre e o próprio Chromium; a saída de cada um sai inteira, com o tempo): ~70 s, o tempo do mais lento (o Treino). O GitHub Actions (`.github/workflows/validacao.yml`) roda o mesmo em todo push.
+  Na raiz roda tudo, **os testes da raiz e os cinco apps ao mesmo tempo** (cada um com o próprio servidor numa porta livre e o próprio Chromium; a saída de cada um sai inteira, com o tempo): ~55 s, o tempo do mais lento. Arquivo de navegador que passa de ~20 s vale dividir por assunto (o Node roda arquivos diferentes ao mesmo tempo): foi assim com `tr/tests/dias.test.mjs`. O GitHub Actions (`.github/workflows/validacao.yml`) roda o mesmo em todo push.
 - Teste com tempo: relógio falso (`page.clock`) em vez de esperar de verdade; toque repetido com `{ timeout: 500 }` no 2º clique (senão o Playwright espera 30 s o botão travado).
 - Feature nova: regra + teste. Correção: teste de regressão que falhava antes (confira que falha: quebre o código de propósito, rode, desfaça).
 - No relato, separar teste local, navegador local, celular e Supabase real; nunca alegar o que não rodou.

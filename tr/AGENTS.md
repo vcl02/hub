@@ -31,7 +31,7 @@
 Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para todos fica lá).
 
 - **Migrations:** `migrations/` 00 a 07, formato DataGrip, RLS só do dono em todas as `tr_*`; conferido em `tests/estrutura.test.mjs`, numeração em `../tests/documentacao.test.mjs`.
-- **Testes:** Playwright + `node:test`, um arquivo por área (`treino`, `pontos`, `nuvem`, `ajustes`, `calistenia`, `cardio`), com servidor e Supabase falso em `tests/helpers/app.mjs` (o teste de navegação da raiz usa o mesmo Supabase falso); funções e estrutura em `tests/estrutura.test.mjs`.
+- **Testes:** Playwright + `node:test`, um arquivo por área (`treino`, `dias` (arrastar, ‹ ›, ← →, resumo antigo e `?dia`; separado para rodar junto com `treino`), `pontos`, `nuvem`, `ajustes`, `calistenia`, `cardio`), com servidor e Supabase falso em `tests/helpers/app.mjs` (o teste de navegação da raiz usa o mesmo Supabase falso); estrutura em `tests/estrutura.test.mjs`; as contas da pirâmide (peso e reps por série, aquecimento, completo, kg ↔ lb) sem navegador em `../tests/regras-apps.test.mjs`, e as funções repetidas com os outros apps em `../tests/repetidas.test.mjs`.
 - **Pacotes:** o único `package.json` do hub: `playwright` 1.56.1 (com `package-lock.json`), que serve também à raiz, ao al, ao Corpo e à Água. Instalar: `npm ci` e `npx playwright install chromium` dentro de `tr/`. `supabase.js` é o `supabase-js` 2.118.0, igual byte a byte ao da raiz.
 - **Backups:** cópia no aparelho (`tr.db.<usuário>`, base em `tr.base.<usuário>`) e `hub_historico` com `tr_treino`, `tr_registro`, `tr_exercicio` e `tr_variacao` (migration `00` da raiz). Sem backup manual em `.json`. Fotos das máquinas ficam só no aparelho, sem cópia.
 - **Domínio:** `/hub/tr/`. Externo: só o Supabase.
