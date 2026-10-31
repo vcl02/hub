@@ -30,3 +30,11 @@ export function carregar(arquivo, nomes, contexto = {}) {
   vm.runInNewContext(`${nomes.map(n => trecho(src, n)).join('\n')}\n;Object.assign(__saida, { ${nomes.join(', ')} });`, { ...contexto, __saida: saida }, { filename: arquivo });
   return saida;
 }
+
+// Módulo inteiro (ex.: corpo/perfil.js e al/gasto.js, que já são só funções puras): roda os arquivos em ordem num contexto
+// isolado e devolve as declarações pedidas.
+export function carregarArquivos(arquivos, nomes, contexto = {}) {
+  const saida = {};
+  vm.runInNewContext(`${arquivos.map(a => readFileSync(a, 'utf8').replace(/^'use strict';/, '')).join('\n')}\n;Object.assign(__saida, { ${nomes.join(', ')} });`, { ...contexto, __saida: saida });
+  return saida;
+}

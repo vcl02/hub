@@ -28,7 +28,7 @@ for (const [comando, args] of raiz) {
   const resultado = spawnSync(comando, args, { stdio: 'inherit', shell: process.platform === 'win32' });
   if (resultado.status !== 0) process.exit(resultado.status || 1);
 }
-const tarefas = [['raiz', '.', ['--test', 'tests/hub.test.mjs', 'tests/documentacao.test.mjs', 'tests/habitos.test.mjs', 'tests/repetidas.test.mjs', 'tests/navegacao.test.mjs']],
+const tarefas = [['raiz', '.', ['--test', 'tests/hub.test.mjs', 'tests/documentacao.test.mjs', 'tests/habitos.test.mjs', 'tests/repetidas.test.mjs', 'tests/regras-apps.test.mjs', 'tests/navegacao.test.mjs']],
   ...['fin', 'tr', 'al', 'corpo', 'agua'].map(app => [app, app, ['scripts/check.mjs']])];
 const rodar = ([nome, cwd, args]) => new Promise(ok => {
   const inicio = Date.now(), filho = spawn(process.execPath, args, { cwd, shell: process.platform === 'win32' });
