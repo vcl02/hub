@@ -45,6 +45,7 @@ Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para
 2. Ajuste os testes em `tests/`: `dia` (navegador, Playwright do `tr/node_modules`, Supabase e IA falsos em `tests/helpers/app.mjs`), `funcao` (a Edge Function rodando com SDK e rede simulados) e `estrutura`.
 3. Rode `node scripts/check.mjs` dentro de `al/` e, antes do push, na raiz do hub. Informe precisamente o que foi validado; não alegue validação no celular, no Supabase real ou com a IA real se ela não ocorreu.
 4. Commit e push conforme `../AGENTS.md`.
+- **Sem prints de tela:** não tire nem abra capturas de tela (screenshot) para conferir visual, a pedido do mantenedor (gastam muito do limite de uso). Confira pelos testes e por medidas no navegador (posição, tamanho, texto, classes) e diga o que não foi visto.
 
 ## Preferências do mantenedor
 

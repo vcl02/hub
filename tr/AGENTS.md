@@ -43,6 +43,7 @@ Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para
 3. Rode `node scripts/check.mjs` dentro de `tr/` (sintaxe, higiene textual do `.editorconfig`, testes e `git diff --check`) e, antes do push, também na raiz do hub (página inicial, fin e tr juntos). Informe precisamente o que foi validado; não alegue validação no celular ou no Supabase real se ela não ocorreu.
 4. Depois de os testes passarem, faça commit e push para `origin/main` do `vcl02/hub`. Nunca inclua alterações alheias no commit.
 5. Trabalhe direto na branch `main`: projeto pessoal, sem fluxo de PR. Não crie worktree, branch auxiliar nem peça revisão antes de puxar pra `main`.
+- **Sem prints de tela:** não tire nem abra capturas de tela (screenshot) para conferir visual, a pedido do mantenedor (gastam muito do limite de uso). Confira pelos testes e por medidas no navegador (posição, tamanho, texto, classes) e diga o que não foi visto.
 
 ## Preferências do mantenedor
 

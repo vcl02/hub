@@ -59,6 +59,7 @@ Valem para todos os apps. O comportamento visível da página inicial (login, h�
 2. Rode `node scripts/check.mjs` na raiz. Ele roda a validação da raiz e de todos os apps e precisa das dependências do tr (`npm ci` e `npx playwright install chromium` dentro de `tr/`; nas sessões na nuvem, o hook de início já instala). Informe precisamente o que foi validado; não alegue validação no celular ou no Supabase real se ela não ocorreu.
 3. Faça commit e push direto na `main`: projeto pessoal, sem fluxo de PR, sem worktree nem branch auxiliar. Nunca inclua alterações alheias no commit.
 4. Nunca reescreva o histórico importado de `fin/` e `tr/` (rebase, amend, troca de autor).
+- **Sem prints de tela:** não tire nem abra capturas de tela (screenshot) para conferir visual, a pedido do mantenedor (gastam muito do limite de uso). Confira pelos testes e por medidas no navegador (posição, tamanho, texto, classes) e diga o que não foi visto.
 
 ## Infraestrutura
 

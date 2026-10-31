@@ -48,6 +48,7 @@ Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para
    O atalho oficial é `node scripts/check.mjs` (dentro de `fin/`), que executa a validação local completa sem dependências adicionais, inclusive higiene textual definida no `.editorconfig`. Antes do push, rode também `node scripts/check.mjs` na raiz do hub, que valida a página inicial, o fin e o tr juntos.
 5. Depois de os testes passarem, faça commit e push para `origin/main` do `vcl02/hub` por padrão, salvo pedido contrário do usuário. Nunca inclua alterações alheias no commit.
 6. Trabalhe sempre no checkout principal, direto na branch `main`: este é um projeto pessoal, sem fluxo de PR. Nunca crie git worktree, branch auxiliar nem peça revisão antes de puxar pra `main` — pedido explícito do mantenedor.
+- **Sem prints de tela:** não tire nem abra capturas de tela (screenshot) para conferir visual, a pedido do mantenedor (gastam muito do limite de uso). Confira pelos testes e por medidas no navegador (posição, tamanho, texto, classes) e diga o que não foi visto.
 
 ## Preferências do mantenedor
 

@@ -84,6 +84,7 @@ Todo projeto tem os três (o teste `tests/documentacao.test.mjs` confere):
   Na raiz roda tudo; o GitHub Actions (`.github/workflows/validacao.yml`) roda o mesmo em todo push.
 - Feature nova: regra + teste. Correção: teste de regressão que falhava antes.
 - No relato, separar teste local, navegador local, celular e Supabase real; nunca alegar o que não rodou.
+- **Sem prints de tela:** não tire nem abra capturas de tela (screenshot) para conferir visual, a pedido do mantenedor (gastam muito do limite de uso). Confira pelos testes e por medidas no navegador (posição, tamanho, texto, classes) e diga o que não foi visto.
 
 ## 4. Pacotes
 

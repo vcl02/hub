@@ -38,3 +38,4 @@ Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para
 2. Ajuste os testes (`tests/agua.test.mjs` e `tests/notificacoes.test.mjs` no navegador, com o Playwright do `tr/node_modules` e o Supabase falso de `tests/helpers/app.mjs`; `tests/funcao.test.mjs` roda a função de verdade com rede falsa; `tests/estrutura.test.mjs`).
 3. Rode `node scripts/check.mjs` dentro de `agua/` e, antes do push, na raiz do hub.
 4. Commit e push conforme `../AGENTS.md`.
+- **Sem prints de tela:** não tire nem abra capturas de tela (screenshot) para conferir visual, a pedido do mantenedor (gastam muito do limite de uso). Confira pelos testes e por medidas no navegador (posição, tamanho, texto, classes) e diga o que não foi visto.
