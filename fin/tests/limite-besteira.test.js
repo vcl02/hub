@@ -1,6 +1,7 @@
 // Regressão: indicadores de limite por categoria (Besteira, Isabella) no título Débito do
 // ciclo atual — somam Débito e Crédito do mesmo ciclo (pela DATA da compra) contra um teto
-// fixo em código, cada um com o seu.
+// fixo em código, cada um com o seu. Na tela (Hoje só o pago, Futuro com o em aberto, Ultrapassado e quanto passou, a dica
+// e o filtro pelo nome): navegador-tetos.test.js.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
@@ -14,13 +15,6 @@ const estilosForm = fs.readFileSync('css/forms.css', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const html = fs.readFileSync('index.html', 'utf8');
 const formulario = fs.readFileSync('js/form.js', 'utf8');
-
-test('cada categoria tem seu teto fixo em código, não editável pela tela', () => {
-    assert.match(dominio, /const CATEGORIA_BESTEIRA = 'Besteira';/);
-    assert.match(dominio, /const LIMITE_BESTEIRA = 250;/);
-    assert.match(dominio, /const LIMITE_ISABELLA = 700;/);
-    assert.doesNotMatch(dominio, /CATEGORIA_BESTEIRA_ISABELLA/);
-});
 
 // Extrai dadosLimiteCategoriaDoCiclo E ehGastoIsabella do arquivo real (não reescreve a
 // regra à mão) e roda num contexto isolado, com os globais de que dependem simulados.
@@ -118,19 +112,9 @@ test('aparece no título Débito de qualquer ciclo (inclusive passados), com o C
     // novembro — nem pela data da compra, nem pelo periodoIdx cru do lançamento.
     // A compra prevista (_prev) é justamente o que falta até o teto: nunca entra no indicador.
     assert.match(visoes, /const linhasDaPreviaNoCiclo = \[\.\.\.debitos, \.\.\.creditosExibidosNoCiclo\(visiveis, i\)\]\.filter\(r => !r\._prev\);/);
-    assert.match(visoes, /rotulo: 'Besteira', teto: tetosDoCiclo\.besteira, \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, criterioDoTeto\('besteira'\), tetosDoCiclo\.besteira\)/);
-    assert.match(visoes, /rotulo: 'Isabella', teto: tetosDoCiclo\.isabella, \.\.\.dadosLimiteCategoriaDoCiclo\(linhasDaPreviaNoCiclo, criterioDoTeto\('isabella'\), tetosDoCiclo\.isabella\)/);
-    assert.match(visoes, /spansLimitesCategoria\(cicloDebitoPassado \? 'percentualTotal' : 'percentualPago'\)/);
-    assert.match(visoes, /spansLimitesCategoria\('percentualTotal'\)/);
-    assert.match(visoes, /const cor = corDoLimiteCategoria\(limite\[chave\]\);/);
     // Além do %, quanto ainda cabe no teto (Hoje: pago; Futuro: pago + aberto) ou quanto passou.
-    assert.match(visoes, /const restante = limite\.teto - \(chave === 'percentualPago' \? limite\.valorPago : limite\.valorTotal\);/);
-    assert.match(visoes, /<span class=limiteRotulo>\$\{dentro \? 'Livre' : 'Acima'\}<\/span> <b class="\$\{dentro \? cor : 'vm'\}">\$\{brl\(dentro \? Math\.max\(0, restante\) : -restante\)\}<\/b>/);
     // Rótulo antes do número: "Usado 0%" e "Livre R$ 100,00", nunca "0% Usado · R$ 100,00 Livre".
-    assert.match(visoes, /<span class=limiteRotulo>\$\{dentro \? 'Usado' : 'Ultrapassado'\}<\/span> <b class="pct \$\{cor\}">\$\{percentual\}<\/b><\/span>/);
     // Teto do próprio ciclo (linha âncora) e indicador do ciclo atual em diante.
-    assert.match(visoes, /const tetosDoCiclo = limitesCategoriaDoCiclo\(i\);/);
-    assert.match(visoes, /const limitesCategoria = i >= 0 \? \[/);
 });
 
 test('fica visivelmente separado de Saldo/Guardado por um divisor', () => {
@@ -141,7 +125,6 @@ test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /cada um com seu próprio teto fixo em código \(`js\/domain\.js`, não editável pela tela\)/);
     assert.match(regras, /No título Débito de qualquer ciclo \(atual, seguintes e passados\)/);
     // Passado mostra o fechamento do ciclo: pago + aberto, como Saldo e Guardado da mesma linha.
-    assert.match(visoes, /spansLimitesCategoria\(cicloDebitoPassado \? 'percentualTotal' : 'percentualPago'\)/);
     assert.match(regras, /`creditosExibidosNoCiclo`, fatura de `i\+1`/);
     assert.match(regras, /ciclo que começa em outubro conta, no Crédito, o que vai entrar na fatura de novembro/);
     assert.match(regras, /o rótulo `Isabella` contra `LIMITE_ISABELLA`, R\$ 700/);
@@ -186,10 +169,7 @@ test('nome de Besteira e Isabella no título explica o que entra no teto (toolti
     const dominio = fs.readFileSync('js/domain.js', 'utf8');
     const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
     const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
-    assert.match(dominio, /const DESCRICAO_LIMITE_CATEGORIA = \{\s*\n\s*besteira: 'Besteira: [^']*café[^']*',\s*\n\s*isabella: 'Isabella: tudo com a categoria Isabella[^']*fatura do cartão dela e o que estiver marcado Comprometido[^']*',/);
     // O nome continua com a dica no hover, agora num botão (toggle do filtro de teto).
-    assert.match(visoes, /<button type=button class="rotuloComDica filtroTeto\$\{ativo \? ' ativo' : ''\}" data-filtro-teto="\$\{limite\.chave\}" /);
-    assert.match(visoes, /title="\$\{escapeHtml\(dica\)\}" aria-label="Filtrar \$\{limite\.rotulo\}">\$\{limite\.rotulo\}<\/button>/);
     assert.match(regras, /Passar o mouse no nome \*\*Besteira\*\* ou \*\*Isabella\*\* do indicador mostra o que entra naquele teto/);
 });
 

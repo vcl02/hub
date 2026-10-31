@@ -49,6 +49,7 @@ function tabelasDoFin(dados, atraso = 0) {
         if (!L) return json({ message: 'tabela?' }, 404);
         const id = (u.searchParams.get('id') || '').replace(/^(eq|gt)\./, ''), depois = /^gt\./.test(u.searchParams.get('id') || '');
         if (req.method() === 'GET' && dados._semRede) return route.abort('failed');   // o teste corta a rede no meio
+    if (req.method() === 'GET' && dados._leituraLenta) await new Promise(ok => setTimeout(ok, dados._leituraLenta));   // ms, rede lenta
     if (req.method() === 'GET') return json(depois ? L.filter(l => String(l.id) > id) : id ? L.filter(l => String(l.id) === id) : L);
         escritas.push([req.method(), t]);
         if (atraso) await new Promise(ok => setTimeout(ok, atraso));
