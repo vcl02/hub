@@ -157,8 +157,8 @@ const preparar = d => ({
   // (sonoEm). Sono só em horas (antes da migration 05): dormiu às 23:00 e acordou 23:00 + as horas. Formato da migration 01
   // (evacuou sim ou não): sim vira 1 evacuação sem horário. Dia sem nada não fica guardado.
   dias: (d?.dias || []).filter(x => x && dataOk(x.data)).map(x => {
-    const ev = Array.isArray(x.evacuacoes) ? x.evacuacoes.map(h => /^\d{2}:\d{2}$/.test(h) ? h : '').slice(0, 20) : x.evacuou === true ? [''] : [];
-    const xixis = (Array.isArray(x.xixis) ? x.xixis : []).filter(h => /^\d{2}:\d{2}$/.test(h)).sort().slice(0, 50);
+    const ev = Array.isArray(x.evacuacoes) ? x.evacuacoes.map(h => horaOk(h) ? h : '').slice(0, 20) : x.evacuou === true ? [''] : [];
+    const xixis = (Array.isArray(x.xixis) ? x.xixis : []).filter(horaOk).sort().slice(0, 50);
     let dormiu = horaOk(x.dormiu) ? x.dormiu : null, acordou = horaOk(x.acordou) ? x.acordou : null;
     const antigo = num(x.sono);
     if (!dormiu && !acordou && antigo >= 0 && antigo <= 24) { dormiu = SONO_ANTIGO_DORMIU; acordou = maisMinutos(SONO_ANTIGO_DORMIU, Math.round(antigo * 60)); }

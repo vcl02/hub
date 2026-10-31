@@ -150,7 +150,7 @@ async function baixarTreino() {
   try {
     const A = await todas('agua_dia', 'data,aguas');
     bebidas = Object.fromEntries(A.map(x => [x.data, (Array.isArray(x.aguas) ? x.aguas : [])
-      .filter(a => nutrientesBebida(a)).map(a => ({ hora: /^\d{2}:\d{2}$/.test(a.hora) ? a.hora : '', bebida: a.bebida, volume: +a.volume }))]).filter(([, L]) => L.length));
+      .filter(a => nutrientesBebida(a)).map(a => ({ hora: /^([01]\d|2[0-3]):[0-5]\d$/.test(a.hora) ? a.hora : '', bebida: a.bebida, volume: +a.volume }))]).filter(([, L]) => L.length));
     store.set(K_BEBIDAS(usuario.id), JSON.stringify(bebidas));
   } catch (e) { /* fica a cópia */ }
 }
@@ -182,13 +182,13 @@ function preparar(d) {
   const itens = (d?.itens || []).filter(i => i && i.id && txt(i.nome, 60))
     .map(i => ({ id: String(i.id), nome: txt(i.nome, 60), porcao: txt(i.porcao, 60), ...valores(i), usos: Math.max(0, parseInt(i.usos, 10) || 0) }));
   const registros = (d?.registros || []).filter(r => r && r.id && /^\d{4}-\d{2}-\d{2}$/.test(r.data) && txt(r.nome, 60))
-    .map(r => ({ id: String(r.id), data: r.data, hora: /^\d{2}:\d{2}$/.test(r.hora) ? r.hora : '', ...(r.item && { item: String(r.item) }),
+    .map(r => ({ id: String(r.id), data: r.data, hora: /^([01]\d|2[0-3]):[0-5]\d$/.test(r.hora) ? r.hora : '', ...(r.item && { item: String(r.item) }),
       nome: txt(r.nome, 60), porcao: txt(r.porcao, 60), qtd: num(r.qtd) > 0 ? Math.min(num(r.qtd), 20) : 1, ...valores(r) }));
   // Caminhada: trechos do dia em ordem de horário; dia sem trecho sai. Cópia local antiga (andou, minutos e km no total do
   // dia) vira 1 trecho sem horário, como a migration 02 fez no servidor.
   const trecho = t => {
     const minutos = num(t?.minutos), km = num(t?.km);
-    return { hora: /^\d{2}:\d{2}$/.test(t?.hora) ? t.hora : '', ...(minutos > 0 && minutos <= 600 && { minutos }), ...(km > 0 && km <= 60 && { km }) };
+    return { hora: /^([01]\d|2[0-3]):[0-5]\d$/.test(t?.hora) ? t.hora : '', ...(minutos > 0 && minutos <= 600 && { minutos }), ...(km > 0 && km <= 60 && { km }) };
   };
   const dias = (d?.dias || []).filter(x => x && /^\d{4}-\d{2}-\d{2}$/.test(x.data)).map(x => ({
     data: x.data,

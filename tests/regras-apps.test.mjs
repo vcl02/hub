@@ -71,7 +71,7 @@ test('água: a limpeza do db tira o formato antigo (xixis), horário ou ml invá
   });
   const d = json(preparar({ dias: [
     { data: '2026-10-27', aguas: [{ hora: '12:00', ml: 150 }, { hora: '9:00', ml: 100 }, { hora: '10:00', ml: 0 }, { hora: '08:00', ml: 300, bebida: 'suco', volume: 300 }], xixis: ['10:00'] },
-    { data: '2026-10-28', aguas: [{ hora: '25:00x', ml: 100 }] },
+    { data: '2026-10-28', aguas: [{ hora: '25:00', ml: 100 }, { hora: '10:60', ml: 100 }] },   // horário impossível
     { data: 'ontem', aguas: [{ hora: '10:00', ml: 100 }] }
   ] }));
   assert.deepEqual(d, { dias: [{ data: '2026-10-27', aguas: [{ hora: '08:00', ml: 264, bebida: 'suco', volume: 300 }, { hora: '12:00', ml: 150 }] }] });
@@ -107,4 +107,49 @@ test('treino: completo só com todas as séries no alvo e sem falha; kg ↔ lb; 
   assert.equal(P.completo(r(12, 10), e), false);                                // faltou série
   assert.deepEqual(json([P.naOutra(100, { unidade: 'kg' }), P.daOutra(220.5, { unidade: 'kg' }), P.naOutra(10, { unidade: 'nível' })]), [220.5, 100.02, 10]);
   assert.deepEqual([P.umAUm(40, 1), P.umAUm(40.5, 1), P.umAUm(40.5, -1), P.umAUm(0, -1)], [41, 41, 40, 0]);
+});
+
+// ---------- Formato antigo: a cópia local de uma versão anterior vira o formato de agora, sem perder o que tinha ----------
+test('corpo: formato antigo (evacuou sim, sono só em horas, sono_em) vira o de agora; horário inválido e dia vazio saem', () => {
+  const U = carregar('corpo/js/util.js', ['pad', 'dataOk', 'num']);
+  const C = carregar('corpo/js/config.js', ['SONO_ANTIGO_DORMIU', 'horaOk', 'maisMinutos', 'horasDeSono'], U);
+  const { ordenarMedidas } = carregarArquivos(['corpo/perfil.js'], ['ordenarMedidas']);
+  const { preparar } = carregar('corpo/js/banco.js', ['preparar'], { ...U, ...C, ordenarMedidas });
+  const d = json(preparar({ medidas: [], dias: [
+    { data: '2026-10-20', evacuou: true, sono: 7.5, sono_em: '2026-10-20T10:00:00.000Z' },   // migration 01 e sono antes dos horários
+    { data: '2026-10-21', evacuacoes: ['09:00', 'x'], xixis: ['14:00', '25:61', '06:00'], dormiu: '23:30', acordou: '07:00' },
+    { data: '2026-10-22', evacuou: false, xixis: [] },                                          // nada: sai
+    { data: '22/10', xixis: ['10:00'] }
+  ] }));
+  assert.deepEqual(d.dias, [
+    { data: '2026-10-20', evacuacoes: [''], xixis: [], dormiu: '23:00', acordou: '06:30', sono: 7.5, sonoEm: '2026-10-20T10:00:00.000Z' },
+    { data: '2026-10-21', evacuacoes: ['', '09:00'], xixis: ['06:00', '14:00'], dormiu: '23:30', acordou: '07:00', sono: 7.5 }
+  ]);
+});
+
+test('alimentação: formato antigo da caminhada (andou + total do dia) vira 1 trecho; valores fora da faixa e marmita acabada saem', () => {
+  const { preparar } = carregar('al/js/banco.js', ['preparar'], { ...carregar('al/js/util.js', ['num']), ...carregar('al/js/config.js', ['TRECHOS_MAX', 'MARMITAS_MAX']) });
+  const d = json(preparar({
+    itens: [{ id: 1, nome: ' Arroz ', porcao: '1 colher', kcal: 32, usos: '3' }, { id: 2, nome: '' }],
+    registros: [{ id: 'r', data: '2026-10-20', hora: '24:00', nome: 'Arroz', qtd: 99, kcal: -5, prot: 900 }],
+    dias: [{ data: '2026-10-20', andou: true, minutos: 30, km: 2 }, { data: '2026-10-21', caminhadas: [{ hora: '18:00' }, { hora: '08:00', minutos: 9999 }] }, { data: '2026-10-22', andou: false }],
+    marmitas: [{ id: 'm1', nome: 'Feijoada', restam: 0, itens: [{ nome: 'x' }] }, { id: 'm2', nome: 'Frango', restam: 3, itens: [{ nome: 'Frango', qtd: 2, kcal: 200 }] }]
+  }));
+  assert.deepEqual(d.itens, [{ id: '1', nome: 'Arroz', porcao: '1 colher', kcal: 32, prot: 0, carb: 0, gord: 0, usos: 3 }]);
+  assert.deepEqual(d.registros, [{ id: 'r', data: '2026-10-20', hora: '', nome: 'Arroz', porcao: '', qtd: 20, kcal: 0, prot: 500, carb: 0, gord: 0 }]);
+  assert.deepEqual(d.dias, [{ data: '2026-10-20', caminhadas: [{ hora: '', minutos: 30, km: 2 }] }, { data: '2026-10-21', caminhadas: [{ hora: '08:00' }, { hora: '18:00' }] }]);
+  assert.deepEqual(d.marmitas.map(m => [m.id, m.restam, m.itens[0].qtd]), [['m2', 3, 2]]);
+});
+
+test('treino: formato antigo (slots/logs, carga + reps) vira exercícios com 3 variações e séries da pirâmide crescente', () => {
+  const U = carregar('tr/js/util.js', ['num', 'dataOk', 'intEntre', 'novoId']), K = carregar('tr/js/config.js', ['LB', 'semPeso', 'UNIDADES', 'REGIOES', 'MODO_PADRAO', 'MODOS', 'passoPadrao', 'PADRAO']);
+  const Pi = carregar('tr/js/piramide.js', ['arred', 'alvoKg'], K);
+  const { preparar } = carregar('tr/js/banco.js', ['repsDe', 'variacaoAtiva', 'preparar'], { ...U, ...K, ...Pi });
+  const d = json(preparar({ slots: [{ id: 'leg', g: 'Leg press', sets: 3, reps: '8-12', rest: 90, a: 0, vs: [{ id: 'v1', pt: 'Leg press 45°', u: 'kg' }] }],
+    logs: [{ v: 'v1', d: '2026-10-01', w: 100, r: [12, 10, 8] }, { v: 'sumiu', d: '2026-10-01', w: 50, r: 10 }], medidas: [{ data: '2026-10-01', peso: 99 }] }));
+  const e = d.exercicios[0];
+  assert.deepEqual([e.id, e.grupo, e.regiao, e.series, e.reps, e.descanso, e.variacoes.length, e.variacoes[0].nome, e.modo], ['leg', 'Leg press', 'Pernas', 3, 12, 90, 3, 'Leg press 45°', K.MODO_PADRAO]);
+  assert.deepEqual(d.registros, [{ variacao: 'v1', data: '2026-10-01', series: [{ kg: 100, reps: 12 }, { kg: 110, reps: 10 }, { kg: 120, reps: 8 }] }]);   // variação que não existe sai
+  assert.equal('medidas' in d, false);                                          // pesagens agora são do Corpo
+  assert.throws(() => preparar({ exercicios: 'x' }));                           // formato desconhecido: erro (o app não sobrescreve nada)
 });

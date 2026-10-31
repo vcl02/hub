@@ -36,8 +36,10 @@ before(async () => {
 after(async () => { await navegador?.close(); servidor?.close(); });
 
 // As tabelas do Fin: GET devolve tudo (a paginação por id=gt. devolve o que vem depois), POST grava com id novo e devolve
-// a linha, PATCH e DELETE por id=eq. Cada pedido de escrita fica em `escritas`.
-function tabelasDoFin(dados) {
+// a linha (id numérico, como o bigint do banco), PATCH e DELETE por id=eq. Cada pedido de escrita fica em `escritas`; com
+// `atraso` (ms), a resposta das escritas demora, como numa rede lenta (o 2º toque cai com o pedido no ar).
+const PADROES = { fin_meta: { status: 'aberta' } };   // o default da coluna no banco (migration 36)
+function tabelasDoFin(dados, atraso = 0) {
   const escritas = [];
   let proximo = 1000;
   const rota = async route => {
@@ -47,7 +49,8 @@ function tabelasDoFin(dados) {
     const id = (u.searchParams.get('id') || '').replace(/^(eq|gt)\./, ''), depois = /^gt\./.test(u.searchParams.get('id') || '');
     if (req.method() === 'GET') return json(depois ? L.filter(l => String(l.id) > id) : id ? L.filter(l => String(l.id) === id) : L);
     escritas.push([req.method(), t]);
-    if (req.method() === 'POST') { const novas = [].concat(req.postDataJSON()).map(l => ({ id: String(proximo++), ...l })); L.push(...novas); return json(novas, 201); }
+    if (atraso) await new Promise(ok => setTimeout(ok, atraso));
+    if (req.method() === 'POST') { const novas = [].concat(req.postDataJSON()).map(l => ({ id: proximo++, ...PADROES[t], ...l })); L.push(...novas); return json(novas, 201); }
     const i = L.findIndex(l => String(l.id) === id);
     if (req.method() === 'PATCH') { Object.assign(L[i], req.postDataJSON()); return json([L[i]]); }
     if (req.method() === 'DELETE') { const [fora] = L.splice(i, 1); return json(fora ? [fora] : []); }
@@ -66,13 +69,13 @@ const dadosDeExemplo = () => ({
   fin_meta: []
 });
 
-async function abrirFin(busca = '', dados = dadosDeExemplo()) {
+async function abrirFin(busca = '', dados = dadosDeExemplo(), atraso = 0) {
   const ctx = await navegador.newContext({ serviceWorkers: 'block', viewport: { width: 390, height: 844 } });
   await ctx.route(u => !u.href.startsWith(base), r => r.abort());
   await falso.fakeSupabase(ctx, falso.novaNuvem());
   const supabaseLocal = fs.readFileSync(path.join(HUB, 'supabase.js'));
   await ctx.route(/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@/, r => r.fulfill({ contentType: 'text/javascript', body: supabaseLocal }));
-  const fin = tabelasDoFin(dados);
+  const fin = tabelasDoFin(dados, atraso);
   await ctx.route(/\/rest\/v1\/(fin|fin_ciclo|fin_meta)(\?|$)/, fin.rota);   // registrada depois: vence o falso do tr
   const pg = await ctx.newPage(), erros = [], faltando = [];
   pg.on('pageerror', e => erros.push(e.message));
@@ -138,6 +141,59 @@ test('apagar: tocar na linha seleciona; Excluir pede confirmação, grava um DEL
   await pg.waitForFunction(() => !/Mercado/.test(document.getElementById('out').textContent));
   assert.deepEqual(escritas.filter(([m]) => m === 'DELETE'), [['DELETE', 'fin']]);
   assert.equal(dados.fin.some(l => l.nome === 'Mercado'), false);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test('simulação: lançar na simulação aparece na tela mas não grava nada; desligar descarta', async () => {
+  const { ctx, pg, erros, dados, escritas } = await abrirFin();
+  await pg.click('#toggleSimulacao');
+  await pg.waitForFunction(() => document.getElementById('toggleSimulacao').classList.contains('ativo'));
+  await pg.click('#abreNovo');
+  await pg.waitForSelector('#modalNovo', { state: 'visible' });
+  await pg.$eval('#fCred', e => { if (e.checked) e.click(); });
+  await pg.fill('#fNome', 'Viagem simulada'); await pg.fill('#fValor', '50000'); await pg.fill('#fCateg', 'Lazer');
+  await pg.click('#salvaNovo');
+  await pg.waitForFunction(() => /Viagem simulada/.test(document.getElementById('out').textContent));
+  assert.deepEqual(escritas, []);                                                // nada foi para o banco
+  assert.equal(dados.fin.some(l => l.nome === 'Viagem simulada'), false);
+  await pg.click('#fechaNovo');
+  await pg.click('#toggleSimulacao');                                            // desligar: recarrega do banco
+  await pg.waitForFunction(() => !document.getElementById('toggleSimulacao').classList.contains('ativo'));
+  await pg.waitForFunction(() => !/Viagem simulada/.test(document.getElementById('out').textContent));
+  assert.deepEqual([escritas, erros], [[], []]);
+  await ctx.close();
+});
+
+test('metas: o botão aparece com a tabela; Nova meta grava uma vez só (mesmo com toque repetido) e aparece na lista', async () => {
+  const { ctx, pg, erros, dados, escritas } = await abrirFin('', dadosDeExemplo(), 300);   // rede lenta
+  await pg.click('#btMetas');
+  await pg.waitForSelector('#modalMetas', { state: 'visible' });
+  const nova = '#modalMetas [data-acao=novaMeta]';
+  await Promise.all([pg.click(nova), pg.click(nova, { timeout: 500 }).catch(() => {})]);
+  await pg.waitForFunction(() => [...document.querySelectorAll('#corpoMetas input')].some(i => i.value === 'Nova meta'));   // a meta vem em campos editáveis
+  await pg.waitForTimeout(400);                                                  // tempo de um 2º pedido chegar, se houvesse
+  assert.deepEqual(escritas.filter(([m]) => m === 'POST'), [['POST', 'fin_meta']]);
+  assert.deepEqual(dados.fin_meta.map(m => [m.nome, m.valor, m.forma]), [['Nova meta', 1000, 'avista']]);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test('cartão: compra lançada no crédito entra na fatura do Nubank, que o botão dele abre', async () => {
+  const { ctx, pg, erros, dados } = await abrirFin();
+  await pg.click('#abreNovo');
+  await pg.waitForSelector('#modalNovo', { state: 'visible' });
+  assert.equal(await pg.isChecked('#fCred'), true);                              // crédito é o padrão
+  await pg.fill('#fNome', 'Tênis'); await pg.fill('#fValor', '40000'); await pg.fill('#fCateg', 'Roupas');
+  await pg.click('#salvaNovo');
+  await pg.waitForFunction(() => document.getElementById('erroNovo').textContent.startsWith('Salvo'));
+  await pg.click('#fechaNovo');
+  const tenis = dados.fin.find(l => l.nome === 'Tênis');
+  assert.deepEqual([tenis.cred, tenis.valor, tenis.fatura], [true, -400, '2026-11-12']);   // vence no dia 12: Nubank
+  await pg.click('#btNubank');
+  await pg.waitForSelector('#modalCartao', { state: 'visible' });
+  assert.match(await pg.textContent('#tituloCartao'), /Nubank/);
+  assert.match((await pg.textContent('#corpoCartao')).replace(/\s+/g, ' '), /Usado ?R\$ ?400,00/);
   assert.deepEqual(erros, []);
   await ctx.close();
 });

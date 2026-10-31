@@ -114,7 +114,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 setInterval(() => { if (temPendente()) enviar(); }, 60000);
 
 // Valida e completa o db (cópia local ou linhas do servidor): horários "HH:MM" em ordem, ml de 1 a 3000; dia vazio sai
-const hhmmOk = h => /^\d{2}:\d{2}$/.test(h);
+const hhmmOk = h => /^([01]\d|2[0-3]):[0-5]\d$/.test(h);   // 00:00 a 23:59
 const preparar = d => ({
   dias: (d?.dias || []).filter(x => x && dataOk(x.data)).map(x => ({
     data: x.data,

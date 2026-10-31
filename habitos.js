@@ -200,7 +200,7 @@ function ateODia(R, dia) {
 //   alDb = { registros: [{ data, hora, qtd, kcal }], dias: [{ data, caminhadas }] } · alBase = { al_registro: { id: linha }, al_dia: { data: linha } }
 function comPendentesDoAl(D, alDb, alBase) {
   if (!alDb || !Array.isArray(alDb.registros) || !Array.isArray(alDb.dias)) return D;
-  const hora = h => /^\d{2}:\d{2}$/.test(h) ? h : '';
+  const hora = h => /^([01]\d|2[0-3]):[0-5]\d$/.test(h) ? h : '';   // a mesma limpeza do al
   const comida = r => ({ hora: hora(r.hora), kcal: Math.min(Math.max(+r.kcal || 0, 0), 5000) * (+r.qtd > 0 ? Math.min(+r.qtd, 20) : 1) });
   const trecho = t => ({ hora: hora(t?.hora), ...(+t?.minutos > 0 && +t.minutos <= 600 && { minutos: +t.minutos }), ...(+t?.km > 0 && +t.km <= 60 && { km: +t.km }) });
   const porDia = (L, f) => L.reduce((o, x) => { (o[x.data] = o[x.data] || []).push(...f(x)); return o; }, {});
