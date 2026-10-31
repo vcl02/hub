@@ -85,11 +85,12 @@ Todo projeto tem os três (o teste `tests/documentacao.test.mjs` confere):
   | Projeto | Funções | Navegador | Estrutura | Edge Function |
   |---|---|---|---|---|
   | Página inicial | `tests/habitos.test.mjs`, `tests/repetidas.test.mjs`, `tests/regras-apps.test.mjs` | `tests/navegacao.test.mjs` (login, hábitos com os dados dos apps, cada app abrindo com a mesma sessão e no dia escolhido) | `tests/hub.test.mjs`, `tests/documentacao.test.mjs` | — |
-  | Fin | `tests/*.test.js` (a maior parte) | `tests/navegador.test.js` (abrir no ciclo, trocar de ciclo, lançar e apagar uma vez só, simulação, metas, cartão) | `tests/estrutura-*.test.js`, `tests/pwa.test.js` e outros | `tests/captura-nubank.test.js` |
+  | Fin | `tests/*.test.js` (a maior parte) | `tests/navegador.test.js` (abrir, ciclo, lançar, apagar, simulação, metas, cartão), `navegador-celular.test.js` (gestos e layout no celular), `navegador-linhas.test.js` (edição na linha, série parcelada) | `tests/estrutura-*.test.js`, `tests/pwa.test.js` e outros | `tests/captura-nubank.test.js` |
   | Treino | pela raiz (`repetidas`, `regras-apps`: pirâmide) | `tests/treino`, `dias`, `ajustes`, `calistenia`, `cardio`, `nuvem`, `pontos` | `tests/estrutura.test.mjs` | — |
   | Alimentação | pela raiz (`repetidas`, `regras-apps`: gasto e meta) | `tests/dia.test.mjs` | `tests/estrutura.test.mjs` | `tests/funcao.test.mjs` (`al-estimar`) |
   | Corpo | pela raiz (`repetidas`, `regras-apps`: sono) | `tests/corpo.test.mjs` | `tests/estrutura.test.mjs` | — |
   | Água | pela raiz (`repetidas`, `regras-apps`: lembretes, limpeza do db) | `tests/agua.test.mjs`, `tests/notificacoes.test.mjs` | `tests/estrutura.test.mjs` | `tests/funcao.test.mjs` (`agua-lembrete`) |
+- **Regex só no que é texto:** SQL, documentação, configuração, segredos, ou a saída de uma função que o teste rodou. Procurar uma linha do código (`assert.match(js, /if \(eixo !== 'x'…/)`) não prova que funciona e quebra a cada reorganização: teste a função rodando ou a tela. O Fin ainda tem conferências assim em conversão (eram 1.825 regex, das quais ~900 no código; o mapa por arquivo sai de contar `assert.match` sobre o que foi lido de `js/`, `css/` e `index.html`).
 - **Onde pôr um teste novo:** regra ou conta → funções (rápido e preciso); o que depende da tela, do clique ou da sincronização de verdade → navegador; formato de arquivo, migration, segredo → estrutura. Na dúvida, funções primeiro e um teste de navegador só para o caminho que o usuário faz.
 - **Playwright numa instalação só:** `tr/package.json`.
   Os outros carregam de lá: `createRequire(path.join(HUB, 'tr', 'package.json'))('playwright')` (o Fin também, em `tests/navegador.test.js`).

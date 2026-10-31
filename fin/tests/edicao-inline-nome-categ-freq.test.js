@@ -1,29 +1,12 @@
-// Regressão: Nome, Categoria e Frequência passam a ser editáveis clicando no próprio texto
-// da célula, mesmo esquema de clique-pra-editar do Valor/Data/Pago (UPDATE imediato via
-// atualizarLancamento). Clicar em outro ponto da linha continua só selecionando-a.
+// Nome, Categoria e Frequência editáveis na própria célula: os editores rodam o código real num DOM falso (helpers/editor-inline)
+// e o caminho na tela (tocar, Enter, linha sintética sem edição) é testado no navegador em navegador-linhas.test.js.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
 
-const tabelas = fs.readFileSync('js/tables.js', 'utf8');
-const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
-const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
-
-test('Nome, Categoria e Frequência só ficam clicáveis pra linha real', () => {
-    assert.match(tabelas, /const celCateg = r => ehLinhaReal\(r\)\s*\n\s*\? `<span class="togCateg" data-tog-categ=/);
-    assert.match(tabelas, /const celFreq = r => ehLinhaReal\(r\)\s*\n\s*\? `<span class="togFreq" data-tog-freq=/);
-    assert.match(tabelas, /data-tog-nome="\$\{escapeHtml\(String\(r\.id\)\)\}"/);
-});
-
-test('celulasDaLinha usa celCateg/celFreq nas colunas categ/freq, celNome continua cobrindo Nome', () => {
-    assert.match(tabelas, /chave == 'categ' \? celCateg\(r\)/);
-    assert.match(tabelas, /chave == 'freq' \? celFreq\(r\)/);
-    assert.match(tabelas, /chave == 'nome' \? celNome\(r\)/);
-});
-
-// Os seis editores (Nome, Categoria, Frequência, Prio, Obs, Canal) saem do mesmo
-// registrarEditorInline: o teste roda o código real num DOM falso e confere o que grava.
+// Os seis editores (Nome, Categoria, Frequência, Prio, Obs, Canal) saem do mesmo registrarEditorInline: o teste roda o
+// código real num DOM falso e confere o que grava.
 const { editar } = require('./helpers/editor-inline');
 
 test('Nome: grava aparado; vazio ou igual cancela sem gravar', async () => {
@@ -72,11 +55,6 @@ test('falha no banco avisa e não muda a linha', async () => {
     const r = await editar('data-tog-nome', { nome: 'Mercado' }, 'Feira', { falhar: true });
     assert.deepEqual(r.toasts, [['Falhou ao atualizar', 'RLS']]);
     assert.equal(r.lancamento.nome, 'Mercado');
-});
-
-test('estilos cobrem os três novos togs e inputs, reaproveitando o padrão visual existente', () => {
-    assert.match(estilos, /\.togData, \.togNome, \.togCateg, \.togFreq, \.togPrio, \.togObs, \.togCanal \{/);
-    assert.match(estilos, /\.inpValor, \.inpNome, \.inpCateg, \.inpFreq, \.inpPrio, \.inpObs, \.inpCanal \{/);
 });
 
 test('regra documentada em REGRAS.md', () => {
