@@ -22,9 +22,10 @@ function roda(codigo, locais, globais = {}) {
     return saida;
 }
 
-test('Nubank A: depois do Stop do não-despesa, apaga a notificação do banco (AutoNotification), tenta lançar sozinho e para se lançou', () => {
+test('Nubank A: depois do Stop do não-despesa, apaga a notificação do banco (AutoNotification), tenta lançar sozinho e para em silêncio se lançou', () => {
     const todas = acoes(ler('tasker/Nubank_A.tsk.xml'));
-    assert.deepEqual(todas.map(x => x.codigo), ['129', '548', '137', '2046367074', '2046367074', '129', '339', '129', '523', '137', '129', '523']);
+    // Uma notificação só (a do pendente, pra tocar): o que entra sozinho não avisa (a pedido do mantenedor).
+    assert.deepEqual(todas.map(x => x.codigo), ['129', '548', '137', '2046367074', '2046367074', '129', '339', '129', '137', '129', '523']);
     // Cancel do AutoNotification: Nubank por regex (compra no crédito e no débito, onde "aprovada" só está
     // no título, Pix e boleto) e Mercado Pago pelo texto da fatura; cada um só na compra do próprio banco.
     const [nu, mp] = [todas[3].corpo, todas[4].corpo];
@@ -52,26 +53,20 @@ test('Nubank A: depois do Stop do não-despesa, apaga a notificação do banco (
     assert.match(a[4].corpo, /captura-nubank<\/Str>/);
     assert.match(a[4].corpo, /x-fin-token:%FINTOKEN/);
     assert.match(a[4].corpo, /<Str sr="arg5" ve="3">%body<\/Str>/);
-    // Lançou: aviso e para. Sem atalho, erro ou sem resposta: segue o fluxo de sempre.
+    // Lançou (ou pagou a conta prevista): para sem avisar. Sem atalho, erro ou sem resposta: segue o fluxo de sempre.
     const lancou = roda(script(a[5]), { http_response_code: '200', http_data: '{"ok":true,"lancado":true,"nome":"Café","categ":"Besteira","forma":"débito"}', valor: '12.50' });
     assert.equal(lancou.lancado, 'sim');
-    assert.equal(lancou.aviso, 'Café R$ 12,50 · Besteira · débito');
-    assert.equal(lancou.avisotit, 'Lançado sozinho');
-    // Conta prevista paga sozinha: o texto vem da função e o título diz pago ou recebido.
-    const pagou = roda(script(a[5]), { http_response_code: '200', http_data: '{"ok":true,"pago":true,"texto":"Água: pago R$ 237,18 (previsto R$ 250,00)"}', valor: '237.18', tipo: 'conta_saida' });
-    assert.deepEqual([pagou.lancado, pagou.aviso, pagou.avisotit], ['sim', 'Água: pago R$ 237,18 (previsto R$ 250,00)', 'Pago sozinho']);
-    assert.equal(roda(script(a[5]), { http_response_code: '200', http_data: '{"ok":true,"pago":true,"texto":"x"}', valor: '1', tipo: 'conta_entrada' }).avisotit, 'Recebido sozinho');
-    assert.match(a[6].corpo, /<Str sr="arg1" ve="3">%avisotit<\/Str>/);
+    assert.equal(lancou.aviso, undefined);
+    assert.equal(roda(script(a[5]), { http_response_code: '200', http_data: '{"ok":true,"pago":true,"texto":"Água: pago R$ 237,18"}', valor: '237.18' }).lancado, 'sim');
     for (const [codigo, dados] of [['200', '{"ok":true,"lancado":false}'], ['200', '{"ok":true,"pago":false,"lancado":false}'], ['500', '{"erro":"x"}'], ['', '']]) {
         assert.equal(roda(script(a[5]), { http_response_code: codigo, http_data: dados, valor: '1' }).lancado, 'nao');
     }
-    for (const i of [6, 7]) assert.match(a[i].corpo, /<lhs>%lancado<\/lhs>\s*<op>2<\/op>\s*<rhs>sim<\/rhs>/);
-    assert.match(a[6].corpo, /<Str sr="arg0" ve="3">%aviso<\/Str>/);
+    assert.match(a[6].corpo, /<lhs>%lancado<\/lhs>\s*<op>2<\/op>\s*<rhs>sim<\/rhs>/);
     // O Stop do começo deixa passar compras e contas previstas.
     assert.match(todas[2].corpo, /<lhs>%tipo<\/lhs>\s*<op>3<\/op>\s*<rhs>despesa\*\/conta\*<\/rhs>/);
     // O pendente (fluxo de tocar) usa o mesmo instante do pedido automático e guarda o cartão.
-    assert.match(script(a[8]), /var agora = parseInt\(local\("agora"\), 10\) \|\| Math\.floor/);
-    assert.match(script(a[8]), /cartao: local\("cartao"\)/);
+    assert.match(script(a[7]), /var agora = parseInt\(local\("agora"\), 10\) \|\| Math\.floor/);
+    assert.match(script(a[7]), /cartao: local\("cartao"\)/);
 });
 
 test('Nubank A lê crédito Nubank, NuPay, débito Nubank e crédito Mercado Pago', () => {
