@@ -7,9 +7,9 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const FIN = path.join(__dirname, '..', '..');
-const ARQUIVOS = ['js/app-state.js', 'js/shared.js', 'js/domain.js', 'js/finance.js', 'js/supabase-api.js', 'js/tables.js', 'js/charts.js', 'js/cycle-views.js'];
+const ARQUIVOS = ['js/app-state.js', 'js/shared.js', 'js/domain.js', 'js/finance.js', 'js/supabase-api.js', 'js/data-ui.js', 'js/tables.js', 'js/charts.js', 'js/cycle-views.js'];
 // A máscara de dinheiro mora em js/form.js, que mexe na tela ao carregar: só as funções puras saem de lá
-const FUNCOES_DO_FORM = ['formataMascaraDinheiro', 'valorMascaraParaNumero'];
+const FUNCOES_DO_FORM = ['formataMascaraDinheiro', 'valorMascaraParaNumero', 'guardarRetratoAntesDaSimulacao'];
 
 // Elemento falso: guarda valor e aceita o que os scripts fazem com ele ao carregar (ganchos de evento, classes)
 function elementoFalso(id) {
@@ -23,7 +23,8 @@ function carregarTela({ hoje = '2026-10-20', dados = {} } = {}) {
     const agora = new Date(`${hoje}T12:00:00-03:00`).getTime();
     class Relogio extends Date { constructor(...a) { super(...(a.length ? a : [agora])); } static now() { return agora; } }
     const elementos = {};
-    const ctx = { console, Intl, Math, JSON, setTimeout, clearTimeout, AbortController, Date: Relogio, navigator: {},
+    const ctx = { console, Intl, Math, JSON, setTimeout, clearTimeout, AbortController, Date: Relogio, navigator: {}, performance: { now: () => 0 }, URL, URLSearchParams,
+        location: { search: '', href: 'http://x/hub/fin/' }, history: { replaceState() {}, pushState() {} },
         matchMedia: () => ({ matches: false }), addEventListener() {}, localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
         document: { getElementById: id => elementos[id] || (elementos[id] = elementoFalso(id)), querySelector: () => null, querySelectorAll: () => [], addEventListener() {} },
         supabase: { createClient: () => ({ auth: { getSession: async () => ({ data: { session: null } }), refreshSession: async () => {} } }) },

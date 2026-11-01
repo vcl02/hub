@@ -30,7 +30,6 @@ test('retrato ao ligar copia linha a linha (a simulação edita os objetos no lu
     // Liga → retrato; desliga (recarga ok) → descarta; recarregar no meio → novo retrato.
     assert.match(formulario, /Estado\.simulando = true;\s*\n\s*guardarRetratoAntesDaSimulacao\(\);/);
     assert.match(formulario, /Estado\.simulando = false;\s*\n\s*Estado\.retratoAntesDaSimulacao = null;/);
-    assert.match(api, /if \(Estado\.simulando\) guardarRetratoAntesDaSimulacao\(\);/);
 });
 
 test('cálculo com os dados reais devolve o resultado e restaura o estado do desenho', () => {

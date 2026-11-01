@@ -1,5 +1,6 @@
 // Toda gravação real (INSERT, UPDATE, DELETE, limites do ciclo) confirmada pelo banco
-// recarrega a tela sozinha, sem atropelar edição em curso nem repetir carga já feita.
+// recarrega a tela sozinha, sem atropelar edição em curso nem repetir carga já feita. As gravações e a carga rodando de
+// verdade estão em gravacao-recarga.test.js; aqui, o agendamento da recarga (bootstrap.js) e a regra documentada.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
@@ -7,32 +8,15 @@ const vm = require('node:vm');
 
 const api = fs.readFileSync('js/supabase-api.js', 'utf8');
 const bootstrap = fs.readFileSync('js/bootstrap.js', 'utf8');
-const dadosUi = fs.readFileSync('js/data-ui.js', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 
 const corpo = (fonte, inicio) => fonte.slice(fonte.indexOf(inicio), fonte.indexOf('\n});', fonte.indexOf(inicio)));
 
-test('toda função que grava no banco pede a recarga ao confirmar', () => {
-    assert.match(api, /const aposGravar = resultado => \{\s*\n\s*if \(typeof recarregarAposGravacao === 'function'\) recarregarAposGravacao\(\);/);
-    assert.match(api, /return aposGravar\(JSON\.parse\(r\.texto\)\);/);   // INSERT
-    assert.match(corpo(api, 'const excluirLancamento'), /if \(JSON\.parse\(r\.texto\)\.length\) return aposGravar\(\);/);
-    assert.match(corpo(api, 'const excluirLancamento'), /if \(tentativa > 1 && !\(await linhaExiste\(id\)\)\) return aposGravar\(\);/);
-    assert.match(corpo(api, 'const atualizarLancamentos'), /return aposGravar\(linhas\);/);
-    assert.match(corpo(api, 'const salvarLimiteDoCiclo'), /return aposGravar\(linhas\[0\]\);/);
-    // INSERT sem resposta pode ter gravado: recarrega também.
-    assert.match(api, /if \(err\.semResposta\) \{ aposGravar\(\); throw erroSemResposta/);
-    // Nenhum outro método que muda dados escapa do gatilho. A única exceção é o POST da
-    // função proxima_recorrencia: só consome um número da sequência, não muda linha nenhuma.
-    const escritas = [...api.matchAll(/method: '(POST|PATCH|DELETE)'/g)].length;
-    assert.equal(escritas, 5);
+test('nenhuma gravação nova escapa da recarga: o código tem exatamente estas 5 e a rpc da série', () => {
+    // Cada gravação, rodando, pede a recarga (gravacao-recarga.test.js); esta conta é a única regex que fica aqui, porque é o
+    // jeito de garantir que uma 6ª gravação acrescentada ao código não passe sem ser testada lá.
+    assert.equal([...api.matchAll(/method: '(POST|PATCH|DELETE)'/g)].length, 5);
     assert.equal((api.match(/rest\/v1\/rpc\//g) || []).length, 1);
-    assert.match(api, /rpc\/proxima_recorrencia/);
-});
-
-test('load marca quando a carga começou e quantas estão em andamento', () => {
-    assert.match(dadosUi, /const gravacoesAteAqui = Estado\.gravacoes;\s*\n\s*Estado\.cargasEmAndamento\+\+;/);
-    assert.match(dadosUi, /Estado\.gravacoesNaUltimaCarga = Math\.max\(Estado\.gravacoesNaUltimaCarga, gravacoesAteAqui\);/);
-    assert.match(dadosUi, /\} finally \{\s*\n\s*Estado\.cargasEmAndamento--;/);
 });
 
 function montar() {
