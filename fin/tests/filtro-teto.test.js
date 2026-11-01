@@ -8,7 +8,6 @@ const vm = require('node:vm');
 const tabelas = fs.readFileSync('js/tables.js', 'utf8');
 const graficos = fs.readFileSync('js/charts.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
-const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 
 // Roda o filtro real (tables.js) com a regra real (charts.js: contaNoTeto e ehGastoIsabella).
@@ -82,10 +81,6 @@ test('clique no nome liga, desliga ou troca o teto e reabre os blocos; Recarrega
     assert.match(trecho, /if \(Estado\.filtroTeto\) \{ delete Estado\.fechados\.db; delete Estado\.fechados\.cr; \}/);
     assert.doesNotMatch(trecho, /atualizarLancamento|inserirLancamento|excluirLancamento/);
     assert.match(fs.readFileSync('js/app-state.js', 'utf8'), /filtroTeto: null,/);
-});
-
-test('nome ligado fica verde, como os outros controles ativos', () => {
-    assert.match(estilos, /\.filtroTeto\.ativo \{\s*\n\s*color: var\(--vd\);\s*\n\s*background: var\(--green-soft\);\s*\n\s*border-color: var\(--vd\);/);
 });
 
 test('REGRAS.md documenta o toggle', () => {

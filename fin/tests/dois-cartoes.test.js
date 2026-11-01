@@ -190,7 +190,6 @@ test('faixas separadas por divisor, nome do cartão em cor própria, teto em it�
     assert.match(visoes, /<span class="limiteCartaoNome cartao-\$\{cartao\}">/);
     assert.match(visoes, /<span class="limiteCartaoNome cartao-total">Total<\/span>/);
     assert.match(estilos, /\.resumoDados > \* \{\s*\n\s*padding-left: \.8rem;\s*\n\s*border-left: 1px solid transparent;/);
-    assert.match(estilos, /\.resumoDados > \* \+ \.limiteCartao \{\s*\n\s*border-left-color: var\(--line-strong\);/);
     assert.match(estilos, /\.limiteCartaoNome\.cartao-nubank \{/);
     assert.match(estilos, /\.limiteCartaoNome\.cartao-mp \{/);
     assert.match(estilos, /\.limiteTeto,\s*\n\s*\.limiteGarantido \{\s*\n\s*font-style: italic;/);

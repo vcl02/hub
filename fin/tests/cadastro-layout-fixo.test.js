@@ -130,7 +130,6 @@ test('Fatura anima só na troca real: recriar o seletor no mesmo estado não pis
 });
 
 test('desativado tem visual próprio (mais escuro, tracejado, sem setinha) e a animação respeita movimento reduzido', () => {
-    assert.match(estilos, /\.fm select:disabled \{\s*\n\s*color: var\(--mu\);\s*\n\s*background-color: var\(--bg\);\s*\n\s*background-image: none;\s*\n\s*border-style: dashed;\s*\n\s*opacity: \.7;\s*\n\s*\}/);
     assert.match(estilos, /\.fm select\.trocaEstado:disabled \{\s*\n\s*animation: desativaCampo \.35s ease-out;/);
     assert.match(estilos, /\.fm select\.trocaEstado:enabled \{\s*\n\s*animation: ativaCampo \.35s ease-out;/);
     assert.match(estilos, /@media \(prefers-reduced-motion: reduce\) \{\s*\n\s*\.fm select\.trocaEstado:disabled,\s*\n\s*\.fm select\.trocaEstado:enabled \{\s*\n\s*animation: none;/);

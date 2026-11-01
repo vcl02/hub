@@ -117,10 +117,6 @@ test('aparece no título Débito de qualquer ciclo (inclusive passados), com o C
     // Teto do próprio ciclo (linha âncora) e indicador do ciclo atual em diante.
 });
 
-test('fica visivelmente separado de Saldo/Guardado por um divisor', () => {
-    assert.match(estilos, /\.resumoDados > \.besteiraIndicador \{\s*\n\s*border-left-color: var\(--ln\);/);
-});
-
 test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /cada um com seu próprio teto fixo em código \(`js\/domain\.js`, não editável pela tela\)/);
     assert.match(regras, /No título Débito de qualquer ciclo \(atual, seguintes e passados\)/);

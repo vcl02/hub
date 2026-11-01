@@ -46,5 +46,5 @@
   }
 
   .celClicavel:hover {
-      background: var(--field-hover);
+      background: var(--surface-2-hover);
   }

@@ -23,8 +23,6 @@ test('registra o tema grafite, ações por ícone e minimalismo como preferênci
     assert.match(agentes, /Prefira ícones a textos nos botões de ação/);
     assert.match(agentes, /formulários somente com campos necessários/);
     assert.match(decisoes, /tema é sempre escuro, mas em cinza grafite legível/);
-    assert.match(base, /--bg: #1B1E21;/);
-    assert.match(base, /--pa: #24272B;/);
 });
 
 test('mantém tooltips e descrições auxiliares curtos', () => {
@@ -76,7 +74,6 @@ test('título do cadastro é só pra leitor de tela (.srOnly); Crédito/Pago/Res
     assert.doesNotMatch(estilosForm, /#formNovo \.modalHead/);
     assert.doesNotMatch(estilosForm, /#formNovo \.modalTituloAcoes/);
     assert.doesNotMatch(estilosForm, /grid-template-columns: repeat\(4, 2\.9rem\)/);
-    assert.match(estilosForm, /#fechaNovo\s*\{[\s\S]*background:\s*var\(--red-soft\)/);
     assert.match(regras, /O título "Novo\/Duplicar\/Editar lançamento"\/"Simular compra" \(`#tituloNovo`\) continua existindo e mudando conforme o modo[\s\S]*?mas é só pra leitor de tela \(`\.srOnly`\)/);
     assert.match(regras, /Os quatro ícones Crédito\/Pago\/Reserva\/Comprometido \(`\.fmChecks`\) e o botão de fechar dividem a mesma linha, numa única fileira/);
 });
@@ -111,9 +108,6 @@ test('visualizações usam um único dropdown com acompanhamentos fixos', () => 
     assert.match(regras, /seletor é fixo/);
     assert.match(regras, /categoria contendo `Roberta`/);
     assert.match(regras, /Toda visualização usa a mesma regra/);
-    // No mobile, a regra de botão não pode apagar a imagem de fundo que desenha a seta do select.
-    assert.match(estilosMobile, /\.btFiltro\s*\{[\s\S]*background-color: var\(--field\);/);
-    assert.doesNotMatch(estilosMobile, /\.btFiltro\s*\{[\s\S]*?background: var\(--field\);/);
 });
 
 test('indicadores financeiros ficam no cabeçalho, entre a navegação e os botões, separados por pipe', () => {
@@ -152,8 +146,6 @@ test('indicadores financeiros ficam no cabeçalho, entre a navegação e os bot�
     assert.match(regras, /Gastos 48,6% em Reserva/);
     assert.match(graficos, /`Liberdade \$\{valorIndicador\(/);
     assert.doesNotMatch(graficos, /[`'](Reserva|Comprometido|Gastos|Liberdade): /);
-    assert.match(estilosPainel, /\.variacaoIndicador\.vd\s*\{\s*color:\s*var\(--vd\)/);
-    assert.match(estilosPainel, /\.variacaoIndicador\.vm\s*\{\s*color:\s*var\(--vm\)/);
     assert.match(graficos, /variacaoValorIndicador\(reserva\.guardado, reservaAnterior\.guardado, true\)/);
     assert.match(graficos, /variacaoValorIndicador\(comprometido\.valor, comprometidosAnterior\.limites\[0\]\.valor, false\)/);
     assert.match(graficos, /atualizarLinhaVariacao\(\s*'variacaoReserva'/);
@@ -165,7 +157,6 @@ test('indicadores financeiros ficam no cabeçalho, entre a navegação e os bot�
     );
     // Fluxo com quebra de linha: itens inteiros, divisor na borda esquerda cortado no início da linha.
     assert.match(estilosPainel, /\.listaIndicadores \{\s*\n\s*display: flex;\s*\n\s*flex-wrap: wrap;/);
-    assert.match(estilosPainel, /\.indicadorItem \{[\s\S]*?flex-wrap: wrap;[\s\S]*?border-left: 1px solid var\(--ln\);/);
     assert.match(estilosPainel, /#indicadoresFinanceiros \{\s*\n\s*min-width: 0;\s*\n\s*overflow: hidden;/);
     assert.match(estilosPainel, /\.listaIndicadores \{[\s\S]*?margin-left: calc\(-\.8rem - 1px\);/);
     assert.match(estilosPainel, /#rowVis \{\s*\n\s*display: flex;\s*\n\s*flex: 1 1 0;/);
@@ -314,7 +305,6 @@ test('"N registros · período" fica encaixado no fim da faixa Futuro do título
     const backlog = ctx.renderBloco('Backlog', 10, '', [{}, {}], 'bk');
     assert.match(backlog, /<h3>.*Backlog · <b class="">R\$ 10<\/b> <span class=contagemTitulo>2 registros<\/span><\/h3>/);
     assert.doesNotMatch(backlog, /<p class=meta>/);
-    assert.match(fs.readFileSync('css/dashboard.css', 'utf8'), /\.blk h3 \.contagemTitulo \{[\s\S]*?color: var\(--mu\);/);
     assert.match(regras, /Sem período a mostrar \(Backlog e Crédito histórico\), a quantidade vai em cinza e menor, sem parênteses, logo depois do valor/);
     // Crédito não passa subtítulo: só a contagem, sem datas nem " · " sobrando.
     const credito = ctx.renderBloco('Crédito', 0, '', [{}, {}, {}], 'cr', true, '', `<span class=resumoTitulo>${faixa('Futuro', 'b')}</span>`);
@@ -358,7 +348,7 @@ test('botões que descem de linha ficam à esquerda; na mesma linha, à direita'
 
 test('controle desativado mostra o cursor de bloqueado vermelho', () => {
     const base = fs.readFileSync('css/base.css', 'utf8');
-    // SVG do círculo cortado no vermelho do tema (--vm #F06A61), com not-allowed de reserva.
+    // SVG do círculo cortado no vermelho do tema (--erro da base, #F06A61), com not-allowed de reserva.
     assert.match(base, /--cursor-bloqueado: url\("data:image\/svg\+xml,[^"]*stroke='%23F06A61'[^"]*"\) 12 12, not-allowed;/);
     assert.match(base, /:disabled \{\s*\n\s*cursor: var\(--cursor-bloqueado\) !important;/);
     // Nenhuma regra de desativado volta a impor o cursor padrão ou o nativo.
@@ -371,8 +361,6 @@ test('controle desativado mostra o cursor de bloqueado vermelho', () => {
 
 test('Simular é sempre laranja, como o Recarregar é sempre verde; ligado fica preenchido', () => {
     const base = fs.readFileSync('css/base.css', 'utf8');
-    assert.match(base, /#toggleSimulacao \{[^}]*color: #F0A83A;\s*\n\s*background: var\(--orange-soft\);\s*\n\s*border: 1px solid #F0A83A;/);
-    assert.match(base, /#recarregar \{[^}]*color: var\(--vd\);\s*\n\s*background: var\(--green-soft\);\s*\n\s*border: 1px solid var\(--vd\);/);
     assert.match(base, /#toggleSimulacao:hover,\s*\n\s*#toggleSimulacao\.ativo \{\s*\n\s*color: #10231A;\s*\n\s*background: #F0A83A;/);
     assert.match(regras, /O botão \*\*Simular\*\* \(lançamentos provisórios\) é sempre laranja/);
 });

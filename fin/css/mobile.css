@@ -234,9 +234,9 @@
       vertical-align: middle;
 
       font: 400 .85rem/1 inherit;
-      color: var(--mu);
-      background: var(--field);
-      border: 1px solid var(--ln);
+      color: var(--muted);
+      background: var(--surface-2);
+      border: 1px solid var(--line);
       border-radius: 6px;
       cursor: pointer;
   }
@@ -247,7 +247,7 @@
   }
 
   .fr {
-      color: var(--vm);
+      color: var(--erro);
       font-weight: 700;
       cursor: help;
       margin-left: .25rem;
@@ -259,32 +259,15 @@
       font-size: .82rem;
       line-height: 1.35;
       color: var(--fg);
-      background: var(--orange-soft);
+      background: var(--laranja-soft);
       border: 1px solid #6A5330;
       border-radius: 9px;
-  }
-
-  .btFiltro {
-      font: inherit;
-      color: var(--fg);
-      /* Não usar shorthand aqui: #visAlvo é um select e preserva a seta definida na camada base. */
-      background-color: var(--field);
-      border: 1px solid var(--ln);
-      border-radius: 9px;
-      padding: .42rem .9rem;
-      cursor: pointer;
-      white-space: nowrap;
-  }
-
-  .btFiltro:hover {
-      background-color: var(--field-hover);
-      border-color: var(--line-strong);
   }
 
   .blk h3 .bruto {
       font-weight: 400;
       font-size: .88rem;
-      color: var(--mu);
+      color: var(--muted);
       margin-left: .4rem;
   }
 
@@ -298,7 +281,7 @@
   }
 
   tbody tr.res td {
-      background: var(--orange-soft);
+      background: var(--laranja-soft);
       font-weight: 600;
   }
 
@@ -307,32 +290,32 @@
   }
 
   tbody tr.sug td {
-      background: var(--green-soft);
+      background: var(--ok-soft);
       font-style: italic;
   }
 
   tbody tr.sug:hover td {
-      background: var(--green-hover);
+      background: var(--ok-hover);
   }
 
   /* Besteira/Isabella prevista: gasto ainda não lançado, reservado até o teto do ciclo. */
   tbody tr.prev td {
-      background: var(--red-soft);
+      background: var(--erro-soft);
       font-style: italic;
   }
 
   tbody tr.prev:hover td {
-      background: var(--red-hover);
+      background: var(--erro-hover);
   }
 
   /* linha de lancamento SIMULADO (modo simulacao) — listrado sutil, nunca confundido
      com um lancamento real */
   tbody tr.sim td {
-      background: repeating-linear-gradient(135deg, var(--orange-soft) 0 8px, transparent 8px 16px);
+      background: repeating-linear-gradient(135deg, var(--laranja-soft) 0 8px, transparent 8px 16px);
   }
 
   tbody tr.sim:hover td {
-      background: repeating-linear-gradient(135deg, #3D3124 0 8px, var(--field-hover) 8px 16px);
+      background: repeating-linear-gradient(135deg, #3D3124 0 8px, var(--surface-2-hover) 8px 16px);
   }
 
   .simIco {
@@ -383,7 +366,7 @@
           grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: .25rem .5rem;
           padding: .5rem .35rem;
-          border-bottom: 1px solid var(--ln);
+          border-bottom: 1px solid var(--line);
       }
       .pmTabela td {
           padding: 0;
@@ -393,14 +376,14 @@
       }
       .pmTabela .n { text-align: left; white-space: nowrap; }
       .pmTabela td.n i { display: block; }
-      .pmTabela tr.pmFalta { background: var(--red-soft); }
+      .pmTabela tr.pmFalta { background: var(--erro-soft); }
       .pmTabela tr.pmFalta td { background: transparent; }
       .pmTabela td:nth-child(1) { font-weight: 600; }
       .pmTabela td:nth-child(2) { grid-column: 2 / 4; }
       .pmTabela td[data-rotulo]::before {
           content: attr(data-rotulo);
           display: block;
-          color: var(--mu);
+          color: var(--muted);
           font-size: .66rem;
       }
   }
@@ -464,13 +447,13 @@
           position: sticky;
           left: 0;
           z-index: 1;
-          box-shadow: inset -1px 0 var(--ln);
+          box-shadow: inset -1px 0 var(--line);
       }
 
       /* Seletor fraco de propósito: o fundo das linhas especiais (fatura, previstas,
          aporte, seleção, hover) é mais específico e continua valendo na coluna fixa. */
       td.cNome {
-          background: var(--pa);
+          background: var(--surface);
       }
 
       table.larguraFixa th.cNome {
@@ -480,16 +463,16 @@
       /* Linhas com fundo translúcido (Mercado Pago) ou listrado (simulação) precisam da base
          opaca por baixo, senão o texto que passa por trás aparece. */
       tbody tr.mp td.cNome {
-          background: linear-gradient(rgba(108, 197, 238, .06), rgba(108, 197, 238, .06)), var(--pa);
+          background: linear-gradient(rgba(108, 197, 238, .06), rgba(108, 197, 238, .06)), var(--surface);
       }
 
       tbody tr.mp:hover td.cNome {
-          background: linear-gradient(rgba(108, 197, 238, .1), rgba(108, 197, 238, .1)), var(--pa);
+          background: linear-gradient(rgba(108, 197, 238, .1), rgba(108, 197, 238, .1)), var(--surface);
       }
 
       tbody tr.sim td.cNome,
       tbody tr.sim:hover td.cNome {
-          background-color: var(--pa);
+          background-color: var(--surface);
       }
 
       /* A data em edição é mais larga que a coluna curta: fica por cima do Nome fixo. */

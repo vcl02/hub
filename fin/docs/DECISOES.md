@@ -159,3 +159,10 @@ A fundação paralela `hub/Vcl.FinHub` (.NET, ABP, Angular, PostgreSQL local) fo
 ## Supabase: itens só do plano Pro
 
 - **Leaked Password Protection** (Auth recusa senhas que constam no HaveIBeenPwned): o advisor de segurança do Supabase aponta como desligada (`auth_leaked_password_protection`), mas o recurso só está disponível no plano Pro. No plano atual o aviso fica aceito; ao migrar para o Pro, ligar em Authentication → Policies/Password security.
+
+## Base comum: tokens (01/11/2026)
+
+- O Fin entra na base comum do hub como os outros módulos, começando pelos tokens: `../base/tokens.css` carrega antes de `css/base.css`, que não redefine nenhum token da base (só escolhe `--cor`) e guarda só os tons que só o Fin usa (`--bg-soft`, `--surface-2-hover`, `--ok-hover`, `--erro-hover`, `--laranja-soft`). A sombra passou a ser a da base (opacidade .35 em vez de .42).
+- As cores deixaram de ser conferidas procurando o texto do CSS (cada token renomeado quebrava dezenas de regex) e passaram a ser medidas no estilo calculado, comparando com o token resolvido pelo próprio navegador (`tests/navegador-estilos.test.js`, uma página só).
+- `.btFiltro` saiu do CSS: o botão de Visualizações não existe mais na tela, e a regra só sobrava (com dois testes conferindo o texto dela).
+- Pendente de decisão do mantenedor: `.catCompartilhada` usa `var(--red)` e `.multiSelAll` usa `var(--ac)`, variáveis que nunca existiram no Fin; hoje os dois herdam a cor do texto. Trocar para `--erro`/`--cor` mudaria a cor visível, então ficou como está.

@@ -12,16 +12,16 @@
   dialog#modalComparativo,
   dialog#modalDetalheCel {
       color: var(--fg);
-      background: var(--pa);
-      border: 1px solid var(--ln);
+      background: var(--surface);
+      border: 1px solid var(--line);
   }
 
   dialog#modalFaturasParcelas,
   dialog#modalDiagnostico,
   dialog#modalConsolidarTudo {
       color: var(--fg);
-      background: var(--pa);
-      border: 1px solid var(--ln);
+      background: var(--surface);
+      border: 1px solid var(--line);
       border-radius: 16px;
       padding: 1.1rem;
       width: min(32rem, 92vw);
@@ -39,7 +39,7 @@
   }
 
   dialog#modalNovo {
-      border: 1px solid var(--ln);
+      border: 1px solid var(--line);
       border-radius: 16px;
       padding: 0;
       width: min(30rem, 92vw);
@@ -57,7 +57,7 @@
   /* Visualizações com a mesma leitura de pago/aberto para qualquer categoria ou nome. */
   dialog#modalVisualizacoes,
   dialog#modalVisualizacao {
-      border: 1px solid var(--ln);
+      border: 1px solid var(--line);
       border-radius: 16px;
       padding: 1.3rem;
       width: min(30rem, 92vw);
@@ -81,7 +81,7 @@
   }
 
   .visPctSub {
-      color: var(--mu);
+      color: var(--muted);
       font-size: .9rem;
       margin: .3rem 0 1.2rem;
   }
@@ -89,14 +89,14 @@
   .visBarra {
       height: 1.7rem;
       border-radius: 999px;
-      background: var(--vm);
-      border: 1px solid var(--ln);
+      background: var(--erro);
+      border: 1px solid var(--line);
       overflow: hidden;
   }
 
   .visFill {
       height: 100%;
-      background: var(--vd);
+      background: var(--ok);
       transition: width .45s ease;
   }
 
@@ -106,7 +106,7 @@
       gap: 1rem;
       margin-top: .5rem;
       font-size: .85rem;
-      color: var(--mu);
+      color: var(--muted);
   }
 
   .visTab {
@@ -119,7 +119,7 @@
 
   .visTab td {
       padding: .7rem .8rem;
-      background: var(--field);
+      background: var(--surface-2);
       border: 0;
   }
 
@@ -137,7 +137,7 @@
   }
 
   .visTab tr.tot td {
-      background: var(--field-hover);
+      background: var(--surface-2-hover);
       font-weight: 700;
       font-size: 1.05rem;
   }
@@ -205,7 +205,7 @@
 
       background: transparent;
       border: 0;
-      color: var(--mu);
+      color: var(--muted);
 
       cursor: pointer;
       padding: .2rem .4rem;
@@ -228,16 +228,16 @@
       width: 2rem;
       height: 2rem;
       padding: 0;
-      color: var(--vm);
-      background: var(--red-soft);
-      border: 1px solid var(--vm);
+      color: var(--erro);
+      background: var(--erro-soft);
+      border: 1px solid var(--erro);
       border-radius: 9px;
   }
 
   #fechaNovo:hover {
       color: #fff;
-      background: var(--vm);
-      border-color: var(--vm);
+      background: var(--erro);
+      border-color: var(--erro);
   }
 
   /* =========================================================
@@ -266,7 +266,7 @@
       padding: .25rem;
       border: 1px solid var(--line-strong);
       border-radius: .55rem;
-      background: var(--pa);
+      background: var(--surface);
       box-shadow: 0 .8rem 1.8rem var(--shadow);
   }
 
@@ -287,24 +287,24 @@
   }
 
   .nomeExistente small {
-      color: var(--mu);
+      color: var(--muted);
       white-space: nowrap;
   }
 
   .nomeExistente:hover,
   .nomeExistente:focus-visible {
       outline: 0;
-      background: var(--field-hover);
+      background: var(--surface-2-hover);
   }
 
   .fm>span {
       font-size: .8rem;
       font-weight: 600;
-      color: var(--mu);
+      color: var(--muted);
   }
 
   .fm .req {
-      color: var(--vm);
+      color: var(--erro);
       font-weight: 700;
   }
 
@@ -315,10 +315,10 @@
       color: var(--fg);
 
       padding: .65rem .8rem;
-      border: 1px solid var(--ln);
+      border: 1px solid var(--line);
       border-radius: 10px;
 
-      background: var(--field);
+      background: var(--surface-2);
       width: 100%;
   }
 
@@ -338,7 +338,7 @@
       appearance: none;
       cursor: pointer;
 
-      background-color: var(--field);
+      background-color: var(--surface-2);
       background-image:
           url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%239CA3AA' stroke-width='1.5'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
 
@@ -376,7 +376,7 @@
      mas afundado — fundo mais escuro que o painel, texto apagado, borda tracejada e sem a
      setinha, pra ler como "não dá pra mexer" e não como um campo vazio. */
   .fm select:disabled {
-      color: var(--mu);
+      color: var(--muted);
       background-color: var(--bg);
       background-image: none;
       border-style: dashed;
@@ -397,7 +397,7 @@
   @keyframes desativaCampo {
       from {
           color: var(--fg);
-          background-color: var(--field);
+          background-color: var(--surface-2);
           opacity: 1;
       }
 
@@ -408,7 +408,7 @@
 
   @keyframes ativaCampo {
       from {
-          color: var(--mu);
+          color: var(--muted);
           background-color: var(--bg);
           opacity: .7;
       }
@@ -441,18 +441,18 @@
       flex: none;
       font-size: .75rem;
       font-weight: 600;
-      color: var(--mu);
+      color: var(--muted);
 
       padding: 0 .7rem;
-      border: 1px solid var(--ln);
+      border: 1px solid var(--line);
       border-radius: 10px;
 
-      background: var(--field);
+      background: var(--surface-2);
       cursor: pointer;
   }
 
   .btHojeMini:hover {
-      background: var(--field-hover);
+      background: var(--surface-2-hover);
       color: var(--fg);
       border-color: var(--line-strong);
   }
@@ -477,8 +477,8 @@
 
       padding: .6rem .7rem;
 
-      background: var(--field);
-      border: 1px solid var(--ln);
+      background: var(--surface-2);
+      border: 1px solid var(--line);
       border-radius: 10px;
 
       cursor: pointer;
@@ -487,7 +487,7 @@
   }
 
   .fmChk:hover {
-      background: var(--field-hover);
+      background: var(--surface-2-hover);
       border-color: var(--line-strong);
   }
 
@@ -516,19 +516,19 @@
       height: 1.15rem;
       flex: 0 0 1.15rem;
       fill: none;
-      stroke: var(--mu);
+      stroke: var(--muted);
       stroke-width: 1.8;
       stroke-linecap: round;
       stroke-linejoin: round;
   }
 
   .fmChkIco:has(input:checked) {
-      background: var(--field-hover);
-      border-color: var(--vd);
+      background: var(--surface-2-hover);
+      border-color: var(--ok);
   }
 
   .fmChkIco:has(input:checked) svg {
-      stroke: var(--vd);
+      stroke: var(--ok);
   }
 
   /* Vezes e Dividir na mesma linha, logo abaixo da Frequência (que é um campo comum do
@@ -565,11 +565,11 @@
       align-items: stretch;
       flex: 1;
 
-      border: 1px solid var(--ln);
+      border: 1px solid var(--line);
       border-radius: 10px;
 
       overflow: hidden;
-      background: var(--field);
+      background: var(--surface-2);
   }
 
   .sinalBt {
@@ -586,11 +586,11 @@
       padding: 0;
       line-height: 1;
 
-      border: 1px solid var(--ln);
+      border: 1px solid var(--line);
       border-radius: 10px;
 
       background: #191C1F;
-      color: var(--vm);
+      color: var(--erro);
 
       font-size: 1.15rem;
       font-weight: 700;
@@ -599,19 +599,19 @@
   }
 
   .sinalBt:hover:not(:disabled) {
-      background: var(--red-soft);
+      background: var(--erro-soft);
   }
 
   .sinalBt.pos {
-      color: var(--vd);
+      color: var(--ok);
   }
 
   .sinalBt.pos:hover:not(:disabled) {
-      background: var(--green-soft);
+      background: var(--ok-soft);
   }
 
   .sinalBt.neutro {
-      color: var(--mu);
+      color: var(--muted);
       cursor: default;
   }
 
@@ -642,7 +642,7 @@
       min-width: 0;
 
       color: var(--fg);
-      background: var(--field);
+      background: var(--surface-2);
   }
 
   .moneyWrap input:focus {
@@ -681,7 +681,7 @@
 
   .dinheiroPrefixo {
       flex: none;
-      color: var(--mu);
+      color: var(--muted);
       font-size: .85em;
   }
 
@@ -706,7 +706,7 @@
        ========================================================= */
 
   .erroNovo {
-      color: var(--vm);
+      color: var(--erro);
       font-size: .85rem;
       margin: 0;
       min-height: 1.1rem;
@@ -725,7 +725,7 @@
   .listaDiagnostico {
       margin: .8rem 0 0;
       padding-left: 1.2rem;
-      color: var(--vm);
+      color: var(--erro);
       font-size: .88rem;
       overflow-wrap: anywhere;
   }
@@ -740,13 +740,13 @@
   }
 
   #secaoAvisos .listaDiagnostico {
-      color: var(--mu);
+      color: var(--muted);
   }
 
   /* Resultado de "Consolidar tudo" é informativo, não um erro — herdar o vermelho padrão
      de .listaDiagnostico destoaria do que realmente é (confirmação do que foi gravado). */
   #listaConsolidarTudo {
-      color: var(--mu);
+      color: var(--muted);
   }
 
   /* Toasts são alertas breves de operação; inconsistências de dados usam o modal. */
@@ -768,10 +768,10 @@
       gap: .25rem .8rem;
       width: min(22rem, calc(100vw - 2rem));
       padding: .75rem .85rem;
-      border: 1px solid var(--ln);
-      border-left: 3px solid var(--vm);
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--erro);
       border-radius: 10px;
-      background: var(--pa);
+      background: var(--surface);
       box-shadow: 0 10px 30px var(--shadow);
       pointer-events: auto;
   }
@@ -781,7 +781,7 @@
   .toast p {
       grid-column: 1 / -1;
       margin: 0;
-      color: var(--mu);
+      color: var(--muted);
       font-size: .82rem;
       overflow-wrap: break-word;   /* chave Pix e outros textos sem espaço (ver copiarCanal
                                        em interactions.js) não podem estourar a largura fixa */
@@ -791,7 +791,7 @@
       border: 0;
       padding: 0;
       background: transparent;
-      color: var(--mu);
+      color: var(--muted);
       font: 1.1rem/1 inherit;
       cursor: pointer;
   }
@@ -806,9 +806,9 @@
       margin-top: .9rem;
 
       padding: .6rem .9rem .7rem;
-      border: 1px solid var(--ln);
+      border: 1px solid var(--line);
       border-radius: 10px;
-      background: var(--field);
+      background: var(--surface-2);
   }
 
   .calcExpr {
@@ -836,7 +836,7 @@
       text-align: right;
       font: 500 .95rem/1.3 inherit;
       font-variant-numeric: tabular-nums;
-      color: var(--mu);
+      color: var(--muted);
 
       overflow-x: auto;
       white-space: nowrap;
@@ -851,10 +851,10 @@
 
   .calcTecla {
       padding: .8rem 0;
-      border: 1px solid var(--ln);
+      border: 1px solid var(--line);
       border-radius: 10px;
 
-      background: var(--field);
+      background: var(--surface-2);
       color: var(--fg);
 
       font: 600 1.05rem/1 inherit;
@@ -862,12 +862,12 @@
   }
 
   .calcTecla:hover {
-      background: var(--field-hover);
+      background: var(--surface-2-hover);
       border-color: var(--line-strong);
   }
 
   .calcTecla.calcOp {
-      color: var(--mu);
+      color: var(--muted);
   }
 
   .calcTecla.calcIgual {
@@ -882,7 +882,7 @@
   }
 
   .erroNovo.okNovo.ok {
-      color: var(--vd);
+      color: var(--ok);
   }
 
   /* =========================================================
@@ -915,7 +915,7 @@
       display: block;
       font-size: .68rem;
       font-weight: 400;
-      color: var(--mu);
+      color: var(--muted);
       margin-top: .1rem;
   }
 
@@ -925,8 +925,8 @@
 
   dialog#modalMetas {
       color: var(--fg);
-      background: var(--pa);
-      border: 1px solid var(--ln);
+      background: var(--surface);
+      border: 1px solid var(--line);
       border-radius: 14px;
       padding: 1rem;
       width: min(56rem, 94vw);
@@ -945,8 +945,8 @@
   dialog#modalPlanoMeta,
   dialog#modalComprometidos {
       color: var(--fg);
-      background: var(--pa);
-      border: 1px solid var(--ln);
+      background: var(--surface);
+      border: 1px solid var(--line);
       border-radius: 14px;
       padding: 1rem;
       width: min(52rem, 94vw);
@@ -982,21 +982,21 @@
       padding: .35rem .5rem;
       text-align: left;
       white-space: nowrap;
-      border-bottom: 1px solid var(--ln);
+      border-bottom: 1px solid var(--line);
   }
 
   .pmTabela th {
-      color: var(--mu);
+      color: var(--muted);
       font-size: .74rem;
       font-weight: 500;
   }
 
   .pmTabela .n { text-align: right; }
-  .pmTabela i { color: var(--mu); }
-  .pmTabela .vd { color: var(--vd); }
+  .pmTabela i { color: var(--muted); }
+  .pmTabela .vd { color: var(--ok); }
   .pmTabela .vm,
-  .pmTabela .vm i { color: var(--vm); }
-  .pmTabela tr.pmFalta td { background: var(--red-soft); }
+  .pmTabela .vm i { color: var(--erro); }
+  .pmTabela tr.pmFalta td { background: var(--erro-soft); }
   .pmTabela tfoot td { border-bottom: 0; }
 
   /* Entrada e parcela no mesmo mês ficam uma embaixo da outra. */
@@ -1013,7 +1013,7 @@
       margin-bottom: .5rem;
       padding: .5rem .6rem;
       background: var(--bg-soft);
-      border: 1px solid var(--ln);
+      border: 1px solid var(--line);
       border-radius: 9px;
       font-size: .84rem;
   }
@@ -1033,8 +1033,8 @@
   }
 
   .pcCortes li { margin: .15rem 0; }
-  .pcCortes i { color: var(--mu); }
-  .pcCortes .vd { color: var(--vd); }
+  .pcCortes i { color: var(--muted); }
+  .pcCortes .vd { color: var(--ok); }
 
   .pcSemCortar {
       display: flex;
@@ -1045,7 +1045,7 @@
       font-size: .8rem;
   }
 
-  .pcSemCortar > i { color: var(--mu); }
+  .pcSemCortar > i { color: var(--muted); }
 
   /* Nenhuma receita cobre: aviso em vermelho com o botão da lista de comprometidos. */
   .pcAviso {
@@ -1054,8 +1054,8 @@
       gap: .5rem;
       margin-top: .6rem;
       padding: .45rem .6rem;
-      color: var(--vm);
-      background: var(--red-soft);
+      color: var(--erro);
+      background: var(--erro-soft);
       border: 1px solid #6A3A36;
       border-radius: 9px;
       font-size: .84rem;
@@ -1090,7 +1090,7 @@
       padding: .55rem .6rem;
       margin-bottom: .45rem;
       background: var(--bg-soft);
-      border: 1px solid var(--ln);
+      border: 1px solid var(--line);
       border-radius: 9px;
   }
 
@@ -1112,7 +1112,7 @@
   }
 
   .metaCampo > .metaRotulo {
-      color: var(--mu);
+      color: var(--muted);
       font-size: .72rem;
   }
 
@@ -1136,8 +1136,8 @@
       font: inherit;
       font-size: .88rem;
       color: var(--fg);
-      background: var(--field);
-      border: 1px solid var(--ln);
+      background: var(--surface-2);
+      border: 1px solid var(--line);
       border-radius: 6px;
   }
 
@@ -1154,8 +1154,8 @@
       box-sizing: border-box;
       font-size: .88rem;
       color: var(--fg);
-      background: var(--field);
-      border: 1px solid var(--ln);
+      background: var(--surface-2);
+      border: 1px solid var(--line);
       border-radius: 6px;
   }
 
@@ -1172,7 +1172,7 @@
   }
 
   .vezesFim {
-      color: var(--mu);
+      color: var(--muted);
       font-size: .8em;
       white-space: nowrap;
   }
@@ -1184,8 +1184,8 @@
       padding: 0 .45rem;
       font-size: .88rem;
       color: var(--fg);
-      background: var(--field);
-      border: 1px solid var(--ln);
+      background: var(--surface-2);
+      border: 1px solid var(--line);
       border-radius: 6px;
   }
 
@@ -1213,15 +1213,15 @@
       gap: .3rem;
       padding: .1rem .5rem;
       color: var(--fg);
-      background: var(--field);
-      border: 1px solid var(--ln);
+      background: var(--surface-2);
+      border: 1px solid var(--line);
       border-radius: 999px;
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
   }
 
   .mpParte i,
-  .mpDetalhe { color: var(--mu); }
+  .mpDetalhe { color: var(--muted); }
 
   /* Opção de vezes clicável (Mínimo/Ideal): a mesma pílula, com cursor e realce de botão. */
   .mpOpcao {
@@ -1229,14 +1229,14 @@
       cursor: pointer;
   }
 
-  .mpOpcao:hover { border-color: var(--line-strong); background: var(--field-hover); }
-  .mpParte .vd { color: var(--vd); }
-  .mpParte .vm { color: var(--vm); }
+  .mpOpcao:hover { border-color: var(--line-strong); background: var(--surface-2-hover); }
+  .mpParte .vd { color: var(--ok); }
+  .mpParte .vm { color: var(--erro); }
   .mpParte b { font-weight: 700; }
 
-  .mpParte.vd { color: var(--vd); background: var(--green-soft); border-color: #2F5A40; }
-  .mpParte.vm { color: var(--vm); background: var(--red-soft); border-color: #6A3A36; }
-  .mpParte.am { color: #F0A83A; background: var(--orange-soft); border-color: #6A5330; }
+  .mpParte.vd { color: var(--ok); background: var(--ok-soft); border-color: #2F5A40; }
+  .mpParte.vm { color: var(--erro); background: var(--erro-soft); border-color: #6A3A36; }
+  .mpParte.am { color: #F0A83A; background: var(--laranja-soft); border-color: #6A5330; }
 
   /* Nas coloridas, rótulo e mês seguem a cor, um pouco mais apagados. */
   .mpParte.vd i, .mpParte.vm i, .mpParte.am i,
@@ -1246,20 +1246,20 @@
   }
 
   .mpSituacao { font-weight: 700; }
-  .metaPlano.neutro .mpParte { color: var(--mu); }
+  .metaPlano.neutro .mpParte { color: var(--muted); }
 
   /* Cadastro no Crédito: Livre Hoje do cartão antes → depois da compra, discreto sob a
      Fatura; sem limite, a linha inteira fica vermelha. */
   .limiteNoCadastro {
       display: block;
       margin-top: .35rem;
-      color: var(--mu);
+      color: var(--muted);
       font-size: .8rem;
       font-variant-numeric: tabular-nums;
   }
 
   .limiteNoCadastro.semLimite {
-      color: var(--vm);
+      color: var(--erro);
   }
 
   /* =========================================================
@@ -1268,8 +1268,8 @@
 
   dialog#modalCartao {
       color: var(--fg);
-      background: var(--pa);
-      border: 1px solid var(--ln);
+      background: var(--surface);
+      border: 1px solid var(--line);
       border-radius: 18px;
       padding: 1.1rem;
       /* Largo o bastante pra Teto, Aprovado e Garantido caberem numa linha só no desktop
@@ -1514,13 +1514,13 @@
       margin-top: .8rem;
       padding: .7rem .8rem;
       background: var(--bg-soft);
-      border: 1px solid var(--ln);
+      border: 1px solid var(--line);
       border-radius: 12px;
   }
 
   .cartaoLinhaRotulo {
       grid-column: 1 / -1;
-      color: var(--mu);
+      color: var(--muted);
       font-size: .7rem;
       font-weight: 700;
       letter-spacing: .08em;
@@ -1529,7 +1529,7 @@
 
   .cartaoValor small {
       display: block;
-      color: var(--mu);
+      color: var(--muted);
       font-size: .72rem;
   }
 
@@ -1543,7 +1543,7 @@
       grid-column: 1 / -1;
       height: .4rem;
       overflow: hidden;
-      background: var(--field);
+      background: var(--surface-2);
       border-radius: 999px;
   }
 
@@ -1562,12 +1562,12 @@
   }
 
   #modalCartao .cartaoUso.acima > span {
-      background: var(--vm);
+      background: var(--erro);
   }
 
   .cartaoAntecipado {
       grid-column: 1 / -1;
-      color: var(--mu);
+      color: var(--muted);
       font-size: .75rem;
   }
 
@@ -1577,7 +1577,7 @@
       align-items: baseline;
       gap: .4rem 1.1rem;
       margin-top: .9rem;
-      color: var(--mu);
+      color: var(--muted);
       font-size: .85rem;
   }
 

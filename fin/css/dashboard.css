@@ -34,7 +34,7 @@
       font-weight: 700;
       letter-spacing: .05em;
       text-transform: uppercase;
-      color: var(--mu);
+      color: var(--muted);
   }
 
   /* Filtros e comandos permanecem na mesma faixa horizontal. */
@@ -105,7 +105,7 @@
       align-items: baseline;
       gap: 0 .4rem;
       padding-left: .8rem;
-      border-left: 1px solid var(--ln);
+      border-left: 1px solid var(--line);
   }
 
   /* normal: a faixa do Débito herda nowrap nos seus itens e cortaria o fim no celular. */
@@ -127,7 +127,7 @@
   /* Simulação: o valor real, apagado, antes do simulado ("71,6% → 83,2%"), nos títulos e
      nos indicadores (marcarAntesDaSimulacao). */
   .valorAntes {
-      color: var(--mu);
+      color: var(--muted);
       font-weight: 400;
       white-space: nowrap;
   }
@@ -138,10 +138,10 @@
       font-variant-numeric: tabular-nums;
   }
 
-  .variacaoIndicador.neutro { color: var(--mu); }
-  .variacaoIndicador.vd { color: var(--vd); }
-  .variacaoIndicador.vm { color: var(--vm); }
-  .separadorVariacao { color: var(--mu); }
+  .variacaoIndicador.neutro { color: var(--muted); }
+  .variacaoIndicador.vd { color: var(--ok); }
+  .variacaoIndicador.vm { color: var(--erro); }
+  .separadorVariacao { color: var(--muted); }
   /* Variação logo depois do próprio indicador, no mesmo item, como texto miúdo: nunca
      parece de outro indicador quando os itens quebram de linha. */
   .variacaoLinha {
@@ -151,8 +151,8 @@
   select {
       font: inherit;
       color: var(--fg);
-      background-color: var(--field);
-      border: 1px solid var(--ln);
+      background-color: var(--surface-2);
+      border: 1px solid var(--line);
       border-radius: 9px;
       padding: .42rem 1.9rem .42rem .7rem;
       cursor: pointer;
@@ -166,12 +166,12 @@
   }
 
   select:hover {
-      background-color: var(--field-hover);
+      background-color: var(--surface-2-hover);
       border-color: var(--line-strong);
   }
 
   select option {
-      background: var(--field);
+      background: var(--surface-2);
       color: var(--fg);
   }
 
@@ -182,8 +182,8 @@
   .multiSelBtn {
       font: inherit;
       color: var(--fg);
-      background-color: var(--field);
-      border: 1px solid var(--ln);
+      background-color: var(--surface-2);
+      border: 1px solid var(--line);
       border-radius: 9px;
       padding: .42rem 1.9rem .42rem .7rem;
       cursor: pointer;
@@ -203,7 +203,7 @@
   }
 
   .multiSelBtn:hover {
-      background-color: var(--field-hover);
+      background-color: var(--surface-2-hover);
       border-color: var(--line-strong);
   }
 
@@ -214,8 +214,8 @@
       left: 0;
       z-index: 25;
 
-      background: var(--pa);
-      border: 1px solid var(--ln);
+      background: var(--surface);
+      border: 1px solid var(--line);
       border-radius: 10px;
       box-shadow: 0 12px 35px var(--shadow);
 
@@ -233,7 +233,7 @@
       width: 100%;
       padding: .35rem .5rem;
       border: 0;
-      border-bottom: 1px solid var(--ln);
+      border-bottom: 1px solid var(--line);
       color: var(--ac);
       background: transparent;
       font: inherit;
@@ -322,12 +322,12 @@
       gap: .55rem;
       padding: .28rem .48rem;
       background: var(--bg-soft);
-      border: 1px solid var(--ln);
+      border: 1px solid var(--line);
       border-radius: 7px;
   }
 
   .resumoRotulo {
-      color: var(--mu);
+      color: var(--muted);
       font-size: .78em;
       font-weight: 700;
       letter-spacing: .04em;
@@ -391,8 +391,8 @@
   /* Fica visivelmente separado de Saldo/Guardado (gap maior + divisor), pois é uma leitura
      diferente: não é saldo de caixa, é progresso contra um teto fixo de código. */
   .resumoDados > .besteiraIndicador {
-      border-left-color: var(--ln);
-      color: var(--mu);
+      border-left-color: var(--line);
+      color: var(--muted);
   }
 
   /* Indicadores na faixa Hoje do Débito (encaixarIndicadoresNoDebito), numa linha própria
@@ -413,7 +413,7 @@
 
   /* O limite só contextualiza o total do único cartão; não é outro saldo nem outra tabela. */
   .limiteCartao {
-      color: var(--mu);
+      color: var(--muted);
       font-size: .88em;
       font-weight: 500;
   }
@@ -424,7 +424,7 @@
       align-items: center;
       justify-content: center;
       width: 1rem;
-      color: var(--vm);
+      color: var(--erro);
       font-size: 1.05em;
       line-height: 1;
       cursor: help;
@@ -468,7 +468,7 @@
   /* Rótulos discretos, valores em negrito; o teto ("de R$ …") e os complementos ficam em
      itálico, como contexto do número principal. */
   .limiteRotulo {
-      color: var(--mu);
+      color: var(--muted);
       font-weight: 400;
   }
 
@@ -505,12 +505,12 @@
   }
 
   .limiteCartaoEditavel::placeholder {
-      color: var(--mu);
+      color: var(--muted);
       opacity: .72;
   }
 
   .limiteGarantido {
-      color: var(--vd);
+      color: var(--ok);
   }
 
   /* "N registros" logo depois do valor nos títulos compactos (Backlog, Crédito histórico). */
@@ -518,7 +518,7 @@
       margin-left: .2rem;
       font-size: .78em;
       font-weight: 400;
-      color: var(--mu);
+      color: var(--muted);
   }
 
   /* Nome com explicação no hover (Besteira, Isabella): sublinhado pontilhado discreto. */
@@ -542,12 +542,12 @@
       cursor: pointer;
   }
   .filtroTeto:hover {
-      background: var(--field-hover);
+      background: var(--surface-2-hover);
   }
   .filtroTeto.ativo {
-      color: var(--vd);
-      background: var(--green-soft);
-      border-color: var(--vd);
+      color: var(--ok);
+      background: var(--ok-soft);
+      border-color: var(--ok);
       text-decoration: none;
   }
 
@@ -559,7 +559,7 @@
       font-size: .75em;
       font-weight: 600;
       color: #F0A83A;
-      background: var(--orange-soft);
+      background: var(--laranja-soft);
       border: 1px solid #6A5330;
       border-radius: 6px;
       white-space: nowrap;
@@ -571,7 +571,7 @@
       font-size: .9em;
       font-weight: 400;
       font-style: italic;
-      color: var(--mu);
+      color: var(--muted);
       white-space: nowrap;
   }
 
@@ -583,13 +583,13 @@
   .blk .meta,
   .meta {
       font-size: .85rem;
-      color: var(--mu);
+      color: var(--muted);
       font-style: italic;
       margin: .1rem 0 .6rem;
   }
 
   .empty {
-      color: var(--mu);
+      color: var(--muted);
       font-style: italic;
       font-size: .9rem;
       padding: .8rem;
@@ -600,8 +600,8 @@
        ========================================================= */
 
   .wrap {
-      background: var(--pa);
-      border: 1px solid var(--ln);
+      background: var(--surface);
+      border: 1px solid var(--line);
       border-radius: 10px;
       overflow: hidden;
       box-shadow: 0 2px 12px rgba(0, 0, 0, .12);
@@ -616,7 +616,7 @@
       border-collapse: separate;
       border-spacing: 0;
       width: 100%;
-      background: var(--pa);
+      background: var(--surface);
   }
 
   /* Tabelas de lançamentos (Débito, Crédito, Backlog): largura de coluna fixa, que não muda
@@ -692,7 +692,7 @@
       z-index: 1;
 
       background: #1D2024;
-      color: var(--mu);
+      color: var(--muted);
 
       font-size: .7rem;
       font-weight: 700;
@@ -701,7 +701,7 @@
       text-align: left;
 
       padding: .55rem .7rem;
-      border-bottom: 1px solid var(--ln);
+      border-bottom: 1px solid var(--line);
 
       cursor: pointer;
       user-select: none;
@@ -719,7 +719,7 @@
       z-index: 1;
       background: #1A1D20;
       padding: .25rem .5rem .45rem;
-      border-bottom: 1px solid var(--ln);
+      border-bottom: 1px solid var(--line);
       cursor: default;
   }
 
@@ -731,9 +731,9 @@
       letter-spacing: normal;
 
       color: var(--fg);
-      background: var(--field);
+      background: var(--surface-2);
 
-      border: 1px solid var(--ln);
+      border: 1px solid var(--line);
       border-radius: 6px;
       padding: .2rem .4rem;
   }
@@ -795,8 +795,8 @@
       letter-spacing: normal;
       white-space: nowrap;
       color: #737B82;
-      background: var(--field);
-      border: 1px solid var(--ln);
+      background: var(--surface-2);
+      border: 1px solid var(--line);
       border-radius: 6px;
       cursor: pointer;
   }
@@ -821,7 +821,7 @@
 
   td {
       padding: .5rem .7rem;
-      border-bottom: 1px solid var(--ln);
+      border-bottom: 1px solid var(--line);
       color: var(--fg);
   }
 
@@ -892,13 +892,13 @@
   /* Acabou = verde, porque a despesa deixou de existir de forma confirmada. */
   .difOk {
       color: #10231A;
-      background: var(--vd);
+      background: var(--ok);
   }
 
   /* Começou = vermelho, porque é uma nova despesa recorrente. */
   .difNovo {
       color: #2B1211;
-      background: var(--vm);
+      background: var(--erro);
   }
 
   /* Único = âmbar, pois apareceu uma vez e não se confirmou como recorrência. */
@@ -938,12 +938,12 @@
       border: 1px solid #F0A83A;
       border-radius: 50%;
 
-      background: var(--field);
+      background: var(--surface-2);
       color: #F0A83A;
   }
 
   .corrigeDupData:hover {
-      background: var(--field-hover);
+      background: var(--surface-2-hover);
   }
 
   /* =========================================================
@@ -951,12 +951,12 @@
        ========================================================= */
 
   .vd {
-      color: var(--vd);
+      color: var(--ok);
       font-weight: 600;
   }
 
   .vm {
-      color: var(--vm);
+      color: var(--erro);
       font-weight: 600;
   }
 
@@ -1056,12 +1056,12 @@
       border: 1px solid var(--line-strong);
       border-radius: 50%;
 
-      background: var(--field);
+      background: var(--surface-2);
       color: var(--fg);
   }
 
   .linkCanal:hover, .copiarCanal:hover {
-      background: var(--field-hover);
+      background: var(--surface-2-hover);
       border-color: var(--fg);
   }
 
@@ -1069,7 +1069,7 @@
       font: inherit;
       font-variant-numeric: tabular-nums;
       color: var(--fg);
-      background: var(--field);
+      background: var(--surface-2);
       border: 1px solid var(--line-strong);
       border-radius: 6px;
       padding: .15rem .4rem;
@@ -1092,7 +1092,7 @@
       font: inherit;
       font-variant-numeric: tabular-nums;
       color: var(--fg);
-      background: var(--field);
+      background: var(--surface-2);
       border: 1px solid var(--line-strong);
       border-radius: 6px;
       padding: .15rem .4rem;
@@ -1121,11 +1121,11 @@
        ========================================================= */
 
   tbody tr.fat td {
-      background: var(--red-soft);
+      background: var(--erro-soft);
   }
 
   tbody tr.fat:hover td {
-      background: var(--red-hover);
+      background: var(--erro-hover);
   }
 
   /* =========================================================
@@ -1175,11 +1175,11 @@
   }
 
   tbody tr.on td {
-      background: var(--green-soft);
+      background: var(--ok-soft);
   }
 
   tbody tr.on:hover td {
-      background: var(--green-hover);
+      background: var(--ok-hover);
   }
 
   /* =========================================================
@@ -1191,7 +1191,7 @@
       position: sticky;
       left: 0;
       z-index: 2;
-      background: var(--pa);
+      background: var(--surface);
   }
 
   .wx th.c1 {
@@ -1207,11 +1207,11 @@
   }
 
   .wx tbody tr.on td.c1 {
-      background: var(--green-soft);
+      background: var(--ok-soft);
   }
 
   .wx tbody tr.on:hover td.c1 {
-      background: var(--green-hover);
+      background: var(--ok-hover);
   }
 
   .wx tr.tot td.c1 {
@@ -1219,7 +1219,7 @@
   }
 
   .wx td.c1 {
-      border-right: 1px solid var(--ln);
+      border-right: 1px solid var(--line);
   }
 
   /* =========================================================
@@ -1238,9 +1238,9 @@
       font: inherit;
       color: var(--fg);
       padding: .55rem .7rem;
-      border: 1px solid var(--ln);
+      border: 1px solid var(--line);
       border-radius: 9px;
-      background: var(--field);
+      background: var(--surface-2);
   }
 
   #login input::placeholder {
@@ -1268,7 +1268,7 @@
   }
 
   #login .err {
-      color: var(--vm);
+      color: var(--erro);
       font-size: .85rem;
       min-height: 1.1rem;
   }
@@ -1341,7 +1341,7 @@
 
   #selbar .cnt {
       font-size: .78rem;
-      color: var(--mu);
+      color: var(--muted);
       text-transform: uppercase;
       letter-spacing: .04em;
   }
@@ -1369,13 +1369,13 @@
   #selbar #seledit,
   #selbar #seldup {
       color: var(--fg);
-      background: var(--field);
+      background: var(--surface-2);
       border: 1px solid var(--line-strong);
   }
 
   #selbar #seledit:hover,
   #selbar #seldup:hover {
-      background: var(--field-hover);
+      background: var(--surface-2-hover);
       border-color: var(--fg);
   }
 
@@ -1387,14 +1387,14 @@
   /* Excluir: mesma forma discreta do Duplicar, so' que em vermelho — a acao e'
      irreversivel, entao nao deve parecer o botao primario (branco) da barra. */
   #selbar #seldel {
-      color: var(--vm);
-      background: var(--red-soft);
-      border: 1px solid var(--vm);
+      color: var(--erro);
+      background: var(--erro-soft);
+      border: 1px solid var(--erro);
   }
 
   #selbar #seldel:hover {
       color: #111315;
-      background: var(--vm);
+      background: var(--erro);
   }
 
   #selbar #seldel:disabled {
@@ -1412,14 +1412,14 @@
       height: 2.2rem;
       padding: 0;
       color: var(--fg);
-      background: var(--field);
-      border: 1px solid var(--ln);
+      background: var(--surface-2);
+      border: 1px solid var(--line);
       border-radius: 9px;
       cursor: pointer;
   }
 
   .btIcone:hover:not(:disabled) {
-      background: var(--field-hover);
+      background: var(--surface-2-hover);
       border-color: var(--line-strong);
   }
 
@@ -1453,9 +1453,9 @@
 
   /* Ligado (ex.: só as linhas diferentes): mesmo verde de "ativo" do restante da tela. */
   .btIcone.ativo {
-      color: var(--vd);
-      background: var(--green-soft);
-      border-color: var(--vd);
+      color: var(--ok);
+      background: var(--ok-soft);
+      border-color: var(--ok);
   }
 
   /* Menu do ícone Visualizações: cartão escuro solto abaixo do ícone (não colado), com
@@ -1475,8 +1475,8 @@
       gap: .1rem;
       min-width: 12rem;
       padding: .35rem;
-      background: var(--pa);
-      border: 1px solid var(--ln);
+      background: var(--surface);
+      border: 1px solid var(--line);
       border-radius: 10px;
       box-shadow: 0 10px 28px var(--shadow);
   }
@@ -1496,18 +1496,8 @@
 
   .menuIcone button:hover,
   .menuIcone button:focus-visible {
-      background: var(--field-hover);
+      background: var(--surface-2-hover);
       outline: none;
-  }
-
-  /* .btFiltro (Visualizações) só tem estilo
-     próprio dentro do media query mobile (ver mobile.css) — no desktop usa a aparência
-     nativa do navegador, que nem sempre deixa claro que o botão está desabilitado durante
-     um processamento (ex.: "Consolidar tudo" enquanto roda, ver consolidarTudo em
-     form.js). Esta regra fica fora do media query de propósito, pra valer nas duas
-     larguras, mesmo esquema de opacidade do Duplicar/Editar/Excluir acima. */
-  .btFiltro:disabled {
-      opacity: .5;
   }
 
   /* =========================================================
@@ -1547,14 +1537,14 @@
       line-height: 1;
 
       color: var(--fg);
-      background: var(--field);
-      border: 1px solid var(--ln);
+      background: var(--surface-2);
+      border: 1px solid var(--line);
       border-radius: 9px;
       cursor: pointer;
   }
 
   .btNavCiclo:hover {
-      background: var(--field-hover);
+      background: var(--surface-2-hover);
       border-color: var(--fg);
   }
 

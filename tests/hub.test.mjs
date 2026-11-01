@@ -33,8 +33,7 @@ test('cada app volta para o hub (../)', () => {
 });
 
 test('tema escuro único: hub, fin e os módulos na base com o mesmo fundo', () => {
-  assert.match(ler('fin/css/base.css'), /--bg: #1B1E21;/);
-  for (const app of ['tr', 'al', 'corpo', 'agua']) assert.match(ler(`${app}/index.html`), /<link rel="stylesheet" href="\.\.\/base\/tokens\.css">/, app);   // na base comum
+  for (const app of ['fin', 'tr', 'al', 'corpo', 'agua']) assert.match(ler(`${app}/index.html`), /<link rel="stylesheet" href="\.\.\/base\/tokens\.css">/, app);   // na base comum
   assert.match(html, /<link rel="stylesheet" href="base\/tokens\.css">/);   // a página inicial também
   assert.match(ler('base/tokens.css'), /--bg:#1B1E21;/);   // módulo na base comum: o fundo vem de lá
   for (const arquivo of ['index.html', 'fin/index.html', 'tr/index.html', 'al/index.html', 'corpo/index.html', 'agua/index.html']) assert.match(ler(arquivo), /<meta name=("theme-color"|theme-color) content="#1B1E21">/, arquivo);

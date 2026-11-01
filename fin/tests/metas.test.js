@@ -172,7 +172,6 @@ test('plano em pílulas: situação, entrada, parcelas, Comprometido e falta, co
         '<span class="mpParte"><i>Entrada</i> <b>R$ 1.000,00</b> <span class=mpDetalhe>Nov/26</span></span> ' +
         '<span class="mpParte"><i>Débito</i> <b>21x R$ 190,48</b> <span class=mpDetalhe>Nov/26 a Jul/28</span></span></span>');
     assert.match(regras, /cada meta mostra o plano embaixo dos campos em \*\*pílulas\*\*, com o rótulo em itálico, o valor em negrito e o mês apagado/);
-    assert.match(ler('css/forms.css'), /\.mpParte\.am \{ color: #F0A83A; background: var\(--orange-soft\); border-color: #6A5330; \}/);
     assert.equal(rotuloDoMesDaMeta({ forma: 'financiamento', entrada: 500 }), '1ª parcela');
     assert.equal(rotuloDoMesDaMeta({ forma: 'cartao', entrada: 500 }), 'Compra');
     assert.equal(rotuloDoMesDaMeta({ forma: 'auto' }), 'Pagamento');

@@ -9,7 +9,6 @@ const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const formulario = fs.readFileSync('js/form.js', 'utf8');
 const graficos = fs.readFileSync('js/charts.js', 'utf8');
 const api = fs.readFileSync('js/supabase-api.js', 'utf8');
-const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const trecho = (fonte, assinatura) => {
     const inicio = fonte.indexOf(assinatura);
@@ -71,7 +70,6 @@ test('desenho: calcula o antes primeiro, marca depois de encaixar os indicadores
     const alinha = corpo.indexOf('alinharResumosDosTitulos();');
     assert.ok(antes > 0 && antes < real && encaixe < marca && marca < alinha);
     assert.match(interacoes, /`<span class=valorAntes title="Sem a simulação">\$\{escapeHtml\(textos\[i\]\)\} →<\/span> `/);
-    assert.match(estilos, /\.valorAntes \{\s*\n\s*color: var\(--mu\);\s*\n\s*font-weight: 400;/);
 });
 
 test('Reserva: primeiro ciclo seguinte em que o guardado projetado alcança a meta', () => {

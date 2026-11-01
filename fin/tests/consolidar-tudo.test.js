@@ -8,8 +8,6 @@ const test = require('node:test');
 
 const formulario = fs.readFileSync('js/form.js', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
-const estilosMobile = fs.readFileSync('css/mobile.css', 'utf8');
-const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 
 test('Consolidar tudo não tem botão próprio: roda no clique do Recarregar', () => {
     assert.match(fs.readFileSync('js/bootstrap.js', 'utf8'), /await consolidarTudo\(bt, voltarAoCicloAtualELimpar\);/);
@@ -29,15 +27,6 @@ test('botão fica desabilitado e com texto "Consolidando…" durante a varredura
     // finally roda tanto no caminho feliz quanto no catch, então o texto e o disabled
     // voltam ao normal nos dois casos — sucesso ou falha.
     assert.match(trecho, /\} finally \{\s*\n\s*Estado\.gravandoAjuste = false;\s*\n\s*botao\.disabled = false;\s*\n\s*botao\.classList\.remove\('carregando'\);\s*\n\s*botao\.title = tituloOriginal;\s*\n\s*botao\.setAttribute\('aria-label', rotuloOriginal\);\s*\n\s*\}/);
-});
-
-test('fica visualmente apagado enquanto desabilitado, igual Duplicar/Editar/Excluir e o Salvar do cadastro — não só o cursor nativo do navegador', () => {
-    // .btFiltro só tinha estilo dentro do media query mobile (ver css/mobile.css); esta
-    // regra fica em dashboard.css, fora de qualquer media query, pra também valer no
-    // desktop — onde "Consolidar tudo" realmente roda.
-    // O cursor vem da regra global de :disabled (bloqueado vermelho, em base.css).
-    assert.match(estilos, /\.btFiltro:disabled \{\s*\n\s*opacity: \.5;\s*\n\s*\}/);
-    assert.doesNotMatch(estilosMobile, /\.btFiltro:disabled/);
 });
 
 test('consolidar tudo corrige recorrências duplicadas ANTES de materializar/consolidar, no mesmo intervalo, recalculando o fim do intervalo depois', () => {
@@ -81,7 +70,6 @@ test('também abre um modal com o detalhe ciclo a ciclo — resposta direta ao c
     const estilosForm = fs.readFileSync('css/forms.css', 'utf8');
     assert.match(estilosForm, /dialog#modalDiagnostico::backdrop,\s*\n\s*dialog#modalConsolidarTudo::backdrop \{\s*\n\s*background: rgba\(0, 0, 0, \.68\);/);
     assert.match(estilosForm, /dialog#modalDiagnostico,\s*\n\s*dialog#modalConsolidarTudo \{/);
-    assert.match(estilosForm, /#listaConsolidarTudo \{\s*\n\s*color: var\(--mu\);\s*\n\s*\}/);
 });
 
 test('regra documentada em REGRAS.md', () => {

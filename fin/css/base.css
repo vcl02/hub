@@ -1,32 +1,17 @@
-  /* Base global: tokens de cor, tipografia, elementos nativos e comportamentos comuns.
-     Os demais módulos consomem estas variáveis; não redefinir a identidade visual fora daqui. */
+  /* Base do Fin: os tons próprios, tipografia, elementos nativos e comportamentos comuns. As cores com significado e as
+     superfícies vêm da base comum do hub (../base/tokens.css); os demais arquivos do Fin consomem estas variáveis. */
   :root {
       /* Cursor de bloqueado (círculo cortado) em vermelho, com contorno escuro pra ler sobre
          qualquer fundo; not-allowed nativo de reserva se o SVG não carregar. */
       --cursor-bloqueado: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Cg stroke='%231B1E21' stroke-width='5'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Cpath d='M6.5 6.5l11 11'/%3E%3C/g%3E%3Cg stroke='%23F06A61' stroke-width='2.5'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Cpath d='M6.5 6.5l11 11'/%3E%3C/g%3E%3C/svg%3E") 12 12, not-allowed;
-      --bg: #1B1E21;
-      --pa: #24272B;
-      --fg: #E9ECEF;
-      --mu: #AAB1B8;
-      --ln: #3B4147;
-
-      --vd: #4CCB78;
-      --vm: #F06A61;
-
+      /* Cores, superfícies, linhas e sombra vêm de ../base/tokens.css (carregado antes): aqui só a cor do módulo e
+         os tons que só o Fin usa (passar o mouse, o fundo mais leve e o laranja da simulação). */
+      --cor: #A78BFA;
       --bg-soft: #202428;
-      --field: #2A2E33;
-      --field-hover: #34393F;
-      --line-strong: #4A5158;
-
-      --green-soft: #1E392A;
-      --green-hover: #254634;
-
-      --red-soft: #402624;
-      --red-hover: #4D2D2A;
-
-      --orange-soft: #403326;
-
-      --shadow: rgba(0, 0, 0, .42);
+      --surface-2-hover: #34393F;
+      --ok-hover: #254634;
+      --erro-hover: #4D2D2A;
+      --laranja-soft: #403326;
   }
 
   * {
@@ -90,7 +75,7 @@
 
   .sub {
       font-size: .85rem;
-      color: var(--mu);
+      color: var(--muted);
       font-style: italic;
       margin: 0 0 1.8rem;
   }
@@ -111,17 +96,17 @@
       width: 2rem;
       height: 2rem;
       padding: 0;
-      color: var(--vd);
-      background: var(--green-soft);
-      border: 1px solid var(--vd);
+      color: var(--ok);
+      background: var(--ok-soft);
+      border: 1px solid var(--ok);
       border-radius: 9px;
       cursor: pointer;
   }
 
   #recarregar:hover:not(:disabled) {
       color: #10231A;
-      border-color: var(--vd);
-      background: var(--vd);
+      border-color: var(--ok);
+      background: var(--ok);
   }
 
   #recarregar.carregando svg {
@@ -138,9 +123,9 @@
       width: 2rem;
       height: 2rem;
       padding: 0;
-      color: var(--mu);
-      background: var(--field);
-      border: 1px solid var(--ln);
+      color: var(--muted);
+      background: var(--surface-2);
+      border: 1px solid var(--line);
       border-radius: 9px;
       cursor: pointer;
   }
@@ -148,13 +133,13 @@
   #btDiagnostico:hover {
       color: var(--fg);
       border-color: var(--line-strong);
-      background: var(--field-hover);
+      background: var(--surface-2-hover);
   }
 
   #btDiagnostico.temInconsistencia {
-      color: var(--vm);
-      border-color: var(--vm);
-      background: var(--red-soft);
+      color: var(--erro);
+      border-color: var(--erro);
+      background: var(--erro-soft);
   }
 
   #btDiagnostico.temInconsistencia::after {
@@ -166,7 +151,7 @@
       height: .5rem;
       border: 1px solid var(--bg);
       border-radius: 50%;
-      background: var(--vm);
+      background: var(--erro);
   }
 
   /* Simular (lançamentos provisórios): sempre em laranja, como o Recarregar é sempre verde.
@@ -180,7 +165,7 @@
       height: 2rem;
       padding: 0;
       color: #F0A83A;
-      background: var(--orange-soft);
+      background: var(--laranja-soft);
       border: 1px solid #F0A83A;
       border-radius: 9px;
       cursor: pointer;
