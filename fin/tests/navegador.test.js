@@ -8,12 +8,15 @@ const { HOJE, prepararNavegador, abrirFin, dadosDeExemplo, textoDaTabela } = req
 
 prepararNavegador();
 
-test('abre no ciclo de hoje com os lançamentos dele, sem erro nem arquivo faltando', async () => {
+test('abre no ciclo de hoje com os lançamentos dele, sem erro nem arquivo faltando; no alto, o cabeçalho da base (hub e Fin, sem Sair)', async () => {
     const { ctx, pg, erros, faltando } = await abrirFin();
     const t = await textoDaTabela(pg);
     assert.match(t, /Salário/); assert.match(t, /Mercado/);
     assert.doesNotMatch(t, /Aluguel/);                                    // do ciclo anterior
-    assert.equal(await pg.getAttribute('#voltarHub', 'href'), '../');
+    // Cabeçalho da base, o primeiro do painel: o ícone do hub volta à página inicial; o nome é Fin; Sair só existe no hub
+    assert.deepEqual(await pg.$eval('#app > :first-child', e => [e.tagName, e.className, e.querySelector('#i-hub.bt-ic')?.getAttribute('href'), e.querySelector('h1').textContent]),
+        ['HEADER', 'topo', '../', 'Fin']);
+    assert.equal(await pg.$('#sair'), null);
     assert.deepEqual([erros, faltando], [[], []]);
     await ctx.close();
 });

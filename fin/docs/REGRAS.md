@@ -221,7 +221,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Esse modal não tem botão de fechar e pode ser fechado ao clicar no fundo ou usar Esc.
   No desktop, ele amplia proporcionalmente para avisos longos usarem a linha disponível; no mobile preserva a largura da tela.
   Avisos não acendem o ponto.
-  Lentidão e falhas operacionais aparecem em toast no canto inferior direito.
+  Lentidão e falhas operacionais aparecem no aviso da base comum (um só, embaixo no meio, como nos outros módulos; o novo troca o anterior; falha, valor inválido e não salvo em vermelho).
   Nada é corrigido, descartado ou gravado automaticamente.
   O Console mantém apenas uma linha resumida de métricas por carga.
 - As regras de diagnóstico ficam centralizadas em `validarLancamentosCarregados()` em `js/domain.js`: `inconsistencias` apontam contrato de dados inválido e `avisos` são sinais de revisão.
@@ -568,14 +568,14 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ### Cabeçalho e controles
 
-- O ícone do hub (**Hub**, a marca do hub em traço), o último do cabeçalho, volta à página inicial do hub (`../`), que abre os outros apps; é um link, não grava nada.
+- No alto da página fica o cabeçalho da base comum, igual ao dos outros módulos: o ícone do hub (**Hub**, a marca do hub em traço) e o nome **Fin** com a bolinha da cor do módulo. O ícone volta à página inicial do hub (`../`), que abre os outros apps; é um link, não grava nada.
   Não há botão de sair no fin: o login e o Sair ficam só na página inicial do hub (a sessão é a mesma).
 - **Esc** sai do fin para a página inicial do hub (`../`), como em todos os apps, quando nada mais usou a tecla.
   Modal aberto fecha antes (o próprio `<dialog>` fecha com Esc), e o menu de visualização e a edição na célula também.
   Num campo de texto, o 1º Esc só tira o foco.
 - Os seletores **De** e **Até** mostram cada ciclo pelo mês abreviado (`Out/26`, mês do início do ciclo), com o nome completo (`Outubro 2026`) no tooltip da opção.
   Os dois ficam lado a lado, sem texto ou traço entre eles (`Out/26` `Nov/26`).
-- O cabeçalho (navegação De/Até, simulação, cadastro, recarregar, diagnóstico, hub) é o mesmo em qualquer largura; quando não cabe numa linha só, quebra para a seguinte.
+- A linha de baixo do cabeçalho (navegação De/Até, indicadores, simulação, cadastro, recarregar, diagnóstico) é a mesma em qualquer largura; quando não cabe numa linha só, quebra para a seguinte.
   Os botões (cartões Nubank e Mercado Pago, Todas/Diferentes, Gráfico, Visualizações, simulação, cadastro, recarregar, diagnóstico, hub, nessa ordem) formam um bloco só, à direita — a navegação de ciclo fica só com setas e De/Até: quando não cabem, descem **juntos** pra linha seguinte, nunca separados, e lá ficam alinhados **à esquerda**.
   No celular, o bloco vira uma grade de 6 colunas com a largura da tela (duas linhas de botões maiores, mais fáceis de tocar), na mesma ordem; o menu de Visualizações abre alinhado pela direita do ícone, dentro da tela.
   A navegação de ciclo (setas, De/Até) ganha sua própria linha e encolhe/quebra internamente em vez de estourar a tela.

@@ -751,56 +751,6 @@
       color: var(--muted);
   }
 
-  /* Toasts são alertas breves de operação; inconsistências de dados usam o modal. */
-  #toasts {
-      position: fixed;
-      right: 1rem;
-      bottom: 1rem;
-      z-index: 20;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: .55rem;
-      pointer-events: none;
-  }
-
-  .recado {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: .25rem .8rem;
-      width: min(22rem, calc(100vw - 2rem));
-      padding: .75rem .85rem;
-      border: 1px solid var(--line);
-      border-left: 3px solid var(--erro);
-      border-radius: 10px;
-      background: var(--surface);
-      box-shadow: 0 10px 30px var(--shadow);
-      pointer-events: auto;
-  }
-
-  .recado strong { font-size: .88rem; }
-
-  .recado p {
-      grid-column: 1 / -1;
-      margin: 0;
-      color: var(--muted);
-      font-size: .82rem;
-      overflow-wrap: break-word;   /* chave Pix e outros textos sem espaço (ver copiarCanal
-                                       em interactions.js) não podem estourar a largura fixa */
-  }
-
-  .recado button {
-      border: 0;
-      padding: 0;
-      background: transparent;
-      color: var(--muted);
-      font-size: 1.1rem;
-      line-height: 1;
-      cursor: pointer;
-  }
-
-  .recado button:hover { color: var(--fg); }
-
   /* =========================================================
        MODAL — CALCULADORA
        ========================================================= */

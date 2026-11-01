@@ -1448,7 +1448,7 @@ el('cicloProximo').onclick = () => navegaCiclo(1);
     document.addEventListener('touchstart', ev => {
         ativo = false;
         if (ev.touches.length !== 1 || el('app').style.display === 'none' || document.querySelector('dialog[open]')) return;
-        if (ev.target.closest('input, textarea, select, #selbar, .menuIcone, #toasts')) return;
+        if (ev.target.closest('input, textarea, select, #selbar, .menuIcone, #toast')) return;
         const rolavel = ev.target.closest('.rolagem, .wx');
         bordas = rolavel && rolavel.scrollWidth > rolavel.clientWidth + 1
             ? { inicio: rolavel.scrollLeft <= 1, fim: rolavel.scrollLeft + rolavel.clientWidth >= rolavel.scrollWidth - 1 }

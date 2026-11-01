@@ -215,24 +215,19 @@ async function tocarSomToast() {
 
 // Toast é reservado a estado operacional passageiro; não mistura uma falha de rede com
 // inconsistências persistentes dos registros, que precisam ser lidas no modal.
+// É o aviso da base comum (.toast, um só, embaixo no meio, como nos outros módulos): o título em negrito e o texto na
+// mesma linha; um aviso novo troca o anterior. Falha, valor inválido e não salvo ficam em vermelho (.toast.erro).
+const avisoDeErro = titulo => /^(Falhou|Não foi possível)|inválid|não salv/i.test(titulo);
+let tempoDoAviso;
 function mostrarToast(titulo, texto) {
     void tocarSomToast();
-    const toast = document.createElement('article');
-    const tituloToast = document.createElement('strong');
-    const descricao = document.createElement('p');
-    const fechar = document.createElement('button');
-    tituloToast.textContent = titulo;
-    descricao.textContent = texto;
-    fechar.type = 'button';
-    fechar.textContent = '×';
-    fechar.title = 'Fechar';
-    fechar.setAttribute('aria-label', 'Fechar');
-    const remover = () => toast.remove();
-    fechar.onclick = remover;
-    toast.className = 'recado';   // não .toast: a base comum tem um .toast diferente (um aviso só, no meio)
-    toast.append(tituloToast, fechar, descricao);
-    el('toasts').append(toast);
-    setTimeout(remover, 7000);
+    const aviso = el('toast'), negrito = document.createElement('strong');
+    negrito.textContent = titulo;
+    aviso.replaceChildren(negrito, texto ? ` ${texto}` : '');
+    aviso.classList.toggle('erro', avisoDeErro(titulo));
+    aviso.hidden = false;
+    clearTimeout(tempoDoAviso);
+    tempoDoAviso = setTimeout(() => { aviso.hidden = true; }, 7000);   // mais que nos outros: as mensagens do Fin são longas
 }
 
 // Recarga em silêncio (automática, após gravar, consolidação de 15 min) que termina com

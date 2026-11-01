@@ -88,3 +88,15 @@ test('o resumo do Consolidar tudo vai para o modal (texto e lista ciclo a ciclo)
     assert.deepEqual(el('listaConsolidarTudo').filhos.map(li => li.textContent), ['Outubro 2026: Materializado Aporte de R$ 10,00.']);
     assert.equal(el('modalConsolidarTudo').open, true);
 });
+
+test('aviso (o .toast da base): título em negrito e texto na mesma linha; falha, inválido e não salvo em vermelho', () => {
+    const { bruto, rodar, ctx } = carregarTela();
+    ctx.tocarSomToast = async () => {};
+    const erro = t => rodar(`avisoDeErro(${JSON.stringify(t)})`);
+    for (const t of ['Falhou ao atualizar', 'Não foi possível carregar', 'Valor inválido', 'Mês inválido', 'Limite não salvo', 'Meta não salva']) assert.equal(erro(t), true, t);
+    for (const t of ['Copiado', 'Aguarde', 'Consolidar tudo', 'Carga lenta', 'Atualizado', 'Atrasado pago hoje', 'Parcela']) assert.equal(erro(t), false, t);
+    bruto(`mostrarToast('Copiado', 'chave-pix')`);
+    const aviso = ctx.document.getElementById('toast');
+    assert.equal(aviso.hidden, false);
+    assert.deepEqual([aviso.filhos[0].textContent, aviso.filhos[1]], ['Copiado', ' chave-pix']);
+});

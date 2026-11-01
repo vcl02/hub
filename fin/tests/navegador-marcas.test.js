@@ -45,13 +45,14 @@ test('tabela: "—" quando desmarcado; tocar marca e grava na hora; na simulaç�
 test('Duplicar herda as marcas; Editar reenvia as duas no PATCH', async () => {
     const d = dadosDeExemplo();
     Object.assign(d.fin.find(l => l.id === '2'), { reserva: true, comprometido: false });
-    const { ctx, pg, erros } = await abrirFin('', d);
+    const { ctx, pg, erros, ocioso } = await abrirFin('', d);
     const corpos = [];
     pg.on('request', r => { if (r.method() === 'PATCH') corpos.push(JSON.parse(r.postData())); });
     await pg.click(linha(2) + ' td:last-child');
     await pg.click('#seldup'); await pg.waitForSelector('#modalNovo', { state: 'visible' });
     assert.deepEqual([await pg.isChecked('#fReserva'), await pg.isChecked('#fComprometido')], [true, false]);
     await pg.click('#fechaNovo');
+    await pg.waitForSelector('#modalNovo', { state: 'hidden' }); await ocioso();   // fechar limpa a seleção logo depois: espera acabar
     if (!(await pg.isVisible('#selbar'))) await pg.click(linha(2) + ' td:last-child');   // fechar o cadastro pode limpar a seleção
     await pg.click('#seledit'); await pg.waitForSelector('#modalNovo', { state: 'visible' });
     assert.deepEqual([await pg.isChecked('#fReserva'), await pg.isChecked('#fComprometido')], [true, false]);

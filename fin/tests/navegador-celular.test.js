@@ -45,7 +45,7 @@ test('arrastar: para a direita o ciclo anterior, para a esquerda o seguinte; na 
 test('celular: nada estoura a largura; a navegação de ciclo, a simulação e as ferramentas ficam visíveis, sem menu escondido', async () => {
     const { ctx, pg } = await abrirFin('', undefined, 0, { celular: true });
     assert.ok(await pg.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'a página rola de lado');
-    for (const sel of ['#cicloAnterior', '#cicloProximo', '#fde', '#fate', '#toggleSimulacao', '#abreNovo', '#btMetas', '#voltarHub']) {
+    for (const sel of ['#cicloAnterior', '#cicloProximo', '#fde', '#fate', '#toggleSimulacao', '#abreNovo', '#btMetas', '#i-hub']) {
         const b = await pg.locator(sel).boundingBox();
         assert.ok(b && b.width > 0 && b.x >= 0 && b.x + b.width <= 391, `${sel} fora da tela: ${JSON.stringify(b)}`);
     }

@@ -1,4 +1,5 @@
-// Link de volta ao hub no cabeçalho: último ícone, apontando pra página inicial (../); sem Sair no fin.
+// Volta ao hub e login: o cabeçalho (ícone do hub e o nome, sem Sair) é conferido no navegador (navegador.test.js); aqui, a regra
+// escrita e a ida ao login do hub sem sessão.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
@@ -6,11 +7,8 @@ const test = require('node:test');
 const pagina = fs.readFileSync('index.html', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 
-test('ícone Hub é o último do cabeçalho e leva à página inicial do hub; não há Sair', () => {
-    const acoes = pagina.slice(pagina.indexOf('<div class=acoesCabecalho>'));
-    assert.match(acoes, /<a id=voltarHub class=btIcone href="\.\.\/" title="Hub" aria-label="Hub">[\s\S]*?<\/a>\s*<\/div>/);
-    assert.doesNotMatch(pagina, /id=sair\b/);
-    assert.match(regras, /O ícone do hub \(\*\*Hub\*\*, a marca do hub em traço\), o último do cabeçalho, volta à página inicial do hub/);
+test('REGRAS.md: o cabeçalho da base no alto, com o ícone do hub e o nome Fin', () => {
+    assert.match(regras, /No alto da página fica o cabeçalho da base comum, igual ao dos outros módulos: o ícone do hub \(\*\*Hub\*\*, a marca do hub em traço\) e o nome \*\*Fin\*\*/);
 });
 
 test('sem sessão dentro do hub, vai pro login do hub levando o ?ciclo; fora do hub, login próprio', () => {

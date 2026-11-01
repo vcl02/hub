@@ -25,7 +25,7 @@ test('um hábito por linha (os de habitos.js, o Fin pela Besteira); cada um apon
 });
 
 test('cada app volta para o hub (../)', () => {
-  assert.match(ler('fin/index.html'), /<a id=voltarHub class=btIcone href="\.\.\/"/);
+  assert.match(ler('fin/index.html'), /<a class=bt-ic href="\.\.\/" id=i-hub/);   // bt-ic: o botão da base comum
   assert.match(ler('tr/index.html'), /<a class="(icon-btn|bt-ic)" href="\.\.\/" id="i-hub"/);   // bt-ic: o botão da base comum
   assert.match(ler('al/index.html'), /<a class="(icon-btn|bt-ic)" href="\.\.\/" id="i-hub"/);   // bt-ic: o botão da base comum
   assert.match(ler('corpo/index.html'), /<a class="(icon-btn|bt-ic)" href="\.\.\/" id="i-hub"/);   // bt-ic: o botão da base comum
@@ -98,7 +98,7 @@ test('marca do hub em todo lugar: favicon, celular, login e o botão de volta no
   for (const [arquivo, lado] of [['icons/hub-32.png', 32], ['icons/hub-180.png', 180], ['icons/hub-192.png', 192], ['icons/hub-512.png', 512]]) assert.deepEqual(png(arquivo), [lado, lado], arquivo);
   // Mesmo desenho em traço no botão que volta ao hub, nos dois apps.
   const marca = codigo => codigo.match(/<circle cx="12" cy="12" r="3" ?\/><path d="M9\.9 9\.9 6\.6 6\.6[^"]*" ?\/>(<circle cx="(5|19)" cy="(5|19)" r="2" ?\/>){4}/);
-  assert.ok(marca(ler('fin/index.html').slice(ler('fin/index.html').indexOf('id=voltarHub'))), 'fin');
+  assert.ok(marca(ler('fin/index.html').slice(ler('fin/index.html').indexOf('id=i-hub'))), 'fin');
   assert.ok(marca(ler('tr/index.html').slice(ler('tr/index.html').indexOf('id="i-hub"'))), 'tr');
   assert.ok(marca(ler('al/index.html').slice(ler('al/index.html').indexOf('id="i-hub"'))), 'al');
   assert.ok(marca(ler('corpo/index.html').slice(ler('corpo/index.html').indexOf('id="i-hub"'))), 'corpo');

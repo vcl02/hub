@@ -21,7 +21,6 @@ test('modal de diagnóstico: larguras e lista que quebra palavras longas (o comp
     assert.match(estilos, /dialog#modalDiagnostico/);
     assert.match(estilos, /@media \(min-width: 700px\) \{\s*dialog#modalDiagnostico,\s*dialog#modalConsolidarTudo \{\s*width: min\(44rem, calc\(100vw - 4rem\)\)/);
     assert.match(estilos, /\.listaDiagnostico \{[\s\S]*?overflow-wrap: anywhere/);
-    assert.match(estilos, /#toasts/);
     assert.match(base, /#btDiagnostico\.temInconsistencia::after/);
     assert.match(estilos, /#secaoAvisos \.listaDiagnostico/);
 });

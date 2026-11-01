@@ -108,7 +108,7 @@ test('entrou no hub: os apps abrem direto com a mesma sessão, sem login própri
   await pg.waitForURL(`${base}fin/`);
   await pg.waitForFunction(() => getComputedStyle(document.getElementById('app')).display === 'block');
   assert.equal(await pg.evaluate(() => getComputedStyle(document.getElementById('login')).display), 'none');
-  assert.equal(await pg.getAttribute('#voltarHub', 'href'), '../');
+  assert.equal(await pg.getAttribute('#i-hub', 'href'), '../');
   assert.deepEqual(faltando, []);
   assert.deepEqual(erros.filter(e => !/tabela\?|404|Falh|carreg/i.test(e)), []);   // o falso não tem as tabelas do fin
   await ctx.close();

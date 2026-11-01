@@ -28,7 +28,7 @@ const CASOS = [
     ['Recarregar sempre verde', null, '#recarregar', { color: '--ok', 'background-color': '--ok-soft', 'border-top-color': '--ok' }],
     ['asterisco da categoria compartilhada em vermelho', '<b class=catCompartilhada id=sondaCompartilhada>*</b>', '#sondaCompartilhada', { color: '--erro' }],
     ['Selecionar tudo das categorias na cor do Fin', '<button class=multiSelAll id=sondaTodas></button>', '#sondaTodas', { color: '--cor' }],
-    ['toast quebra texto sem espaço (chave Pix) em vez de estourar a largura', '<article class=recado><p id=sondaRecado></p></article>', '#sondaRecado', { 'overflow-wrap': 'break-word' }],
+    ['aviso (o da base) quebra texto sem espaço (chave Pix) em vez de estourar a largura', null, '#toast', { 'overflow-wrap': 'anywhere' }],
     ['valor de antes da simulação em cinza e sem negrito', '<span class=valorAntes id=sondaAntes></span>', '#sondaAntes', { color: '--muted', 'font-weight': '400' }],
 ];
 

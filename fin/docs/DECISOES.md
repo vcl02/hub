@@ -171,6 +171,12 @@ A fundação paralela `hub/Vcl.FinHub` (.NET, ABP, Angular, PostgreSQL local) fo
 
 - `../base/componentes.css` carrega depois dos tokens e antes do CSS do Fin. A fonte, o tamanho e a entrelinha passam a ser os da base (Barlow 16 px, entrelinha 1,4; antes, a do sistema em 15 px e 1,55): as linhas da tabela ficam 1 a 4 px mais baixas. Botões e campos herdam a fonte da página, como nos outros módulos.
 - Largura: o Fin **não** usa a coluna de 560 px da base (`--largura`); as tabelas usam a tela toda (pedido do mantenedor).
-- Colisões de nome com peças da base: `.wrap` (a moldura que rola cada tabela) virou `.rolagem` e `.toast` (os avisos empilhados no canto) virou `.recado`. O `.toast` da base é outra peça (um aviso só, no meio, embaixo); unificar os dois é uma mudança visível, ainda não decidida.
+- Colisão de nome com peça da base: `.wrap` (a moldura que rola cada tabela) virou `.rolagem`.
 - Dez declarações `font: 700 1.05rem/1.3 inherit` eram inválidas (`inherit` não entra no atalho `font`) e o navegador sempre as ignorou. Com os botões herdando a fonte da base, as setas ▸▾ dos blocos ficariam em negrito: viraram propriedades separadas (`font-weight`, `font-size`, `line-height`), com o que o código já pedia.
 - Conferido sem print: posição, tamanho, fonte e cor de cada elemento medidos no navegador antes e depois (computador, cadastro aberto e celular); fora a fonte, só mudaram as alturas da entrelinha e os tamanhos das declarações que voltaram a valer. Nada passou a estourar a largura. Não vi a Barlow carregada (os testes bloqueiam a internet e usam a fonte de reserva).
+
+## Base comum: cabeçalho e aviso (01/11/2026)
+
+- Pedido do mantenedor: o Fin entra 100% na base, sem peça à parte onde a base tem uma.
+- Cabeçalho: o da base (`.topo`: ícone do hub `#i-hub` e o nome **Fin** com a bolinha da cor) fica no alto, como nos outros módulos; a navegação de ciclos, os indicadores e os botões vêm logo abaixo. O ícone do hub saiu do fim dos botões (era `#voltarHub`). Ocupa uma linha a mais (escolha do mantenedor entre isso e só trocar os botões).
+- Aviso: o `.toast` da base (um só, embaixo no meio, que quebra linha) no lugar dos cartões empilhados no canto com título, texto e ×. O título vai em negrito e o texto na mesma linha; um aviso novo troca o anterior; some em 7 s (mais que nos outros módulos, porque as mensagens do Fin são mais longas). Falha, valor inválido e não salvo ficam em vermelho (`.toast.erro`, regra em `avisoDeErro`); antes, todos tinham a borda vermelha. O som curto continua.

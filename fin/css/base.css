@@ -69,11 +69,6 @@
       height: 2rem;
   }
 
-  /* Link de volta ao hub: mesmo visual dos botões-ícone, sem sublinhado de link. */
-  #voltarHub {
-      text-decoration: none;
-  }
-
   .sub {
       font-size: .85rem;
       color: var(--muted);
