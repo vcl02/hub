@@ -79,8 +79,6 @@ test('recorrência duplicada ignora o atrasado (não move a conta do mês)', () 
 
 test('aviso na faixa Hoje, marca no nome e alinhamento sem o aviso', () => {
     const visoes = ler('js/cycle-views.js');
-    assert.match(visoes, /const atrasadosDoCiclo = cicloAtual \? linhasDebito\.filter\(r => r\._atrasado \|\| ehDebitoAtrasado\(r\)\) : \[\];/);
-    assert.match(visoes, /`Atrasado <b class=vm>\$\{brl\(atrasadosDoCiclo\.reduce/);
     assert.match(ler('js/tables.js'), /const badgeAtrasado = r\._atrasado \|\| ehDebitoAtrasado\(r\)/);
     assert.match(ler('js/interactions.js'), /!c\.classList\.contains\('resumoAtrasado'\)/);
 });

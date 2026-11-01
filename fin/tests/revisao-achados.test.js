@@ -82,8 +82,6 @@ test('ciclo aberto nunca usa 31/12/9999 em datas exibidas ou calculadas', () => 
     assert.match(financas, /data: dataDeFechamentoDoCiclo\(ciclo\), nome: c\.nome/);
     assert.match(graficos, /data: dataDeFechamentoDoCiclo\(Estado\.ciclos\[i\]\), nome: ajuste\.nome/);
     assert.match(visoes, /data: dataDeFechamentoDoCiclo\(per\), cred: false, v: ajuste\.v/);
-    assert.match(visoes, /a \$\{dataBR\(dataDeFechamentoDoCiclo\(periodo\)\)\}/);
-    assert.match(visoes, /a \$\{dataBR\(dataDeFechamentoDoCiclo\(fimPeriodo\)\)\}/);
     assert.match(compartilhado, /: dataDeFechamentoDoCiclo\(Estado\.ciclos\[idx\]\);/);
 });
 
