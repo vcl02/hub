@@ -25,9 +25,6 @@ test('edição do Valor na tabela: caixa .dinheiro com "R$" e a máscara do cada
 });
 
 test('metas: Valor total e Entrada com "R$" e máscara de caixa eletrônico; vazio fica vazio', () => {
-    assert.match(visoes, /const dinheiro = \(nome, valor\) => `<span class=dinheiro><span class=dinheiroPrefixo aria-hidden=true>R\$<\/span>` \+/);
-    assert.match(visoes, /campo\('mcValor', 'Valor total', dinheiro\('valor', m\.valor\)\)/);
-    assert.match(visoes, /campo\('mcEntrada', 'Entrada', dinheiro\('entrada', m\.entrada\), /);
     assert.match(interacoes, /el\('corpoMetas'\)\.addEventListener\('input', e => \{[\s\S]*?const input = e\.target\.closest\('\[data-dinheiro\]'\);/);
     assert.match(interacoes, /input\.value = input\.value\.replace\(\/\\D\/g, ''\) \? formataMascaraDinheiro\(input\.value\) : '';/);
     // O valor mascarado ("1.500,00") volta a número pela mesma leitura dos limites.

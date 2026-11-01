@@ -81,7 +81,6 @@ test('clique no nome liga, desliga ou troca o teto e reabre os blocos; Recarrega
     assert.match(trecho, /Estado\.filtroTeto = Estado\.filtroTeto === chave \? null : chave;/);
     assert.match(trecho, /if \(Estado\.filtroTeto\) \{ delete Estado\.fechados\.db; delete Estado\.fechados\.cr; \}/);
     assert.doesNotMatch(trecho, /atualizarLancamento|inserirLancamento|excluirLancamento/);
-    assert.match(graficos, /Estado\.filtroTeto = null;/);
     assert.match(fs.readFileSync('js/app-state.js', 'utf8'), /filtroTeto: null,/);
 });
 

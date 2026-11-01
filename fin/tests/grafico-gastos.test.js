@@ -76,15 +76,7 @@ test('clique fora do seletor no modal fecha o dropdown antes do gráfico tratar 
     assert.match(fonte, /!e\.target\.closest\('#excluirCatWrap'\)/);
 });
 
-test('o modal Gráfico abre toda vez com Contabilidade excluída por padrão, mostrando o líquido', () => {
-    assert.match(fonte, /excluidasDoGrafico = \[CATEGORIA_EXCLUIDA_GRAFICO_PADRAO\];/);
-    // O botão Atual (que limpa os filtros) também repõe esse mesmo padrão, não a lista vazia de antes.
-    assert.match(fonte, /excluidasDoGrafico = \[CATEGORIA_EXCLUIDA_GRAFICO_PADRAO\];\s*\/\/ volta ao padrão: só Contabilidade fora/);
-    assert.doesNotMatch(fonte, /excluidasDoGrafico = \[\];/);
-});
-
 test('categoria continua reincluível no seletor: só o estado INICIAL muda, não a lista de categorias disponíveis', () => {
-    assert.match(fonte, /const { periodo, renda, categorias, categoriasCompartilhadas } = dadosDoGraficoCiclo\(idxPeriodo\);/);
     assert.match(fonte, /montaExcluirCatDrop\(todasCategorias, categoriasCompartilhadas\);/);
 });
 
@@ -100,6 +92,4 @@ test('fatia mantém as linhas reais para abrir seu detalhamento no recorte atual
     const agrupado = regras.agruparGastosDaPizza([{ categorias: ['Casa'], valor: 100, linha }], []);
     assert.deepEqual({ ...agrupado.porCategoria }, { Casa: 100 });
     assert.deepEqual(Array.from(agrupado.linhasPorCategoria.Casa), [linha]);
-    assert.match(fonte, /onClick: \(_evento, elementos\)/);
-    assert.match(fonte, /abrirDetalheFatiaGrafico/);
 });

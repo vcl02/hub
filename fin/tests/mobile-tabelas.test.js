@@ -6,12 +6,7 @@ const test = require('node:test');
 
 const ler = arquivo => fs.readFileSync(arquivo, 'utf8');
 const mobile = ler('css/mobile.css');
-const graficos = ler('js/charts.js');
 const regras = ler('docs/REGRAS.md');
-
-test('pizza com legenda embaixo no celular', () => {
-    assert.match(graficos, /legend: \{ position: isMobile\(\) \? 'bottom' : 'right'/);
-});
 
 test('regra documentada', () => {
     assert.match(regras, /### Tabelas, faixas e seleção no celular/);

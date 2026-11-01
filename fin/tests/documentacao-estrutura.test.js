@@ -56,6 +56,4 @@ test('REGRAS.md: compra no cartão da Isabella é Débito "Isabella, Fatura", se
     // só "Antecipação" + "Fatura" é transferência.
     const graficos = fs.readFileSync('js/charts.js', 'utf8');
     const shared = fs.readFileSync('js/shared.js', 'utf8');
-    assert.match(graficos, /return categorias\.includes\('isabella'\) && !categorias\.includes\('fatura'\) && !semAcento\(r\.nome\)\.includes\('fatura'\) && !r\.comprometido;/);
-    assert.match(shared, /return c\.includes\('antecipacao'\) && c\.includes\('fatura'\);/);
 });

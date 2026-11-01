@@ -20,16 +20,18 @@ function elementoFalso(id) {
 }
 
 // hoje: 'AAAA-MM-DD' (meio-dia, horário de São Paulo); dados: { fin, fin_ciclo, fin_meta } como o banco devolve
-function carregarTela({ hoje = '2026-10-20', dados = {} } = {}) {
+// celular: true faz as consultas de largura (max-width) responderem como num celular
+function carregarTela({ hoje = '2026-10-20', dados = {}, celular = false } = {}) {
     const agora = new Date(`${hoje}T12:00:00-03:00`).getTime();
     class Relogio extends Date { constructor(...a) { super(...(a.length ? a : [agora])); } static now() { return agora; } }
     const elementos = {};
     const ctx = { console, Intl, Math, JSON, setTimeout, clearTimeout, AbortController, Date: Relogio, navigator: {}, performance: { now: () => 0 }, URL, URLSearchParams,
         location: { search: '', href: 'http://x/hub/fin/' }, history: { replaceState() {}, pushState() {} },
-        matchMedia: () => ({ matches: false }), addEventListener() {}, localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+        matchMedia: consulta => ({ matches: celular && /max-width/.test(consulta) }), addEventListener() {}, localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
         document: { getElementById: id => elementos[id] || (elementos[id] = elementoFalso(id)), createElement: tag => elementoFalso(tag), querySelector: () => null, querySelectorAll: () => [], addEventListener() {} },
         supabase: { createClient: () => ({ auth: { getSession: async () => ({ data: { session: null } }), refreshSession: async () => {} } }) },
-        Chart: Object.assign(function () {}, { register() {} }),
+        // Chart.js falso: guarda a configuração de cada gráfico montado (em ctx.graficos), para o teste conferir
+        Chart: Object.assign(function (canvas, config) { ctx.graficos.push(config); this.destroy = () => {}; }, { register() {} }), graficos: [],
         // O banco falso: GET devolve a tabela (a página seguinte da paginação, vazia)
         fetch: async url => {
             const u = new URL(url), t = u.pathname.split('/').pop();

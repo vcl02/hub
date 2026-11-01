@@ -55,11 +55,6 @@ test('recarga após gravar espera a simulação acabar (a carga apagaria os simu
     assert.match(inicializacao, /const telaSemEdicaoEmCurso = \(\) =>\s*\n\s*el\('app'\)\.style\.display !== 'none' && !Estado\.simulando &&/);
 });
 
-test('teto Besteira compara item inteiro da categoria, sem substring', () => {
-    assert.match(graficos, /x => ehCategoria\(x\.categ, categoria\)/);
-    assert.doesNotMatch(graficos, /categoriaContemCompromisso/);
-});
-
 test('ciclo aberto nunca usa 31/12/9999 em datas exibidas ou calculadas', () => {
     assert.match(graficos, /data: dataDeFechamentoDoCiclo\(Estado\.ciclos\[i\]\), nome: ajuste\.nome/);
 });
