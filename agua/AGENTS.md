@@ -27,16 +27,17 @@
 Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para todos fica lá).
 
 - **Migrations:** `migrations/` 00 a 02, formato DataGrip, RLS só do Victor em `agua_dia`; tabelas `push_*` sem policy. A 02 tem função de gatilho em `plpgsql` (exceção das diretrizes): vai pelo SQL Editor do Supabase, não pelo DataGrip; aplicada em 28/10/2026. Conferido em `tests/estrutura.test.mjs`, numeração em `../tests/documentacao.test.mjs`.
-- **Testes:** navegador em `tests/agua.test.mjs` e `tests/notificacoes.test.mjs` (Playwright do `tr/`, Supabase falso em `tests/helpers/app.mjs`); a Edge Function em `tests/funcao.test.mjs` (rede falsa); estrutura em `tests/estrutura.test.mjs`.
-- **Pacotes:** sem `package.json`. `../supabase.js` da raiz e o Playwright do `tr/`; a função não usa pacote (WebCrypto do Deno), só os tipos `jsr:@supabase/functions-js@2.118.0`.
+- **Testes:** navegador em `tests/agua.test.mjs` e `tests/notificacoes.test.mjs` (Playwright da raiz, Supabase falso em `tests/helpers/app.mjs`); a Edge Function em `tests/funcao.test.mjs` (rede falsa); estrutura em `tests/estrutura.test.mjs`.
+- **Pacotes:** sem `package.json`. `../supabase.js` da raiz e o Playwright da raiz; a função não usa pacote (WebCrypto do Deno), só os tipos `jsr:@supabase/functions-js@2.118.0`.
 - **Backups:** cópia no aparelho (`agua.db.<conta>`, base em `agua.base.<conta>`) e `hub_historico` com `agua_dia`. As tabelas `push_*` ficam fora: perdida `push_chave`, a função gera chaves novas e cada aparelho precisa reativar as notificações.
 - **Domínio:** `/hub/agua/`. Externos: o Supabase (inclusive `functions/v1/agua-lembrete`, chamada pelo pg_cron e pelo `sw.js`) e o serviço de push de cada navegador inscrito. Os testes usam `https://vcl02.github.io/hub/agua/`: mudou o domínio, eles mudam.
 
 ## Como concluir uma mudança
 
 1. Atualize `docs/REGRAS.md`.
-2. Ajuste os testes (`tests/agua.test.mjs` e `tests/notificacoes.test.mjs` no navegador, com o Playwright do `tr/node_modules` e o Supabase falso de `tests/helpers/app.mjs`; `tests/funcao.test.mjs` roda a função de verdade com rede falsa; `tests/estrutura.test.mjs`).
+2. Ajuste os testes (`tests/agua.test.mjs` e `tests/notificacoes.test.mjs` no navegador, com o Playwright da raiz e o Supabase falso de `tests/helpers/app.mjs`; `tests/funcao.test.mjs` roda a função de verdade com rede falsa; `tests/estrutura.test.mjs`).
 3. Rode `node scripts/check.mjs` dentro de `agua/` e, antes do push, na raiz do hub.
 4. Commit e push conforme `../AGENTS.md`.
+
 - **Sem prints de tela:** não tire nem abra capturas de tela (screenshot) para conferir visual, a pedido do mantenedor (gastam muito do limite de uso). Confira pelos testes e por medidas no navegador (posição, tamanho, texto, classes) e diga o que não foi visto.
 - **Testes: função primeiro, tela pouco, regex quase nunca:** 1) a função do código rodando (sem navegador); 2) Playwright só em poucos casos estratégicos; nunca regex no código, só onde o objeto é texto (SQL, docs, configuração, segredos). Detalhes e exceções em `../docs/DIRETRIZES.md`, seção 3.

@@ -1,5 +1,5 @@
-# Executa no GitHub a mesma validação local do hub (raiz, fin e tr). O tr e o teste de navegação
-# usam Playwright, instalado em tr/ junto com o Chromium.
+# Executa no GitHub o mesmo que roda local: ESLint, Prettier, EditorConfig e a validação do hub (raiz, fin, tr, al,
+# corpo e agua). Os testes de navegador usam Playwright, instalado na raiz junto com o Chromium.
 name: Validação
 
 on:
@@ -19,8 +19,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Instalar dependências de teste
-        working-directory: tr
+      - name: Instalar dependências
         run: npm ci && npx playwright install --with-deps chromium
+      - name: ESLint
+        run: npm run lint
+      - name: Prettier
+        run: npm run format:check
+      - name: EditorConfig
+        run: npm run editorconfig
       - name: Executar validação local
         run: node scripts/check.mjs

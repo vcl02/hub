@@ -17,17 +17,23 @@
 // ===== Supabase (chave publicável: pode ficar no código; quem protege os dados é o RLS) =====
 const SUPABASE_URL = 'https://yzmyncxoskvqzdczaill.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Fq984qUdQO8mGq4PSYmUiQ_ySaLrmEQ';
-const DONO = '32f70255-30a0-4e2b-ad76-31d7a1bf54f7';   // única conta com acesso (a mesma do hub e do tr)
-const EMAIL_POR_USUARIO = { victor: 'victor.cabrera0209@gmail.com' };   // login aceita o usuário ou o e-mail, como no hub
-const emailDoLogin = texto => { const t = String(texto || '').trim(); return t.includes('@') ? t : EMAIL_POR_USUARIO[t.toLowerCase()] || null; };
+const DONO = '32f70255-30a0-4e2b-ad76-31d7a1bf54f7'; // única conta com acesso (a mesma do hub e do tr)
+const EMAIL_POR_USUARIO = { victor: 'victor.cabrera0209@gmail.com' }; // login aceita o usuário ou o e-mail, como no hub
+
+const emailDoLogin = (texto) => {
+  const t = String(texto || '').trim();
+
+  return t.includes('@') ? t : EMAIL_POR_USUARIO[t.toLowerCase()] || null;
+};
+
 const FUNCAO_IA = 'al-estimar';
 
 // ===== Gasto do dia =====
 // Fator de atividade, caminhada padrão e déficit planejado (DEFICIT_META) ficam em gasto.js (na pasta do al), que o hub também usa.
-const TRECHOS_MAX = 30;    // trechos de caminhada por dia
-const MARMITAS_MAX = 50;   // marmitas iguais de uma vez (o limite de al_marmita.restam)
-const QTDS = [0.5, 1, 1.5, 2, 3];   // porções rápidas (× a porção salva)
+const TRECHOS_MAX = 30; // trechos de caminhada por dia
+const MARMITAS_MAX = 50; // marmitas iguais de uma vez (o limite de al_marmita.restam)
+const QTDS = [0.5, 1, 1.5, 2, 3]; // porções rápidas (× a porção salva)
 
 // ===== Metas do dia (perder gordura mantendo músculo) =====
-const PROT_G_KG = 1.6;      // proteína em g por kg de peso
-const GORD_PCT = 0.25;      // gordura: 25% das kcal da meta; carboidrato fica com o resto
+const PROT_G_KG = 1.6; // proteína em g por kg de peso
+const GORD_PCT = 0.25; // gordura: 25% das kcal da meta; carboidrato fica com o resto

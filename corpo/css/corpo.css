@@ -1,82 +1,372 @@
 /* Corpo — o que é só dele, sobre a base comum (../base/tokens.css e ../base/componentes.css): a cor (verde-água), o cartão
    do peso, a medida do dia com − / +, o dia (sono, evacuações e xixis), sono, bexiga, gráficos e o histórico. */
-:root{--cor:#3DD6B5}
-.bom{color:var(--ok);font-weight:600} .ruim{color:var(--erro);font-weight:600}
+:root {
+  --cor: #3dd6b5;
+}
+.bom {
+  color: var(--ok);
+  font-weight: 600;
+}
+.ruim {
+  color: var(--erro);
+  font-weight: 600;
+}
 
 /* ---------- Peso atual ---------- */
-.peso-card{display:flex;align-items:center;gap:var(--e-4)}
-.peso-card>b{font-family:var(--display);font-size:clamp(2.4rem,13vw,4.25rem);font-weight:700;line-height:.9;white-space:nowrap;color:var(--cor)}   /* encolhe em tela estreita */
-.peso-card>b small{font-size:var(--t-lg);margin-left:2px;color:var(--muted);font-family:var(--body);font-weight:500}
-.pc-lado{display:flex;flex-direction:column;gap:2px;font-size:var(--t-sm);min-width:0}
-.pc-lado i{color:var(--muted)}
-.pc-lado .falta{color:var(--muted);font-size:var(--t-xs)}
-.perfil{color:var(--muted);font-size:var(--t-sm)}
+.peso-card {
+  display: flex;
+  align-items: center;
+  gap: var(--e-4);
+}
+.peso-card > b {
+  font-family: var(--display);
+  font-size: clamp(2.4rem, 13vw, 4.25rem);
+  font-weight: 700;
+  line-height: 0.9;
+  white-space: nowrap;
+  color: var(--cor);
+} /* encolhe em tela estreita */
+.peso-card > b small {
+  font-size: var(--t-lg);
+  margin-left: 2px;
+  color: var(--muted);
+  font-family: var(--body);
+  font-weight: 500;
+}
+.pc-lado {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--t-sm);
+  min-width: 0;
+}
+.pc-lado i {
+  color: var(--muted);
+}
+.pc-lado .falta {
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.perfil {
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
 
 /* ---------- Medida do dia: data e horário, peso e barriga com − / + ---------- */
-.form{display:flex;flex-direction:column;gap:var(--e-3)}
-.quando{display:flex;gap:var(--e-2)}
-.quando .campo{flex:1;font-family:var(--display);font-weight:700;font-size:var(--t-lg)}
-.aviso{font-size:var(--t-sm);padding:10px 12px;border-radius:var(--r);background:var(--cor-soft)}
-.aviso b{color:var(--cor)}
-.grandeza{display:flex;flex-direction:column;gap:6px}
-.grandeza>label{font-size:var(--t-sm);color:var(--muted)}
-.stepper{display:grid;grid-template-columns:56px 1fr 56px;gap:var(--e-2);align-items:stretch}
-.stepper button{border:1px solid var(--line);background:var(--bg);border-radius:var(--r);font-size:1.6rem;font-weight:600;min-height:56px}
-.mid{display:flex;align-items:baseline;justify-content:center;gap:4px;border:1px solid var(--line);border-radius:var(--r);padding:0 10px;background:var(--bg)}
-.mid input{width:100%;min-width:0;border:0;background:transparent;text-align:right;font-family:var(--display);font-weight:700;font-size:var(--t-2xl);padding:4px 0;font-variant-numeric:tabular-nums}
-.mid input:focus{outline:none}
-.mid:focus-within{outline:3px solid var(--cor);outline-offset:1px}
-.unit{color:var(--muted);flex:none;min-width:2.2em;font-size:var(--t-sm)}
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+}
+.quando {
+  display: flex;
+  gap: var(--e-2);
+}
+.quando .campo {
+  flex: 1;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: var(--t-lg);
+}
+.aviso {
+  font-size: var(--t-sm);
+  padding: 10px 12px;
+  border-radius: var(--r);
+  background: var(--cor-soft);
+}
+.aviso b {
+  color: var(--cor);
+}
+.grandeza {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.grandeza > label {
+  font-size: var(--t-sm);
+  color: var(--muted);
+}
+.stepper {
+  display: grid;
+  grid-template-columns: 56px 1fr 56px;
+  gap: var(--e-2);
+  align-items: stretch;
+}
+.stepper button {
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: var(--r);
+  font-size: 1.6rem;
+  font-weight: 600;
+  min-height: 56px;
+}
+.mid {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 0 10px;
+  background: var(--bg);
+}
+.mid input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  text-align: right;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: var(--t-2xl);
+  padding: 4px 0;
+  font-variant-numeric: tabular-nums;
+}
+.mid input:focus {
+  outline: none;
+}
+.mid:focus-within {
+  outline: 3px solid var(--cor);
+  outline-offset: 1px;
+}
+.unit {
+  color: var(--muted);
+  flex: none;
+  min-width: 2.2em;
+  font-size: var(--t-sm);
+}
 
 /* ---------- Dia: sono, evacuações e xixis ---------- */
-.evac{display:flex;flex-direction:column;gap:10px}
-.dia-linha{display:flex;align-items:center;gap:var(--e-2)}
-.dia-linha>span{margin-right:auto}
-.dia-linha>span b{font-family:var(--display);font-size:var(--t-lg);margin-left:6px;color:var(--cor)}
-.dia-linha small{color:var(--muted)}
-.dia-linha .chip.ativo{min-width:64px;font-weight:700}
-.chips:empty{display:none}
-.evac-ultima{font-size:var(--t-sm);color:var(--erro);font-weight:600}   /* só aparece como aviso: 3+ dias sem evacuar */
+.evac {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dia-linha {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+}
+.dia-linha > span {
+  margin-right: auto;
+}
+.dia-linha > span b {
+  font-family: var(--display);
+  font-size: var(--t-lg);
+  margin-left: 6px;
+  color: var(--cor);
+}
+.dia-linha small {
+  color: var(--muted);
+}
+.dia-linha .chip.ativo {
+  min-width: 64px;
+  font-weight: 700;
+}
+.chips:empty {
+  display: none;
+}
+.evac-ultima {
+  font-size: var(--t-sm);
+  color: var(--erro);
+  font-weight: 600;
+} /* só aparece como aviso: 3+ dias sem evacuar */
 
 /* ---------- Sono: dormi e acordei, horas e BOM (verde), OK (neutro) ou RUIM (vermelho) ---------- */
-.sono-linha{display:grid;grid-template-columns:1fr 1fr;gap:var(--e-2)}
-.sono-linha>span{grid-column:1/-1}
-.hora-l{display:flex;flex-direction:column;gap:4px;font-size:var(--t-xs);color:var(--muted)}
-.hora-l input{width:100%;text-align:left;padding:6px 8px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--bg);font-family:var(--display);font-weight:700;font-size:1.15rem;color:var(--fg)}
-.hora-l input::-webkit-calendar-picker-indicator{display:none}   /* tocar no campo já abre o seletor */
-.sono-res,.sono-media{display:flex;align-items:center;gap:var(--e-2);margin:0}
-.sono-res b,.sono-media b{font-family:var(--display);font-size:var(--t-lg)}
-.nivel{font-size:var(--t-xs);font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:var(--r-pill);border:1px solid var(--line);color:var(--muted)}
-.nivel.bom{border-color:var(--ok);background:var(--ok-soft);color:var(--ok)}
-.nivel.ruim{border-color:var(--erro);background:var(--erro-soft);color:var(--erro)}
-.noites{list-style:none;margin:var(--e-2) 0 0;padding:0}
-.noites li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:var(--e-2) 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
-.noites li:first-child{border-top:0}
-.noites .h-d{color:var(--muted);font-size:var(--t-sm)}
-.noites .h-sub{color:var(--muted);font-size:var(--t-sm)}
-.noites .h-v{display:flex;align-items:center;gap:var(--e-2);justify-content:flex-end}
-.noites .h-v b{font-family:var(--display);font-size:1.1rem}
+.sono-linha {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--e-2);
+}
+.sono-linha > span {
+  grid-column: 1/-1;
+}
+.hora-l {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--t-xs);
+  color: var(--muted);
+}
+.hora-l input {
+  width: 100%;
+  text-align: left;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--fg);
+}
+.hora-l input::-webkit-calendar-picker-indicator {
+  display: none;
+} /* tocar no campo já abre o seletor */
+.sono-res,
+.sono-media {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  margin: 0;
+}
+.sono-res b,
+.sono-media b {
+  font-family: var(--display);
+  font-size: var(--t-lg);
+}
+.nivel {
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+.nivel.bom {
+  border-color: var(--ok);
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+.nivel.ruim {
+  border-color: var(--erro);
+  background: var(--erro-soft);
+  color: var(--erro);
+}
+.noites {
+  list-style: none;
+  margin: var(--e-2) 0 0;
+  padding: 0;
+}
+.noites li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: var(--e-2) 0;
+  border-top: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+.noites li:first-child {
+  border-top: 0;
+}
+.noites .h-d {
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+.noites .h-sub {
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+.noites .h-v {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  justify-content: flex-end;
+}
+.noites .h-v b {
+  font-family: var(--display);
+  font-size: 1.1rem;
+}
 
 /* ---------- Bexiga ---------- */
-.numeros{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:var(--e-2)}
-.numeros li{display:flex;flex-direction:column}
-.numeros b{font-family:var(--display);font-size:1.5rem;line-height:1.1;color:var(--cor)}
-.numeros span{font-size:var(--t-xs);color:var(--muted)}
-.bx-nota,.bx-vazio{margin:var(--e-2) 0 0;font-size:var(--t-xs);color:var(--muted)}
-.bx-vazio{margin:0;font-style:italic}
+.numeros {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--e-2);
+}
+.numeros li {
+  display: flex;
+  flex-direction: column;
+}
+.numeros b {
+  font-family: var(--display);
+  font-size: 1.5rem;
+  line-height: 1.1;
+  color: var(--cor);
+}
+.numeros span {
+  font-size: var(--t-xs);
+  color: var(--muted);
+}
+.bx-nota,
+.bx-vazio {
+  margin: var(--e-2) 0 0;
+  font-size: var(--t-xs);
+  color: var(--muted);
+}
+.bx-vazio {
+  margin: 0;
+  font-style: italic;
+}
 
 /* ---------- Gráficos ---------- */
-.chart{padding:10px}
-.chart svg{display:block;width:100%;height:auto;touch-action:pan-y;cursor:crosshair}   /* arrastar o dedo para o lado mostra os pontos; para cima e para baixo rola */
+.chart {
+  padding: 10px;
+}
+.chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: pan-y;
+  cursor: crosshair;
+} /* arrastar o dedo para o lado mostra os pontos; para cima e para baixo rola */
 
 /* ---------- Histórico (a lista da base: data e hora · peso, barriga e IMC · editar e apagar) ---------- */
-.hist .h-d{font-style:normal;line-height:1.2}
-.hist .h-sub{font-weight:400;color:var(--muted);font-size:var(--t-sm);white-space:nowrap}
-.hist li.vazio{display:block;color:var(--muted);font-style:italic}
-.hist li.editando{display:flex;flex-wrap:wrap;gap:4px;padding:var(--e-2)}
-.ed-acoes{display:flex;gap:6px;align-items:center;justify-content:flex-end;margin-left:auto}
-.ed-acoes .bt-ic{width:34px;height:34px}
-.ed-inline{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
-.ed-inline input{border:1px solid var(--line);border-radius:var(--r-sm);background:var(--bg);padding:5px 6px;font-size:.85rem;max-width:4.6em}
-.ed-inline input[type=date]{max-width:8.4em}
-.ed-inline #em-peso,.ed-inline #em-cint{max-width:3.6em}
+.hist .h-d {
+  font-style: normal;
+  line-height: 1.2;
+}
+.hist .h-sub {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  white-space: nowrap;
+}
+.hist li.vazio {
+  display: block;
+  color: var(--muted);
+  font-style: italic;
+}
+.hist li.editando {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: var(--e-2);
+}
+.ed-acoes {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+.ed-acoes .bt-ic {
+  width: 34px;
+  height: 34px;
+}
+.ed-inline {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.ed-inline input {
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  padding: 5px 6px;
+  font-size: 0.85rem;
+  max-width: 4.6em;
+}
+.ed-inline input[type='date'] {
+  max-width: 8.4em;
+}
+.ed-inline #em-peso,
+.ed-inline #em-cint {
+  max-width: 3.6em;
+}

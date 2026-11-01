@@ -11,4 +11,4 @@
 
 ## Testes
 
-`node scripts/check.mjs` dentro de `agua/`. Os testes de navegador usam o Playwright instalado em `tr/`.
+`node scripts/check.mjs` dentro de `agua/`. Os testes de navegador usam o Playwright instalado na raiz.

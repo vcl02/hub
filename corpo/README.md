@@ -9,4 +9,4 @@ Pesagem e barriga dia a dia, IMC e evolução, e o perfil (idade, altura, basal)
 
 ## Testes
 
-`node scripts/check.mjs` dentro de `corpo/`. Os testes de navegador usam o Playwright instalado em `tr/`.
+`node scripts/check.mjs` dentro de `corpo/`. Os testes de navegador usam o Playwright instalado na raiz.

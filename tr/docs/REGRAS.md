@@ -30,12 +30,12 @@ Fonte de verdade do comportamento do app. Toda mudança de regra atualiza este a
 
 Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 
-| Tabela | Chave | Campos |
-|---|---|---|
-| `tr_exercicio` | `id` | ordem, grupo, regiao, series, reps, descanso, modo, ativo |
-| `tr_variacao` | `id` | exercicio_id, ordem (0 principal, 1 substituto, 2 halter), nome, unidade (`kg`, `lb`, `nível`, `corpo`, `s`; migration 07), passo, lados, equip, nota |
-| `tr_registro` | `variacao_id, data` | series `[{ kg, reps, falha? }]` (`falha: true` só na série que falhou) |
-| `tr_treino` | `inicio` | fim, fechado, cardio `{ inicio, ms, vel, incl }` (esteira depois do treino; null = sem cardio, migration 05) |
+| Tabela         | Chave               | Campos                                                                                                                                                |
+| -------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tr_exercicio` | `id`                | ordem, grupo, regiao, series, reps, descanso, modo, ativo                                                                                             |
+| `tr_variacao`  | `id`                | exercicio_id, ordem (0 principal, 1 substituto, 2 halter), nome, unidade (`kg`, `lb`, `nível`, `corpo`, `s`; migration 07), passo, lados, equip, nota |
+| `tr_registro`  | `variacao_id, data` | series `[{ kg, reps, falha? }]` (`falha: true` só na série que falhou)                                                                                |
+| `tr_treino`    | `inicio`            | fim, fechado, cardio `{ inicio, ms, vel, incl }` (esteira depois do treino; null = sem cardio, migration 05)                                          |
 
 `tr_medida` (as pesagens que o Treino gravava) foi copiada para `corpo_medida` e depois apagada: as pesagens agora são do app Corpo (`../corpo/`). O Treino só lê `corpo_medida` (peso das calorias), nunca grava.
 

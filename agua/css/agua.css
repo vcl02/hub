@@ -1,37 +1,140 @@
 /* Água — o que é só dela, sobre a base comum (../base/tokens.css e ../base/componentes.css): a cor (ciano), o total que
    fica verde ao bater a meta, os lembretes do dia (feito, atrasado, o da vez), a bebida que não é água e os 7 dias. */
-:root{--cor:#4CC9F0}
+:root {
+  --cor: #4cc9f0;
+}
 
 /* ---------- Total ---------- */
-.total{display:flex;flex-direction:column;gap:var(--e-3)}
-.total.ok{border-color:var(--ok)}
-.total.ok .barra span{background:var(--ok)}
-.bateu{margin-left:auto;align-self:center;font-size:var(--t-xs);font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ok);background:var(--ok-soft);border-radius:var(--r-pill);padding:4px 10px}
-.barra span{width:0}
+.total {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+}
+.total.ok {
+  border-color: var(--ok);
+}
+.total.ok .barra span {
+  background: var(--ok);
+}
+.bateu {
+  margin-left: auto;
+  align-self: center;
+  font-size: var(--t-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ok);
+  background: var(--ok-soft);
+  border-radius: var(--r-pill);
+  padding: 4px 10px;
+}
+.barra span {
+  width: 0;
+}
 
 /* ---------- Lembretes: feito (cor da Água), atrasado (vermelho), o da vez (vermelho cheio), ainda não chegou ---------- */
-.lembretes{display:flex;flex-direction:column;gap:var(--e-3)}
-.lembrete-agora{display:flex;align-items:center;gap:var(--e-2);font-weight:700;color:var(--erro)}
-.lembrete-agora::before{content:'';width:10px;height:10px;border-radius:50%;background:var(--erro);animation:pulsar 1.2s ease-in-out infinite}
-@keyframes pulsar{50%{transform:scale(1.5);opacity:.5}}
-.horas .chip{color:var(--muted)}
-.horas .feito{border-color:var(--cor);background:var(--cor-soft);color:var(--cor)}
-.horas .atrasado{border-color:var(--erro);color:var(--erro)}
-.horas .vez{background:var(--erro);color:var(--bg);font-weight:700}
-.notif{font-size:var(--t-sm);color:var(--muted)}
-.notif .chip{width:100%}
-.notif #n-ligadas{color:var(--cor);font-weight:600}
+.lembretes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+}
+.lembrete-agora {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  font-weight: 700;
+  color: var(--erro);
+}
+.lembrete-agora::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--erro);
+  animation: pulsar 1.2s ease-in-out infinite;
+}
+@keyframes pulsar {
+  50% {
+    transform: scale(1.5);
+    opacity: 0.5;
+  }
+}
+.horas .chip {
+  color: var(--muted);
+}
+.horas .feito {
+  border-color: var(--cor);
+  background: var(--cor-soft);
+  color: var(--cor);
+}
+.horas .atrasado {
+  border-color: var(--erro);
+  color: var(--erro);
+}
+.horas .vez {
+  background: var(--erro);
+  color: var(--bg);
+  font-weight: 700;
+}
+.notif {
+  font-size: var(--t-sm);
+  color: var(--muted);
+}
+.notif .chip {
+  width: 100%;
+}
+.notif #n-ligadas {
+  color: var(--cor);
+  font-weight: 600;
+}
 
 /* ---------- Beber ---------- */
-.beber .campo{font-family:var(--display);font-weight:700;font-size:var(--t-lg)}
-.chips:empty{display:none}
-.lista li.outra{border-style:dashed}   /* outra bebida: só a parte que é água conta */
-.lista:empty{display:none}
+.beber .campo {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: var(--t-lg);
+}
+.chips:empty {
+  display: none;
+}
+.lista li.outra {
+  border-style: dashed;
+} /* outra bebida: só a parte que é água conta */
+.lista:empty {
+  display: none;
+}
 
 /* ---------- 7 dias ---------- */
-.sem-lista{list-style:none;margin:0;padding:0}
-.sem-lista li{border-bottom:1px solid var(--line);font-size:var(--t-sm)}
-.sem-lista li:last-child{border-bottom:0}
-.sem-lista button{display:grid;grid-template-columns:1fr auto;gap:var(--e-2);width:100%;padding:6px 0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
-.sem-lista li.visto button>span:first-child{font-weight:700;color:var(--cor)}
-.sem-lista .ok{color:var(--ok);font-weight:600}
+.sem-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.sem-lista li {
+  border-bottom: 1px solid var(--line);
+  font-size: var(--t-sm);
+}
+.sem-lista li:last-child {
+  border-bottom: 0;
+}
+.sem-lista button {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--e-2);
+  width: 100%;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sem-lista li.visto button > span:first-child {
+  font-weight: 700;
+  color: var(--cor);
+}
+.sem-lista .ok {
+  color: var(--ok);
+  font-weight: 600;
+}

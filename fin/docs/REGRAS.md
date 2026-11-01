@@ -694,6 +694,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - `migrations/43-vinculos-pagamento.sql` cria `public.fin_vinculo` (trecho de quem recebe ou paga no Pix/boleto → conta prevista em `fin`, por nome sem parcela e categoria; uma pessoa pode ter várias contas), usada pela Edge Function `captura-nubank` pra marcar como paga a conta certa (ver "Contas previstas pelo celular").
   RLS só do dono pelo app e histórico em `fin_historico`; não altera nenhuma linha de `fin` e rodar de novo não muda nada.
   Coberta por `node --test tests/captura-nubank.test.js tests/tasker-atalho.test.js`.
+
 ## Testes
 
 - Os estilos são carregados em camadas por `css/base.css`, `css/dashboard.css`, `css/forms.css`, `css/charts.css`, `css/utilities.css` e `css/mobile.css`; o responsivo permanece por último para preservar a cascata.

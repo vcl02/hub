@@ -8,14 +8,14 @@ Pedido explícito do mantenedor vence tudo.
 
 ## Projetos
 
-| Projeto | Pasta | Endereço | Tabelas próprias | Migrations | Edge Function |
-|---|---|---|---|---|---|
-| Hub (página inicial) | raiz | `/hub/` | `hub_historico` (as dos apps, só lê) | `migrations/` 00 a 01 | — |
-| Fin | `fin/` | `/hub/fin/` | `fin`, `fin_ciclo`, `fin_meta`, `fin_historico` | 00 a 41 | `captura-nubank` |
-| Treino | `tr/` | `/hub/tr/` | `tr_exercicio`, `tr_variacao`, `tr_registro`, `tr_treino` | 00 a 07 | — |
-| Alimentação | `al/` | `/hub/al/` | `al_item`, `al_registro`, `al_dia`, `al_marmita`, `al_uso` | 00 a 03 | `al-estimar` |
-| Corpo | `corpo/` | `/hub/corpo/` | `corpo_medida`, `corpo_dia` | 00 a 05 | — |
-| Água | `agua/` | `/hub/agua/` | `agua_dia`, `push_inscricao`, `push_chave`, `push_agendado`, `push_ultimo` | 00 a 02 | `agua-lembrete` |
+| Projeto              | Pasta    | Endereço      | Tabelas próprias                                                           | Migrations            | Edge Function    |
+| -------------------- | -------- | ------------- | -------------------------------------------------------------------------- | --------------------- | ---------------- |
+| Hub (página inicial) | raiz     | `/hub/`       | `hub_historico` (as dos apps, só lê)                                       | `migrations/` 00 a 01 | —                |
+| Fin                  | `fin/`   | `/hub/fin/`   | `fin`, `fin_ciclo`, `fin_meta`, `fin_historico`                            | 00 a 41               | `captura-nubank` |
+| Treino               | `tr/`    | `/hub/tr/`    | `tr_exercicio`, `tr_variacao`, `tr_registro`, `tr_treino`                  | 00 a 07               | —                |
+| Alimentação          | `al/`    | `/hub/al/`    | `al_item`, `al_registro`, `al_dia`, `al_marmita`, `al_uso`                 | 00 a 03               | `al-estimar`     |
+| Corpo                | `corpo/` | `/hub/corpo/` | `corpo_medida`, `corpo_dia`                                                | 00 a 05               | —                |
+| Água                 | `agua/`  | `/hub/agua/`  | `agua_dia`, `push_inscricao`, `push_chave`, `push_agendado`, `push_ultimo` | 00 a 02               | `agua-lembrete`  |
 
 Todos usam o mesmo projeto Supabase e a mesma conta `DONO`.
 
@@ -23,11 +23,11 @@ Todos usam o mesmo projeto Supabase e a mesma conta `DONO`.
 
 Todo projeto tem os três (o teste `tests/documentacao.test.mjs` confere):
 
-| Arquivo | Guarda | Não guarda |
-|---|---|---|
-| `AGENTS.md` | Como trabalhar: arquitetura, ordem de carga, dados e segurança, **Infraestrutura**, como concluir uma mudança | Regra de negócio (vai para o REGRAS) |
-| `docs/REGRAS.md` | Fonte de verdade do comportamento visível e das contas | Como mexer no código |
-| `docs/DECISOES.md` | O porquê das escolhas, alternativas descartadas e problemas que já aconteceram (com data) | Regra vigente repetida |
+| Arquivo            | Guarda                                                                                                        | Não guarda                           |
+| ------------------ | ------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| `AGENTS.md`        | Como trabalhar: arquitetura, ordem de carga, dados e segurança, **Infraestrutura**, como concluir uma mudança | Regra de negócio (vai para o REGRAS) |
+| `docs/REGRAS.md`   | Fonte de verdade do comportamento visível e das contas                                                        | Como mexer no código                 |
+| `docs/DECISOES.md` | O porquê das escolhas, alternativas descartadas e problemas que já aconteceram (com data)                     | Regra vigente repetida               |
 
 - Opcionais: `README.md` (o que é e a implantação: migration, secret, deploy) e `docs/CHECKLIST-PUBLICACAO.md` (conferência manual; fin e tr).
 - Mudou uma regra: o REGRAS muda no mesmo commit.
@@ -82,23 +82,27 @@ Todo projeto tem os três (o teste `tests/documentacao.test.mjs` confere):
   4. **Edge Function**: o código da função roda de verdade com rede e SDK falsos (`al/tests/funcao.test.mjs`, `agua/tests/funcao.test.mjs`, `fin/tests/captura-nubank.test.js`).
 - **O que cada projeto tem** (atualize ao mudar):
 
-  | Projeto | Funções | Navegador | Estrutura | Edge Function |
-  |---|---|---|---|---|
-  | Página inicial | `tests/habitos.test.mjs`, `tests/repetidas.test.mjs`, `tests/regras-apps.test.mjs` | `tests/navegacao.test.mjs` (login, hábitos com os dados dos apps, cada app abrindo com a mesma sessão e no dia escolhido) | `tests/hub.test.mjs`, `tests/documentacao.test.mjs` | — |
-  | Fin | `tests/*.test.js` (a maior parte) | `tests/navegador.test.js` (abrir, ciclo, lançar, apagar, simulação, metas, cartão), `navegador-celular.test.js` (gestos e layout no celular), `navegador-linhas.test.js` (edição na linha, série parcelada) | `tests/estrutura-*.test.js`, `tests/pwa.test.js` e outros | `tests/captura-nubank.test.js` |
-  | Treino | pela raiz (`repetidas`, `regras-apps`: pirâmide) | `tests/treino`, `dias`, `ajustes`, `calistenia`, `cardio`, `nuvem`, `pontos` | `tests/estrutura.test.mjs` | — |
-  | Alimentação | pela raiz (`repetidas`, `regras-apps`: gasto e meta) | `tests/dia.test.mjs` | `tests/estrutura.test.mjs` | `tests/funcao.test.mjs` (`al-estimar`) |
-  | Corpo | pela raiz (`repetidas`, `regras-apps`: sono) | `tests/corpo.test.mjs` | `tests/estrutura.test.mjs` | — |
-  | Água | pela raiz (`repetidas`, `regras-apps`: lembretes, limpeza do db) | `tests/agua.test.mjs`, `tests/notificacoes.test.mjs` | `tests/estrutura.test.mjs` | `tests/funcao.test.mjs` (`agua-lembrete`) |
+  | Projeto        | Funções                                                                            | Navegador                                                                                                                                                                                                   | Estrutura                                                 | Edge Function                             |
+  | -------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------------- |
+  | Página inicial | `tests/habitos.test.mjs`, `tests/repetidas.test.mjs`, `tests/regras-apps.test.mjs` | `tests/navegacao.test.mjs` (login, hábitos com os dados dos apps, cada app abrindo com a mesma sessão e no dia escolhido)                                                                                   | `tests/hub.test.mjs`, `tests/documentacao.test.mjs`       | —                                         |
+  | Fin            | `tests/*.test.js` (a maior parte)                                                  | `tests/navegador.test.js` (abrir, ciclo, lançar, apagar, simulação, metas, cartão), `navegador-celular.test.js` (gestos e layout no celular), `navegador-linhas.test.js` (edição na linha, série parcelada) | `tests/estrutura-*.test.js`, `tests/pwa.test.js` e outros | `tests/captura-nubank.test.js`            |
+  | Treino         | pela raiz (`repetidas`, `regras-apps`: pirâmide)                                   | `tests/treino`, `dias`, `ajustes`, `calistenia`, `cardio`, `nuvem`, `pontos`                                                                                                                                | `tests/estrutura.test.mjs`                                | —                                         |
+  | Alimentação    | pela raiz (`repetidas`, `regras-apps`: gasto e meta)                               | `tests/dia.test.mjs`                                                                                                                                                                                        | `tests/estrutura.test.mjs`                                | `tests/funcao.test.mjs` (`al-estimar`)    |
+  | Corpo          | pela raiz (`repetidas`, `regras-apps`: sono)                                       | `tests/corpo.test.mjs`                                                                                                                                                                                      | `tests/estrutura.test.mjs`                                | —                                         |
+  | Água           | pela raiz (`repetidas`, `regras-apps`: lembretes, limpeza do db)                   | `tests/agua.test.mjs`, `tests/notificacoes.test.mjs`                                                                                                                                                        | `tests/estrutura.test.mjs`                                | `tests/funcao.test.mjs` (`agua-lembrete`) |
+
 - **Prioridade dos testes (regra geral, a pedido do mantenedor, 31/10/2026), em todo projeto:**
   1. **Código: a função rodando.** Primeira escolha sempre. A função é tirada do próprio arquivo publicado e roda com dados fixos, sem navegador (`tests/funcoes.mjs` na raiz, `fin/tests/helpers/carregar-funcoes.js` no Fin), e o teste confere o que ela devolve ou grava. Regra, conta, validação, formato antigo, sincronização, o que vai no payload: tudo aqui. Lógica presa num handler de tela? Extraia a parte pura para uma função e teste ela.
   2. **Tela (Playwright), em poucos casos estratégicos.** Só o que a função sozinha não prova: o caminho principal de cada app (abrir, lançar, apagar), gestos, layout medido no celular e a ligação entre a tela e o banco (grava uma vez só, na simulação não grava). Não é o lugar padrão de regra nenhuma: se a regra pode ser testada como função, o teste de tela não a repete.
 - **Nunca regex onde ela não é estritamente necessária.** Procurar uma linha ou um trecho do código (`assert.match(js, /if \(eixo !== 'x'…/)`) não prova que funciona e quebra a cada reorganização: é proibido em teste novo. Regex só onde o próprio objeto é texto: SQL das migrations (formato, RLS), documentação, configuração (`.editorconfig`, manifest), ausência de segredos, ou a saída de uma função que o teste rodou (o HTML que ela gerou). O Fin ainda tem conferências antigas no código em conversão (eram ~900; o mapa sai de contar `assert.match` sobre o que foi lido de `js/`, `css/` e `index.html`), e elas viram teste de função (1) antes de teste de tela (2).
 - **Onde pôr um teste novo:** pela prioridade acima — função primeiro; tela só se for um dos casos estratégicos; formato de arquivo, migration e segredo → estrutura (regex permitida, é texto).
-- **Playwright numa instalação só:** `tr/package.json`.
-  Os outros carregam de lá: `createRequire(path.join(HUB, 'tr', 'package.json'))('playwright')` (o Fin também, em `tests/navegador.test.js`).
-  Não crie `package.json` em outro projeto só para testar.
+- **Playwright numa instalação só:** `package.json` da raiz.
+  Os outros carregam de lá: `createRequire(path.join(HUB, 'package.json'))('playwright')` (o Fin também, em `tests/navegador.test.js`).
+  Não crie `package.json` em outro projeto só para testar. O mesmo `package.json` tem ESLint e Prettier, que rodam na validação da raiz.
 - `node scripts/check.mjs` em cada projeto: sintaxe (`node --check`), higiene textual do `.editorconfig` (sem tab, sem espaço no fim, newline final), testes e `git diff --check`.
+- **Estilo de todo o repositório (raiz):** `npm run lint` (ESLint), `npm run format:check` (Prettier) e `npm run editorconfig` (`scripts/editorconfig.mjs`). `npm run validar` roda os três e `npm test`, nessa ordem.
+  O GitHub Actions roda os mesmos passos (ESLint, Prettier, EditorConfig e `scripts/check.mjs`); o push falha se um deles falhar.
+  O `scripts/editorconfig.mjs` não tem dependência: confere UTF-8 sem BOM, LF, newline final, sem espaço no fim e sem tab na indentação, contra o `.editorconfig` mais próximo de cada arquivo (raiz, `fin/` ou `tr/`). Não confere o tamanho da indentação, que é do Prettier. Ignora `supabase.js`, `tr/supabase.js` (cópia de terceiros) e `fin/tasker/` (exportação do Tasker, com tab). Por que não `editorconfig-checker`: `docs/DECISOES.md` da raiz (01/11/2026).
   Na raiz roda tudo, **os testes da raiz e os cinco apps ao mesmo tempo** (cada um com o próprio servidor numa porta livre e o próprio Chromium; a saída de cada um sai inteira, com o tempo): ~55 s, o tempo do mais lento. Arquivo de navegador que passa de ~20 s vale dividir por assunto (o Node roda arquivos diferentes ao mesmo tempo): foi assim com `tr/tests/dias.test.mjs`. O GitHub Actions (`.github/workflows/validacao.yml`) roda o mesmo em todo push.
 - Supabase falso imita o banco no que o app depende: ids numéricos, defaults de coluna (ex.: `fin_meta.status`), e `atraso` nas escritas para testar o toque repetido com o pedido no ar.
 - **Sem espera fixa** (`waitForTimeout`): espere a condição (`waitForFunction` no dado salvo, na tela trocada, em `document.getAnimations()` sem animação rodando, como no `arrastar` de `tr/tests/helpers/app.mjs`). Espera fixa só onde o teste é justamente o tempo real (o 0,5 s do toque repetido na Água) ou a prova de que algo **não** aconteceu (um 2º pedido que não chegou).
@@ -113,14 +117,16 @@ Todo projeto tem os três (o teste `tests/documentacao.test.mjs` confere):
 - Sem build, sem bundler e sem `node_modules` publicado: os apps são HTML/CSS/JavaScript clássico servidos como estão.
 - Inventário (a fonte é o arquivo citado):
 
-| Pacote | Versão | Onde | Como |
-|---|---|---|---|
-| `playwright` | 1.56.1 | `tr/package.json` + `tr/package-lock.json` | Só testes (raiz, tr, al, corpo, agua) |
-| `@supabase/supabase-js` | 2.118.0 | `supabase.js` (raiz) e `tr/supabase.js`, iguais byte a byte | Cópia UMD, abre sem internet; raiz, tr, al, corpo, agua |
-| `@supabase/supabase-js` | 2.118.0 | `fin/index.html` | jsDelivr com `integrity` igual ao hash da cópia da raiz (`fin/tests/pwa.test.js` confere) |
-| `chart.js` | 4.4.1 | `fin/index.html` | jsDelivr com `integrity` |
-| `@anthropic-ai/sdk` | 0.133.0 | `al/supabase/functions/al-estimar/index.ts` | `npm:` no Deno |
-| `@supabase/functions-js` (tipos) | 2.118.0 | as três Edge Functions | `jsr:@supabase/functions-js@2.118.0/edge-runtime.d.ts`, só os tipos do editor |
+| Pacote                               | Versão                    | Onde                                                        | Como                                                                                             |
+| ------------------------------------ | ------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `playwright`                         | 1.56.1                    | `package.json` + `package-lock.json` (raiz)                 | Só testes (raiz, fin, tr, al, corpo, agua)                                                       |
+| `eslint` · `@eslint/js` · `prettier` | 10.13.0 · 10.0.1 · 3.9.10 | `package.json` + `package-lock.json` (raiz)                 | Lint e formato no GitHub Actions e em `npm run validar` (`npm run lint`, `npm run format:check`) |
+| `globals`                            | 17.13.0                   | `package.json` + `package-lock.json` (raiz)                 | Só o ESLint (`eslint.config.mjs`, globais de cada página), que roda na validação                 |
+| `@supabase/supabase-js`              | 2.118.0                   | `supabase.js` (raiz) e `tr/supabase.js`, iguais byte a byte | Cópia UMD, abre sem internet; raiz, tr, al, corpo, agua                                          |
+| `@supabase/supabase-js`              | 2.118.0                   | `fin/index.html`                                            | jsDelivr com `integrity` igual ao hash da cópia da raiz (`fin/tests/pwa.test.js` confere)        |
+| `chart.js`                           | 4.4.1                     | `fin/index.html`                                            | jsDelivr com `integrity`                                                                         |
+| `@anthropic-ai/sdk`                  | 0.133.0                   | `al/supabase/functions/al-estimar/index.ts`                 | `npm:` no Deno                                                                                   |
+| `@supabase/functions-js` (tipos)     | 2.118.0                   | as três Edge Functions                                      | `jsr:@supabase/functions-js@2.118.0/edge-runtime.d.ts`, só os tipos do editor                    |
 
 - Versão exata sempre (nunca `@2`, `^`, `~`, nem import sem versão), de preferência publicada há pelo menos duas semanas.
 - `supabase-js` na mesma versão em todos os apps (mesma origem, mesma sessão), e os tipos `jsr:@supabase/functions-js` das Edge Functions na mesma versão dele: atualizar tudo junto (`tests/documentacao.test.mjs` confere).
@@ -128,20 +134,20 @@ Todo projeto tem os três (o teste `tests/documentacao.test.mjs` confere):
 - App que precisa abrir sem internet usa cópia local, não CDN.
 - `supabase.js` da raiz e do tr mudam juntos (o teste confere que são iguais).
 - Pacote novo só com entrada no DECISOES do projeto: o que resolve e por que não dá sem.
-- Atualizar o Playwright: em `tr/`, `npm install -D playwright@<versão exata>` e `npx playwright install chromium`; depois `node scripts/check.mjs` na raiz.
+- Atualizar o Playwright: na raiz, `npm install -D playwright@<versão exata>` e `npx playwright install chromium`; depois `node scripts/check.mjs` na raiz.
   O hook de início das sessões na nuvem (`.claude/hooks/session-start.sh`) reinstala sozinho.
 
 ## 5. Backups
 
 O que existe hoje (conferido no repositório):
 
-| Camada | Cobre | Onde |
-|---|---|---|
-| Código | Todo o repositório, com histórico | GitHub `vcl02/hub` e os clones |
-| Histórico no banco | Antes e depois de cada linha inserida, alterada ou apagada | `fin_historico` (`fin` e `fin_ciclo` pela migration `fin/27`, `fin_meta` pela `fin/41`) e `hub_historico` (Água, Corpo, al e Treino, migration `00` da raiz) |
-| Cópia no aparelho | O banco do app naquele aparelho (`localStorage`) | Uma chave por app e conta (ex.: `tr.db.<conta>`) |
-| Exportação do Fin | O recorte filtrado | Download no próprio Fin |
-| Backup do Supabase | Não tem: o plano atual (gratuito) não faz backup, segundo o mantenedor em 28/10/2026 | — |
+| Camada             | Cobre                                                                                | Onde                                                                                                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Código             | Todo o repositório, com histórico                                                    | GitHub `vcl02/hub` e os clones                                                                                                                               |
+| Histórico no banco | Antes e depois de cada linha inserida, alterada ou apagada                           | `fin_historico` (`fin` e `fin_ciclo` pela migration `fin/27`, `fin_meta` pela `fin/41`) e `hub_historico` (Água, Corpo, al e Treino, migration `00` da raiz) |
+| Cópia no aparelho  | O banco do app naquele aparelho (`localStorage`)                                     | Uma chave por app e conta (ex.: `tr.db.<conta>`)                                                                                                             |
+| Exportação do Fin  | O recorte filtrado                                                                   | Download no próprio Fin                                                                                                                                      |
+| Backup do Supabase | Não tem: o plano atual (gratuito) não faz backup, segundo o mantenedor em 28/10/2026 | —                                                                                                                                                            |
 
 Diretriz:
 
@@ -166,15 +172,15 @@ Nenhum app, workflow ou script faz backup automático; mudar isso é decisão no
 - Mesma origem para todos: prefixos de `localStorage` e cache por app (ver `../AGENTS.md`).
 - Domínios externos (lista fechada; um novo entra aqui e no AGENTS do projeto):
 
-| Domínio | Para quê | Quem |
-|---|---|---|
-| `yzmyncxoskvqzdczaill.supabase.co` | Banco, Auth e `functions/v1/*` | Todos |
-| `cdn.jsdelivr.net` | `supabase-js` e `chart.js` | Fin |
-| `api.anthropic.com` | IA, pelo SDK | Só a função `al-estimar` |
-| Serviço de push do navegador | Endpoint de cada inscrição | Só a função `agua-lembrete` |
-| `api.resend.com` | E-mail de publicação | Workflow `avisar-pages-publicado.yml` |
-| `calendar.google.com`, `wa.me` | Atalhos Agenda e Anotações | Página inicial |
-| `mcp.supabase.com` | MCP só de leitura | `.mcp.json` (sessões do Claude Code) |
+| Domínio                            | Para quê                       | Quem                                  |
+| ---------------------------------- | ------------------------------ | ------------------------------------- |
+| `yzmyncxoskvqzdczaill.supabase.co` | Banco, Auth e `functions/v1/*` | Todos                                 |
+| `cdn.jsdelivr.net`                 | `supabase-js` e `chart.js`     | Fin                                   |
+| `api.anthropic.com`                | IA, pelo SDK                   | Só a função `al-estimar`              |
+| Serviço de push do navegador       | Endpoint de cada inscrição     | Só a função `agua-lembrete`           |
+| `api.resend.com`                   | E-mail de publicação           | Workflow `avisar-pages-publicado.yml` |
+| `calendar.google.com`, `wa.me`     | Atalhos Agenda e Anotações     | Página inicial                        |
+| `mcp.supabase.com`                 | MCP só de leitura              | `.mcp.json` (sessões do Claude Code)  |
 
 - **Mudar de domínio** (domínio próprio ou outro host) cria uma **origem nova**. Antes de trocar:
   1. Abrir todos os apps em todos os aparelhos e confirmar que não há nada pendente: `localStorage` e caches ficam na origem antiga.

@@ -2,10 +2,16 @@
 import { readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
-const js = readdirSync('js').filter(nome => nome.endsWith('.js')).map(nome => `js/${nome}`);
-const testes = readdirSync('tests').filter(nome => nome.endsWith('.test.js')).map(nome => `tests/${nome}`);
+const js = readdirSync('js')
+  .filter((nome) => nome.endsWith('.js'))
+  .map((nome) => `js/${nome}`);
+
+const testes = readdirSync('tests')
+  .filter((nome) => nome.endsWith('.test.js'))
+  .map((nome) => `tests/${nome}`);
+
 const comandos = [
-  ...js.map(arquivo => [process.execPath, ['--check', arquivo]]),
+  ...js.map((arquivo) => [process.execPath, ['--check', arquivo]]),
   [process.execPath, ['scripts/check-style.mjs']],
   [process.execPath, ['--test', ...testes]],
   ['git', ['diff', '--check']],
@@ -13,7 +19,11 @@ const comandos = [
 ];
 
 for (const [comando, args] of comandos) {
-  const resultado = spawnSync(comando, args, { stdio: 'inherit', shell: process.platform === 'win32' });
+  const resultado = spawnSync(comando, args, {
+    stdio: 'inherit',
+    shell: process.platform === 'win32',
+  });
+
   if (resultado.status !== 0) process.exit(resultado.status || 1);
 }
 

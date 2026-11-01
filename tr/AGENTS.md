@@ -32,7 +32,7 @@ Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para
 
 - **Migrations:** `migrations/` 00 a 07, formato DataGrip, RLS só do dono em todas as `tr_*`; conferido em `tests/estrutura.test.mjs`, numeração em `../tests/documentacao.test.mjs`.
 - **Testes:** Playwright + `node:test`, um arquivo por área (`treino`, `dias` (arrastar, ‹ ›, ← →, resumo antigo e `?dia`; separado para rodar junto com `treino`), `pontos`, `nuvem`, `ajustes`, `calistenia`, `cardio`), com servidor e Supabase falso em `tests/helpers/app.mjs` (o teste de navegação da raiz usa o mesmo Supabase falso); estrutura em `tests/estrutura.test.mjs`; as contas da pirâmide (peso e reps por série, aquecimento, completo, kg ↔ lb) sem navegador em `../tests/regras-apps.test.mjs`, e as funções repetidas com os outros apps em `../tests/repetidas.test.mjs`.
-- **Pacotes:** o único `package.json` do hub: `playwright` 1.56.1 (com `package-lock.json`), que serve também à raiz, ao al, ao Corpo e à Água. Instalar: `npm ci` e `npx playwright install chromium` dentro de `tr/`. `supabase.js` é o `supabase-js` 2.118.0, igual byte a byte ao da raiz.
+- **Pacotes:** sem `package.json`; o Playwright vem da raiz (`npm ci` e `npx playwright install chromium` lá). `supabase.js` é o `supabase-js` 2.118.0, igual byte a byte ao da raiz.
 - **Backups:** cópia no aparelho (`tr.db.<usuário>`, base em `tr.base.<usuário>`) e `hub_historico` com `tr_treino`, `tr_registro`, `tr_exercicio` e `tr_variacao` (migration `00` da raiz). Sem backup manual em `.json`. Fotos das máquinas ficam só no aparelho, sem cópia.
 - **Domínio:** `/hub/tr/`. Externo: só o Supabase.
 
@@ -43,6 +43,7 @@ Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para
 3. Rode `node scripts/check.mjs` dentro de `tr/` (sintaxe, higiene textual do `.editorconfig`, testes e `git diff --check`) e, antes do push, também na raiz do hub (página inicial, fin e tr juntos). Informe precisamente o que foi validado; não alegue validação no celular ou no Supabase real se ela não ocorreu.
 4. Depois de os testes passarem, faça commit e push para `origin/main` do `vcl02/hub`. Nunca inclua alterações alheias no commit.
 5. Trabalhe direto na branch `main`: projeto pessoal, sem fluxo de PR. Não crie worktree, branch auxiliar nem peça revisão antes de puxar pra `main`.
+
 - **Sem prints de tela:** não tire nem abra capturas de tela (screenshot) para conferir visual, a pedido do mantenedor (gastam muito do limite de uso). Confira pelos testes e por medidas no navegador (posição, tamanho, texto, classes) e diga o que não foi visto.
 - **Testes: função primeiro, tela pouco, regex quase nunca:** 1) a função do código rodando (sem navegador); 2) Playwright só em poucos casos estratégicos; nunca regex no código, só onde o objeto é texto (SQL, docs, configuração, segredos). Detalhes e exceções em `../docs/DIRETRIZES.md`, seção 3.
 

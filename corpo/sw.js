@@ -2,32 +2,86 @@
 // Mesmo padrão do tr e do al: cache de nome fixo e nada de outros domínios (Supabase e fontes ficam fora deste worker).
 // Só apaga caches "corpo-" antigos: os outros apps dividem a mesma origem e os mesmos caches.
 const CACHE_ESTATICO = 'corpo-estatico';
-const ARQUIVOS_ESTATICOS = [
-  './perfil.js', '../base/tokens.css', '../base/componentes.css', './js/config.js', './js/util.js', './js/banco.js', './js/telas.js', './js/bootstrap.js',
-  './css/corpo.css', './', './index.html', '../supabase.js', './manifest.webmanifest', './icons/corpo-192.png', './icons/corpo-512.png'];
 
-self.addEventListener('install', evento => {
-  evento.waitUntil(caches.open(CACHE_ESTATICO).then(cache => Promise.all(
-    ARQUIVOS_ESTATICOS.map(async arquivo => cache.put(arquivo, await fetch(arquivo, { cache: 'reload' })))
-  )).then(() => self.skipWaiting()));
+const ARQUIVOS_ESTATICOS = [
+  './perfil.js',
+  '../base/tokens.css',
+  '../base/componentes.css',
+  './js/config.js',
+  './js/util.js',
+  './js/banco.js',
+  './js/telas.js',
+  './js/bootstrap.js',
+  './css/corpo.css',
+  './',
+  './index.html',
+  '../supabase.js',
+  './manifest.webmanifest',
+  './icons/corpo-192.png',
+  './icons/corpo-512.png',
+];
+
+self.addEventListener('install', (evento) => {
+  evento.waitUntil(
+    caches
+      .open(CACHE_ESTATICO)
+      .then((cache) =>
+        Promise.all(
+          ARQUIVOS_ESTATICOS.map(async (arquivo) =>
+            cache.put(arquivo, await fetch(arquivo, { cache: 'reload' }))
+          )
+        )
+      )
+      .then(() => self.skipWaiting())
+  );
 });
 
-self.addEventListener('activate', evento => evento.waitUntil(
-  caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('corpo-') && k !== CACHE_ESTATICO).map(k => caches.delete(k)))).then(() => self.clients.claim())
-));
+self.addEventListener('activate', (evento) =>
+  evento.waitUntil(
+    caches
+      .keys()
+      .then((ks) =>
+        Promise.all(
+          ks
+            .filter((k) => k.startsWith('corpo-') && k !== CACHE_ESTATICO)
+            .map((k) => caches.delete(k))
+        )
+      )
+      .then(() => self.clients.claim())
+  )
+);
 
-self.addEventListener('fetch', evento => {
+self.addEventListener('fetch', (evento) => {
   if (evento.request.method !== 'GET') return;
   const url = new URL(evento.request.url);
+
   if (url.origin !== self.location.origin) return;
+
   // Com busca: ?dia=… (o dia no endereço, como o ?ciclo do Fin) abre a mesma página; sem internet, a do cache. Outras
   // buscas (ex.: ?v=…, a checagem de versão) vão direto à rede, sem cache.
   if (url.search) {
-    if (evento.request.mode === 'navigate') evento.respondWith(fetch(evento.request).catch(() => caches.match('./').then(r => r || caches.match('./index.html'))));
+    if (evento.request.mode === 'navigate')
+      evento.respondWith(
+        fetch(evento.request).catch(() =>
+          caches.match('./').then((r) => r || caches.match('./index.html'))
+        )
+      );
+
     return;
   }
-  evento.respondWith(fetch(evento.request, { cache: 'no-cache' }).then(async resposta => {
-    if (resposta.ok) await (await caches.open(CACHE_ESTATICO)).put(evento.request, resposta.clone());
-    return resposta;
-  }).catch(() => caches.match(evento.request, { ignoreSearch: true }).then(r => r || caches.match('./index.html'))));
+
+  evento.respondWith(
+    fetch(evento.request, { cache: 'no-cache' })
+      .then(async (resposta) => {
+        if (resposta.ok)
+          await (await caches.open(CACHE_ESTATICO)).put(evento.request, resposta.clone());
+
+        return resposta;
+      })
+      .catch(() =>
+        caches
+          .match(evento.request, { ignoreSearch: true })
+          .then((r) => r || caches.match('./index.html'))
+      )
+  );
 });

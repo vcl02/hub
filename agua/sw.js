@@ -2,34 +2,94 @@
 // Mesmo padrão dos outros apps: cache de nome fixo e nada de outros domínios (Supabase e fontes ficam fora deste worker).
 // Só apaga caches "agua-" antigos: os outros apps dividem a mesma origem e os mesmos caches.
 const CACHE_ESTATICO = 'agua-estatico';
-const ARQUIVOS_ESTATICOS = [
-  './js/config.js', './js/util.js', './js/banco.js', './js/conta.js', './js/notificacoes.js', './js/telas.js', './js/bootstrap.js',
-  './css/agua.css', './', './index.html', '../supabase.js', '../corpo/perfil.js', '../base/tokens.css', '../base/componentes.css', './bebidas.js', './manifest.webmanifest', './icons/agua-192.png', './icons/agua-512.png', './icons/agua-badge.png', './icons/dentes-192.png', './icons/dentes-badge.png'];
 
-self.addEventListener('install', evento => {
-  evento.waitUntil(caches.open(CACHE_ESTATICO).then(cache => Promise.all(
-    ARQUIVOS_ESTATICOS.map(async arquivo => cache.put(arquivo, await fetch(arquivo, { cache: 'reload' })))
-  )).then(() => self.skipWaiting()));
+const ARQUIVOS_ESTATICOS = [
+  './js/config.js',
+  './js/util.js',
+  './js/banco.js',
+  './js/conta.js',
+  './js/notificacoes.js',
+  './js/telas.js',
+  './js/bootstrap.js',
+  './css/agua.css',
+  './',
+  './index.html',
+  '../supabase.js',
+  '../corpo/perfil.js',
+  '../base/tokens.css',
+  '../base/componentes.css',
+  './bebidas.js',
+  './manifest.webmanifest',
+  './icons/agua-192.png',
+  './icons/agua-512.png',
+  './icons/agua-badge.png',
+  './icons/dentes-192.png',
+  './icons/dentes-badge.png',
+];
+
+self.addEventListener('install', (evento) => {
+  evento.waitUntil(
+    caches
+      .open(CACHE_ESTATICO)
+      .then((cache) =>
+        Promise.all(
+          ARQUIVOS_ESTATICOS.map(async (arquivo) =>
+            cache.put(arquivo, await fetch(arquivo, { cache: 'reload' }))
+          )
+        )
+      )
+      .then(() => self.skipWaiting())
+  );
 });
 
-self.addEventListener('activate', evento => evento.waitUntil(
-  caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('agua-') && k !== CACHE_ESTATICO).map(k => caches.delete(k)))).then(() => self.clients.claim())
-));
+self.addEventListener('activate', (evento) =>
+  evento.waitUntil(
+    caches
+      .keys()
+      .then((ks) =>
+        Promise.all(
+          ks
+            .filter((k) => k.startsWith('agua-') && k !== CACHE_ESTATICO)
+            .map((k) => caches.delete(k))
+        )
+      )
+      .then(() => self.clients.claim())
+  )
+);
 
-self.addEventListener('fetch', evento => {
+self.addEventListener('fetch', (evento) => {
   if (evento.request.method !== 'GET') return;
   const url = new URL(evento.request.url);
+
   if (url.origin !== self.location.origin) return;
+
   // Com busca: ?dia=… (o dia no endereço, como o ?ciclo do Fin) abre a mesma página; sem internet, a do cache. Outras
   // buscas (ex.: ?v=…, a checagem de versão) vão direto à rede, sem cache.
   if (url.search) {
-    if (evento.request.mode === 'navigate') evento.respondWith(fetch(evento.request).catch(() => caches.match('./').then(r => r || caches.match('./index.html'))));
+    if (evento.request.mode === 'navigate')
+      evento.respondWith(
+        fetch(evento.request).catch(() =>
+          caches.match('./').then((r) => r || caches.match('./index.html'))
+        )
+      );
+
     return;
   }
-  evento.respondWith(fetch(evento.request, { cache: 'no-cache' }).then(async resposta => {
-    if (resposta.ok) await (await caches.open(CACHE_ESTATICO)).put(evento.request, resposta.clone());
-    return resposta;
-  }).catch(() => caches.match(evento.request, { ignoreSearch: true }).then(r => r || caches.match('./index.html'))));
+
+  evento.respondWith(
+    fetch(evento.request, { cache: 'no-cache' })
+      .then(async (resposta) => {
+        if (resposta.ok)
+          await (await caches.open(CACHE_ESTATICO)).put(evento.request, resposta.clone());
+
+        return resposta;
+      })
+      .catch(() =>
+        caches
+          .match(evento.request, { ignoreSearch: true })
+          .then((r) => r || caches.match('./index.html'))
+      )
+  );
 });
 
 // Notificação de verdade (Web Push sem conteúdo): a função agua-lembrete manda quando é hora e falta água, ou 20 min depois
@@ -37,27 +97,69 @@ self.addEventListener('fetch', evento => {
 // função responde em GET ?ultimo; sem resposta (sem internet), o de água.
 // badge = ícone pequeno da barra do Android, que só usa a transparência: desenho branco em fundo transparente (gota da água,
 // escova dos dentes: icons/*-badge.svg).
-const ULTIMO_LEMBRETE = 'https://yzmyncxoskvqzdczaill.supabase.co/functions/v1/agua-lembrete?ultimo';
+const ULTIMO_LEMBRETE =
+  'https://yzmyncxoskvqzdczaill.supabase.co/functions/v1/agua-lembrete?ultimo';
+
 const LEMBRETES = {
-  agua: { titulo: 'Hora de beber água', corpo: 'Toque para registrar.', tag: 'agua-lembrete', icone: 'icons/agua-192.png', badge: 'icons/agua-badge.png', abre: './' },
-  dentes: { titulo: 'Escove os dentes', corpo: 'Você comeu há 20 minutos.', tag: 'dentes', icone: 'icons/dentes-192.png', badge: 'icons/dentes-badge.png', abre: '../' }
+  agua: {
+    titulo: 'Hora de beber água',
+    corpo: 'Toque para registrar.',
+    tag: 'agua-lembrete',
+    icone: 'icons/agua-192.png',
+    badge: 'icons/agua-badge.png',
+    abre: './',
+  },
+  dentes: {
+    titulo: 'Escove os dentes',
+    corpo: 'Você comeu há 20 minutos.',
+    tag: 'dentes',
+    icone: 'icons/dentes-192.png',
+    badge: 'icons/dentes-badge.png',
+    abre: '../',
+  },
 };
-self.addEventListener('push', evento => {
+
+self.addEventListener('push', (evento) => {
   // Imagens com endereço completo (a partir do escopo da Água), sem depender de como o Android resolve caminho relativo
-  const url = caminho => new URL(caminho, self.registration.scope).href;
-  evento.waitUntil(fetch(ULTIMO_LEMBRETE, { cache: 'no-store' }).then(r => r.json()).then(x => x.tipo, () => 'agua').then(tipo => {
-    const l = LEMBRETES[tipo] || LEMBRETES.agua;
-    return self.registration.showNotification(l.titulo, {
-      body: l.corpo, icon: url(l.icone), badge: url(l.badge), tag: l.tag, renotify: true, data: { abre: l.abre }
-    });
-  }));
+  const url = (caminho) => new URL(caminho, self.registration.scope).href;
+
+  evento.waitUntil(
+    fetch(ULTIMO_LEMBRETE, { cache: 'no-store' })
+      .then((r) => r.json())
+      .then(
+        (x) => x.tipo,
+        () => 'agua'
+      )
+      .then((tipo) => {
+        const l = LEMBRETES[tipo] || LEMBRETES.agua;
+
+        return self.registration.showNotification(l.titulo, {
+          body: l.corpo,
+          icon: url(l.icone),
+          badge: url(l.badge),
+          tag: l.tag,
+          renotify: true,
+          data: { abre: l.abre },
+        });
+      })
+  );
 });
 // Tocar na notificação abre a Água (o de dentes, a página inicial), ou volta para ela se já estiver aberta
-self.addEventListener('notificationclick', evento => {
+self.addEventListener('notificationclick', (evento) => {
   evento.notification.close();
-  const alvo = new URL(evento.notification.data?.abre || './', self.registration.scope).pathname;
-  evento.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(L => {
-    const aberta = L.find(c => new URL(c.url).pathname === alvo || (alvo.endsWith('/agua/') && new URL(c.url).pathname.startsWith(alvo)));
-    return aberta ? aberta.focus() : self.clients.openWindow(alvo);
-  }));
+
+  const alvo = new URL(evento.notification.data?.abre || './', self.registration.scope)
+    .pathname;
+
+  evento.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((L) => {
+      const aberta = L.find(
+        (c) =>
+          new URL(c.url).pathname === alvo ||
+          (alvo.endsWith('/agua/') && new URL(c.url).pathname.startsWith(alvo))
+      );
+
+      return aberta ? aberta.focus() : self.clients.openWindow(alvo);
+    })
+  );
 });

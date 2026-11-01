@@ -1,484 +1,568 @@
-  /* =========================================================
+/* =========================================================
        MOBILE
        ========================================================= */
 
-  @media (max-width: 640px) {
-      body {
-          padding: 1.2rem .9rem;
-      }
+@media (max-width: 640px) {
+  body {
+    padding: 1.2rem 0.9rem;
+  }
 
-      .head {
-          gap: .5rem;
-          justify-content: space-between;
-          /* Cabeçalho inteiro (nav de ciclo, simulação, cadastro, recarregar, diagnóstico,
+  .head {
+    gap: 0.5rem;
+    justify-content: space-between;
+    /* Cabeçalho inteiro (nav de ciclo, simulação, cadastro, recarregar, diagnóstico,
              hub) é o mesmo do desktop — só quebra pra segunda linha quando não cabe,
              em vez de esconder qualquer coisa. */
-          flex-wrap: wrap;
-      }
+    flex-wrap: wrap;
+  }
 
-      /* Indicadores numa linha própria, quebrando item a item dentro da largura da tela. */
-      #rowVis {
-          min-width: 0;
-      }
+  /* Indicadores numa linha própria, quebrando item a item dentro da largura da tela. */
+  #rowVis {
+    min-width: 0;
+  }
 
-      #rowVis .indicadorRegra {
-          font-size: .78rem;
-      }
+  #rowVis .indicadorRegra {
+    font-size: 0.78rem;
+  }
 
-      /* fciclNav (as setas + De/Até + Atual) ganha a linha inteira pra si; min-width:0
+  /* fciclNav (as setas + De/Até + Atual) ganha a linha inteira pra si; min-width:0
          deixa os filhos flex encolherem de verdade em vez de forçar a linha a estourar
          pra fora da tela. */
-      #fciclNav {
-          flex: 1 1 100%;
-          min-width: 0;
-      }
+  #fciclNav {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
 
-      /* Vão menor entre os botões no mobile: com Atual, Gráfico, Visualizações e Consolidar
+  /* Vão menor entre os botões no mobile: com Atual, Gráfico, Visualizações e Consolidar
          tudo depois da seta ›, o vão do desktop empurrava o último ícone pra uma 3ª linha. */
-      #navComparar {
-          flex-wrap: wrap;
-          row-gap: .5rem;
-          column-gap: .4rem;
-          min-width: 0;
-      }
+  #navComparar {
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+    column-gap: 0.4rem;
+    min-width: 0;
+  }
 
-      #fde {
-          flex: 1 1 auto;
-          min-width: 0;
-      }
+  #fde {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
 
-      /* Até (que quebra pra 2ª linha junto com › e os ícones) ocupa só o que sobra dessa
+  /* Até (que quebra pra 2ª linha junto com › e os ícones) ocupa só o que sobra dessa
          linha, sem reservar a largura do texto do select — senão empurrava o último ícone
          pra uma 3ª linha. O mínimo mantém o mês legível. */
-      #fate {
-          flex: 1 1 0;
-          min-width: 9rem;
-      }
+  #fate {
+    flex: 1 1 0;
+    min-width: 9rem;
+  }
 
-      /* O select acompanha o rótulo, encolhendo junto. */
-      #fde select,
-      #fate select {
-          width: 100%;
-          min-width: 0;
-      }
+  /* O select acompanha o rótulo, encolhendo junto. */
+  #fde select,
+  #fate select {
+    width: 100%;
+    min-width: 0;
+  }
 
-      /* .tool (filtros e indicadores) fica sempre
+  /* .tool (filtros e indicadores) fica sempre
          visível, igual ao desktop — sem menu pra abrir/fechar. */
 
-      /* Barra flutuante de seleção some atrás do teclado em formulários altos; mantém a
+  /* Barra flutuante de seleção some atrás do teclado em formulários altos; mantém a
          mesma largura confortável do resto da tela. */
-      /* No celular a barra ocupa a largura da tela: o nome/soma numa linha só em cima (nome
+  /* No celular a barra ocupa a largura da tela: o nome/soma numa linha só em cima (nome
          longo vira "…") e os botões embaixo, dividindo a linha por igual — antes o Excluir
          ficava cortado fora da tela. */
-      #selbar {
-          left: .9rem;
-          right: .9rem;
-          bottom: calc(.9rem + env(safe-area-inset-bottom));
-          max-width: none;
-          flex-wrap: wrap;
-          gap: .55rem;
-          padding: .7rem .8rem;
-      }
+  #selbar {
+    left: 0.9rem;
+    right: 0.9rem;
+    bottom: calc(0.9rem + env(safe-area-inset-bottom));
+    max-width: none;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    padding: 0.7rem 0.8rem;
+  }
 
-      #selbar .info {
-          flex: 1 1 100%;
-          min-width: 0;
-      }
+  #selbar .info {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
 
-      #selbar .val {
-          font-size: 1.15rem;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-      }
+  #selbar .val {
+    font-size: 1.15rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
-      #selbar button {
-          flex: 1 1 0;
-          min-width: 0;
-          min-height: 2.6rem;
-          padding: .5rem .4rem;
-      }
+  #selbar button {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 2.6rem;
+    padding: 0.5rem 0.4rem;
+  }
 
-      /* tabela com scroll horizontal */
-      .rolagem {
-          overflow-x: auto;
-      }
+  /* tabela com scroll horizontal */
+  .rolagem {
+    overflow-x: auto;
+  }
 
-      /* "N registros · período" pode quebrar de linha: em tela estreita não cabe inteiro na
+  /* "N registros · período" pode quebrar de linha: em tela estreita não cabe inteiro na
          faixa e, sem quebrar, alargava a página. */
-      .resumoMeta {
-          white-space: normal;
-      }
+  .resumoMeta {
+    white-space: normal;
+  }
 
-      /* Ações do cabeçalho juntas, à direita (sem o Simular separado das demais). */
-      /* Com os botões dos cartões, o grupo não cabe nem sozinho numa tela estreita: aí ele
+  /* Ações do cabeçalho juntas, à direita (sem o Simular separado das demais). */
+  /* Com os botões dos cartões, o grupo não cabe nem sozinho numa tela estreita: aí ele
          quebra entre os botões, também à esquerda (na largura em que cabe, segue inteiro). */
-      /* No celular os botões viram uma grade de 6 colunas que ocupa a largura toda: duas
+  /* No celular os botões viram uma grade de 6 colunas que ocupa a largura toda: duas
          linhas de botões maiores (mais fáceis de acertar com o dedo) em vez de três linhas
          com os dois últimos sobrando sozinhos. A ordem continua a mesma. */
-      .acoesCabecalho {
-          display: grid;
-          grid-template-columns: repeat(6, minmax(0, 1fr));
-          gap: .45rem;
-          flex: 1 1 100%;
-      }
+  .acoesCabecalho {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.45rem;
+    flex: 1 1 100%;
+  }
 
-      /* Visualizações fica nas colunas da direita da grade: o menu abre alinhado pela
+  /* Visualizações fica nas colunas da direita da grade: o menu abre alinhado pela
          direita do ícone, pra dentro da tela. */
-      .visWrap .menuIcone {
-          left: auto;
-          right: 0;
-          max-width: calc(100vw - 1.8rem);
-      }
+  .visWrap .menuIcone {
+    left: auto;
+    right: 0;
+    max-width: calc(100vw - 1.8rem);
+  }
 
-      /* Cada botão (o .bt-ic da base, com a altura dela) ocupa a coluna inteira da grade. */
-      #app .acoesCabecalho > *,
-      #app .acoesCabecalho .visWrap > .bt-ic {
-          width: 100%;
-      }
+  /* Cada botão (o .bt-ic da base, com a altura dela) ocupa a coluna inteira da grade. */
+  #app .acoesCabecalho > *,
+  #app .acoesCabecalho .visWrap > .bt-ic {
+    width: 100%;
+  }
 
-      /* dvh (viewport visivel de verdade) e nao vh: com a barra de endereco embaixo, 100vh
+  /* dvh (viewport visivel de verdade) e nao vh: com a barra de endereco embaixo, 100vh
          e' MAIOR que a area visivel e o fim do form — o botao Salvar — fica atras dela.
          O par vh/dvh e' proposital: vh e' o fallback de quem nao suporta dvh. */
-      dialog#modalNovo {
-          width: calc(100vw - 2rem);
-          max-width: calc(100vw - 2rem);
-          height: calc(100vh - 2rem);
-          max-height: calc(100vh - 2rem);
-          height: calc(100dvh - 2rem);
-          max-height: calc(100dvh - 2rem);
-          border-radius: 16px;
-          margin: 1rem auto;
-      }
+  dialog#modalNovo {
+    width: calc(100vw - 2rem);
+    max-width: calc(100vw - 2rem);
+    height: calc(100vh - 2rem);
+    max-height: calc(100vh - 2rem);
+    height: calc(100dvh - 2rem);
+    max-height: calc(100dvh - 2rem);
+    border-radius: 16px;
+    margin: 1rem auto;
+  }
 
-      /* O modal ocupa a tela inteira; o formulário preenche essa altura e reparte a sobra
+  /* O modal ocupa a tela inteira; o formulário preenche essa altura e reparte a sobra
          entre os campos (space-between), em vez de deixar um vão entre Salvar e o fim do
          modal. Se o conteúdo passar da altura (tela baixa), só rola, sem espaço extra. */
-      #formNovo {
-          height: 100%;
-          max-height: none;
-          justify-content: space-between;
-          padding: 1.1rem 1rem calc(1.1rem + env(safe-area-inset-bottom));
-      }
+  #formNovo {
+    height: 100%;
+    max-height: none;
+    justify-content: space-between;
+    padding: 1.1rem 1rem calc(1.1rem + env(safe-area-inset-bottom));
+  }
 
-      /* .btPri tem flex: 1 (pra linhas de botões); aqui ele esticaria e engoliria a sobra. */
-      #salvaNovo {
-          flex: none;
-      }
+  /* .btPri tem flex: 1 (pra linhas de botões); aqui ele esticaria e engoliria a sobra. */
+  #salvaNovo {
+    flex: none;
+  }
 
-      /* Vazia, a mensagem sai do fluxo: senão ganharia uma fatia da sobra e abriria um vão
+  /* Vazia, a mensagem sai do fluxo: senão ganharia uma fatia da sobra e abriria um vão
          duplo entre Categorias e Salvar. */
-      .erroNovo:empty {
-          display: none;
-      }
+  .erroNovo:empty {
+    display: none;
+  }
 
-      dialog#modalGrafico,
-      dialog#modalComparativo {
-          width: 100vw;
-          max-width: 100vw;
-          height: 100vh;
-          max-height: 100vh;
-          height: 100dvh;
-          max-height: 100dvh;
-          border-radius: 0;
-          margin: 0;
-          padding: 1.1rem 1rem calc(1.1rem + env(safe-area-inset-bottom));
-          overflow-y: auto;
-      }
+  dialog#modalGrafico,
+  dialog#modalComparativo {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    margin: 0;
+    padding: 1.1rem 1rem calc(1.1rem + env(safe-area-inset-bottom));
+    overflow-y: auto;
+  }
 
-      #modalGrafico>div[style*=height],
-      #modalComparativo>div[style*=height] {
-          height: 320px !important;
-      }
+  #modalGrafico > div[style*='height'],
+  #modalComparativo > div[style*='height'] {
+    height: 320px !important;
+  }
 
-      .multiSelBtn {
-          min-width: 0;
-          max-width: 100%;
-      }
+  .multiSelBtn {
+    min-width: 0;
+    max-width: 100%;
+  }
 
-      /* O resumo financeiro preserva a leitura em duas faixas sem apertar os valores
+  /* O resumo financeiro preserva a leitura em duas faixas sem apertar os valores
          do Débito no modo simples. Crédito não é exibido no mobile. */
-      .blk h3:has(.resumoTitulo) {
-          align-items: flex-start;
-          flex-wrap: wrap;
-      }
-
-      .blk h3:has(.resumoTitulo) .resumoTitulo {
-          flex-basis: 100%;
-          margin-left: 0;
-      }
+  .blk h3:has(.resumoTitulo) {
+    align-items: flex-start;
+    flex-wrap: wrap;
   }
 
-  .blk h3 .tog {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 1.4rem;
-      height: 1.4rem;
-      margin-right: .35rem;
-      vertical-align: middle;
-
-      font-weight: 400;
-      font-size: .85rem;
-      line-height: 1;
-      color: var(--muted);
-      background: var(--surface-2);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      cursor: pointer;
+  .blk h3:has(.resumoTitulo) .resumoTitulo {
+    flex-basis: 100%;
+    margin-left: 0;
   }
+}
 
-  .blk h3 .tog:hover {
-      color: var(--fg);
-      border-color: var(--fg);
-  }
+.blk h3 .tog {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  margin-right: 0.35rem;
+  vertical-align: middle;
 
-  .fr {
-      color: var(--erro);
-      font-weight: 700;
-      cursor: help;
-      margin-left: .25rem;
-  }
+  font-weight: 400;
+  font-size: 0.85rem;
+  line-height: 1;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+}
 
-  .avisoFr {
-      margin: -.5rem 0 0;
-      padding: .5rem .7rem;
-      font-size: .82rem;
-      line-height: 1.35;
-      color: var(--fg);
-      background: var(--laranja-soft);
-      border: 1px solid #6A5330;
-      border-radius: 9px;
-  }
+.blk h3 .tog:hover {
+  color: var(--fg);
+  border-color: var(--fg);
+}
 
-  .blk h3 .bruto {
-      font-weight: 400;
-      font-size: .88rem;
-      color: var(--muted);
-      margin-left: .4rem;
-  }
+.fr {
+  color: var(--erro);
+  font-weight: 700;
+  cursor: help;
+  margin-left: 0.25rem;
+}
 
-  tbody tr.sal td {
-      background: #1C2530;
-      font-style: italic;
-  }
+.avisoFr {
+  margin: -0.5rem 0 0;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: var(--fg);
+  background: var(--laranja-soft);
+  border: 1px solid #6a5330;
+  border-radius: 9px;
+}
 
-  tbody tr.sal:hover td {
-      background: #212C39;
-  }
+.blk h3 .bruto {
+  font-weight: 400;
+  font-size: 0.88rem;
+  color: var(--muted);
+  margin-left: 0.4rem;
+}
 
-  tbody tr.res td {
-      background: var(--laranja-soft);
-      font-weight: 600;
-  }
+tbody tr.sal td {
+  background: #1c2530;
+  font-style: italic;
+}
 
-  tbody tr.res:hover td {
-      background: #3D3124;
-  }
+tbody tr.sal:hover td {
+  background: #212c39;
+}
 
-  tbody tr.sug td {
-      background: var(--ok-soft);
-      font-style: italic;
-  }
+tbody tr.res td {
+  background: var(--laranja-soft);
+  font-weight: 600;
+}
 
-  tbody tr.sug:hover td {
-      background: var(--ok-hover);
-  }
+tbody tr.res:hover td {
+  background: #3d3124;
+}
 
-  /* Besteira/Isabella prevista: gasto ainda não lançado, reservado até o teto do ciclo. */
-  tbody tr.prev td {
-      background: var(--erro-soft);
-      font-style: italic;
-  }
+tbody tr.sug td {
+  background: var(--ok-soft);
+  font-style: italic;
+}
 
-  tbody tr.prev:hover td {
-      background: var(--erro-hover);
-  }
+tbody tr.sug:hover td {
+  background: var(--ok-hover);
+}
 
-  /* linha de lancamento SIMULADO (modo simulacao) — listrado sutil, nunca confundido
+/* Besteira/Isabella prevista: gasto ainda não lançado, reservado até o teto do ciclo. */
+tbody tr.prev td {
+  background: var(--erro-soft);
+  font-style: italic;
+}
+
+tbody tr.prev:hover td {
+  background: var(--erro-hover);
+}
+
+/* linha de lancamento SIMULADO (modo simulacao) — listrado sutil, nunca confundido
      com um lancamento real */
-  tbody tr.sim td {
-      background: repeating-linear-gradient(135deg, var(--laranja-soft) 0 8px, transparent 8px 16px);
-  }
+tbody tr.sim td {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--laranja-soft) 0 8px,
+    transparent 8px 16px
+  );
+}
 
-  tbody tr.sim:hover td {
-      background: repeating-linear-gradient(135deg, #3D3124 0 8px, var(--surface-2-hover) 8px 16px);
-  }
+tbody tr.sim:hover td {
+  background: repeating-linear-gradient(
+    135deg,
+    #3d3124 0 8px,
+    var(--surface-2-hover) 8px 16px
+  );
+}
 
-  .simIco {
-      color: #F0A83A;
-  }
+.simIco {
+  color: #f0a83a;
+}
 
-  /* Tag de antecipação/pagamento de fatura ao lado do nome. */
-  .tagFatura {
-      display: inline-flex;
-      align-items: center;
-      font-size: 0.72rem;
-      font-weight: 500;
-      padding: 1px 6px;
-      border-radius: 4px;
-      background: rgba(139, 132, 245, 0.15);
-      color: #A8A0FF;
-      border: 1px solid rgba(139, 132, 245, 0.35);
-      margin-left: 6px;
-      vertical-align: middle;
-      white-space: nowrap;
-      cursor: help;
-  }
+/* Tag de antecipação/pagamento de fatura ao lado do nome. */
+.tagFatura {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(139, 132, 245, 0.15);
+  color: #a8a0ff;
+  border: 1px solid rgba(139, 132, 245, 0.35);
+  margin-left: 6px;
+  vertical-align: middle;
+  white-space: nowrap;
+  cursor: help;
+}
 
-  /* Metas no celular: a mesma grade rotulada em duas colunas iguais, com os mesmos campos
+/* Metas no celular: a mesma grade rotulada em duas colunas iguais, com os mesmos campos
      do desktop (valores à esquerda, vezes e meses à direita) e as ações no fim. */
-  @media (max-width: 640px) {
-      .metaGrade { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-      .mcNome { grid-column: 1 / -1; grid-row: 1; }
-      .mcValor { grid-column: 1; grid-row: 2; }
-      .mcVezes { grid-column: 2; grid-row: 2; }
-      .mcMes { grid-column: 1; grid-row: 3; }
-      .mcForma { grid-column: 2; grid-row: 3; }
-      .mcEntrada { grid-column: 1; grid-row: 4; }
-      .mcMesEntrada { grid-column: 2; grid-row: 4; }
-      .metaGrade > .metaBotoes { grid-column: 1 / -1; grid-row: 5; justify-content: flex-end; }
+@media (max-width: 640px) {
+  .metaGrade {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
+  .mcNome {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+  .mcValor {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .mcVezes {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .mcMes {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .mcForma {
+    grid-column: 2;
+    grid-row: 3;
+  }
+  .mcEntrada {
+    grid-column: 1;
+    grid-row: 4;
+  }
+  .mcMesEntrada {
+    grid-column: 2;
+    grid-row: 4;
+  }
+  .metaGrade > .metaBotoes {
+    grid-column: 1 / -1;
+    grid-row: 5;
+    justify-content: flex-end;
+  }
+}
 
-  /* Mês a mês no celular: cada mês vira um cartão com as mesmas informações — mês e o que
+/* Mês a mês no celular: cada mês vira um cartão com as mesmas informações — mês e o que
      sai em cima; Disponível, Sobra/falta e Comprometido embaixo, cada um com o rótulo
      (data-rotulo) em cima do número — pra caber na largura sem rolar de lado. */
-  @media (max-width: 640px) {
-      .pmTabela thead { display: none; }
-      .pmTabela,
-      .pmTabela tbody,
-      .pmTabela tfoot { display: block; }
-      .pmTabela tr {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: .25rem .5rem;
-          padding: .5rem .35rem;
-          border-bottom: 1px solid var(--line);
-      }
-      .pmTabela td {
-          padding: 0;
-          white-space: normal;
-          text-align: left;
-          border: 0;
-      }
-      .pmTabela .n { text-align: left; white-space: nowrap; }
-      .pmTabela td.n i { display: block; }
-      .pmTabela tr.pmFalta { background: var(--erro-soft); }
-      .pmTabela tr.pmFalta td { background: transparent; }
-      .pmTabela td:nth-child(1) { font-weight: 600; }
-      .pmTabela td:nth-child(2) { grid-column: 2 / 4; }
-      .pmTabela td[data-rotulo]::before {
-          content: attr(data-rotulo);
-          display: block;
-          color: var(--muted);
-          font-size: .66rem;
-      }
+@media (max-width: 640px) {
+  .pmTabela thead {
+    display: none;
   }
+  .pmTabela,
+  .pmTabela tbody,
+  .pmTabela tfoot {
+    display: block;
+  }
+  .pmTabela tr {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.25rem 0.5rem;
+    padding: 0.5rem 0.35rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .pmTabela td {
+    padding: 0;
+    white-space: normal;
+    text-align: left;
+    border: 0;
+  }
+  .pmTabela .n {
+    text-align: left;
+    white-space: nowrap;
+  }
+  .pmTabela td.n i {
+    display: block;
+  }
+  .pmTabela tr.pmFalta {
+    background: var(--erro-soft);
+  }
+  .pmTabela tr.pmFalta td {
+    background: transparent;
+  }
+  .pmTabela td:nth-child(1) {
+    font-weight: 600;
+  }
+  .pmTabela td:nth-child(2) {
+    grid-column: 2 / 4;
+  }
+  .pmTabela td[data-rotulo]::before {
+    content: attr(data-rotulo);
+    display: block;
+    color: var(--muted);
+    font-size: 0.66rem;
+  }
+}
 
-  /* =========================================================
+/* =========================================================
        TABELAS DE LANÇAMENTOS NO CELULAR
        ========================================================= */
 
-  @media (max-width: 640px) {
-      /* Hoje/Futuro/Passado em cima dos dados, não numa coluna à esquerda: os valores ganham
+@media (max-width: 640px) {
+  /* Hoje/Futuro/Passado em cima dos dados, não numa coluna à esquerda: os valores ganham
          a largura inteira da faixa e quebram menos. */
-      .resumoLinha {
-          grid-template-columns: minmax(0, 1fr);
-          gap: .15rem;
-          padding: .4rem .6rem;
-      }
+  .resumoLinha {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.15rem;
+    padding: 0.4rem 0.6rem;
+  }
 
-      /* Ano com dois dígitos (05/10/26): o século fica no HTML, só escondido. */
-      .seculo {
-          display: none;
-      }
+  /* Ano com dois dígitos (05/10/26): o século fica no HTML, só escondido. */
+  .seculo {
+    display: none;
+  }
 
-      /* Larguras pensadas pro celular (a tabela rola de lado de qualquer jeito): Data curta,
+  /* Larguras pensadas pro celular (a tabela rola de lado de qualquer jeito): Data curta,
          Nome mais largo e Categoria com espaço pra uma palavra inteira. Com todas as colunas
          definidas, a tabela tem a soma delas; o mínimo do desktop deixa de valer. */
-      table.larguraFixa { min-width: 0; }
-      table.larguraFixa .col-data { width: 5rem; }
-      table.larguraFixa .col-nome { width: 8rem; }
-      table.larguraFixa .col-valor { width: 9.25rem; }
+  table.larguraFixa {
+    min-width: 0;
+  }
+  table.larguraFixa .col-data {
+    width: 5rem;
+  }
+  table.larguraFixa .col-nome {
+    width: 8rem;
+  }
+  table.larguraFixa .col-valor {
+    width: 9.25rem;
+  }
 
-      /* Texto um pouco menor e menos folga lateral: Data, Nome e Valor cabem juntos na
+  /* Texto um pouco menor e menos folga lateral: Data, Nome e Valor cabem juntos na
          primeira tela, sem rolar de lado pra ver quanto é. */
-      table.larguraFixa td,
-      table.larguraFixa th {
-          padding-left: .5rem;
-          padding-right: .5rem;
-      }
+  table.larguraFixa td,
+  table.larguraFixa th {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
 
-      table.larguraFixa td {
-          font-size: .9rem;
-      }
+  table.larguraFixa td {
+    font-size: 0.9rem;
+  }
 
-      /* A data nunca quebra no meio (05/10/2 + 6). */
-      table.larguraFixa td.cData {
-          white-space: nowrap;
-      }
-      table.larguraFixa .col-categ { width: 8.5rem; }
-      table.larguraFixa .col-freq { width: 6.75rem; }
-      table.larguraFixa .col-obs,
-      table.larguraFixa .col-canal { width: 9rem; }
+  /* A data nunca quebra no meio (05/10/2 + 6). */
+  table.larguraFixa td.cData {
+    white-space: nowrap;
+  }
+  table.larguraFixa .col-categ {
+    width: 8.5rem;
+  }
+  table.larguraFixa .col-freq {
+    width: 6.75rem;
+  }
+  table.larguraFixa .col-obs,
+  table.larguraFixa .col-canal {
+    width: 9rem;
+  }
 
-      /* Quebra só entre palavras ("Contabilidade" inteira); palavra maior que a coluna ainda
+  /* Quebra só entre palavras ("Contabilidade" inteira); palavra maior que a coluna ainda
          quebra, pra nunca estourar. */
-      table.larguraFixa td {
-          overflow-wrap: break-word;
-      }
+  table.larguraFixa td {
+    overflow-wrap: break-word;
+  }
 
-      /* Nome fica fixo à esquerda ao rolar a tabela de lado: dá pra ler Categoria, Pago, Obs…
+  /* Nome fica fixo à esquerda ao rolar a tabela de lado: dá pra ler Categoria, Pago, Obs…
          sabendo de que linha são. Fundo opaco e um traço à direita marcando a borda. */
-      table.larguraFixa .cNome {
-          position: sticky;
-          left: 0;
-          z-index: 1;
-          box-shadow: inset -1px 0 var(--line);
-      }
+  table.larguraFixa .cNome {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    box-shadow: inset -1px 0 var(--line);
+  }
 
-      /* Seletor fraco de propósito: o fundo das linhas especiais (fatura, previstas,
+  /* Seletor fraco de propósito: o fundo das linhas especiais (fatura, previstas,
          aporte, seleção, hover) é mais específico e continua valendo na coluna fixa. */
-      td.cNome {
-          background: var(--surface);
-      }
+  td.cNome {
+    background: var(--surface);
+  }
 
-      table.larguraFixa th.cNome {
-          z-index: 3;
-      }
+  table.larguraFixa th.cNome {
+    z-index: 3;
+  }
 
-      /* Linhas com fundo translúcido (Mercado Pago) ou listrado (simulação) precisam da base
+  /* Linhas com fundo translúcido (Mercado Pago) ou listrado (simulação) precisam da base
          opaca por baixo, senão o texto que passa por trás aparece. */
-      tbody tr.mp td.cNome {
-          background: linear-gradient(rgba(108, 197, 238, .06), rgba(108, 197, 238, .06)), var(--surface);
-      }
-
-      tbody tr.mp:hover td.cNome {
-          background: linear-gradient(rgba(108, 197, 238, .1), rgba(108, 197, 238, .1)), var(--surface);
-      }
-
-      tbody tr.sim td.cNome,
-      tbody tr.sim:hover td.cNome {
-          background-color: var(--surface);
-      }
-
-      /* A data em edição é mais larga que a coluna curta: fica por cima do Nome fixo. */
-      .inpData {
-          position: relative;
-          z-index: 2;
-      }
+  tbody tr.mp td.cNome {
+    background:
+      linear-gradient(rgba(108, 197, 238, 0.06), rgba(108, 197, 238, 0.06)),
+      var(--surface);
   }
 
-  /* Ciclo trocado arrastando para o lado: entra pelo lado do gesto (ver o arrastar em
+  tbody tr.mp:hover td.cNome {
+    background:
+      linear-gradient(rgba(108, 197, 238, 0.1), rgba(108, 197, 238, 0.1)), var(--surface);
+  }
+
+  tbody tr.sim td.cNome,
+  tbody tr.sim:hover td.cNome {
+    background-color: var(--surface);
+  }
+
+  /* A data em edição é mais larga que a coluna curta: fica por cima do Nome fixo. */
+  .inpData {
+    position: relative;
+    z-index: 2;
+  }
+}
+
+/* Ciclo trocado arrastando para o lado: entra pelo lado do gesto (ver o arrastar em
      interactions.js). Nenhum movimento com movimento reduzido no sistema. */
-  #out.entraDaDireita { animation: cicloEntra .18s ease-out; --de: 2.5rem; }
-  #out.entraDaEsquerda { animation: cicloEntra .18s ease-out; --de: -2.5rem; }
+#out.entraDaDireita {
+  animation: cicloEntra 0.18s ease-out;
+  --de: 2.5rem;
+}
+#out.entraDaEsquerda {
+  animation: cicloEntra 0.18s ease-out;
+  --de: -2.5rem;
+}
 
-  @keyframes cicloEntra {
-      from { transform: translateX(var(--de)); opacity: .4; }
-      to { transform: none; opacity: 1; }
+@keyframes cicloEntra {
+  from {
+    transform: translateX(var(--de));
+    opacity: 0.4;
   }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
 
-  @media (prefers-reduced-motion: reduce) {
-      #out.entraDaDireita, #out.entraDaEsquerda { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  #out.entraDaDireita,
+  #out.entraDaEsquerda {
+    animation: none;
   }
+}

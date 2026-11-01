@@ -51,7 +51,7 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md` (página inicial), `
 - O que se repete foi para `DIRETRIZES.md`; cada `AGENTS.md` ganhou a seção Infraestrutura com a resolução própria; os projetos sem `DECISOES.md` (raiz, al, Corpo, Água) e sem `REGRAS.md` (raiz) ganharam os seus.
   O comportamento visível da página inicial saiu do `AGENTS.md` da raiz para `REGRAS.md`, como nos apps.
 - `tests/documentacao.test.mjs` confere os três documentos, a seção Infraestrutura e a numeração das migrations em todos os projetos, para a estrutura não se perder no próximo app.
-- Não foi criado `package.json` por app: o único pacote de desenvolvimento é o Playwright, e uma instalação em `tr/` serve a todos.
+- Não foi criado `package.json` por app: uma instalação só, na raiz, serve a todos (era no `tr/` até 01/11/2026).
 
 ## Respostas do mantenedor às pendências (28/10/2026)
 
@@ -90,3 +90,33 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md` (página inicial), `
 - Escolha: uma base comum (tokens, componentes e, depois, um núcleo de código), adotada módulo a módulo, em vez de virar uma página única (reescrever tudo, o Fin sozinho tem cerca de 8 mil linhas).
 - Ponto de partida: os tokens do Treino (o sistema mais completo), com as cores com significado dos hábitos (verde feito, vermelho falhou, azul protegido) e uma cor de destaque por módulo.
 - Plano e estado em `DIRETRIZES.md`, seção 8.
+
+## `package.json` da raiz para o editor (01/11/2026)
+
+- O mantenedor pediu ESLint, Prettier e EditorConfig de um lugar só. A raiz ganhou `package.json` com `eslint`, `@eslint/js` e `prettier` (versões exatas), mais `.prettierignore`, `.prettierrc` e `eslint.config.mjs`.
+- Só ferramenta de editor: não entra em `scripts/check.mjs`, no GitHub Actions nem em nenhum app. O Playwright, antes em `tr/package.json`, também vive nesse mesmo `package.json` (um só `package.json` e um só `node_modules`) desde 01/11/2026.
+- `globals` 17.13.0 (versão exata; a 17.14.0 saiu hoje, por isso não foi usada) serve ao ESLint.
+
+### `no-undef` ligado, com globais por página (01/11/2026)
+
+- Os apps são scripts clássicos: um arquivo usa o que outro declara no topo, na mesma página. Em vez de desligar `no-undef`, o `eslint.config.mjs` lê os `<script src>` do `index.html` de cada página (raiz, `fin/`, `tr/`, `al/`, `corpo/`, `agua/`) e dá a cada arquivo, como globais, o que os outros scripts da página declaram.
+- A descoberta é por leitura de texto: `function`, `const`/`let`/`var`, `class`, declarações em várias linhas e `window.x = …` no topo. Um nome declarado fora desses padrões some da lista e o seu uso aparece como `no-undef`; a saída é ampliar a leitura, não desligar a regra.
+- Os testes de cada pasta recebem os globais da página (o `page.evaluate` roda lá) e `globals.browser`. `supabase` e `Chart` entram como globais de terceiros; `supabase.js` e `tr/supabase.js` são ignorados.
+- O porquê: com a regra desligada, nome digitado errado ou função que sumiu passariam batidos. Assim, continuam sendo pegos.
+- Estado: `npm run lint` saiu sem nenhum achado em 01/11/2026 (antes eram 12.732).
+
+### Critério da limpeza do ESLint (01/11/2026)
+
+- `catch (e)` sem uso virou `catch {`.
+- Bloco de `catch` que engole o erro de propósito tem um comentário dizendo por quê.
+- `throw` dentro de `catch` passa `{ cause }`, para o erro original não se perder.
+- `.prettierignore` ignora `supabase.js` (cópia de terceiros que o Prettier tinha expandido); o resto segue o `.prettierrc`.
+
+## Validação no GitHub, EditorConfig próprio e Fin com 2 espaços (01/11/2026)
+
+- O mantenedor pediu que o push falhe se o estilo quebrar. O workflow `.github/workflows/validacao.yml` roda, nesta ordem: instalar (`npm ci` e Chromium), `npm run lint`, `npm run format:check`, `npm run editorconfig` e `node scripts/check.mjs`. Se um passo falha, o workflow para. `tests/hub.test.mjs` confere os passos e os scripts do `package.json`.
+- `npm run validar` encadeia lint, format:check, editorconfig e test, para rodar a mesma sequência na máquina.
+- `scripts/editorconfig.mjs` é próprio e não tem dependências. Motivo: o `editorconfig-checker` 7.0.0 quebra no Node 22, e a 6.1.1 baixa um binário que não existe para Windows. Ele confere os arquivos versionados e os novos contra o `.editorconfig` mais próximo de cada um (raiz, `fin/`, `tr/`): UTF-8 sem BOM, LF, newline final, sem espaço no fim e sem tab na indentação. Não confere o tamanho da indentação, que é do Prettier. Ignora `supabase.js`, `tr/supabase.js` (cópia de terceiros) e `fin/tasker/` (XML do Tasker, com tab).
+- `fin/.editorconfig`: `indent_size` passou de 4 para 2, igual ao `.prettierrc`. O código do Fin já segue 2 espaços; com 4, o editor e o Prettier discordariam.
+- `hub.js` (`dadosComPendentes`): se a cópia do al (`al.db`) ou a base dele (`al.base`) estiver ilegível, a página inicial fica só com os dados da nuvem. Antes, um `al.base` ilegível com `al.db` válido contava todo dia como pendente. `al.db` sem base (o al nunca sincronizou) continua valendo como pendente. Teste: `tests/regras-apps.test.mjs`.
+- `fin/tests/helpers/assert-tolerante.js`: o `match` tolerante ignora maiúsculas e parênteses, para aceitar o que o Prettier reescreve; o `doesNotMatch` continua estrito. Limite conhecido: um `match` pode aceitar caixa ou parênteses diferentes do código. O que precisa sumir do código fica com `doesNotMatch`.

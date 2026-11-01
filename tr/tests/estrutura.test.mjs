@@ -7,32 +7,67 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const RAIZ = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const ler = arquivo => readFileSync(path.join(RAIZ, arquivo), 'utf8');
-const listar = (pasta, ext) => readdirSync(path.join(RAIZ, pasta)).filter(n => n.endsWith(ext)).map(n => `${pasta}/${n}`);
+const ler = (arquivo) => readFileSync(path.join(RAIZ, arquivo), 'utf8');
+
+const listar = (pasta, ext) =>
+  readdirSync(path.join(RAIZ, pasta))
+    .filter((n) => n.endsWith(ext))
+    .map((n) => `${pasta}/${n}`);
+
 const html = ler('index.html');
-const cssDoHtml = [...html.matchAll(/<link rel="stylesheet" href="(css\/[^"]+)">/g)].map(m => m[1]);
-const jsDoHtml = [...html.matchAll(/<script src="(js\/[^"]+)"><\/script>/g)].map(m => m[1]);
+
+const cssDoHtml = [
+  ...html.matchAll(/<link\s+rel="stylesheet"\s+href="(css\/[^"]+)"\s*\/?>/g),
+].map((m) => m[1]);
+
+const jsDoHtml = [...html.matchAll(/<script src="(js\/[^"]+)"><\/script>/g)].map(
+  (m) => m[1]
+);
 
 test('todo arquivo de código começa com um comentário de responsabilidade', () => {
-  for (const f of listar('js', '.js')) assert.match(ler(f), /^'use strict';\n(\/\/ |\/\*)/, f);
+  for (const f of listar('js', '.js'))
+    assert.match(ler(f), /^'use strict';\n\s*(\/\/ |\/\*)/, f);
+
   for (const f of listar('css', '.css')) assert.match(ler(f), /^\/\* /, f);
-  for (const f of ['sw.js', ...listar('scripts', '.mjs'), ...listar('tests', '.mjs'), ...listar('tests/helpers', '.mjs')]) assert.match(ler(f), /^\/\/ /, f);
+
+  for (const f of [
+    'sw.js',
+    ...listar('scripts', '.mjs'),
+    ...listar('tests', '.mjs'),
+    ...listar('tests/helpers', '.mjs'),
+  ])
+    assert.match(ler(f), /^\/\/ /, f);
+
   for (const f of listar('migrations', '.sql')) assert.match(ler(f), /^-- /, f);
 });
 
 test('index.html: tags de bloco fecham na ordem certa', () => {
-  const pilha = [], semComentario = html.replace(/<!--[\s\S]*?-->/g, '');
-  for (const [, fecha, tag] of semComentario.matchAll(/<(\/?)(div|section|form|ul|ol|details|label|button|p)\b[^>]*>/g)) {
-    if (!fecha) { pilha.push(tag); continue; }
+  const pilha = [],
+    semComentario = html.replace(/<!--[\s\S]*?-->/g, '');
+
+  for (const [, fecha, tag] of semComentario.matchAll(
+    /<(\/?)(div|section|form|ul|ol|details|label|button|p)\b[^>]*>/g
+  )) {
+    if (!fecha) {
+      pilha.push(tag);
+      continue;
+    }
+
     assert.equal(pilha.pop(), tag, `</${tag}> fora de ordem`);
   }
+
   assert.deepEqual(pilha, [], 'tags sem fechar');
 });
 
 test('cada stylesheet tem chaves balanceadas', () => {
   for (const f of cssDoHtml) {
     let n = 0;
-    for (const c of ler(f).replace(/\/\*[\s\S]*?\*\//g, '')) { n += c === '{' ? 1 : c === '}' ? -1 : 0; assert.ok(n >= 0, `${f}: } a mais`); }
+
+    for (const c of ler(f).replace(/\/\*[\s\S]*?\*\//g, '')) {
+      n += c === '{' ? 1 : c === '}' ? -1 : 0;
+      assert.ok(n >= 0, `${f}: } a mais`);
+    }
+
     assert.equal(n, 0, `${f}: { sem fechar`);
   }
 });
@@ -40,72 +75,175 @@ test('cada stylesheet tem chaves balanceadas', () => {
 test('index.html carrega todos os css/ e js/, e o service worker guarda os mesmos arquivos', () => {
   assert.deepEqual([...cssDoHtml].sort(), listar('css', '.css').sort());
   assert.deepEqual([...jsDoHtml].sort(), listar('js', '.js').sort());
-  assert.equal(jsDoHtml[0], 'js/config.js'); assert.equal(jsDoHtml.at(-1), 'js/bootstrap.js');
-  assert.ok(html.indexOf('src="supabase.js"') < html.indexOf('src="js/'), 'supabase.js antes dos módulos');
-  assert.ok(html.indexOf('src="../corpo/perfil.js"') > 0 && html.indexOf('src="../corpo/perfil.js"') < html.indexOf('src="js/'), '../corpo/perfil.js (módulo do app Corpo) antes dos módulos');
-  assert.match(ler('sw.js'), /'\.\.\/corpo\/perfil\.js'/, 'sw.js guarda ../corpo/perfil.js');
-  const sw = ler('sw.js'), guardados = [...sw.matchAll(/'\.\/([^']*)'/g)].map(m => m[1]);
-  for (const f of [...cssDoHtml, ...jsDoHtml, 'index.html', 'supabase.js', 'manifest.webmanifest']) assert.ok(guardados.includes(f), `sw.js não guarda ${f}`);
-  for (const f of guardados.filter(Boolean)) assert.ok(existsSync(path.join(RAIZ, f)), `sw.js guarda ${f}, que não existe`);
+  assert.equal(jsDoHtml[0], 'js/config.js');
+  assert.equal(jsDoHtml.at(-1), 'js/bootstrap.js');
+  assert.ok(
+    html.indexOf('src="supabase.js"') < html.indexOf('src="js/'),
+    'supabase.js antes dos módulos'
+  );
+  assert.ok(
+    html.indexOf('src="../corpo/perfil.js"') > 0 &&
+      html.indexOf('src="../corpo/perfil.js"') < html.indexOf('src="js/'),
+    '../corpo/perfil.js (módulo do app Corpo) antes dos módulos'
+  );
+  assert.match(
+    ler('sw.js'),
+    /'\.\.\/corpo\/perfil\.js'/,
+    'sw.js guarda ../corpo/perfil.js'
+  );
+
+  const sw = ler('sw.js'),
+    guardados = [...sw.matchAll(/'\.\/([^']*)'/g)].map((m) => m[1]);
+
+  for (const f of [
+    ...cssDoHtml,
+    ...jsDoHtml,
+    'index.html',
+    'supabase.js',
+    'manifest.webmanifest',
+  ])
+    assert.ok(guardados.includes(f), `sw.js não guarda ${f}`);
+
+  for (const f of guardados.filter(Boolean))
+    assert.ok(existsSync(path.join(RAIZ, f)), `sw.js guarda ${f}, que não existe`);
 });
 
 test('PWA: manifest válido, ícones existem e o service worker é registrado', () => {
   const m = JSON.parse(ler('manifest.webmanifest'));
-  assert.equal(m.display, 'standalone'); assert.ok(m.name && m.start_url);
+
+  assert.equal(m.display, 'standalone');
+  assert.ok(m.name && m.start_url);
+
   for (const i of m.icons) assert.ok(existsSync(path.join(RAIZ, i.src)), i.src);
-  assert.match(html, /<link rel="manifest" href="manifest.webmanifest">/);
-  assert.match(ler('js/bootstrap.js'), /serviceWorker\.register\('sw\.js'/);
+  assert.match(html, /<link rel="manifest" href="manifest.webmanifest"\s*\/?>/);
+  assert.match(ler('js/bootstrap.js'), /serviceWorker\s*\.register\('sw\.js'/);
 });
 
 test('migrations no formato do DataGrip e RLS só do dono em todas as tabelas tr_', () => {
-  const sql = listar('migrations', '.sql').map(ler), tudo = sql.join('\n');
+  const sql = listar('migrations', '.sql').map(ler),
+    tudo = sql.join('\n');
+
   for (const s of sql) {
     assert.doesNotMatch(s, /do \$\$/, 'sem bloco do $$');
-    for (const linha of s.split('\n').filter(l => l.trim().startsWith('--'))) assert.ok(!linha.includes(';'), `; em comentário: ${linha}`);
-    assert.match(s, /^begin;$/m); assert.match(s, /^commit;$/m);
+
+    for (const linha of s.split('\n').filter((l) => l.trim().startsWith('--')))
+      assert.ok(!linha.includes(';'), `; em comentário: ${linha}`);
+    assert.match(s, /^begin;$/m);
+    assert.match(s, /^commit;$/m);
   }
+
   const dono = ler('js/config.js').match(/const DONO = '([0-9a-f-]{36})'/)[1];
+
   for (const [, t] of tudo.matchAll(/create table public\.(tr_\w+)/g)) {
-    assert.match(tudo, new RegExp(`alter table public\\.${t} enable row level security`), t);
+    assert.match(
+      tudo,
+      new RegExp(`alter table public\\.${t} enable row level security`),
+      t
+    );
     assert.match(tudo, new RegExp(`revoke all on public\\.${t} from anon`), t);
-    assert.match(tudo, new RegExp(`create policy ${t}_somente_dono on public\\.${t} for all to authenticated using \\(user_id = \\(select auth\\.uid\\(\\)\\)\\)`), t);
-    assert.match(tudo, new RegExp(`create policy ${t}_somente_victor on public\\.${t} as restrictive[^;]*'${dono}'`), t);
+    assert.match(
+      tudo,
+      new RegExp(
+        `create policy ${t}_somente_dono on public\\.${t} for all to authenticated using \\(user_id = \\(select auth\\.uid\\(\\)\\)\\)`
+      ),
+      t
+    );
+    assert.match(
+      tudo,
+      new RegExp(
+        `create policy ${t}_somente_victor on public\\.${t} as restrictive[^;]*'${dono}'`
+      ),
+      t
+    );
   }
 });
 
 test('exercício incluído por migration tem a descrição e a posição no GUIA (js/config.js)', () => {
   const config = ler('js/config.js');
+
   // linhas de tr_variacao: (user_id, id, exercicio_id, ordem, nome, unidade, …)
-  const nomes = listar('migrations', '.sql').flatMap(f => [...ler(f).matchAll(/'[\w]+', '[\w]+', [0-2], '([^']*)', '(?:kg|lb|nível|corpo|s)'/g)].map(m => m[1])).filter(Boolean);
-  assert.deepEqual(nomes, ['Elevação pélvica na máquina', 'Elevação pélvica no Smith', 'Elevação pélvica com halter', 'Flexão com joelhos apoiados', 'Flexão completa',
-    'Pendurar na barra', 'Negativa na barra', 'Barra fixa', 'Rosca de punho com halteres', 'Rosca de punho invertida com halteres']);
-  for (const nome of nomes) assert.ok(config.includes(`'${nome.toLowerCase()}': [`), `${nome} sem GUIA`);
+  const nomes = listar('migrations', '.sql')
+    .flatMap((f) =>
+      [
+        ...ler(f).matchAll(
+          /'[\w]+', '[\w]+', [0-2], '([^']*)', '(?:kg|lb|nível|corpo|s)'/g
+        ),
+      ].map((m) => m[1])
+    )
+    .filter(Boolean);
+
+  assert.deepEqual(nomes, [
+    'Elevação pélvica na máquina',
+    'Elevação pélvica no Smith',
+    'Elevação pélvica com halter',
+    'Flexão com joelhos apoiados',
+    'Flexão completa',
+    'Pendurar na barra',
+    'Negativa na barra',
+    'Barra fixa',
+    'Rosca de punho com halteres',
+    'Rosca de punho invertida com halteres',
+  ]);
+
+  for (const nome of nomes)
+    assert.ok(config.includes(`'${nome.toLowerCase()}': [`), `${nome} sem GUIA`);
 });
 
 test('nenhum segredo no repositório; a chave do Supabase é a publicável', () => {
-  const textos = ['index.html', 'sw.js', 'AGENTS.md', ...listar('js', '.js'), ...listar('docs', '.md'), ...listar('migrations', '.sql')];
+  const textos = [
+    'index.html',
+    'sw.js',
+    'AGENTS.md',
+    ...listar('js', '.js'),
+    ...listar('docs', '.md'),
+    ...listar('migrations', '.sql'),
+  ];
+
   for (const f of textos) assert.doesNotMatch(ler(f), /service_role|sb_secret_/, f);
   assert.match(ler('js/config.js'), /const SUPABASE_KEY = 'sb_publishable_/);
 });
 
 test('higiene textual do .editorconfig (scripts/check-style.mjs)', () => {
-  const r = spawnSync(process.execPath, ['scripts/check-style.mjs'], { cwd: RAIZ, encoding: 'utf8' });
+  const r = spawnSync(process.execPath, ['scripts/check-style.mjs'], {
+    cwd: RAIZ,
+    encoding: 'utf8',
+  });
+
   assert.equal(r.status, 0, r.stderr);
 });
 
 test('hub: marca do hub na tela inicial volta para ../ e o service worker só apaga os próprios caches', () => {
-  assert.match(html, /<a class="bt-ic" href="\.\.\/" id="i-hub" title="Hub" aria-label="Hub">/);
+  assert.match(
+    html,
+    /<a\s+class="bt-ic"\s+href="\.\.\/"\s+id="i-hub"\s+title="Hub"\s+aria-label="Hub"\s*>/
+  );
   assert.ok(html.indexOf('id="i-hub"') < html.indexOf('data-ir="editar"'));
-  assert.doesNotMatch(html, /id="(i-corpo|v-corpo)"/);                                        // pesagem é do app Corpo
+  assert.doesNotMatch(html, /id="(i-corpo|v-corpo)"/); // pesagem é do app Corpo
   // fin e a página inicial do hub dividem a origem (e os caches) com o tr.
-  assert.match(ler('sw.js'), /ks\.filter\(k => k\.startsWith\('carga-'\) && k !== CACHE_ESTATICO\)/);
+  assert.match(
+    ler('sw.js'),
+    /\.filter\(\(?k\)? => k\.startsWith\('carga-'\) && k !== CACHE_ESTATICO\)/
+  );
   assert.match(ler('docs/REGRAS.md'), /marca do hub \(volta ao hub, `\.\.\/`\)/);
 });
 
 test('sem sessão dentro do hub, vai pro login do hub; servido fora dele (como nos testes), login próprio', () => {
   const boot = ler('js/bootstrap.js');
-  assert.match(boot, /if \(!\/\\\/tr\\\/\(index\\\.html\)\?\$\/\.test\(location\.pathname\)\) return false;/);
-  assert.match(boot, /location\.replace\('\.\.\/\?volta=' \+ encodeURIComponent\('tr\/' \+ location\.search \+ location\.hash\)\);/);
-  assert.match(boot, /if \(data\.session\) carregar\(data\.session\.user\); else if \(!irParaLoginDoHub\(\)\) telaLogin\(\);/);
-  assert.match(ler('docs/REGRAS.md'), /sem sessão, o tr vai direto para `\.\.\/\?volta=tr\/`/);
+
+  assert.match(
+    boot,
+    /if \(!\/\\\/tr\\\/\(index\\\.html\)\?\$\/\.test\(location\.pathname\)\) return false;/
+  );
+  assert.match(
+    boot,
+    /location\.replace\(\s*'\.\.\/\?volta=' \+ encodeURIComponent\('tr\/' \+ location\.search \+ location\.hash\)\s*\);/
+  );
+  assert.match(
+    boot,
+    /if \(data\.session\) carregar\(data\.session\.user\);\s*else if \(!irParaLoginDoHub\(\)\) telaLogin\(\);/
+  );
+  assert.match(
+    ler('docs/REGRAS.md'),
+    /sem sessão, o tr vai direto para `\.\.\/\?volta=tr\/`/
+  );
 });
