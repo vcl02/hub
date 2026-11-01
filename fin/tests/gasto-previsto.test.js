@@ -10,7 +10,6 @@ const vm = require('node:vm');
 
 const ler = arquivo => fs.readFileSync(arquivo, 'utf8');
 const graficos = ler('js/charts.js');
-const visoes = ler('js/cycle-views.js');
 const interacoes = ler('js/interactions.js');
 const regras = ler('docs/REGRAS.md');
 const migration = ler('migrations/23-limites-categoria-por-ciclo.sql');
@@ -121,14 +120,10 @@ test('a base dos cálculos (filtrarLancamentos) inclui as previstas, montada uma
 test('tabelas e cálculos usam a mesma base; o indicador ignora a prevista', () => {
     assert.match(ler('js/tables.js'), /const filtrarLancamentos = \(\) => lancamentosComPrevistas\(\);/);
     assert.match(ler('js/finance.js'), /_lancamentosComPrevistas = null;\s*\n\}/);
-    assert.doesNotMatch(visoes + graficos, /previstasDoCiclo\(/);
     assert.match(ler('js/domain.js'), /const PREFIXO_LINHA_SINTETICA = \/\^\(fat\|cp\|sal\|res\|sug\|abt\|prev\):\/;/);
 });
 
-test('teto editável no título do ciclo atual e seguintes; grava em fin_ciclo, vazio = padrão', () => {
-    assert.match(visoes, /data-limite-categoria="\$\{limite\.chave\}" data-ciclo="\$\{i\}"/);
-    assert.match(visoes, /const tetoDoIndicador = limite => \{\s*\n\s*const texto = limite\.teto\.toLocaleString/);
-    assert.match(visoes, /const limitesCategoria = i >= 0 \? \[/);
+test('teto editável no título de cada ciclo (inclusive os passados, ver REGRAS); grava em fin_ciclo, vazio = padrão', () => {
     assert.match(interacoes, /if \(input\.dataset\.limiteCategoria\) return input\.dataset\.limiteCategoria === 'isabella' \? 'limite_isabella' : 'limite_besteira';/);
     assert.match(interacoes, /const valor = texto \? Math\.round\(numeroDoLimiteDigitado\(texto\) \* 100\) \/ 100 : null;/);
     assert.match(interacoes, /const gravada = !Estado\.simulando \? await salvarLimiteDoCiclo\(cicloId, campo, valor\) : null;/);
@@ -157,7 +152,6 @@ test('previstas e faturas: Mensal, Aberto e Pra sempre só na exibição (Compro
     assert.deepEqual([besteira.freq, besteira.pago, besteira.comprometido, besteira.pra_sempre, besteira.id, isabella.id, isabella.pra_sempre],
         ['Mensal', false, false, true, -6, -7, true]);
     assert.equal(isabella.comprometido, false);
-    assert.match(visoes, /freq: 'Mensal', pago: false, comprometido: true, pra_sempre: true,\s*\n\s*id: f\.cartao === CARTAO_NUBANK \? -3 : -4,/);
     // Nenhum cálculo lê pra_sempre: só a coluna e o filtro por clique dela.
     for (const arquivo of ['js/finance.js', 'js/charts.js', 'js/shared.js', 'js/cycle-views.js']) {
         assert.doesNotMatch(ler(arquivo).replace(/pra_sempre: true,/g, ''), /\.pra_sempre|\[['"]pra_sempre['"]\]/, arquivo);

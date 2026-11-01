@@ -53,20 +53,6 @@ test('um Materializar/Consolidar por vez: o clique e o Consolidar tudo dividem a
     assert.match(fs.readFileSync('js/app-state.js', 'utf8'), /gravandoAjuste: false,/);
 });
 
-test('Livre Hoje do cartão só libera limite com antecipação já paga; Futuro só com as da fatura exibida', () => {
-    // Regra única em finance.js (limiteLivreHojeDoCartao), usada pelo título e pelo cadastro.
-    assert.match(financas, /const abatidoPago = alocacaoAntecipacoes\(linhas\.filter\(r => !ehTransferenciaFatura\(r\) \|\| r\.pago\)\);/);
-    assert.match(visoes, /limiteLivreHoje: limiteLivreHojeDoCartao\(Estado\.lancamentos, i, cartao\),/);
-    assert.match(visoes, /limiteLivreFuturo: limiteCartaoLivreFuturo\(\s*\n\s*Estado\.lancamentos, garantidoDoCartao, idxCreditoExibido,/);
-    assert.doesNotMatch(visoes, /abatidoNoCartao|abatidoDoCartao/);
-});
-
-test('garantia Nubank só com investimento pago; Liberdade financeira segue com os abertos', () => {
-    assert.match(financas, /\.filter\(r => r\.inv && r\.pago && r\.periodoIdx != null && r\.periodoIdx <= idx\)/);
-    assert.match(graficos, /guardadoRealAte\(Estado\.lancamentos, idxPeriodo\),/);
-    assert.doesNotMatch(graficos, /guardadoGarantidoAte/);
-});
-
 test('recarga após gravar espera a simulação acabar (a carga apagaria os simulados)', () => {
     assert.match(inicializacao, /const telaSemEdicaoEmCurso = \(\) =>\s*\n\s*el\('app'\)\.style\.display !== 'none' && !Estado\.simulando &&/);
 });

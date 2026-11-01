@@ -5,7 +5,6 @@ const test = require('node:test');
 const vm = require('node:vm');
 
 const fonte = fs.readFileSync('js/charts.js', 'utf8');
-const dominio = fs.readFileSync('js/domain.js', 'utf8');
 const regrasMd = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const inicio = fonte.indexOf('const PERCENTUAL_MINIMO_PIZZA');
 const fim = fonte.indexOf('\n// clique numa celula', inicio);
@@ -75,10 +74,6 @@ test('comando do seletor alterna entre incluir e excluir todas as categorias do 
 test('clique fora do seletor no modal fecha o dropdown antes do gráfico tratar o gesto', () => {
     assert.match(fonte, /modalGrafico'\)\.addEventListener\('pointerdown'/);
     assert.match(fonte, /!e\.target\.closest\('#excluirCatWrap'\)/);
-});
-
-test('Contabilidade (CATEGORIA_EXCLUIDA_GRAFICO_PADRAO) é intrínseca ao faturamento, fixa em código', () => {
-    assert.match(dominio, /const CATEGORIA_EXCLUIDA_GRAFICO_PADRAO = 'Contabilidade';/);
 });
 
 test('o modal Gráfico abre toda vez com Contabilidade excluída por padrão, mostrando o líquido', () => {

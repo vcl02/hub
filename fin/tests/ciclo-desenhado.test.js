@@ -116,3 +116,31 @@ test('na tabela, a compra do Mercado Pago marca a linha inteira (classe mp); a d
     assert.match(html, /<tr class="mp [^"]*"[^>]*data-sid="5"/);
     assert.doesNotMatch(html, /<tr class="mp [^"]*"[^>]*data-sid="6"/);
 });
+
+test('teto de Besteira e Isabella editável no título de cada ciclo, inclusive os passados (o campo diz de qual ciclo é)', async () => {
+    for (const i of [0, 1]) {
+        const { html } = await carregarTela({ dados: base() }).desenharCiclo(i);
+        for (const c of ['besteira', 'isabella']) assert.match(html, new RegExp(`<input class=limiteCartaoEditavel data-limite-categoria="${c}" data-ciclo="${i}"[^>]*title="Editar limite de \\w+ deste ciclo`), `${c} no ciclo ${i}`);
+    }
+});
+
+test('a linha da fatura no Débito é uma conta mensal, em aberto e comprometida; a de um ciclo que fechou vem como Atrasado', async () => {
+    const { texto } = await desenhar(base(l(5, 'Livro', '2026-09-18', -80, { cred: true, fatura: '2026-10-12' })));
+    assert.match(texto, /Fatura Nubank Atrasado − R\$\s80,00 Fatura Mensal Aberto — Comprometido/);
+});
+
+test('o gráfico de gastos deixa Contabilidade de fora por padrão', () => {
+    assert.equal(carregarTela().rodar('CATEGORIA_EXCLUIDA_GRAFICO_PADRAO'), 'Contabilidade');
+});
+
+test('Livre Hoje do Nubank: só antecipação paga libera limite; garantia só com investimento pago', async () => {
+    const fone = l(5, 'Fone', '2026-10-16', -1000, { cred: true, fatura: '2026-11-12' });
+    const livre = async (...extra) => { const t = carregarTela({ dados: base(fone, ...extra) }); await t.bruto('carregarDados()'); return t.rodar("limiteLivreHojeDoCartao(Estado.lancamentos, 1, 'nubank')"); };
+    const sem = await livre();
+    const antecipacao = pago => l(9, 'Antecipação', '2026-10-17', -400, { categ: 'Antecipação fatura', fatura: '2026-11-12', pago });
+    assert.equal(await livre(antecipacao(true)), sem + 400);
+    assert.equal(await livre(antecipacao(false)), sem);                          // em aberto: ainda não pagou o cartão
+    const aporte = pago => l(8, 'Aporte', '2026-10-16', -500, { categ: 'Investimento', pago });
+    assert.equal(await livre(aporte(true)), sem + 500);                          // garantia do Nubank: o investido pago
+    assert.equal(await livre(aporte(false)), sem);
+});
