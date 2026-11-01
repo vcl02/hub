@@ -23,7 +23,7 @@ const COLS = [
     ['prio', 'Prio', 'n'], ['obs', 'Obs', 't'], ['canal', 'Canal', 't'], ['id', 'ID', 'n'],
 ];
 // Mesmas colunas do desktop no mobile: a tabela já tinha rolagem horizontal própria
-// (.wrap) pra telas estreitas, então não precisa de um recorte de colunas à parte. Prio é a
+// (.rolagem) pra telas estreitas, então não precisa de um recorte de colunas à parte. Prio é a
 // única exceção de tabela: só faz sentido na fila de elevação do Backlog (ver
 // estadoOrdenacao), então some nas demais (Débito, Crédito), onde a linha já tem ciclo — e,
 // no Backlog, vem na FRENTE de tudo (inclusive Data), já que é o primeiro critério que

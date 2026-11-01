@@ -31,7 +31,8 @@
       color: var(--fg);
       margin: 0;
       padding: 2rem 1.4rem 7rem;
-      font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, sans-serif;
+      /* Fonte, tamanho e entrelinha da base comum (Barlow 16 px), como nos outros módulos; a largura continua a da tela
+         toda (as tabelas precisam), sem a coluna de 560 px da base (pedido do mantenedor, 01/11/2026). */
   }
 
   /* =========================================================

@@ -108,7 +108,7 @@
       }
 
       /* tabela com scroll horizontal */
-      .wrap {
+      .rolagem {
           overflow-x: auto;
       }
 
@@ -233,7 +233,9 @@
       margin-right: .35rem;
       vertical-align: middle;
 
-      font: 400 .85rem/1 inherit;
+      font-weight: 400;
+      font-size: .85rem;
+      line-height: 1;
       color: var(--muted);
       background: var(--surface-2);
       border: 1px solid var(--line);

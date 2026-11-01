@@ -539,7 +539,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ### Paridade e barra de filtros
 
-- O mobile tem paridade total com o desktop: mesmas colunas (`colunasAtivas()` não recorta mais nada; a rolagem horizontal própria de `.wrap` já resolvia telas estreitas), mesma edição inline (Valor, Data, Pago, Nome, Categoria e Frequência por toque), mesmo Editar/Duplicar/Excluir na barra de seleção, mesmo Crédito, Comparar, Visualizações, gráficos, Consolidar tudo, simulação e cadastro.
+- O mobile tem paridade total com o desktop: mesmas colunas (`colunasAtivas()` não recorta mais nada; a rolagem horizontal própria de `.rolagem` já resolvia telas estreitas), mesma edição inline (Valor, Data, Pago, Nome, Categoria e Frequência por toque), mesmo Editar/Duplicar/Excluir na barra de seleção, mesmo Crédito, Comparar, Visualizações, gráficos, Consolidar tudo, simulação e cadastro.
   Nenhuma dessas ações é reduzida por tamanho de tela.
 - A barra de filtros (`.tool`: Linhas) fica sempre visível, em qualquer largura — sem menu pra abrir/fechar.
 

@@ -185,7 +185,7 @@ test('base comum: tokens e componentes existem, a referência carrega os dois e 
 });
 
 test('módulos na base comum só usam as cores da base (nada de --teal, --cyan, --green… que deixaram de existir)', () => {
-  for (const app of ['agua', 'corpo', 'al', 'tr']) {
+  for (const app of ['agua', 'corpo', 'al', 'tr', 'fin']) {
     const arquivos = [`${app}/index.html`, ...readdirSync(path.join(RAIZ, app, 'js')).map(n => `${app}/js/${n}`), ...readdirSync(path.join(RAIZ, app, 'css')).map(n => `${app}/css/${n}`)];
     for (const f of arquivos) assert.doesNotMatch(ler(f), /var\(--(teal|cyan|yellow|blue|green|red|on-teal|on-cyan)[a-z-]*\)/, f);
   }

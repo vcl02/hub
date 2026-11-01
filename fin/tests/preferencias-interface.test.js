@@ -286,7 +286,7 @@ test('"N registros · período" fica encaixado no fim da faixa Futuro do título
     const fim = tabelas.indexOf('\n};', tabelas.indexOf('const renderBloco =')) + 3;
     const ctx = {
         Estado: { fechados: {} }, corSoma: () => '', brl: v => `R$ ${v}`,
-        renderTabela: () => '<div class=wrap>tabela</div>',
+        renderTabela: () => '<div class=rolagem>tabela</div>',
     };
     vm.runInNewContext(`${tabelas.slice(inicio, fim)}\nthis.renderBloco = renderBloco;`, ctx);
     const faixa = (rotulo, dados) => `<span class=resumoLinha><span class=resumoRotulo>${rotulo}</span><span class=resumoDados>${dados}</span></span>`;

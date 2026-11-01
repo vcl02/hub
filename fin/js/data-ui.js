@@ -229,7 +229,7 @@ function mostrarToast(titulo, texto) {
     fechar.setAttribute('aria-label', 'Fechar');
     const remover = () => toast.remove();
     fechar.onclick = remover;
-    toast.className = 'toast';
+    toast.className = 'recado';   // não .toast: a base comum tem um .toast diferente (um aviso só, no meio)
     toast.append(tituloToast, fechar, descricao);
     el('toasts').append(toast);
     setTimeout(remover, 7000);

@@ -21,7 +21,7 @@
 
   /* Asterisco indica que a categoria divide o mesmo lançamento com outra classificação. */
   .catCompartilhada {
-      color: var(--red);
+      color: var(--erro);
       margin-left: .18rem;
   }
 

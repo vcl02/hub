@@ -6,7 +6,7 @@ const { test } = require('node:test');
 const { prepararNavegador, abrirFin, dadosDeExemplo } = require('./helpers/navegador');
 
 prepararNavegador();
-const toasts = pg => pg.$$eval('#toasts .toast strong', L => L.map(t => t.textContent));
+const toasts = pg => pg.$$eval('#toasts .recado strong', L => L.map(t => t.textContent));
 
 test('dado inconsistente acende o botão; o modal separa inconsistências de avisos; tocar fora fecha', async () => {
     const d = dadosDeExemplo();
@@ -56,7 +56,7 @@ test('falha de carga: toast, sem alert, e a tela diz que pode tentar de novo sem
     dados._semRede = true;
     await pg.evaluate(() => load());
     await ocioso();
-    await pg.waitForFunction(() => [...document.querySelectorAll('#toasts .toast strong')].some(t => /Não foi possível carregar/.test(t.textContent)));
+    await pg.waitForFunction(() => [...document.querySelectorAll('#toasts .recado strong')].some(t => /Não foi possível carregar/.test(t.textContent)));
     assert.deepEqual(alertas, []);
     assert.match(await pg.textContent('#out'), /Falhou: carregar[\s\S]*repetir não duplica nada/);   // a tela diz o que houve e que pode tentar de novo
     await ctx.close();

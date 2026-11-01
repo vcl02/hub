@@ -234,7 +234,7 @@
       padding: .35rem .5rem;
       border: 0;
       border-bottom: 1px solid var(--line);
-      color: var(--ac);
+      color: var(--cor);
       background: transparent;
       font: inherit;
       font-size: .82rem;
@@ -275,7 +275,9 @@
   }
 
   .blk h3 {
-      font: 700 1.05rem/1.3 inherit;
+      font-weight: 700;
+      font-size: 1.05rem;
+      line-height: 1.3;
       margin: 0;
       color: var(--fg);
   }
@@ -576,7 +578,7 @@
   }
 
   /* Sem a linha de meta (encaixada no título), a tabela mantém a mesma folga abaixo dele. */
-  .blk > h3 + .wrap {
+  .blk > h3 + .rolagem {
       margin-top: .6rem;
   }
 
@@ -599,7 +601,7 @@
        TABELAS
        ========================================================= */
 
-  .wrap {
+  .rolagem {
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: 10px;
@@ -623,7 +625,7 @@
      conforme o filtro. As colunas de conteúdo previsível têm a largura do maior conteúdo
      (cabeçalho, botão de filtro ou célula); as de texto livre (Nome, Categoria, Frequência,
      Obs, Canal) dividem igualmente o que sobra e quebram linha dentro dela. O mínimo da
-     tabela evita espremer o texto: abaixo dele a própria .wrap rola de lado. */
+     tabela evita espremer o texto: abaixo dele a própria .rolagem rola de lado. */
   table.larguraFixa {
       table-layout: fixed;
       min-width: 92rem;
@@ -725,7 +727,8 @@
 
   thead tr.filtros input {
       width: 100%;
-      font: 12px/1.3 inherit;
+      font-size: 12px;
+      line-height: 1.3;
       font-weight: 400;
       text-transform: none;
       letter-spacing: normal;
@@ -789,7 +792,8 @@
   .filtroEstado {
       flex: none;
       padding: .12rem .45rem;
-      font: 12px/1.3 inherit;
+      font-size: 12px;
+      line-height: 1.3;
       font-weight: 400;
       text-transform: none;
       letter-spacing: normal;
@@ -833,7 +837,7 @@
       background: #202428;
   }
 
-  .wrap {
+  .rolagem {
       -webkit-overflow-scrolling: touch;
   }
 

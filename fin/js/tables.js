@@ -424,7 +424,7 @@ const passaFiltroTeto = (r, idTabela) => !Estado.filtroTeto || !TABELAS_DO_FILTR
 const renderTabela = (linhasBrutas, idTabela, selecionavel) => {
     const linhas = linhasBrutas.filter(r => passaFiltroTexto(r, idTabela) && passaFiltroTeto(r, idTabela));
     if (!linhasBrutas.length) { Estado.linhasVisiveis[idTabela] = []; return '<p class=empty>Vazio</p>'; }
-    if (!linhas.length) { Estado.linhasVisiveis[idTabela] = []; return `<div class=wrap><table><thead><tr>${cabecalhoTabela(idTabela)}</thead></table></div><p class=empty>Nenhum resultado com esse filtro.</p>`; }
+    if (!linhas.length) { Estado.linhasVisiveis[idTabela] = []; return `<div class=rolagem><table><thead><tr>${cabecalhoTabela(idTabela)}</thead></table></div><p class=empty>Nenhum resultado com esse filtro.</p>`; }
     const ordenadas = ordenarLinhas(linhas, idTabela);
     // guarda na ordem REAL da tela (pos-ordenacao) — usado por "Selecionar tudo" e pelo
     // shift-click de intervalo, que dependem do indice bater com a posicao visual.
@@ -451,7 +451,7 @@ const renderTabela = (linhasBrutas, idTabela, selecionavel) => {
     // <colgroup> com uma classe por coluna: as larguras são fixas no CSS (table.larguraFixa),
     // então filtrar Reserva, Comprometido ou o sinal não faz as colunas "dançarem".
     const colunas = colunasAtivas(idTabela).map(([chave]) => `<col class=col-${chave}>`).join('');
-    return `<div class=wrap><table class=larguraFixa><colgroup>${colunas}</colgroup><thead><tr>${cabecalhoTabela(idTabela)}</thead><tbody>` +
+    return `<div class=rolagem><table class=larguraFixa><colgroup>${colunas}</colgroup><thead><tr>${cabecalhoTabela(idTabela)}</thead><tbody>` +
         ordenadas.map(r => {
             const chave = chaveSelecao(r), marcada = podeSelecionar && chave && Estado.selecionados.has(chave);
             return `<tr class="${r._fat ? 'fat ' : ''}${r._sal ? 'sal ' : ''}${r._res ? 'res ' : ''}${r._sug != null ? 'sug ' : ''}${r._prev ? 'prev ' : ''}${r._sim ? 'sim ' : ''}${ehCompraMercadoPago(r) ? 'mp ' : ''}${marcada ? 'on' : ''}${podeSelecionar && chave ? ' pick' : ''}" data-sid="${podeSelecionar ? chave : ''}">` + celulasDaLinha(r, idTabela);

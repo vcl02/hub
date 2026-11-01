@@ -3,7 +3,7 @@
 const CACHE_ESTATICO = 'fin-estatico';
 const ARQUIVOS_ESTATICOS = [
     './', './index.html', './manifest.webmanifest',
-    '../base/tokens.css', './css/base.css', './css/dashboard.css', './css/forms.css', './css/charts.css', './css/utilities.css', './css/mobile.css',
+    '../base/tokens.css', '../base/componentes.css', './css/base.css', './css/dashboard.css', './css/forms.css', './css/charts.css', './css/utilities.css', './css/mobile.css',
     './js/app-state.js', './js/domain.js', './js/shared.js', './js/supabase-api.js', './js/finance.js', './js/data-ui.js',
     './js/tables.js', './js/cycle-views.js', './js/interactions.js', './js/charts.js', './js/form.js', './js/bootstrap.js',
     './icons/fin-192.png', './icons/fin-512.png',

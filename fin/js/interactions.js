@@ -293,13 +293,13 @@ function desenhar() {
     const trocouModo = Estado._modoBlocosAnterior != null && Estado._modoBlocosAnterior != modoBlocos;
     Estado._modoBlocosAnterior = modoBlocos;
     // #out.innerHTML e' reescrito do zero a cada desenhar() (ex: a cada linha marcada
-    // no shift-click) — sem isso, o scroll INTERNO de cada tabela (.wx/.wrap tem
+    // no shift-click) — sem isso, o scroll INTERNO de cada tabela (.wx/.rolagem tem
     // overflow:auto proprio) e' perdido a cada redesenho, dando a impressao de que a
     // tabela "reseta" a visao no meio de um shift-click. Guarda a posicao de cada
     // container rolavel (por indice — o mesmo modo gera os mesmos blocos, na mesma
     // ordem, entre um redesenho e outro) e restaura depois, exceto ao trocar de modo
     // de verdade (blocos <-> matriz), onde nao ha posicao antiga que faca sentido.
-    const scrollsAntigos = [...el('out').querySelectorAll('.wx, .wrap')].map(e => [e.scrollTop, e.scrollLeft]);
+    const scrollsAntigos = [...el('out').querySelectorAll('.wx, .rolagem')].map(e => [e.scrollTop, e.scrollLeft]);
     el('out').innerHTML = modoBlocos ? vCiclo() : vComp();
     encaixarIndicadoresNoDebito(temCicloParaIndicadores && modoBlocos);
     if (antesDaSimulacao) marcarAntesDaSimulacao(antesDaSimulacao);
@@ -307,7 +307,7 @@ function desenhar() {
     atualizarCartoes();
     atualizarMetas();
     if (!trocouModo) {
-        [...el('out').querySelectorAll('.wx, .wrap')].forEach((e, i) => {
+        [...el('out').querySelectorAll('.wx, .rolagem')].forEach((e, i) => {
             if (!scrollsAntigos[i]) return;
             [e.scrollTop, e.scrollLeft] = scrollsAntigos[i];
         });
@@ -1449,7 +1449,7 @@ el('cicloProximo').onclick = () => navegaCiclo(1);
         ativo = false;
         if (ev.touches.length !== 1 || el('app').style.display === 'none' || document.querySelector('dialog[open]')) return;
         if (ev.target.closest('input, textarea, select, #selbar, .menuIcone, #toasts')) return;
-        const rolavel = ev.target.closest('.wrap, .wx');
+        const rolavel = ev.target.closest('.rolagem, .wx');
         bordas = rolavel && rolavel.scrollWidth > rolavel.clientWidth + 1
             ? { inicio: rolavel.scrollLeft <= 1, fim: rolavel.scrollLeft + rolavel.clientWidth >= rolavel.scrollWidth - 1 }
             : null;

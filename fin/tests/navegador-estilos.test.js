@@ -22,9 +22,13 @@ const CASOS = [
     ['variação ruim em vermelho', '<span class="variacaoIndicador vm" id=sondaVm></span>', '#sondaVm', { color: '--erro' }],
     ['indicador inteiro numa linha, com o divisor à esquerda', '<span class=indicadorItem id=sondaIndicador></span>', '#sondaIndicador',
         { 'flex-wrap': 'wrap', 'border-left-style': 'solid', 'border-left-width': '1px', 'border-left-color': '--line' }],
+    ['título do bloco: negrito e 1,05 rem (o atalho font com inherit era inválido e o navegador o ignorava)', '<div class=blk><h3 id=sondaTitulo></h3></div>', '#sondaTitulo', { 'font-size': '1.05rem', 'font-weight': '700' }],
     ['contagem do título do bloco em cinza', '<div class=blk><h3><span class=contagemTitulo id=sondaContagem></span></h3></div>', '#sondaContagem', { color: '--muted' }],
     ['Simular sempre laranja', null, '#toggleSimulacao', { color: '#F0A83A', 'background-color': '--laranja-soft', 'border-top-color': '#F0A83A' }],
     ['Recarregar sempre verde', null, '#recarregar', { color: '--ok', 'background-color': '--ok-soft', 'border-top-color': '--ok' }],
+    ['asterisco da categoria compartilhada em vermelho', '<b class=catCompartilhada id=sondaCompartilhada>*</b>', '#sondaCompartilhada', { color: '--erro' }],
+    ['Selecionar tudo das categorias na cor do Fin', '<button class=multiSelAll id=sondaTodas></button>', '#sondaTodas', { color: '--cor' }],
+    ['toast quebra texto sem espaço (chave Pix) em vez de estourar a largura', '<article class=recado><p id=sondaRecado></p></article>', '#sondaRecado', { 'overflow-wrap': 'break-word' }],
     ['valor de antes da simulação em cinza e sem negrito', '<span class=valorAntes id=sondaAntes></span>', '#sondaAntes', { color: '--muted', 'font-weight': '400' }],
 ];
 
@@ -52,18 +56,18 @@ test('cada peça usa a cor da base comum (ou a própria do Fin) que deve', async
     await ctx.close();
 });
 
-test('o Fin carrega a base antes do próprio CSS e não redefine os tokens dela: só escolhe a própria cor (--cor)', async () => {
+test('o Fin carrega a base (tokens e componentes) antes do próprio CSS e não redefine os tokens dela: só escolhe a própria cor (--cor)', async () => {
     const { ctx, pg } = await abrirFin();
     const { ordem, daBase, doFin, cor } = await pg.evaluate(() => {
-        const folhas = [...document.styleSheets].filter(f => f.href);
+        const folhas = [...document.styleSheets].filter(f => f.href?.startsWith(location.origin));   // as fontes vêm de fora
         const declarados = f => [...f.cssRules].flatMap(r => (r.style ? [...r.style].filter(p => p.startsWith('--')) : []));
         const base = folhas.find(f => f.href.endsWith('/base/tokens.css'));
         return { ordem: folhas.map(f => new URL(f.href).pathname.replace(/^\/hub\//, '')),
             daBase: declarados(base), doFin: folhas.filter(f => f.href.includes('/fin/css/')).flatMap(declarados),
             cor: getComputedStyle(document.documentElement).getPropertyValue('--cor').trim() };
     });
-    assert.equal(ordem[0], 'base/tokens.css');
-    assert.ok(ordem.slice(1).every(f => f.startsWith('fin/css/')), JSON.stringify(ordem));
+    assert.deepEqual(ordem.slice(0, 2), ['base/tokens.css', 'base/componentes.css']);
+    assert.ok(ordem.slice(2).every(f => f.startsWith('fin/css/')), JSON.stringify(ordem));
     assert.ok(daBase.includes('--ok') && daBase.includes('--surface'), JSON.stringify(daBase));
     assert.deepEqual(doFin.filter(t => daBase.includes(t)), ['--cor']);
     assert.equal(cor, '#A78BFA');                                                 // a mesma da referência da base

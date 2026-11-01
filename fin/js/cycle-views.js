@@ -816,7 +816,7 @@ function vComp() {
     // collapse (▾/▸), linha de meta info e o corpo por baixo — pra trocar de visao
     // (Ciclo <-> Comparar) ser impercetivel, os blocos ficam visualmente identicos.
     return blocoCasca(tituloPeriodo, subtitulo, nRegistros, 'cp',
-        () => `<div class="wrap wx"><table><thead>${cabecalho}<tbody>${corpo}${linhaTotal}</tbody></table></div>`);
+        () => `<div class="rolagem wx"><table><thead>${cabecalho}<tbody>${corpo}${linhaTotal}</tbody></table></div>`);
 }
 
 // Vencimento da fatura de um cartão num ciclo: o da fatura cadastrada ou, sem compra nela, o

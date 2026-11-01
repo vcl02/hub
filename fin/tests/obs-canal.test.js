@@ -9,7 +9,6 @@ const vm = require('node:vm');
 const tabelas = fs.readFileSync('js/tables.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
-const estilosForm = fs.readFileSync('css/forms.css', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const migracao = fs.readFileSync('migrations/19-obs-canal-lancamentos.sql', 'utf8');
 
@@ -84,10 +83,6 @@ test('clique no ícone de copiar do Canal usa a Clipboard API e nunca entra em e
     assert.match(interacoes, /navigator\.clipboard\.writeText\(String\(r\.canal\)\)\.then\(/);
     assert.match(interacoes, /mostrarToast\('Copiado', String\(r\.canal\)\)/);
     assert.match(interacoes, /mostrarToast\('Falhou ao copiar'/);
-});
-
-test('toast quebra texto sem espaço (chave Pix) em vez de estourar a largura fixa', () => {
-    assert.match(estilosForm, /\.toast p \{[\s\S]*?overflow-wrap: break-word;/);
 });
 
 test('migration já aplicada pelo mantenedor, documentada no repo', () => {

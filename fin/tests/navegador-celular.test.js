@@ -66,7 +66,7 @@ test('celular: Data, Nome e Valor na primeira tela (ano com 2 dígitos); rolando
     assert.ok(data && nome && valor, JSON.stringify(celulas.slice(0, 4)));         // 16/10/26: o século (20) fica escondido
     assert.ok(valor.d <= 390, `Valor fora da 1ª tela: ${valor.d}`);
     // Rolando de lado, a Data sai e o Nome gruda na borda esquerda da tabela (sem isso, sairia da tela junto)
-    const r = await pg.$eval(`${linha} td.cNome`, td => { const caixa = td.closest('.wrap, .wx'); caixa.scrollLeft = 300; return [caixa.scrollLeft, td.getBoundingClientRect().x - caixa.getBoundingClientRect().x]; });
+    const r = await pg.$eval(`${linha} td.cNome`, td => { const caixa = td.closest('.rolagem, .wx'); caixa.scrollLeft = 300; return [caixa.scrollLeft, td.getBoundingClientRect().x - caixa.getBoundingClientRect().x]; });
     assert.ok(r[0] > 0, 'a tabela não rolou');
     assert.ok(Math.abs(r[1]) <= 1, `o Nome não ficou na borda: ${r[1]}`);
     await ctx.close();

@@ -181,7 +181,9 @@
      e geraria espaço perdido (mesmo problema que #erroNovo tinha antes de virar :empty). */
 
   .modalHead h2 {
-      font: 700 1.1rem/1 inherit;
+      font-weight: 700;
+      font-size: 1.1rem;
+      line-height: 1;
       margin: 0;
       color: var(--fg);
   }
@@ -311,7 +313,7 @@
   .fm input[type=text],
   .fm input[type=date],
   .fm select {
-      font: 16px inherit;
+      font-size: 16px;
       color: var(--fg);
 
       padding: .65rem .8rem;
@@ -762,7 +764,7 @@
       pointer-events: none;
   }
 
-  .toast {
+  .recado {
       display: grid;
       grid-template-columns: 1fr auto;
       gap: .25rem .8rem;
@@ -776,9 +778,9 @@
       pointer-events: auto;
   }
 
-  .toast strong { font-size: .88rem; }
+  .recado strong { font-size: .88rem; }
 
-  .toast p {
+  .recado p {
       grid-column: 1 / -1;
       margin: 0;
       color: var(--muted);
@@ -787,16 +789,17 @@
                                        em interactions.js) não podem estourar a largura fixa */
   }
 
-  .toast button {
+  .recado button {
       border: 0;
       padding: 0;
       background: transparent;
       color: var(--muted);
-      font: 1.1rem/1 inherit;
+      font-size: 1.1rem;
+      line-height: 1;
       cursor: pointer;
   }
 
-  .toast button:hover { color: var(--fg); }
+  .recado button:hover { color: var(--fg); }
 
   /* =========================================================
        MODAL — CALCULADORA
@@ -820,7 +823,9 @@
       padding: 0;
 
       text-align: right;
-      font: 600 1.5rem/1.2 inherit;
+      font-weight: 600;
+      font-size: 1.5rem;
+      line-height: 1.2;
       font-variant-numeric: tabular-nums;
       color: var(--fg);
 
@@ -834,7 +839,9 @@
 
   .calcResultado {
       text-align: right;
-      font: 500 .95rem/1.3 inherit;
+      font-weight: 500;
+      font-size: .95rem;
+      line-height: 1.3;
       font-variant-numeric: tabular-nums;
       color: var(--muted);
 
@@ -857,7 +864,9 @@
       background: var(--surface-2);
       color: var(--fg);
 
-      font: 600 1.05rem/1 inherit;
+      font-weight: 600;
+      font-size: 1.05rem;
+      line-height: 1;
       cursor: pointer;
   }
 

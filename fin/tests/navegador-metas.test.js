@@ -44,7 +44,7 @@ test('campos da meta: cada mudança grava; o mês com o ano pela metade não gra
     await mudar(pg, 'mes', '2027-01'); await gravou(escritas, ocioso, 2);
     assert.equal(dados.fin_meta[0].mes, '2027-01-01');
     await mudar(pg, 'valor', '0,00');                                            // valor total zero não vale
-    await pg.waitForFunction(() => [...document.querySelectorAll('#toasts .toast strong')].some(t => t.textContent === 'Valor inválido'));
+    await pg.waitForFunction(() => [...document.querySelectorAll('#toasts .recado strong')].some(t => t.textContent === 'Valor inválido'));
     await ocioso();
     assert.equal(dados.fin_meta[0].valor, 1500);
     assert.equal(patches(escritas), 2);
@@ -68,7 +68,7 @@ test('parcelado: Vezes mostra até quando vão as parcelas enquanto digita; entr
     assert.deepEqual([dados.fin_meta[0].entrada, dados.fin_meta[0].meses_ate_parcela], [1000, 1]);   // 1 mês antes da 1ª parcela
     const n = patches(escritas);
     await mudar(pg, 'mes_entrada', '2027-03');                                   // depois de novembro/2026: não vale
-    await pg.waitForFunction(() => [...document.querySelectorAll('#toasts .toast strong')].some(t => t.textContent === 'Mês inválido'));
+    await pg.waitForFunction(() => [...document.querySelectorAll('#toasts .recado strong')].some(t => t.textContent === 'Mês inválido'));
     assert.equal(patches(escritas), n);
     assert.deepEqual(erros, []);
     await ctx.close();
