@@ -85,8 +85,6 @@ test('sem dados do cartão no ciclo exibido, o modal avisa em vez de quebrar', (
 });
 
 test('botões no cabeçalho, desativados sem dados; modal refeito a cada desenho', () => {
-    assert.match(pagina, /<button type=button id=btNubank class="btIcone btCartao cartao-nubank" data-cartao=nubank title="Nubank"\s*\n\s*aria-label="Cartão Nubank" disabled>/);
-    assert.match(pagina, /<button type=button id=btMercadoPago class="btIcone btCartao cartao-mp" data-cartao=mp title="Mercado Pago"\s*\n\s*aria-label="Cartão Mercado Pago" disabled>/);
     assert.match(pagina, /<dialog id=modalCartao tabindex=-1>/);
     // Sem título visível: o nome do cartão fica só pra leitor de tela.
     assert.match(pagina, /<h2 id=tituloCartao class=srOnly>Cartão<\/h2>/);

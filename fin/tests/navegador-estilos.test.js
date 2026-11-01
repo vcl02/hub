@@ -73,3 +73,35 @@ test('o Fin carrega a base (tokens e componentes) antes do próprio CSS e não r
     assert.equal(cor, '#A78BFA');                                                 // a mesma da referência da base
     await ctx.close();
 });
+
+// O bloco de botões do cabeçalho, na ordem (REGRAS.md, "Os botões (cartões …) formam um bloco só")
+const BOTOES = ['btNubank', 'btMercadoPago', 'btSomenteDif', 'btGrafico', 'btVis', 'toggleSimulacao', 'abreNovo', 'recarregar', 'btDiagnostico'];
+
+test('cabeçalho: ‹ › e cada botão são o botão de ícone da base (.bt-ic, 40 px), o bloco na ordem; Novo é o .ok da base', async () => {
+    const { ctx, pg, erros } = await abrirFin();
+    await pg.setViewportSize({ width: 1280, height: 800 });
+    const r = await pg.evaluate(() => ({
+        ordem: [...document.querySelectorAll('.acoesCabecalho > button, .visWrap > button')].map(b => b.id),
+        medidas: [...document.querySelectorAll('#navComparar button, .acoesCabecalho > button, .visWrap > button')].filter(b => !b.hidden)
+            .map(b => [b.id, b.classList.contains('bt-ic'), Math.round(b.getBoundingClientRect().width), Math.round(b.getBoundingClientRect().height)]),
+        novo: document.getElementById('abreNovo').className,
+    }));
+    assert.deepEqual(r.ordem.filter(id => id !== 'btMetas'), BOTOES);
+    for (const [id, base, w, h] of r.medidas) assert.deepEqual([id, base, w, h], [id, true, 40, 40]);
+    assert.equal(r.novo, 'bt-ic ok');
+    assert.deepEqual(erros, []);
+    await ctx.close();
+});
+
+test('celular: ‹ De Até › numa linha só e os botões numa grade de 6 colunas com a altura da base, sem estourar', async () => {
+    const { ctx, pg } = await abrirFin('', undefined, 0, { celular: true });
+    const caixa = id => pg.$eval('#' + id, e => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height, fim: r.right }; });
+    const nav = await Promise.all(['cicloAnterior', 'fde', 'fate', 'cicloProximo'].map(caixa));
+    assert.ok(nav.every(c => Math.abs((c.y + c.h / 2) - (nav[0].y + nav[0].h / 2)) < 4), JSON.stringify(nav));
+    const visiveis = await pg.$$eval('.acoesCabecalho > button, .visWrap > button', L => L.filter(b => !b.hidden).map(b => b.id));
+    const bts = await Promise.all(visiveis.map(caixa)), largura = await pg.evaluate(() => innerWidth);
+    assert.deepEqual([...new Set(bts.map(c => Math.round(c.y)))].length, 2);      // duas linhas
+    assert.equal(bts.filter(c => Math.round(c.y) === Math.round(bts[0].y)).length, 6);
+    assert.ok(bts.every(c => Math.round(c.h) === 40 && c.fim <= largura), JSON.stringify(bts));
+    await ctx.close();
+});

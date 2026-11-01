@@ -97,7 +97,6 @@ test('recarga automática só lê: chama recarregarDados, nunca o clique do bot�
 });
 
 test('o botão verde é o único: sem Atual, Limpar filtros nem Consolidar tudo', () => {
-    assert.match(pagina, /<button id=recarregar title="Recarregar, voltar ao ciclo atual, limpar filtros e consolidar tudo"\s*\n\s*aria-label="Recarregar, voltar ao ciclo atual, limpar filtros e consolidar tudo">/);
     assert.doesNotMatch(pagina, /id=cicloHoje|btLimparFiltros|id=flimpar|btConsolidarTudo/);
     assert.doesNotMatch(graficos + interacoes + inicializacao + formulario, /cicloHoje|btLimparFiltros|btConsolidarTudo/);
     assert.doesNotMatch(estilos, /\.btHoje\b/);
@@ -109,25 +108,20 @@ test('Todas/Diferentes, Gráfico e Visualizações ficam no bloco de botões, an
     const acoes = pagina.slice(pagina.indexOf('<div class=acoesCabecalho>'), pagina.indexOf('id=toggleSimulacao'));
     assert.ok(acoes.indexOf('id=btSomenteDif') < acoes.indexOf('id=btGrafico'));
     assert.doesNotMatch(pagina.slice(pagina.indexOf('id=navComparar'), pagina.indexOf('id=rowVis')), /btGrafico|btVis|btSomenteDif/);
-    assert.match(acoes, /<button type=button id=btGrafico class=btIcone title="Gráfico" aria-label="Gráfico">\s*\n\s*<svg/);
     assert.ok(acoes.indexOf('id=btGrafico') < acoes.indexOf('id=visIcone'));
     const barra = pagina.slice(pagina.indexOf('id=rowVis'), pagina.indexOf('id=indicadoresFinanceiros'));
     assert.doesNotMatch(barra, /btGrafico|btVis/);
     assert.doesNotMatch(interacoes, /el\('btGrafico'\)\.hidden|el\('visIcone'\)\.hidden/);
     assert.match(estilos, /\.menuIcone \{\s*\n\s*position: absolute;\s*\n\s*top: calc\(100% \+ \.45rem\);/);
     assert.match(regras, /\*\*Visualizações\*\* é um ícone \(olho\) no bloco de botões do cabeçalho, logo depois do Gráfico/);
-    assert.match(fs.readFileSync('css/base.css', 'utf8'), /\.acoesCabecalho \.btIcone \{\s*\n\s*width: 2rem;\s*\n\s*height: 2rem;/);
-    assert.match(estilos, /\.btIcone \{[\s\S]*?width: 2\.2rem;\s*\n\s*height: 2\.2rem;/);
-    assert.match(estilos, /\.btIcone:disabled \{\s*\n\s*opacity: \.5;/);
     assert.match(regras, /\*\*Gráfico\*\* \(ícone de barras\) é botão só de ícone[^.]*no bloco de botões à direita do cabeçalho, junto dos demais\./);
-    assert.match(regras, /Os botões \(cartões Nubank e Mercado Pago, Todas\/Diferentes, Gráfico, Visualizações, simulação, cadastro, recarregar, diagnóstico, hub, nessa ordem\) formam um bloco só/);
+    assert.match(regras, /Os botões \(cartões Nubank e Mercado Pago, Todas\/Diferentes, Gráfico, Visualizações, simulação, cadastro, recarregar, diagnóstico, nessa ordem;/);
 });
 
-test('navegação de ciclo quebra linha em vez de sobrepor o cabeçalho, e no mobile os ícones cabem ao lado do Até', () => {
+test('navegação de ciclo quebra linha em vez de sobrepor o cabeçalho (no celular, medida em navegador-estilos.test.js)', () => {
     const mobile = fs.readFileSync('css/mobile.css', 'utf8');
     assert.match(estilos, /#navComparar \{\s*\n\s*display: flex;\s*\n\s*flex-direction: row;\s*\n\s*flex-wrap: wrap;/);
     assert.match(mobile, /#fate \{\s*\n\s*flex: 1 1 0;\s*\n\s*min-width: 9rem;/);
-    assert.match(mobile, /#navComparar \.btNavCiclo,\s*\n\s*#navComparar \.btIcone \{\s*\n\s*width: 2rem;/);
 });
 
 test('menu de Visualizações fecha ao escolher, ao clicar fora e com Esc, e não sai da tela', () => {

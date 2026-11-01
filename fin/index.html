@@ -49,7 +49,7 @@
     <div class=head>
       <div class=f id=fciclNav>
         <div id=navComparar>
-          <button type=button id=cicloAnterior class=btNavCiclo title="Ciclo anterior"
+          <button type=button id=cicloAnterior class=bt-ic title="Ciclo anterior"
             aria-label="Ciclo anterior">‹</button>
           <label class=fInline id=fde><span class=srOnly>De</span>
             <select id=compDe aria-label="De"></select>
@@ -57,7 +57,7 @@
           <label class=fInline id=fate><span class=srOnly>Até</span>
             <select id=compAte aria-label="Até"></select>
           </label>
-          <button type=button id=cicloProximo class=btNavCiclo title="Próximo ciclo"
+          <button type=button id=cicloProximo class=bt-ic title="Próximo ciclo"
             aria-label="Próximo ciclo">›</button>
         </div>
       </div>
@@ -95,7 +95,7 @@
         <!-- Cartões: cada botão abre o modal só daquele cartão, com Hoje e Futuro (#modalCartao,
              preenchido por htmlModalCartao em cycle-views.js; handlers em interactions.js).
              Desativados fora da visão de um ciclo ou sem compras daquele cartão. -->
-        <button type=button id=btNubank class="btIcone btCartao cartao-nubank" data-cartao=nubank title="Nubank"
+        <button type=button id=btNubank class="bt-ic btCartao cartao-nubank" data-cartao=nubank title="Nubank"
           aria-label="Cartão Nubank" disabled>
           <svg viewBox="0 0 24 24" width=19 height=19 aria-hidden=true>
             <rect x=2 y=5 width=20 height=14 rx=3 fill=currentColor />
@@ -103,7 +103,7 @@
             <path d="M5 15.6h6" stroke="#fff" stroke-opacity=.75 stroke-width=1.4 stroke-linecap=round />
           </svg>
         </button>
-        <button type=button id=btMercadoPago class="btIcone btCartao cartao-mp" data-cartao=mp title="Mercado Pago"
+        <button type=button id=btMercadoPago class="bt-ic btCartao cartao-mp" data-cartao=mp title="Mercado Pago"
           aria-label="Cartão Mercado Pago" disabled>
           <svg viewBox="0 0 24 24" width=19 height=19 aria-hidden=true>
             <rect x=2 y=5 width=20 height=14 rx=3 fill=currentColor />
@@ -114,7 +114,7 @@
         <!-- Gráfico, Visualizações e Todas/Diferentes junto dos demais botões (handlers em interactions.js e charts.js). -->
         <!-- Todas/Diferentes ao comparar ciclos (handler em interactions.js). Sempre visível:
              fora da comparação de 2 ciclos fica desativado. -->
-        <button type=button id=btSomenteDif class=btIcone title="Mostrar só as linhas diferentes"
+        <button type=button id=btSomenteDif class=bt-ic title="Mostrar só as linhas diferentes"
           aria-label="Mostrar só as linhas diferentes" aria-pressed=false disabled>
           <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
             stroke-linejoin=round aria-hidden=true>
@@ -122,7 +122,7 @@
             <path d="M16 4 8 20" />
           </svg>
         </button>
-        <button type=button id=btGrafico class=btIcone title="Gráfico" aria-label="Gráfico">
+        <button type=button id=btGrafico class=bt-ic title="Gráfico" aria-label="Gráfico">
           <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
             stroke-linejoin=round aria-hidden=true>
             <path d="M4 20h16" />
@@ -131,7 +131,7 @@
         </button>
         <!-- Metas (fin_meta, migration 36): abre #modalMetas. Escondido sem a tabela
              (interactions.js). -->
-        <button type=button id=btMetas class=btIcone title="Metas" aria-label="Metas" hidden>
+        <button type=button id=btMetas class=bt-ic title="Metas" aria-label="Metas" hidden>
           <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
             stroke-linejoin=round aria-hidden=true>
             <circle cx=12 cy=12 r=9 />
@@ -142,7 +142,7 @@
         <!-- Visualizações: ícone que abre um menu próprio logo abaixo; charts.js preenche
              #visMenu com os acompanhamentos e abre o escolhido. -->
         <div id=visIcone class=visWrap>
-          <button type=button id=btVis class=btIcone title="Visualizações" aria-label="Visualizações"
+          <button type=button id=btVis class=bt-ic title="Visualizações" aria-label="Visualizações"
             aria-haspopup=menu aria-expanded=false aria-controls=visMenu>
             <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
               stroke-linejoin=round aria-hidden=true>
@@ -152,7 +152,7 @@
           </button>
           <div id=visMenu class=menuIcone role=menu aria-label="Visualizações" hidden></div>
         </div>
-        <button id=toggleSimulacao
+        <button type=button id=toggleSimulacao class=bt-ic
           title="Simular (não salva)"
           aria-label="Ativar modo simulação">
           <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
@@ -162,7 +162,7 @@
           </svg>
         </button>
 
-        <button id=abreNovo title="Novo lançamento" aria-label="Novo lançamento">
+        <button type=button id=abreNovo class="bt-ic ok" title="Novo lançamento" aria-label="Novo lançamento">
           <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round
             stroke-linejoin=round>
             <line x1=12 y1=5 x2=12 y2=19 />
@@ -171,7 +171,7 @@
         </button>
 
         <!-- Recarregar: recarrega, volta ao ciclo atual, limpa filtros e consolida tudo (bootstrap.js). -->
-        <button id=recarregar title="Recarregar, voltar ao ciclo atual, limpar filtros e consolidar tudo"
+        <button type=button id=recarregar class=bt-ic title="Recarregar, voltar ao ciclo atual, limpar filtros e consolidar tudo"
           aria-label="Recarregar, voltar ao ciclo atual, limpar filtros e consolidar tudo">
           <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke="currentColor" stroke-width="2.2"
             stroke-linecap="round" stroke-linejoin="round">
@@ -182,7 +182,7 @@
           </svg>
         </button>
 
-        <button id=btDiagnostico title="Sem inconsistências na última carga" aria-label="Sem inconsistências na última carga">
+        <button type=button id=btDiagnostico class=bt-ic title="Sem inconsistências na última carga" aria-label="Sem inconsistências na última carga">
           <svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2
             stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 3 2.8 20.5h18.4L12 3Z" />

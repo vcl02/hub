@@ -55,14 +55,6 @@
           min-width: 9rem;
       }
 
-      /* Botões da navegação um pouco menores no mobile, pra › e os ícones caberem na mesma
-         linha do Até. */
-      #navComparar .btNavCiclo,
-      #navComparar .btIcone {
-          width: 2rem;
-          height: 2rem;
-      }
-
       /* O select acompanha o rótulo, encolhendo junto. */
       #fde select,
       #fate select {
@@ -139,17 +131,10 @@
           max-width: calc(100vw - 1.8rem);
       }
 
+      /* Cada botão (o .bt-ic da base, com a altura dela) ocupa a coluna inteira da grade. */
       #app .acoesCabecalho > *,
-      #app .acoesCabecalho .visWrap > .btIcone {
+      #app .acoesCabecalho .visWrap > .bt-ic {
           width: 100%;
-          height: 2.5rem;
-      }
-
-      #abreNovo {
-          padding: .5rem;
-          width: 2rem;
-          height: 2rem;
-          justify-content: center;
       }
 
       /* dvh (viewport visivel de verdade) e nao vh: com a barra de endereco embaixo, 100vh

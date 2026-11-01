@@ -1029,13 +1029,13 @@ function htmlPraCaber(p) {
     return `<h3 class=pmSubtitulo>Pra caber</h3>` +
         receitasDoModal.map((r, i) => `<div class=pcReceita><div class=pcTopo><b>${r.titulo}</b> ` +
             `<span class="mpParte ${r.cobre ? 'vd' : 'am'}">${r.cobre ? `<b>Cobre</b> <span class=mpDetalhe>+${brl(r.ganho)}</span>` : `<i>Ainda faltam</i> <b>${brl(r.resta)}</b>`}</span>` +
-            `<button type=button class=btIcone data-acao=simularReceita data-receita=${i} title="Simular (não salva)" aria-label="Simular ${r.titulo.toLowerCase()}">${ICONE_SIMULAR}</button></div>` +
+            `<button type=button class=bt-ic data-acao=simularReceita data-receita=${i} title="Simular (não salva)" aria-label="Simular ${r.titulo.toLowerCase()}">${ICONE_SIMULAR}</button></div>` +
             `<ul class=pcCortes>${itens(r)}</ul></div>`).join('') +
         (semCortar ? `<div class=pcSemCortar><i>Sem cortar</i> ${semCortar}</div>` : '') +
         // Nenhuma receita cobre: o resto está no que é intocável (Comprometido).
         (p.falta <= TOLERANCIA_FINANCEIRA || receitasDoModal.some(r => r.cobre) ? '' :
             `<div class=pcAviso><span>Nem cortando tudo cabe: muito já está Comprometido.</span>` +
-            `<button type=button class=btIcone data-acao=verComprometidos title="Ver comprometidos" aria-label="Ver comprometidos">${ICONE_LISTA}</button></div>`);
+            `<button type=button class=bt-ic data-acao=verComprometidos title="Ver comprometidos" aria-label="Ver comprometidos">${ICONE_LISTA}</button></div>`);
 }
 
 // Modal dos comprometidos até a falta (aberto pelo aviso do "Pra caber"): cada grupo com a
@@ -1107,7 +1107,7 @@ function htmlModalMetas(planos) {
         `${entrada(nome, emReais(valor), 'inputmode=numeric data-dinheiro placeholder="0,00"')}</span>`;
     // Todo campo com o rótulo em cima, na sua coluna da grade (mc*): alinha entre as metas.
     const campo = (classe, rotulo, controle, dica = '') => `<label class="metaCampo ${classe}"${dica ? ` title="${dica}"` : ''}><span class=metaRotulo>${rotulo}</span>${controle}</label>`;
-    const botao = (acao, icone, rotulo) => `<button type=button class=btIcone data-acao=${acao} title="${rotulo}" aria-label="${rotulo}">${icone}</button>`;
+    const botao = (acao, icone, rotulo) => `<button type=button class=bt-ic data-acao=${acao} title="${rotulo}" aria-label="${rotulo}">${icone}</button>`;
     const linhaMeta = p => {
         const m = p.meta;
         const formas = Object.entries(FORMAS_DA_META).map(([valor, rotulo]) =>
@@ -1132,7 +1132,7 @@ function htmlModalMetas(planos) {
             `</div>`;
     };
     return `<div class=metasAcoes>` +
-        `<button type=button class=btIcone data-acao=novaMeta title="Nova meta" aria-label="Nova meta"><svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round aria-hidden=true><line x1=12 y1=5 x2=12 y2=19 /><line x1=5 y1=12 x2=19 y2=12 /></svg></button>` +
+        `<button type=button class=bt-ic data-acao=novaMeta title="Nova meta" aria-label="Nova meta"><svg viewBox="0 0 24 24" width=17 height=17 fill=none stroke=currentColor stroke-width=2.2 stroke-linecap=round aria-hidden=true><line x1=12 y1=5 x2=12 y2=19 /><line x1=5 y1=12 x2=19 y2=12 /></svg></button>` +
         `</div>` +
         (planos.length ? planos.map(linhaMeta).join('') : '<p class=empty>Nenhuma meta.</p>');
 }

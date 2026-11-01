@@ -94,7 +94,6 @@ test('fatura à vista não repete o rótulo nem o asterisco', () => {
 });
 
 test('visualizações usam um único dropdown com acompanhamentos fixos', () => {
-    assert.match(pagina, /<button type=button id=btVis class=btIcone title="Visualizações" aria-label="Visualizações"\s*\n\s*aria-haspopup=menu aria-expanded=false aria-controls=visMenu>/);
     assert.match(pagina, /<div id=visMenu class=menuIcone role=menu aria-label="Visualizações" hidden><\/div>/);
     assert.doesNotMatch(pagina, /id=visAlvo/);
     assert.doesNotMatch(pagina, /id=visTipo|id=visAlvoRotulo/);

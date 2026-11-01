@@ -180,3 +180,10 @@ A fundação paralela `hub/Vcl.FinHub` (.NET, ABP, Angular, PostgreSQL local) fo
 - Pedido do mantenedor: o Fin entra 100% na base, sem peça à parte onde a base tem uma.
 - Cabeçalho: o da base (`.topo`: ícone do hub `#i-hub` e o nome **Fin** com a bolinha da cor) fica no alto, como nos outros módulos; a navegação de ciclos, os indicadores e os botões vêm logo abaixo. O ícone do hub saiu do fim dos botões (era `#voltarHub`). Ocupa uma linha a mais (escolha do mantenedor entre isso e só trocar os botões).
 - Aviso: o `.toast` da base (um só, embaixo no meio, que quebra linha) no lugar dos cartões empilhados no canto com título, texto e ×. O título vai em negrito e o texto na mesma linha; um aviso novo troca o anterior; some em 7 s (mais que nos outros módulos, porque as mensagens do Fin são mais longas). Falha, valor inválido e não salvo ficam em vermelho (`.toast.erro`, regra em `avisoDeErro`); antes, todos tinham a borda vermelha. O som curto continua.
+
+## Base comum: botões de ícone (01/11/2026)
+
+- ‹ › da navegação de ciclos e todos os botões do cabeçalho (e os de ícone dentro dos modais) são o `.bt-ic` da base: 40 px, raio, borda e fundo dela; saíram `.btIcone` e `.btNavCiclo` (eram 32 a 35 px, raio 9 px). O Fin só acrescenta a cor dos que têm significado próprio: Recarregar verde, Simular laranja, Diagnóstico vermelho com inconsistência, os cartões na cor de cada um e o ligado (Diferentes) em verde.
+- Novo lançamento virou o `.bt-ic.ok` da base, preenchido na cor do Fin (era branco).
+- O foco do teclado é o da base (contorno na cor do módulo); o do Fin (verde com o botão meio apagado) saiu.
+- Celular: a grade de 6 colunas continua, com a altura da base (40 px; era 2,5 rem, o mesmo). ‹ De Até › seguem numa linha; o conteúdo desce 5 px porque ‹ › cresceram. Conferido medindo no navegador (`navegador-estilos.test.js`).

@@ -984,7 +984,7 @@
       gap: .4rem;
   }
 
-  .pcTopo .btIcone { margin-left: auto; }
+  .pcTopo .bt-ic { margin-left: auto; }
 
   .pcCortes {
       margin: .4rem 0 0;
@@ -1020,7 +1020,7 @@
       font-size: .84rem;
   }
 
-  .pcAviso .btIcone { margin-left: auto; }
+  .pcAviso .bt-ic { margin-left: auto; }
 
   /* Resumo do modal de comprometidos: frase mais longa que uma pílula, quebra no celular. */
   .mpParte.pcResumo {

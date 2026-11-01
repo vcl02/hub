@@ -1405,32 +1405,6 @@
       opacity: .6;
   }
 
-  /* Botões de ação só com ícone na barra (Gráfico, Consolidar tudo): quadrados, no mesmo
-     tamanho dos botões de navegação de ciclo. O texto fica no title/aria-label. */
-  .btIcone {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      flex: none;
-      width: 2.2rem;
-      height: 2.2rem;
-      padding: 0;
-      color: var(--fg);
-      background: var(--surface-2);
-      border: 1px solid var(--line);
-      border-radius: 9px;
-      cursor: pointer;
-  }
-
-  .btIcone:hover:not(:disabled) {
-      background: var(--surface-2-hover);
-      border-color: var(--line-strong);
-  }
-
-  .btIcone:disabled {
-      opacity: .5;
-  }
-
   /* Botões dos cartões no cabeçalho: o ícone do cartão na cor dele (Nubank roxo, Mercado
      Pago azul), com fundo levemente tingido, pra achar de relance qual abre qual. */
   .btCartao.cartao-nubank {
@@ -1456,7 +1430,7 @@
   }
 
   /* Ligado (ex.: só as linhas diferentes): mesmo verde de "ativo" do restante da tela. */
-  .btIcone.ativo {
+  .bt-ic.ativo {
       color: var(--ok);
       background: var(--ok-soft);
       border-color: var(--ok);
@@ -1532,28 +1506,6 @@
       align-items: center;
       gap: .8rem;
       row-gap: .5rem;
-  }
-
-  .btNavCiclo {
-      width: 2.2rem;
-      height: 2.2rem;
-      font-size: 1.2rem;
-      line-height: 1;
-
-      color: var(--fg);
-      background: var(--surface-2);
-      border: 1px solid var(--line);
-      border-radius: 9px;
-      cursor: pointer;
-  }
-
-  .btNavCiclo:hover {
-      background: var(--surface-2-hover);
-      border-color: var(--fg);
-  }
-
-  .btNavCiclo:disabled {
-      opacity: .3;
   }
 
   /* visualmente escondido mas ainda lido por leitor de tela — usado no "De"/"Até", que

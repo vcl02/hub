@@ -63,12 +63,6 @@
       gap: .7rem;
   }
 
-  /* Gráfico, Visualizações e Todas/Diferentes no mesmo tamanho dos outros botões do bloco. */
-  .acoesCabecalho .btIcone {
-      width: 2rem;
-      height: 2rem;
-  }
-
   .sub {
       font-size: .85rem;
       color: var(--muted);
@@ -85,23 +79,16 @@
        BOTÕES DO CABEÇALHO
        ========================================================= */
 
+  /* Todos são o botão de ícone da base (.bt-ic: tamanho, borda, raio e fundo); aqui só a cor de cada um que tem
+     significado no Fin. Novo lançamento é o .bt-ic.ok da base (preenchido na cor do módulo). */
   #recarregar {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 2rem;
-      height: 2rem;
-      padding: 0;
       color: var(--ok);
       background: var(--ok-soft);
-      border: 1px solid var(--ok);
-      border-radius: 9px;
-      cursor: pointer;
+      border-color: var(--ok);
   }
 
   #recarregar:hover:not(:disabled) {
       color: #10231A;
-      border-color: var(--ok);
       background: var(--ok);
   }
 
@@ -113,23 +100,7 @@
      sem poluir o cabeçalho quando há registros que precisam ser revisados. */
   #btDiagnostico {
       position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 2rem;
-      height: 2rem;
-      padding: 0;
       color: var(--muted);
-      background: var(--surface-2);
-      border: 1px solid var(--line);
-      border-radius: 9px;
-      cursor: pointer;
-  }
-
-  #btDiagnostico:hover {
-      color: var(--fg);
-      border-color: var(--line-strong);
-      background: var(--surface-2-hover);
   }
 
   #btDiagnostico.temInconsistencia {
@@ -154,29 +125,27 @@
      Ligado, o botão fica preenchido de laranja, pra não deixar dúvida de que nada está sendo
      gravado. */
   #toggleSimulacao {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 2rem;
-      height: 2rem;
-      padding: 0;
       color: #F0A83A;
       background: var(--laranja-soft);
-      border: 1px solid #F0A83A;
-      border-radius: 9px;
-      cursor: pointer;
+      border-color: #F0A83A;
   }
 
   #toggleSimulacao:hover,
   #toggleSimulacao.ativo {
       color: #10231A;
       background: #F0A83A;
-      border-color: #F0A83A;
   }
 
   #toggleSimulacao.ativo:hover {
       background: #F5BC63;
       border-color: #F5BC63;
+  }
+
+  /* ‹ › da navegação de ciclos: a seta um pouco maior, como a barra do dia da base */
+  #cicloAnterior,
+  #cicloProximo {
+      font-size: 1.2rem;
+      line-height: 1;
   }
 
   @keyframes girar {
@@ -219,33 +188,4 @@
       .f.fadeOut {
           animation: none;
       }
-  }
-
-
-  #abreNovo {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 2rem;
-      height: 2rem;
-      padding: 0;
-      color: #111315;
-      background: var(--fg);
-      border: 0;
-      border-radius: 9px;
-      cursor: pointer;
-  }
-
-  #abreNovo:hover {
-      background: #FFFFFF;
-      opacity: 1;
-  }
-
-  /* =========================================================
-       FOCO
-       ========================================================= */
-
-  :focus-visible {
-      outline: 2px solid #7BCF99;
-      outline-offset: 2px;
   }
