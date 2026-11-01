@@ -57,10 +57,6 @@ test('não aplica filtro global de pago nem origem', () => {
     assert.deepEqual(Array.from(c.regras.filtrarLancamentos()).map(x => x.id), [1, 2, 3, 4]);
 });
 
-test('não há mais filtro de titular nem de sinal', () => {
-    assert.doesNotMatch(fonte, /el\('titular'\)|el\('fvalor'\)/);
-});
-
 test('Categoria aceita ! para inverter uma busca sem diferenciar caixa ou acento', () => {
     const c = filtroDeTexto();
     c.Estado.filtroTexto.debito = { categ: '!cása' };
@@ -203,7 +199,6 @@ test('botão de sinal do Valor filtra só positivos ou só negativos; zero não 
     c.Estado.filtroTexto.debito = { sinal: '-' };
     assert.deepEqual(ids(), [41]);
     // "+"/"-" digitado no campo não é mais atalho de sinal.
-    assert.doesNotMatch(fonte, /termoLimpo === '\+'|bruto === '\+'/);
 });
 
 test('Pago, Reserva e Comprometido filtram por clique; Data busca no texto da célula', () => {

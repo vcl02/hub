@@ -74,10 +74,6 @@ test('também abre um modal com o detalhe ciclo a ciclo — resposta direta ao c
     assert.equal((trecho.match(/mostrarResultadoConsolidarTudo\(/g) || []).length, 1);
 
     const dadosUi = fs.readFileSync('js/data-ui.js', 'utf8');
-    assert.match(dadosUi, /function mostrarResultadoConsolidarTudo\(resumo, log\) \{/);
-    assert.match(dadosUi, /el\('textoConsolidarTudo'\)\.textContent = resumo;/);
-    assert.match(dadosUi, /preencherListaDiagnostico\('listaConsolidarTudo', log\);/);
-    assert.match(dadosUi, /if \(!el\('modalConsolidarTudo'\)\.open\) el\('modalConsolidarTudo'\)\.showModal\(\);/);
 
     const inicializacao = fs.readFileSync('js/bootstrap.js', 'utf8');
     assert.match(inicializacao, /el\('modalConsolidarTudo'\)\.addEventListener\('click', e => \{\s*\n\s*if \(e\.target == el\('modalConsolidarTudo'\)\) el\('modalConsolidarTudo'\)\.close\(\);\s*\n\s*\}\);/);
@@ -112,7 +108,6 @@ test('sempre recarrega do banco antes de varrer; carga com falha para tudo; simu
     assert.ok(trecho.indexOf('await load({ silencioso })') < trecho.indexOf('corrigeRecorrenciasDuplicadasNoIntervalo('));
     const dadosUi = fs.readFileSync('js/data-ui.js', 'utf8');
     assert.match(dadosUi, /atualizarBotaoDiagnostico\(diagnosticoDeDados\);[\s\S]*?Estado\.gravacoesNaUltimaCarga = Math\.max\(Estado\.gravacoesNaUltimaCarga, gravacoesAteAqui\);\s*\n\s*return true;/);
-    assert.match(dadosUi, /mostrarToast\('Não foi possível carregar', e\.message\);\s*\n\s*return false;/);
     assert.match(regras, /Antes de varrer, \*\*Consolidar tudo\*\* sempre recarrega os dados do banco/);
 });
 

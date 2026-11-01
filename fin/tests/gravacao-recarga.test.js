@@ -62,3 +62,29 @@ test('recarregar com a simulação ligada tira um retrato novo de antes, copiado
     await sem.bruto('carregarDados()');
     assert.equal(sem.rodar('Estado.retratoAntesDaSimulacao ?? null'), null);     // sem simulação, nada
 });
+
+test('recarga silenciosa não redesenha por cima de um campo em edição na tabela; espera ele sair e então redesenha', async () => {
+    const t = carregarTela({ dados: dados() });
+    let desenhos = 0;
+    t.ctx.desenhar = () => desenhos++;
+    t.ctx.setTimeout = f => f;                                                  // os "tentar de novo" ficam guardados, sem relógio
+    const campo = { matches: () => true };
+    t.ctx.document.activeElement = campo;
+    t.ctx.document.getElementById('out').contains = el => el === campo;
+    assert.equal(await t.bruto('load({ silencioso: true })'), true);
+    assert.deepEqual([desenhos, t.rodar('Estado.redesenhoPendente')], [0, true]);   // com a edição em curso: espera
+    t.ctx.document.activeElement = null;
+    t.bruto('desenharQuandoLivre()');
+    assert.equal(desenhos, 1);                                                   // saiu do campo: redesenha
+    await t.bruto('load()');
+    assert.equal(desenhos, 2);                                                   // carga normal (não silenciosa) desenha direto
+});
+
+test('o resumo do Consolidar tudo vai para o modal (texto e lista ciclo a ciclo) e o abre', () => {
+    const t = carregarTela();
+    t.bruto("mostrarResultadoConsolidarTudo('1 materializado(s), 0 consolidado(s).', ['Outubro 2026: Materializado Aporte de R$ 10,00.'])");
+    const el = t.ctx.document.getElementById;
+    assert.equal(el('textoConsolidarTudo').textContent, '1 materializado(s), 0 consolidado(s).');
+    assert.deepEqual(el('listaConsolidarTudo').filhos.map(li => li.textContent), ['Outubro 2026: Materializado Aporte de R$ 10,00.']);
+    assert.equal(el('modalConsolidarTudo').open, true);
+});

@@ -69,8 +69,6 @@ test('saldo base carrega o anterior, débito e fatura líquida de antecipação'
 test('saldo diário inclui pagamento antecipado na data e deixa a fatura futura líquida', () => {
     // A antecipação é débito real da conta; o abatimento já reduz a fatura sintética futura.
     // Débito atrasado sai hoje (ver atrasados.test.js); os demais, na própria data.
-    assert.match(fonte, /\.filter\(r => !r\.cred && r\.data\)[\s\S]{0,120}\.map\(r => \(\{ data: ehDebitoAtrasado\(r\) \? hojeISO\(\) : dataISO\(r\.data\), v: r\.v \}\)\)/);
-    assert.doesNotMatch(fonte, /!r\.cred && r\.data && !ehTransferenciaFatura\(r\)/);
     const r = regrasFinanceiras([{ fat: '2026-09-30' }]);
     assert.equal(r.totalBaseDoCiclo(0, [
         { periodoIdx: 0, cred: false, v: -114 },

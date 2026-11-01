@@ -15,7 +15,8 @@ const FUNCOES_DO_FORM = ['formataMascaraDinheiro', 'valorMascaraParaNumero', 'gu
 function elementoFalso(id) {
     return { id, value: '', checked: false, hidden: false, disabled: false, dataset: {}, style: {}, options: [], innerHTML: '', textContent: '',
         classList: { toggle() {}, add() {}, remove() {}, contains: () => false }, setAttribute() {}, getAttribute() {}, addEventListener() {},
-        querySelector: () => null, querySelectorAll: () => [], closest: () => null, append() {}, appendChild() {} };
+        querySelector: () => null, querySelectorAll: () => [], closest: () => null, append() {}, appendChild() {}, contains: () => false,
+        open: false, showModal() { this.open = true; }, close() { this.open = false; }, filhos: [], replaceChildren(...f) { this.filhos = f; } };
 }
 
 // hoje: 'AAAA-MM-DD' (meio-dia, horário de São Paulo); dados: { fin, fin_ciclo, fin_meta } como o banco devolve
@@ -26,7 +27,7 @@ function carregarTela({ hoje = '2026-10-20', dados = {} } = {}) {
     const ctx = { console, Intl, Math, JSON, setTimeout, clearTimeout, AbortController, Date: Relogio, navigator: {}, performance: { now: () => 0 }, URL, URLSearchParams,
         location: { search: '', href: 'http://x/hub/fin/' }, history: { replaceState() {}, pushState() {} },
         matchMedia: () => ({ matches: false }), addEventListener() {}, localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
-        document: { getElementById: id => elementos[id] || (elementos[id] = elementoFalso(id)), querySelector: () => null, querySelectorAll: () => [], addEventListener() {} },
+        document: { getElementById: id => elementos[id] || (elementos[id] = elementoFalso(id)), createElement: tag => elementoFalso(tag), querySelector: () => null, querySelectorAll: () => [], addEventListener() {} },
         supabase: { createClient: () => ({ auth: { getSession: async () => ({ data: { session: null } }), refreshSession: async () => {} } }) },
         Chart: Object.assign(function () {}, { register() {} }),
         // O banco falso: GET devolve a tabela (a página seguinte da paginação, vazia)

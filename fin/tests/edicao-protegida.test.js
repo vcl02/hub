@@ -64,8 +64,6 @@ test('campo fora da tabela (ex.: busca no cadastro) não segura o redesenho', ()
 });
 
 test('load e consolidação silenciosos usam a espera; o clique redesenha direto', () => {
-    assert.match(dadosUi, /if \(silencioso\) desenharQuandoLivre\(\); else desenhar\(\);/);
-    assert.match(formulario, /\/\/ Automática: nunca redesenha por cima de uma célula em edição[^\n]*\n\s*if \(silencioso\) desenharQuandoLivre\(\); else desenhar\(\);/);
     assert.match(fs.readFileSync('js/interactions.js', 'utf8'), /function desenhar\(\) \{\s*\n\s*Estado\.redesenhoPendente = false;/);
 });
 

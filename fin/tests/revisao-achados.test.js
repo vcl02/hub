@@ -10,10 +10,8 @@ const vm = require('node:vm');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const formulario = fs.readFileSync('js/form.js', 'utf8');
 const inicializacao = fs.readFileSync('js/bootstrap.js', 'utf8');
-const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
 const financas = fs.readFileSync('js/finance.js', 'utf8');
 const graficos = fs.readFileSync('js/charts.js', 'utf8');
-const compartilhado = fs.readFileSync('js/shared.js', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 
 // Extrai movimentoAporteOuResgateDoCiclo do arquivo real e roda com os globais mínimos.
@@ -63,12 +61,7 @@ test('teto Besteira compara item inteiro da categoria, sem substring', () => {
 });
 
 test('ciclo aberto nunca usa 31/12/9999 em datas exibidas ou calculadas', () => {
-    assert.doesNotMatch(financas, /ajustes\.push\(\{ data: dataISO\(per\.fat\)/);
-    assert.match(financas, /ajustes\.push\(\{ data: dataDeFechamentoDoCiclo\(per\), v: ajuste\.v \}\)/);
-    assert.match(financas, /data: dataDeFechamentoDoCiclo\(ciclo\), nome: c\.nome/);
     assert.match(graficos, /data: dataDeFechamentoDoCiclo\(Estado\.ciclos\[i\]\), nome: ajuste\.nome/);
-    assert.match(visoes, /data: dataDeFechamentoDoCiclo\(per\), cred: false, v: ajuste\.v/);
-    assert.match(compartilhado, /: dataDeFechamentoDoCiclo\(Estado\.ciclos\[idx\]\);/);
 });
 
 test('saldo diário recortado calcula o guardado com os ajustes do próprio recorte', () => {

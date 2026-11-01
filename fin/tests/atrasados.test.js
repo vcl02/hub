@@ -65,11 +65,6 @@ test('fatura sem pagar de ciclo passado sai do ciclo dela e entra no de hoje; pa
     assert.equal(c.faturasLiquidasDoCiclo(base2, abat2, 1)[0].liquido, 0);
 });
 
-test('atrasado sai hoje no saldo por dia', () => {
-    const fonte = ler('js/finance.js');
-    assert.match(fonte, /data: f\.atrasada \? hojeISO\(\) : f\.vencimento/);
-});
-
 test('aviso na faixa Hoje, marca no nome e alinhamento sem o aviso', () => {
     const visoes = ler('js/cycle-views.js');
     assert.match(ler('js/tables.js'), /const badgeAtrasado = r\._atrasado \|\| ehDebitoAtrasado\(r\)/);

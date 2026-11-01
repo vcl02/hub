@@ -144,3 +144,11 @@ test('Livre Hoje do Nubank: só antecipação paga libera limite; garantia só c
     assert.equal(await livre(aporte(true)), sem + 500);                          // garantia do Nubank: o investido pago
     assert.equal(await livre(aporte(false)), sem);
 });
+
+test('saldo por dia: a antecipação de fatura sai na data dela; a fatura de um ciclo que fechou, sem pagar, sai hoje', async () => {
+    const saldo = async (...extra) => { const t = carregarTela({ dados: base(...extra) }); await t.bruto('carregarDados()'); t.ctx.document.getElementById('ciclo').value = '1'; return t.rodar('saldoPorDia()'); };
+    const antecipada = await saldo(l(9, 'Antecipação', '2026-10-18', -400, { categ: 'Antecipação fatura', fatura: '2026-11-12' }));
+    assert.equal(antecipada['2026-10-18'], 9000 - 400);
+    const atrasada = await saldo(l(5, 'Livro', '2026-09-18', -80, { cred: true, fatura: '2026-10-12' }));
+    assert.equal(atrasada['2026-10-20'], 9000 - 80);                             // hoje (20/10), não em 12/10
+});
