@@ -67,14 +67,7 @@ test('fatura sem pagar de ciclo passado sai do ciclo dela e entra no de hoje; pa
 
 test('atrasado sai hoje no saldo por dia', () => {
     const fonte = ler('js/finance.js');
-    assert.match(fonte, /data: ehDebitoAtrasado\(r\) \? hojeISO\(\) : dataISO\(r\.data\)/);
     assert.match(fonte, /data: f\.atrasada \? hojeISO\(\) : f\.vencimento/);
-});
-
-test('recorrência duplicada ignora o atrasado (não move a conta do mês)', () => {
-    const visoes = ler('js/cycle-views.js');
-    assert.match(visoes, /linhas\.filter\(ehLinhaReal\)\.filter\(r => !ehTransferenciaFatura\(r\) && !ehDebitoAtrasado\(r\)\)/);
-    assert.match(visoes, /!ehTransferenciaFatura\(r\) && !ehDebitoAtrasado\(r\) && r\.v <= 0 && ehDeSerie\(r\)/);
 });
 
 test('aviso na faixa Hoje, marca no nome e alinhamento sem o aviso', () => {

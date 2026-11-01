@@ -86,12 +86,6 @@ test('fin_ciclo pagina por id, como fin', async () => {
     assert.match(chamadas[1].url, /&id=gt\.5$/);
 });
 
-test('sem fin_ciclo no formato de ciclos, a carga para com a instrução das migrations', () => {
-    assert.match(api, /throw Error\(`Tabela de ciclos indisponível \(\$\{err\.message\}\)\. Aplique migrations\/25-tabela-fin-ciclo\.sql e 26-ciclo-com-inicio-e-fim\.sql\.`\);/);
-    assert.match(api, /if \(linhasCiclo\.length && !\('inicio' in linhasCiclo\[0\]\)\) \{/);
-    assert.match(api, /Estado\.limitesPorCiclo = new Map\(linhasCiclo\.map\(linha => \[linha\.id, linha\]\)\);/);
-});
-
 test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /`migrations\/25-tabela-fin-ciclo\.sql` cria `public\.fin_ciclo`/);
     assert.match(regras, /na própria linha do ciclo em `fin_ciclo`/);

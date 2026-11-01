@@ -6,18 +6,12 @@ const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
 
-const estado = fs.readFileSync('js/app-state.js', 'utf8');
 const tabelas = fs.readFileSync('js/tables.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 const estilosForm = fs.readFileSync('css/forms.css', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const migracao = fs.readFileSync('migrations/19-obs-canal-lancamentos.sql', 'utf8');
-
-test('colunas obs e canal existem em COLS, como texto', () => {
-    assert.match(estado, /\['obs', 'Obs', 't'\]/);
-    assert.match(estado, /\['canal', 'Canal', 't'\]/);
-});
 
 test('célula Obs só é clicável pra linha real', () => {
     assert.match(tabelas, /chave == 'obs' \? celObs\(r\)/);

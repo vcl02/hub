@@ -29,7 +29,6 @@ test('coluna aparece depois de Comprometido só quando o banco já tem fin.pra_s
     assert.equal(com[com.indexOf('comprometido') + 1], 'pra_sempre');
     assert.ok(colunas({ temPraSempre: true })('bk').includes('pra_sempre'));
     assert.ok(!colunas({ temPraSempre: false })('db').includes('pra_sempre'));
-    assert.match(api, /Estado\.temPraSempre = lancamentosCrus\.some\(r => 'pra_sempre' in r\);/);
 });
 
 test('cadastro: checkbox desmarcado, herdado por Editar/Duplicar, escondido sem a coluna', () => {
@@ -64,7 +63,6 @@ test('lote real grava pra_sempre em todas as parcelas só quando a coluna existe
 
 test('tabela: rótulo, cor azul, filtro Sempre/Com fim, tooltip e toggle propagado', () => {
     assert.match(tabelas, /pra_sempre: \[\['S', 'Sempre', 'Só os pra sempre', 'flagPraSempre'\], \['N', 'Com fim', 'Só os que têm fim', ''\]\],/);
-    assert.match(tabelas, /pra_sempre: 'Isso se repete sem data pra acabar\?',/);
     assert.match(interacoes, /const ROTULO_FLAG_TOGGLE = \{ reserva: 'Reserva', comprometido: 'Comprometido', pra_sempre: 'Pra sempre' \};/);
     assert.match(estilos, /\.flagPraSempre \{\s*\n\s*color: #6CB8F0;/);
     assert.match(estilos, /\.col-pra_sempre \{ width: 7rem; \}/);

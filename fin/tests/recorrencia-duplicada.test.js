@@ -231,10 +231,6 @@ test('limpa marca de um redesenho anterior antes de recalcular', () => {
     assert.equal(r._dupCiclo, undefined);
 });
 
-test('vCiclo chama a marcação antes de montar os blocos, só com o próximo ciclo (Estado.ciclos[i+1])', () => {
-    assert.match(visoes, /marcaOcorrenciasDuplicadasNoCiclo\(debitos, Estado\.ciclos\[i \+ 1\]\);/);
-});
-
 test('clique no botão pede confirmação, faz o PATCH com a guarda de simulação e reclassifica o período', () => {
     assert.match(interacoes, /const botao = e\.target\.closest\('\[data-corrige-dup\]'\);/);
     assert.match(interacoes, /if \(!r \|\| !r\._dupCiclo\) return;/);

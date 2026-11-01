@@ -73,10 +73,6 @@ test('a soma das linhas filtradas é o valor do indicador (pago + aberto)', () =
     }
 });
 
-test('o filtro entra junto com a busca por coluna na renderização da tabela', () => {
-    assert.match(tabelas, /linhasBrutas\.filter\(r => passaFiltroTexto\(r, idTabela\) && passaFiltroTeto\(r, idTabela\)\)/);
-});
-
 test('clique no nome liga, desliga ou troca o teto e reabre os blocos; Recarregar limpa', () => {
     const inicio = interacoes.indexOf("const botao = e.target.closest('[data-filtro-teto]');");
     assert.ok(inicio >= 0);

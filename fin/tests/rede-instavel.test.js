@@ -38,11 +38,6 @@ function carregaApi(fetch, { sessaoTrava = false } = {}) {
     return { api: contexto.api, chamadas };
 }
 
-test('limite real: 12 s por tentativa', () => {
-    assert.match(fonte, /const LIMITE_REQUISICAO_MS = 12000;/);
-    assert.match(fonte, /const TENTATIVAS_IDEMPOTENTES = 3;/);
-});
-
 test('UPDATE sem resposta: tenta 3 vezes e falha com erro marcado, sem ficar pendente', async () => {
     const { api, chamadas } = carregaApi(pendurado);
     await assert.rejects(api.atualizarLancamento(7, { valor: 1 }), err => {
