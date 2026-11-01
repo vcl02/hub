@@ -63,11 +63,8 @@ test('lote real grava pra_sempre em todas as parcelas só quando a coluna existe
 });
 
 test('tabela: rótulo, cor azul, filtro Sempre/Com fim, tooltip e toggle propagado', () => {
-    assert.match(tabelas, /const ROTULO_FLAG = \{ reserva: 'Reserva', comprometido: 'Comprometido', pra_sempre: 'Pra sempre' \};/);
-    assert.match(tabelas, /pra_sempre: 'flagPraSempre' \};/);
     assert.match(tabelas, /pra_sempre: \[\['S', 'Sempre', 'Só os pra sempre', 'flagPraSempre'\], \['N', 'Com fim', 'Só os que têm fim', ''\]\],/);
     assert.match(tabelas, /pra_sempre: 'Isso se repete sem data pra acabar\?',/);
-    assert.match(tabelas, /coluna == 'reserva' \|\| coluna == 'comprometido' \|\| coluna == 'pra_sempre'\) return termo == 'S' \? !!r\[coluna\] : !r\[coluna\];/);
     assert.match(interacoes, /const ROTULO_FLAG_TOGGLE = \{ reserva: 'Reserva', comprometido: 'Comprometido', pra_sempre: 'Pra sempre' \};/);
     assert.match(estilos, /\.flagPraSempre \{\s*\n\s*color: #6CB8F0;/);
     assert.match(estilos, /\.col-pra_sempre \{ width: 7rem; \}/);

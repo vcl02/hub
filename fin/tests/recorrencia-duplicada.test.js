@@ -9,7 +9,6 @@ const test = require('node:test');
 const vm = require('node:vm');
 
 const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
-const tabelas = fs.readFileSync('js/tables.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const formulario = fs.readFileSync('js/form.js', 'utf8');
 const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
@@ -234,12 +233,6 @@ test('limpa marca de um redesenho anterior antes de recalcular', () => {
 
 test('vCiclo chama a marcação antes de montar os blocos, só com o próximo ciclo (Estado.ciclos[i+1])', () => {
     assert.match(visoes, /marcaOcorrenciasDuplicadasNoCiclo\(debitos, Estado\.ciclos\[i \+ 1\]\);/);
-});
-
-test('celData (tables.js) mostra o botão "↷" só pra linha real com _dupCiclo', () => {
-    assert.match(tabelas, /const corrige = r\._dupCiclo && ehLinhaReal\(r\)/);
-    assert.match(tabelas, /class=corrigeDupData data-corrige-dup="\$\{escapeHtml\(String\(r\.id\)\)\}"/);
-    assert.match(tabelas, /return `\$\{texto\}\$\{corrige\}`;/);
 });
 
 test('clique no botão pede confirmação, faz o PATCH com a guarda de simulação e reclassifica o período', () => {

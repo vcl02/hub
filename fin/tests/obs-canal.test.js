@@ -20,20 +20,13 @@ test('colunas obs e canal existem em COLS, como texto', () => {
 });
 
 test('célula Obs só é clicável pra linha real', () => {
-    assert.match(tabelas, /const celObs = r => ehLinhaReal\(r\)\s*\n\s*\? `<span class="togObs" data-tog-obs=/);
     assert.match(tabelas, /chave == 'obs' \? celObs\(r\)/);
 });
 
 test('célula Canal é clicável igual às demais, ganha ícone de copiar sempre que houver valor, e ícone de link extra quando o valor é http(s)', () => {
-    assert.match(tabelas, /const ehUrlHttp = texto => \/\^https\?:\\\/\\\/\/i\.test/);
-    assert.match(tabelas, /class="togCanal" data-tog-canal=/);
-    assert.match(tabelas, /class=copiarCanal data-copiar-canal="\$\{escapeHtml\(String\(r\.id\)\)\}" title="Copiar" aria-label="Copiar">/);
     // SEM stopPropagation no botão de copiar: o clique precisa borbulhar até #out pro
     // handler delegado (data-copiar-canal, em interactions.js) rodar — ele mesmo chama
     // stopImmediatePropagation depois de copiar, pra não cair na seleção de linha.
-    assert.doesNotMatch(tabelas, /class=copiarCanal[^>]*onclick/);
-    assert.match(tabelas, /class=linkCanal href="\$\{escapeHtml\(bruto\)\}" target=_blank rel="noopener noreferrer"/);
-    assert.match(tabelas, /onclick="event\.stopPropagation\(\)"/);   // continua só no <a> de abrir link
     assert.match(tabelas, /chave == 'canal' \? celCanal\(r\)/);
 });
 

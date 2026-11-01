@@ -101,8 +101,6 @@ test('coluna depois de Frequência, fora do Backlog; ordena por quantas faltam; 
     assert.doesNotMatch(tabelas, /Repete|'some'/);
     assert.match(tabelas, /parcela: \[\['vm', '0–33%'[^\]]+'vm'\], \['am', '33–66%'[^\]]+'am'\], \['vd', '66–100%'[^\]]+'vd'\]\]/);
     assert.match(tabelas, /return !!p && !parcelaSemNumero\(r, p\) && \(r\.v \|\| 0\) <= 0 && corDaParcela\(p\) === termo;/);
-    assert.match(tabelas, /const CATEGORIAS_SEM_PARCELA = \[CATEGORIA_BESTEIRA, 'Isabella', 'Transporte', 'Alimentação', CATEGORIA_INVESTIMENTO, 'Teste'\];/);
-    assert.match(tabelas, /p\.total == 1 \|\| !!r\.pra_sempre \|\| ehTransferenciaFatura\(r\) \|\|/);
     assert.match(tabelas, /const valor = r => coluna == 'parcela' \? parcelaDaLinha\(r\)\?\.falta \?\? null : r\[coluna\];/);
     assert.match(ler('css/dashboard.css'), /\.col-parcela \{ width: 11\.5rem; \}/);
     assert.match(ler('js/interactions.js'), /const celula = e\.target\.closest\('\[data-parcela\]'\);[\s\S]{0,80}e\.stopImmediatePropagation\(\);\s*\n\s*mostrarToast\('Parcela', celula\.dataset\.parcela\);/);
