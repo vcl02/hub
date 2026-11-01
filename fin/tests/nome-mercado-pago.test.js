@@ -32,7 +32,6 @@ test('só compra de crédito do Mercado Pago marca a linha', () => {
     assert.equal(funcoes.ehCompraMercadoPago({ cred: true, fatura: '2026-11-12' }), false);
     assert.equal(funcoes.ehCompraMercadoPago({ cred: false, fatura: '2026-11-13' }), false);   // antecipação
     assert.equal(funcoes.ehCompraMercadoPago({ cred: true, fatura: null }), false);
-    assert.match(tabelas, /\$\{ehCompraMercadoPago\(r\) \? 'mp ' : ''\}\$\{marcada \? 'on' : ''\}/);
 });
 
 test('sem selo MP no nome; antecipação do MP mantém o MP na tag de fatura', () => {

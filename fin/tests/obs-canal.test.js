@@ -13,17 +13,6 @@ const estilosForm = fs.readFileSync('css/forms.css', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const migracao = fs.readFileSync('migrations/19-obs-canal-lancamentos.sql', 'utf8');
 
-test('célula Obs só é clicável pra linha real', () => {
-    assert.match(tabelas, /chave == 'obs' \? celObs\(r\)/);
-});
-
-test('célula Canal é clicável igual às demais, ganha ícone de copiar sempre que houver valor, e ícone de link extra quando o valor é http(s)', () => {
-    // SEM stopPropagation no botão de copiar: o clique precisa borbulhar até #out pro
-    // handler delegado (data-copiar-canal, em interactions.js) rodar — ele mesmo chama
-    // stopImmediatePropagation depois de copiar, pra não cair na seleção de linha.
-    assert.match(tabelas, /chave == 'canal' \? celCanal\(r\)/);
-});
-
 // Extrai celCanal (e sua dependência ehUrlHttp) do arquivo real e roda isolada, com
 // ehLinhaReal/escapeHtml/textoOuTraco simulados.
 function carregaCelCanal({ linhaReal = true } = {}) {

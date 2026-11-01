@@ -3,16 +3,9 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
 
-const estado = fs.readFileSync('js/app-state.js', 'utf8');
 const api = fs.readFileSync('js/supabase-api.js', 'utf8');
 const migration = fs.readFileSync('migrations/13-renomear-lancamentos-para-fin.sql', 'utf8');
 const migrationColunas = fs.readFileSync('migrations/14-renomear-colunas-fin.sql', 'utf8');
-
-test('usa fin como tabela técnica e não mantém rota ativa para o nome antigo', () => {
-    assert.match(estado, /const TABELA_FIN = 'fin';/);
-    assert.match(api, /rest\/v1\/\$\{TABELA_FIN\}/);
-    assert.doesNotMatch(api, /rest\/v1\/lancamentos/);
-});
 
 test('a migration renomeia a tabela sem copiar registros e recarrega o schema da API', () => {
     assert.match(migration, /alter table public\.lancamentos rename to fin;/);

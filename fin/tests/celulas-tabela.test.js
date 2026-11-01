@@ -107,3 +107,10 @@ test('cabeçalho: busca de texto avisa do atalho "vazio"; ID exato com |; Valor 
     assert.match(h, /title="Se eu perder o emprego, preciso continuar pagando isso\?"/);
     assert.match(h, /title="Começou o mês, isso já é obrigatório pagar\?"/);
 });
+
+test('a linha leva Obs (cortada, texto inteiro no title) e Canal editáveis; o Débito tem as colunas de marcas', () => {
+    const r = html('celulasDaLinha', { id: 5, nome: 'x', obs: 'troco do mercado', canal: 'pix', data: '2026-10-16', v: -1, valor: -1 }, 'debito');
+    assert.match(r, /<td class="corta" title="troco do mercado"><span class="togObs" data-tog-obs="5">/);
+    assert.match(r, /class="togCanal" data-tog-canal="5"/);
+    assert.deepEqual(rodar("colunasAtivas('debito').filter(c => ['reserva', 'comprometido'].includes(c[0]))"), [['reserva', 'Reserva', 'b'], ['comprometido', 'Comprometido', 'b']]);
+});

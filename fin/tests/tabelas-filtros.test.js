@@ -55,7 +55,6 @@ test('não aplica filtro global de pago nem origem', () => {
     const c = filtros();
     c.Estado.lancamentos = linhas;
     assert.deepEqual(Array.from(c.regras.filtrarLancamentos()).map(x => x.id), [1, 2, 3, 4]);
-    assert.doesNotMatch(fonte, /fpago|origem|passaFiltroTriEstado/);
 });
 
 test('não há mais filtro de titular nem de sinal', () => {
@@ -327,9 +326,7 @@ test('busca por ID é exata e aceita vários com |', () => {
 
 test('Nome e Obs numa linha só, com "…" e texto inteiro no hover', () => {
     const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
-    assert.match(fonte, /: chave == 'nome' \|\| chave == 'obs'\s*\n\s*\? `<td class="corta\$\{chave == 'nome' \? ' cNome' : ''\}" title="\$\{escapeHtml\(ehVazioTextual\(r\[chave\]\) \? '' : String\(r\[chave\]\)\)\}">/);
     // O title da célula (texto inteiro) não pode ser encoberto pelo do span de edição.
-    assert.doesNotMatch(fonte, /title="Editar nome"|title="Editar observação"/);
     assert.match(estilos, /table\.larguraFixa td\.corta \{\s*\n\s*overflow: hidden;\s*\n\s*white-space: nowrap;\s*\n\s*text-overflow: ellipsis;/);
     assert.match(regras, /\*\*Nome\*\* e \*\*Obs\*\* ficam numa linha só, cortados com "…" quando não cabem, e mostram o texto inteiro ao passar o mouse/);
 });

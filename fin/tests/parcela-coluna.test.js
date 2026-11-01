@@ -95,7 +95,6 @@ test('linha calculada e sem ciclo ficam vazias (sem traço)', () => {
 });
 
 test('coluna depois de Frequência, fora do Backlog; ordena por quantas faltam; filtro pela faixa da cor; toque', () => {
-    assert.doesNotMatch(tabelas, /Repete|'some'/);
     assert.match(tabelas, /parcela: \[\['vm', '0–33%'[^\]]+'vm'\], \['am', '33–66%'[^\]]+'am'\], \['vd', '66–100%'[^\]]+'vd'\]\]/);
     assert.match(tabelas, /return !!p && !parcelaSemNumero\(r, p\) && \(r\.v \|\| 0\) <= 0 && corDaParcela\(p\) === termo;/);
     assert.match(tabelas, /const valor = r => coluna == 'parcela' \? parcelaDaLinha\(r\)\?\.falta \?\? null : r\[coluna\];/);

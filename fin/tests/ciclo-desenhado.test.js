@@ -87,3 +87,32 @@ test('saldo por dia: o débito atrasado sai hoje (não na data antiga); a recorr
     t = await abrir([l(2, 'Luz', '2026-10-16', -150, { freq: 'Mensal' }), l(3, 'Luz', '2026-11-10', -150, { freq: 'Mensal' })]);
     assert.match(t.bruto('vCiclo()'), /data-corrige-dup="3"/);                  // duas no mesmo ciclo: a mais recente ganha o ↷
 });
+
+test('a tabela do banco é a "fin": a carga lê /rest/v1/fin (nunca o nome antigo, lancamentos)', async () => {
+    const t = carregarTela({ dados: base() });
+    const lidas = [];
+    const fetchReal = t.ctx.fetch;
+    t.ctx.fetch = (url, ...r) => { lidas.push(new URL(url).pathname); return fetchReal(url, ...r); };
+    await t.bruto('carregarDados()');
+    assert.equal(t.rodar('TABELA_FIN'), 'fin');
+    assert.ok(lidas.includes('/rest/v1/fin') && !lidas.some(p => /lancamentos/.test(p)), JSON.stringify(lidas));
+});
+
+test('constantes de regra: a série vai até 31/12/2032', () => {
+    assert.equal(carregarTela().rodar('DATA_LIMITE_RECORRENCIA'), '2032-12-31');
+});
+
+test('o desenho do ciclo: cada tabela num bloco com título; guarda os dados dos cartões para os botões e o modal', async () => {
+    const t = carregarTela({ dados: base(l(5, 'Fone', '2026-10-18', -150, { cred: true, fatura: '2026-11-13' })) });
+    const { html } = await t.desenharCiclo(1);
+    assert.match(html, /<div class=blk data-bloco=db><h3>/);
+    assert.deepEqual(t.rodar('Object.keys(Estado.cartoesDoCiclo.cartoes).sort()'), ['mp', 'nubank']);
+});
+
+test('na tabela, a compra do Mercado Pago marca a linha inteira (classe mp); a do Nubank não', async () => {
+    const t = carregarTela({ dados: base(l(5, 'Fone', '2026-09-18', -150, { cred: true, fatura: '2026-10-13' }), l(6, 'Livro', '2026-09-18', -80, { cred: true, fatura: '2026-10-12' })) });
+    await t.bruto('carregarDados()');
+    const html = t.rodar("renderTabela(Estado.lancamentos.filter(r => r.cred), 'cr', true)");
+    assert.match(html, /<tr class="mp [^"]*"[^>]*data-sid="5"/);
+    assert.doesNotMatch(html, /<tr class="mp [^"]*"[^>]*data-sid="6"/);
+});

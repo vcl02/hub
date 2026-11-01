@@ -5,18 +5,10 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
 
-const estado = fs.readFileSync('js/app-state.js', 'utf8');
 const tabelas = fs.readFileSync('js/tables.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const migration = fs.readFileSync('migrations/22-reserva-comprometido-colunas-bool.sql', 'utf8');
-
-test('COLS inclui reserva e comprometido como colunas booleanas, sem recorte em nenhuma tabela', () => {
-    assert.match(estado, /\['reserva', 'Reserva', 'b'\], \['comprometido', 'Comprometido', 'b'\],/);
-    // colunasAtivas só recorta 'prio' (exclusivo do Backlog); reserva/comprometido
-    // aparecem em Débito, Crédito e Backlog igualmente.
-    assert.match(estado, /const colunasDaTabela = idTabela => idTabela === 'bk'/);
-});
 
 test('clique no badge Reserva/Comprometido faz PATCH imediato, com a mesma guarda de simulação', () => {
     const inicio = interacoes.indexOf("const ROTULO_FLAG_TOGGLE = { reserva: 'Reserva', comprometido: 'Comprometido', pra_sempre: 'Pra sempre' };");

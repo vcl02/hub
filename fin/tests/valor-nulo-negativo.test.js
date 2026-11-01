@@ -80,7 +80,6 @@ test('célula editável: valor positivo de verdade continua mostrando "+" verde 
 test('Débito/Crédito (linha não editável) e o detalhamento de categoria do gráfico usam celValorLancamento, não a antiga celValor genérica', () => {
     // Real edita; calculada/simulada fica só leitura.
     assert.match(graficos, /\$\{celNome\(r\)\}\$\{celValorLancamento\(r\)\}/);
-    assert.doesNotMatch(compartilhado, /const celValor = /);
 });
 
 // Extrai só a decisão de sinal (sem tocar DOM/Estado real) do handler de clique no Valor:

@@ -6,7 +6,6 @@ const test = require('node:test');
 const vm = require('node:vm');
 
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
-const tabelas = fs.readFileSync('js/tables.js', 'utf8');
 const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 
@@ -49,7 +48,6 @@ test('o nó volta pro cabeçalho antes de #out ser reescrito, e é encaixado dep
     const reescrita = corpo.indexOf("el('out').innerHTML = modoBlocos ? vCiclo() : vComp();");
     const encaixe = corpo.indexOf('encaixarIndicadoresNoDebito(temCicloParaIndicadores && modoBlocos);');
     assert.ok(volta > 0 && volta < reescrita && reescrita < encaixe);
-    assert.match(tabelas, /return `<div class=blk data-bloco=\$\{idTabela\}><h3>/);
 });
 
 test('estilo: linha própria dentro da faixa; sem linha vazia no cabeçalho estreito', () => {

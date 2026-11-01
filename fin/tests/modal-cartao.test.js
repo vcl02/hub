@@ -95,7 +95,6 @@ test('botões no cabeçalho, desativados sem dados; modal refeito a cada desenho
     assert.match(interacoes, /alinharResumosDosTitulos\(\);\s*\n\s*atualizarCartoes\(\);/);
     // Aprovado/Garantido gravam pelos mesmos handlers no modal (fora do #out).
     assert.match(interacoes, /ligarCamposDeLimite\(el\('out'\)\);\s*\n\s*ligarCamposDeLimite\(el\('modalCartao'\)\);/);
-    assert.match(visoes, /Estado\.cartoesDoCiclo = \{/);
 });
 
 test('Hoje/Futuro com o rótulo em cima e as três colunas na largura toda; cabeçalho quebra no celular', () => {

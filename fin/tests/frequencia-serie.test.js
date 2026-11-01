@@ -9,7 +9,6 @@ const test = require('node:test');
 const vm = require('node:vm');
 
 const compartilhado = fs.readFileSync('js/shared.js', 'utf8');
-const dominio = fs.readFileSync('js/domain.js', 'utf8');
 const formulario = fs.readFileSync('js/form.js', 'utf8');
 const pagina = fs.readFileSync('index.html', 'utf8');
 const estilos = fs.readFileSync('css/forms.css', 'utf8');
@@ -26,10 +25,6 @@ function regrasDaSerie() {
     vm.runInContext(`${compartilhado}\nglobalThis.r = { ocorrenciasAteLimite, faturaDaOcorrencia, dataDaOcorrencia };`, contexto);
     return contexto.r;
 }
-
-test('a data-limite da série fica fixa em código: 31/12/2032', () => {
-    assert.match(dominio, /const DATA_LIMITE_RECORRENCIA = '2032-12-31';/);
-});
 
 test('conta as ocorrências da 1ª data até o limite, inclusive, conforme a Frequência', () => {
     const r = regrasDaSerie();
