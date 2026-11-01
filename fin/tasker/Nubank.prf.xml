@@ -166,12 +166,12 @@ setLocal("cartao", cartao);</Str>
 					<RegexText-type>java.lang.Boolean</RegexText-type>
 					<RegexTitle>false</RegexTitle>
 					<RegexTitle-type>java.lang.Boolean</RegexTitle-type>
-					<Text>(?is).*(compra|transfer|boleto).*</Text>
+					<Text>(?is).*(compra|nupay|transfer|boleto).*</Text>
 					<Text-type>java.lang.String</Text-type>
 					<Title>&lt;null&gt;</Title>
 					<Title-type>java.lang.String</Title-type>
 					<com.twofortyfouram.locale.intent.extra.BLURB>Notification Apps: Nubank
-Notification Text: (?is).*(compra|transfer|boleto).* (regex)</com.twofortyfouram.locale.intent.extra.BLURB>
+Notification Text: (?is).*(compra|nupay|transfer|boleto).* (regex)</com.twofortyfouram.locale.intent.extra.BLURB>
 					<com.twofortyfouram.locale.intent.extra.BLURB-type>java.lang.String</com.twofortyfouram.locale.intent.extra.BLURB-type>
 					<net.dinglisch.android.tasker.RELEVANT_VARIABLES>&lt;StringArray sr=""&gt;&lt;_array_net.dinglisch.android.tasker.RELEVANT_VARIABLES0&gt;%err
 Error Code

@@ -35,10 +35,11 @@ test('Nubank A: depois do Stop do não-despesa, apaga a notificação do banco (
         assert.match(cancela, /<CaseinsensitiveText>true<\/CaseinsensitiveText>/);
     }
     assert.match(nu, /_array_InterceptApps0&gt;com\.nu\.production&lt;/);
-    assert.match(nu, /<Text>\(\?is\)\.\*\(compra\|transfer\|boleto\)\.\*<\/Text>/);
+    assert.match(nu, /<Text>\(\?is\)\.\*\(compra\|nupay\|transfer\|boleto\)\.\*<\/Text>/);
     assert.match(nu, /<RegexText>true<\/RegexText>/);
     const regex = new RegExp(nu.match(/<Text>\(\?is\)(.*?)<\/Text>/)[1], 'is');
-    for (const texto of ['Compra de R$ 5,90 em X', 'Transferência realizada', 'Pagamento de BOLETO realizado']) assert.match(texto, regex);
+    // NuPay não tem "Compra" no texto (31/10/2026: as corridas de Uber entraram sozinhas, mas a notificação ficou).
+    for (const texto of ['Compra de R$ 5,90 em X', 'R$ 11,53 em 1x no crédito sem juros com NuPay APROVADO em Uber.', 'Transferência realizada', 'Pagamento de BOLETO realizado']) assert.match(texto, regex);
     assert.match(nu, /<lhs>%cartao<\/lhs>\s*<op>2<\/op>\s*<rhs>nubank<\/rhs>/);
     assert.match(mp, /<Text>Cartão Mercado Pago<\/Text>/);
     assert.doesNotMatch(mp, /com\.nu\.production/);
