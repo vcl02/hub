@@ -24,3 +24,23 @@ test('ciclo aberto (sem fim no banco) nunca mostra 31/12/9999: o período vai at
     assert.doesNotMatch(html, /9999/);
     assert.match(texto, /15\/10\/2026 a 14\/11\/2026/);
 });
+
+const dadosComparacao = () => base(
+    l(2, 'Aluguel', '2026-09-20', -2000, { categ: 'Moradia', freq: 'Mensal' }), l(3, 'Aluguel', '2026-10-20', -2100, { categ: 'Moradia', freq: 'Mensal' }),
+    l(4, 'Antecipação', '2026-10-18', -100, { categ: 'Antecipação fatura', fatura: '2026-11-12' }));
+
+test('comparar dois ciclos: por categoria, sem a antecipação de fatura (transferência) e sem linha de abatimento inventada', async () => {
+    const { texto } = await carregarTela({ dados: dadosComparacao() }).desenharComparacao(0, 1);
+    assert.match(texto, /Moradia -R\$\s2\.000,00 -R\$\s2\.100,00 -R\$\s4\.100,00/);
+    assert.doesNotMatch(texto, /Antecipação|Abatimento de fatura/);
+    assert.match(texto, /Acabou em Setembro Começou em Outubro Único em Outubro/);
+});
+
+test('comparar: a linha Total soma cada ciclo e o total geral, com as mesmas colunas das outras linhas', async () => {
+    const { html, texto } = await carregarTela({ dados: dadosComparacao() }).desenharComparacao(0, 1);
+    assert.match(texto, /Total -R\$\s2\.000,00 R\$\s2\.100,00 R\$\s100,00$/);       // setembro, outubro (9.000 − 2.100 − 4.800 aportado), soma
+    const celulas = tr => (tr.match(/<td/g) || []).length;
+    const linhas = html.split('<tr').slice(1);
+    const total = linhas.find(tr => />Total</.test(tr)), moradia = linhas.find(tr => /Moradia/.test(tr));
+    assert.equal(celulas(total), celulas(moradia));
+});

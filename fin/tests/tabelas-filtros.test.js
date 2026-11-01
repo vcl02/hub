@@ -160,9 +160,7 @@ test('"|" isolado ou com pedaço vazio não filtra por esse pedaço, igual ao "!
 });
 
 test('campo de busca por coluna avisa sobre o atalho "vazio"; Valor tem botão de sinal no lugar do aviso', () => {
-    assert.match(fonte, /title="Digite \\'vazio\\' pra achar as linhas sem nada preenchido aqui"/);
     assert.doesNotMatch(fonte, /Digite \+ pra só positivos/);
-    assert.match(fonte, /<span class=filtroValor>\$\{botaoFiltroEstado\(idTabela, 'sinal', filtroAtual\.sinal\)\}/);
 });
 
 test('"vazio" em qualquer coluna de texto acha só as linhas sem nada preenchido ali (null, string vazia ou "null"/"n/a" gravado por engano)', () => {
@@ -324,7 +322,6 @@ test('busca por ID é exata e aceita vários com |', () => {
     assert.deepEqual(ids(' 40 | '), [40]);
     assert.deepEqual(ids('-3'), [-3]);
     assert.deepEqual(ids('|'), [4, 14, 40, -3]);
-    assert.match(fonte, /if \(chave == 'id'\) return `<th class=n>\$\{campoBusca\(chave, 'ID', 'inputmode=numeric title="ID exato; use \| pra vários \(ex\.: 12\|40\)" '\)\.replace\('Filtrar id…', 'ID'\)\}<\/th>`;/);
     assert.match(regras, /\*\*ID\*\* tem campo de busca exata: `4` acha só o lançamento de id 4 \(nunca 14 ou 40\)/);
 });
 

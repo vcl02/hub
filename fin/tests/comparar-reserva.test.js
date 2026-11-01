@@ -75,10 +75,7 @@ test('confirma acabou, começou e único somente com dois ciclos futuros', () =>
 });
 
 test('comparar exclui transferências e não cria abatimento de fatura', () => {
-    assert.match(fonte, /filtrarLinhasDaComparacao\(reais, sinteticas\)/);
     assert.match(fonte, /mudancaInteiramenteExplicadaPorDuplicidade\(chave, estado\)/);
-    assert.doesNotMatch(fonte, /nome: 'Abatimento de fatura'/);
-    assert.match(fonte, /const totalDoPeriodo = i => Object\.values\(matriz\)/);
 });
 
 test('comparar aplica exclusões depois de unir linhas reais e sintéticas', () => {
@@ -134,13 +131,6 @@ test('comparar exclui categorias financeiras, técnicas e escolhidas, inclusive 
         assert.equal(ehLinhaExcluidaDaComparacao({ categ: categoria, nome: categoria }), true);
     });
     assert.equal(ehLinhaExcluidaDaComparacao({ categ: 'Casa', nome: 'Moradia' }), false);
-});
-
-test('linha Total preserva a grade das colunas dinâmicas sem células aninhadas', () => {
-    assert.match(fonte, /const celTotalPeriodo = i => celSoma\(totalDoPeriodo\(i\)\);/);
-    assert.match(fonte, /const totalGeral = chavesFiltradas\.reduce/);
-    assert.match(fonte, /<td class="n colDif"><\/td><td class="n colDif"><\/td><td class="n colDif"><\/td>/);
-    assert.doesNotMatch(fonte, /<td class=n>\$\{celSoma/);
 });
 
 test('regras documentam as exclusões específicas de Comparar, gráficos e Visualizações', () => {

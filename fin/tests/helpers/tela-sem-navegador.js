@@ -53,7 +53,15 @@ function carregarTela({ hoje = '2026-10-20', dados = {} } = {}) {
         const html = bruto('vCiclo()');
         return { html, texto: html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() };
     }
-    return { rodar, bruto, ctx, desenharCiclo };
+    // Compara os ciclos de índice de a ate (os seletores De/Até) depois de carregar os dados; somenteDif: 'N' (Todas) ou 'D'
+    async function desenharComparacao(de, ate, somenteDif = 'N') {
+        await bruto('carregarDados()');
+        const el = ctx.document.getElementById;
+        el('compDe').value = String(de); el('compAte').value = String(ate); el('somenteDif').value = somenteDif;
+        const html = bruto('vComp()');
+        return { html, texto: html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() };
+    }
+    return { rodar, bruto, ctx, desenharCiclo, desenharComparacao };
 }
 
 module.exports = { carregarTela };

@@ -10,7 +10,6 @@ const vm = require('node:vm');
 
 const ler = arquivo => fs.readFileSync(arquivo, 'utf8');
 const tabelas = ler('js/tables.js');
-const estado = ler('js/app-state.js');
 const regras = ler('docs/REGRAS.md');
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
@@ -96,8 +95,6 @@ test('linha calculada e sem ciclo ficam vazias (sem traço)', () => {
 });
 
 test('coluna depois de Frequência, fora do Backlog; ordena por quantas faltam; filtro pela faixa da cor; toque', () => {
-    assert.match(estado, /\['freq', 'Frequência', 't'\], \['parcela', 'Parcela', 's'\]/);
-    assert.match(estado, /chave !== 'prio' && chave !== 'parcela'/);
     assert.doesNotMatch(tabelas, /Repete|'some'/);
     assert.match(tabelas, /parcela: \[\['vm', '0–33%'[^\]]+'vm'\], \['am', '33–66%'[^\]]+'am'\], \['vd', '66–100%'[^\]]+'vd'\]\]/);
     assert.match(tabelas, /return !!p && !parcelaSemNumero\(r, p\) && \(r\.v \|\| 0\) <= 0 && corDaParcela\(p\) === termo;/);

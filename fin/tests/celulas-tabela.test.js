@@ -75,3 +75,35 @@ test('colunas de largura fixa: o mesmo <colgroup> com ou sem filtro', () => {
     assert.match(sem, /^<colgroup><col class=col-[a-z_]+>/);
     assert.equal(colgroup({ nome: 'Mer' }), sem);                                // um filtro que esconde a Feira
 });
+
+test('colunas: Parcela logo depois de Frequência no Débito; no Backlog, sem Parcela e com Prio na frente, ordenado por ela', () => {
+    const colunas = id => rodar(`colunasAtivas('${id}').map(c => c[0])`);
+    const d = colunas('debito');
+    assert.equal(d[d.indexOf('freq') + 1], 'parcela');
+    const bk = colunas('bk');
+    assert.deepEqual([bk[0], bk.includes('parcela')], ['prio', false]);
+    assert.deepEqual([rodar("estadoOrdenacao('bk')"), rodar("estadoOrdenacao('debito')")], [{ k: 'prio', d: 1 }, { k: 'data', d: 1 }]);
+});
+
+test('linha real: Nome, Valor (com o ±) e Prio editáveis; linha calculada: só leitura (± desativado)', () => {
+    const linha = r => html('celulasDaLinha', r, 'debito');
+    const real = { id: 5, nome: 'Mercado grande demais', data: '2026-10-16', v: -1, valor: -1, categ: 'Casa' };
+    const r = linha(real);
+    assert.match(r, /<td class="corta cNome" title="Mercado grande demais">.*data-tog-nome="5"/);   // nome inteiro no title, cortado com "…" na tela
+    assert.match(r, /data-tog-sinal="5" title="Inverter sinal"/);
+    assert.match(r, /class="togValor" data-tog-valor="5"/);
+    const c = linha({ ...real, id: -3, _sid: 'x' });
+    assert.doesNotMatch(c, /data-tog-(nome|valor|sinal)/);
+    assert.match(c, /class="sinalBt compacto" disabled title="Somente leitura"/);
+    assert.match(html('celPrio', { ...real, prio: 3 }), /^<span class="togPrio" data-tog-prio="5"[^>]*>3<\/span>$/);
+    assert.equal(html('celPrio', { ...real, id: -3, _sid: 'x', prio: 3 }), 3);
+});
+
+test('cabeçalho: busca de texto avisa do atalho "vazio"; ID exato com |; Valor com o botão de sinal; Reserva e Comprometido com a pergunta', () => {
+    const h = rodar("cabecalhoTabela('debito')");
+    assert.match(h, /title="Digite 'vazio' pra achar as linhas sem nada preenchido aqui"/);
+    assert.match(h, /title="ID exato; use \| pra vários \(ex\.: 12\|40\)"/);
+    assert.match(h, /class=filtroValor/);
+    assert.match(h, /title="Se eu perder o emprego, preciso continuar pagando isso\?"/);
+    assert.match(h, /title="Começou o mês, isso já é obrigatório pagar\?"/);
+});

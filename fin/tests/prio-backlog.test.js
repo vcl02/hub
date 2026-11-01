@@ -9,18 +9,9 @@ const vm = require('node:vm');
 
 const estado = fs.readFileSync('js/app-state.js', 'utf8');
 const tabelas = fs.readFileSync('js/tables.js', 'utf8');
-const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const migracao = fs.readFileSync('migrations/18-prioridade-elevacao-backlog.sql', 'utf8');
-
-test('coluna prio existe em COLS, numérica', () => {
-    assert.match(estado, /\['prio', 'Prio', 'n'\]/);
-});
-
-test('Backlog ("bk") ordena por prio por padrão; as demais tabelas continuam por data', () => {
-    assert.match(estado, /const estadoOrdenacao = id => Estado\.ordenacaoPorTabela\[id\] \|\| \(Estado\.ordenacaoPorTabela\[id\] = \{ k: id === 'bk' \? 'prio' : 'data', d: 1 \}\);/);
-});
 
 // Extrai COLS/colunasAtivas do arquivo real e roda num contexto isolado.
 function carregaColunasAtivas() {
@@ -78,11 +69,6 @@ test('outras tabelas continuam ordenando por data normalmente, ignorando a regra
     const linhas = [{ nome: 'b', data: '2026-10-10' }, { nome: 'a', data: '2026-10-01' }];
     const ordenadas = Array.from(ordenarLinhas(linhas, 'db'), r => r.nome);
     assert.deepEqual(ordenadas, ['a', 'b']);
-});
-
-test('célula Prio só é clicável pra linha real, igual às demais colunas livres', () => {
-    assert.match(tabelas, /const celPrio = r => ehLinhaReal\(r\)\s*\n\s*\? `<span class="togPrio" data-tog-prio=/);
-    assert.match(tabelas, /chave == 'prio' \? celPrio\(r\)/);
 });
 
 test('clique em Prio abre um <input type=number>, aceita limpar (volta a null) e ignora entrada inválida sem salvar', async () => {

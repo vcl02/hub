@@ -9,7 +9,6 @@ const vm = require('node:vm');
 
 const compartilhado = fs.readFileSync('js/shared.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
-const tabelas = fs.readFileSync('js/tables.js', 'utf8');
 const graficos = fs.readFileSync('js/charts.js', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 
@@ -80,7 +79,6 @@ test('célula editável: valor positivo de verdade continua mostrando "+" verde 
 
 test('Débito/Crédito (linha não editável) e o detalhamento de categoria do gráfico usam celValorLancamento, não a antiga celValor genérica', () => {
     // Real edita; calculada/simulada fica só leitura.
-    assert.match(tabelas, /: ehLinhaReal\(r\) \? celValorEditavel\(r\) : celValorSomenteLeitura\(r\)\)/);
     assert.match(graficos, /\$\{celNome\(r\)\}\$\{celValorLancamento\(r\)\}/);
     assert.doesNotMatch(compartilhado, /const celValor = /);
 });
