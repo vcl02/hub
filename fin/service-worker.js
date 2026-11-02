@@ -28,6 +28,7 @@ const ARQUIVOS_ESTATICOS = [
   './js/bootstrap.js',
   './icons/fin-192.png',
   './icons/fin-512.png',
+  './icons/fin-192.svg',
 ];
 
 self.addEventListener('install', (evento) => {

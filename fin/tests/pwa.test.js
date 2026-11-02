@@ -255,11 +255,19 @@ test('o cache offline cobre a página e cada arquivo que ela carrega, e nada de 
 
   // O outro sentido: nada órfão no cache. Cada item é a página ('./', index.html), o manifest, um ícone do manifest
   // ou um arquivo que o index.html carrega (script ou folha de estilo).
+  // O favicon da aba (link rel=icon) também é carregado pela página: sem ele no cache, a aba offline fica sem ícone.
+  const favicons = etiquetas(html)
+    .filter((t) => t.tag === 'link' && t.attrs.rel === 'icon')
+    .map((t) => t.attrs.href);
+
+  assert.ok(favicons.length > 0);
+
   const reconhecidos = new Set([
     './',
     './index.html',
     './manifest.webmanifest',
     ...manifest.icons.map((icone) => icone.src),
+    ...favicons,
     ...noHtml,
     ...etiquetas(html)
       .map((t) => (t.tag === 'link' && t.attrs.rel === 'stylesheet' ? t.attrs.href : ''))
@@ -274,7 +282,11 @@ test('o cache offline cobre a página e cada arquivo que ela carrega, e nada de 
     (t) => t.tag === 'link' && t.attrs.rel === 'manifest'
   ).attrs.href;
 
-  for (const url of [manifestNoHtml, ...manifest.icons.map((icone) => icone.src)])
+  for (const url of [
+    manifestNoHtml,
+    ...favicons,
+    ...manifest.icons.map((icone) => icone.src),
+  ])
     assert.ok(arquivos.includes(url), `${url} não está no cache offline`);
 
   // O service worker só conhece arquivos da interface: nada de endereço de dados
