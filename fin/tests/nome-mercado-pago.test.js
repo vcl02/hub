@@ -4,6 +4,7 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { declaracoes, regras: regrasCss } = require('./helpers/regras-css');
 
 const tabelas = fs.readFileSync('js/tables.js', 'utf8');
 const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
@@ -65,21 +66,30 @@ test('sem selo MP no nome; antecipação do MP mantém o MP na tag de fatura', (
 });
 
 test('estilo: azul do cartão quase transparente com contorno, antes da seleção; REGRAS', () => {
-  const mp = estilos.indexOf('tbody tr.mp td {');
+  const regrasDoCss = regrasCss(estilos);
 
-  assert.ok(mp > 0 && mp < estilos.indexOf('tbody tr.on td {')); // o verde do clique sobressai
-  assert.match(
-    estilos,
-    /tbody tr\.mp td \{\s*\n\s*background: rgba\(108, 197, 238, \.06\);/
-  );
-  assert.match(
-    estilos,
-    /tbody tr\.mp \{\s*\n\s*outline: 1px solid rgba\(108, 197, 238, \.22\);\s*\n\s*outline-offset: -1px;/
-  );
-  assert.doesNotMatch(
-    estilos + fs.readFileSync('css/mobile.css', 'utf8'),
-    /tagCartao|nomeMp/
-  );
+  const posicao = (seletor) =>
+    regrasDoCss.findIndex((r) => r.seletores.includes(seletor));
+
+  assert.ok(posicao('tbody tr.mp td') >= 0);
+  assert.ok(posicao('tbody tr.mp td') < posicao('tbody tr.on td')); // o verde do clique sobressai
+  assert.deepEqual(declaracoes(estilos, 'tbody tr.mp td', ''), [
+    'background: rgba(108, 197, 238, 0.06)',
+  ]);
+  assert.deepEqual(declaracoes(estilos, 'tbody tr.mp', ''), [
+    'outline: 1px solid rgba(108, 197, 238, 0.22)',
+    'outline-offset: -1px',
+  ]);
+
+  // Nenhuma regra sobrou do selo antigo, nem no desktop nem no celular
+  const seletores = [
+    ...regrasDoCss,
+    ...regrasCss(fs.readFileSync('css/mobile.css', 'utf8')),
+  ]
+    .flatMap((r) => r.seletores)
+    .filter((s) => s.includes('tagCartao') || s.includes('nomeMp'));
+
+  assert.deepEqual(seletores, []);
   assert.match(
     regras,
     /compra do Mercado Pago tem a linha inteira num fundo azul \(o do cartão\) bem claro e apagado, com contorno suave/

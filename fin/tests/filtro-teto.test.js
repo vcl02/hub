@@ -4,10 +4,11 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { carregarTela } = require('./helpers/tela-sem-navegador');
+const { ouvinteDe } = require('./helpers/ouvintes');
 
 const tabelas = fs.readFileSync('js/tables.js', 'utf8');
 const graficos = fs.readFileSync('js/charts.js', 'utf8');
-const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 
 // Roda o filtro real (tables.js) com a regra real (charts.js: contaNoTeto e ehGastoIsabella).
@@ -114,25 +115,71 @@ test('a soma das linhas filtradas é o valor do indicador (pago + aberto)', () =
   }
 });
 
-test('clique no nome liga, desliga ou troca o teto e reabre os blocos; Recarregar limpa', () => {
-  const inicio = interacoes.indexOf(
-    "const botao = e.target.closest('[data-filtro-teto]');"
-  );
+// O clique no nome do teto: o ouvinte real de js/interactions.js com o Estado e o desenho falsos. Qualquer gravação falha o teste.
+function cliqueNoTeto({
+  filtroAtual = null,
+  chave = 'besteira',
+  foraDoNome = false,
+} = {}) {
+  const Estado = {
+    filtroTeto: filtroAtual,
+    fechados: { db: true, cr: true, outro: true },
+  };
 
-  assert.ok(inicio >= 0);
-  const trecho = interacoes.slice(inicio, interacoes.indexOf('\n});', inicio));
+  let desenhos = 0;
+  let paradas = 0;
+  const proibida = () => assert.fail('o filtro só lê: não pode gravar');
 
-  assert.match(trecho, /e\.stopImmediatePropagation\(\);/);
-  assert.match(
-    trecho,
-    /Estado\.filtroTeto = Estado\.filtroTeto === chave \? null : chave;/
-  );
-  assert.match(
-    trecho,
-    /if \(Estado\.filtroTeto\) \{ delete Estado\.fechados\.db; delete Estado\.fechados\.cr; \}/
-  );
-  assert.doesNotMatch(trecho, /atualizarLancamento|inserirLancamento|excluirLancamento/);
-  assert.match(fs.readFileSync('js/app-state.js', 'utf8'), /filtroTeto: null,/);
+  const { ouvinte } = ouvinteDe('js/interactions.js', "closest('[data-filtro-teto]')", {
+    Estado,
+    desenhar: () => desenhos++,
+    atualizarLancamento: proibida,
+    inserirLancamento: proibida,
+    excluirLancamento: proibida,
+  });
+
+  ouvinte({
+    target: {
+      closest: () => (foraDoNome ? null : { dataset: { filtroTeto: chave } }),
+    },
+    stopImmediatePropagation: () => paradas++,
+  });
+
+  return { Estado, desenhos, paradas };
+}
+
+test('clique no nome liga, desliga ou troca o teto e reabre os blocos', () => {
+  const liga = cliqueNoTeto();
+
+  assert.equal(liga.Estado.filtroTeto, 'besteira');
+  assert.deepEqual(Object.keys(liga.Estado.fechados), ['outro']); // Débito e Crédito reabrem; os outros ficam como estavam
+  assert.equal(liga.desenhos, 1);
+  assert.equal(liga.paradas, 1); // o clique não vaza para a seleção da linha
+
+  const desliga = cliqueNoTeto({ filtroAtual: 'besteira' });
+
+  assert.equal(desliga.Estado.filtroTeto, null);
+  assert.equal(desliga.desenhos, 1);
+
+  const troca = cliqueNoTeto({ filtroAtual: 'besteira', chave: 'isabella' });
+
+  assert.equal(troca.Estado.filtroTeto, 'isabella');
+  assert.equal(Object.keys(troca.Estado.fechados).length, 1);
+
+  const fora = cliqueNoTeto({ foraDoNome: true }); // clique em outra coisa: o ouvinte não faz nada
+
+  assert.equal(fora.Estado.filtroTeto, null);
+  assert.equal(fora.desenhos, 0);
+  assert.equal(fora.paradas, 0);
+});
+
+test('começa sem filtro de teto, e Recarregar (limparFiltros) o limpa', () => {
+  const t = carregarTela();
+
+  assert.equal(t.rodar('Estado.filtroTeto'), null);
+  t.bruto("Estado.filtroTeto = 'isabella'");
+  t.bruto('limparFiltros()');
+  assert.equal(t.rodar('Estado.filtroTeto'), null);
 });
 
 test('REGRAS.md documenta o toggle', () => {

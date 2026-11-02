@@ -4,6 +4,8 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { carregarTela } = require('./helpers/tela-sem-navegador');
+const { trazer } = require('./helpers/trazer-funcao');
 
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const formulario = fs.readFileSync('js/form.js', 'utf8');
@@ -41,15 +43,7 @@ test('retrato ao ligar copia linha a linha (a simulação edita os objetos no lu
   assert.equal(retrato.limitesPorCiclo.get(5).teto_besteira, 100);
   ctx.Estado.metas[0].valor = 1;
   assert.equal(retrato.metas[0].valor, 500); // metas editadas na simulação também
-  // Liga → retrato; desliga (recarga ok) → descarta; recarregar no meio → novo retrato.
-  assert.match(
-    formulario,
-    /Estado\.simulando = true;\s*\n\s*guardarRetratoAntesDaSimulacao\(\);/
-  );
-  assert.match(
-    formulario,
-    /Estado\.simulando = false;\s*\n\s*Estado\.retratoAntesDaSimulacao = null;/
-  );
+  // Liga → retrato; desliga (recarga ok) → descarta: conferido com o botão rodando, no teste do botão abaixo.
 });
 
 test('cálculo com os dados reais devolve o resultado e restaura o estado do desenho', () => {
@@ -99,29 +93,172 @@ test('cálculo com os dados reais devolve o resultado e restaura o estado do des
   assert.equal(limpezas, 2); // antes (pra calcular com os reais) e depois (pro desenho seguir simulado)
 });
 
-test('desenho: calcula o antes primeiro, marca depois de encaixar os indicadores', () => {
-  const corpo = interacoes.slice(interacoes.indexOf('function desenhar() {'));
-  const antes = corpo.indexOf('const antesDaSimulacao =');
+// O botão da simulação (el('toggleSimulacao').onclick, js/form.js) rodando de verdade, com a recarga e o desenho simulados.
+async function clicarNaSimulacao({ simulando, cargaOk = true }) {
+  const tela = carregarTela();
+  const eventos = [];
 
-  const real = corpo.indexOf(
-    "if (temCicloParaIndicadores) atualizarIndicadoresFinanceiros(+el('compAte').value);\n\n"
+  tela.bruto('Estado.lancamentos = [{ id: 1, v: -10 }]');
+  tela.bruto(`Estado.simulando = ${simulando}`);
+
+  if (simulando) tela.bruto('Estado.retratoAntesDaSimulacao = { lancamentos: [] }');
+  Object.assign(tela.ctx, {
+    load: async (opcoes) => {
+      eventos.push(['load', opcoes.silencioso]);
+
+      return cargaOk;
+    },
+    mostrarToast: (titulo) => eventos.push(['toast', titulo]),
+    atualizaBotaoSimulacao: () => eventos.push('botao'),
+    desenhar: () => eventos.push('desenhar'),
+  });
+
+  const inicio = formulario.indexOf("el('toggleSimulacao').onclick = async () => {");
+
+  vm.runInContext(
+    formulario.slice(inicio, formulario.indexOf('\n};\n', inicio) + 4),
+    tela.ctx
   );
+  await tela.ctx.document.getElementById('toggleSimulacao').onclick();
 
-  const marca = corpo.indexOf(
-    'if (antesDaSimulacao) marcarAntesDaSimulacao(antesDaSimulacao);'
-  );
+  return {
+    eventos: JSON.parse(JSON.stringify(eventos)),
+    simulando: tela.rodar('Estado.simulando'),
+    retrato: tela.rodar('Estado.retratoAntesDaSimulacao'),
+    botaoLivre: tela.ctx.document.getElementById('toggleSimulacao').disabled === false,
+  };
+}
 
-  const encaixe = corpo.indexOf(
-    'encaixarIndicadoresNoDebito(temCicloParaIndicadores && modoBlocos);'
-  );
+test('liga a simulação guardando o retrato; desliga (recarga ok) descartando-o; recarga que falha mantém a simulação', async () => {
+  // Liga → retrato dos dados reais antes de simular
+  const ligou = await clicarNaSimulacao({ simulando: false });
 
-  const alinha = corpo.indexOf('alinharResumosDosTitulos();');
+  assert.equal(ligou.simulando, true);
+  assert.deepEqual(ligou.retrato.lancamentos, [{ id: 1, v: -10 }]);
+  assert.deepEqual(ligou.eventos, ['botao', 'desenhar']);
 
-  assert.ok(antes > 0 && antes < real && encaixe < marca && marca < alinha);
-  assert.match(
-    interacoes,
-    /`<span class=valorAntes title="Sem a simulação">\$\{escapeHtml\(textos\[i\]\)\} →<\/span> `/
-  );
+  // Desliga: recarrega do banco, e só depois sai da simulação e descarta o retrato
+  const desligou = await clicarNaSimulacao({ simulando: true });
+
+  assert.equal(desligou.simulando, false);
+  assert.equal(desligou.retrato, null);
+  assert.deepEqual(desligou.eventos, [['load', true], 'botao', 'desenhar']);
+  assert.equal(desligou.botaoLivre, true);
+
+  // Sem conexão: a simulação continua, com o retrato, e o botão volta a poder ser clicado
+  const falhou = await clicarNaSimulacao({ simulando: true, cargaOk: false });
+
+  assert.equal(falhou.simulando, true);
+  assert.deepEqual(falhou.retrato, { lancamentos: [] });
+  assert.deepEqual(falhou.eventos, [
+    ['load', true],
+    ['toast', 'A simulação continua'],
+  ]);
+  assert.equal(falhou.botaoLivre, true);
+});
+
+test('o valor real aparece antes do simulado só no que mudou, sem HTML do texto', () => {
+  const tela = carregarTela();
+
+  trazer(tela.ctx, 'js/interactions.js', ['marcarAntesDaSimulacao']);
+
+  const negrito = (texto) => {
+    const b = { textContent: texto, inseridos: [] };
+
+    b.insertAdjacentHTML = (onde, html) => b.inseridos.push([onde, html]);
+
+    return b;
+  };
+
+  const faixa = [negrito('83,2%'), negrito('R$ 10,00'), negrito('igual')];
+  const indicador = [negrito('Dez/26')];
+  const extra = negrito('sem antes'); // posição além do que havia antes: fica como está
+
+  tela.ctx.valoresEmNegrito = () => ({
+    faixas: new Map([['db:hoje', [...faixa, extra]]]),
+    indicadores: new Map([['indicadorReserva', indicador]]),
+  });
+  tela.bruto('marcarAntesDaSimulacao')({
+    faixas: new Map([['db:hoje', ['71,6%', 'R$ <10>', 'igual']]]),
+    indicadores: new Map([['indicadorReserva', ['Mar/27']]]),
+  });
+
+  assert.deepEqual(faixa[0].inseridos, [
+    ['beforebegin', '<span class=valorAntes title="Sem a simulação">71,6% →</span> '],
+  ]);
+  assert.deepEqual(faixa[1].inseridos, [
+    [
+      'beforebegin',
+      '<span class=valorAntes title="Sem a simulação">R$ &lt;10&gt; →</span> ',
+    ],
+  ]);
+  assert.deepEqual(faixa[2].inseridos, []); // igual: nada
+  assert.deepEqual(extra.inseridos, []);
+  assert.deepEqual(indicador[0].inseridos, [
+    ['beforebegin', '<span class=valorAntes title="Sem a simulação">Mar/27 →</span> '],
+  ]);
+});
+
+test('desenho: calcula o antes primeiro, marca depois de encaixar os indicadores e antes de alinhar', async () => {
+  const tela = carregarTela({
+    dados: {
+      fin: [],
+      fin_ciclo: [{ id: 1, inicio: '2026-09-15', fim: null }],
+      fin_meta: [],
+    },
+  });
+
+  await tela.bruto('carregarDados()');
+  trazer(tela.ctx, 'js/interactions.js', ['desenhar']);
+
+  const el = (id) => tela.ctx.document.getElementById(id);
+  const ordem = [];
+
+  tela.ctx.ordem = ordem;
+  tela.bruto('(Estado.simulando = true, Estado.retratoAntesDaSimulacao = {})');
+  tela.ctx.comDadosAntesDaSimulacao = (calcula) => {
+    ordem.push('antes:começa');
+    const r = calcula();
+
+    ordem.push('antes:termina');
+
+    return r;
+  };
+
+  tela.ctx.textosDosValores = () => 'textos-do-antes';
+  tela.ctx.marcarAntesDaSimulacao = (antes) => ordem.push(`marca:${antes}`);
+  tela.bruto(`(() => {
+    sincronizarCicloNaUrl = () => {};
+    popularAlvosVisualizacao = () => {};
+    atualizarIndicadoresFinanceiros = () => ordem.push('indicadores');
+    vCiclo = () => 'CICLO';
+    vComp = () => 'MATRIZ';
+    encaixarIndicadoresNoDebito = () => ordem.push('encaixa');
+    alinharResumosDosTitulos = () => ordem.push('alinha');
+    atualizarCartoes = () => {};
+    atualizarMetas = () => {};
+    atualizarBotaoSomenteDif = () => {};
+  })()`);
+
+  el('compDe').value = '1';
+  el('compAte').value = '1';
+  tela.bruto('desenhar')();
+
+  assert.deepEqual(Array.from(ordem), [
+    'antes:começa', // os números com os dados reais, antes de qualquer coisa ser sobrescrita
+    'indicadores',
+    'antes:termina',
+    'indicadores', // os indicadores de verdade sobrescrevem os textos do antes
+    'encaixa',
+    'marca:textos-do-antes', // marca "antes →" só depois de encaixar os indicadores no Débito
+    'alinha', // e o alinhamento mede já com o "antes →" na tela
+  ]);
+
+  // Fora da simulação, nada de antes nem de marca
+  ordem.length = 0;
+  tela.bruto('(Estado.simulando = false, Estado.retratoAntesDaSimulacao = null)');
+  tela.bruto('desenhar')();
+  assert.deepEqual(Array.from(ordem), ['indicadores', 'encaixa', 'alinha']);
 });
 
 test('Reserva: primeiro ciclo seguinte em que o guardado projetado alcança a meta', () => {
@@ -155,18 +292,67 @@ test('Reserva: primeiro ciclo seguinte em que o guardado projetado alcança a me
 
   assert.equal(roda(3), 6); // alvo 1000 (o de hoje): 990 no 5 não chega; 1000 no 6 chega
   assert.equal(roda(7), null); // já completa: sem data
+  assert.equal(roda(3, { ...projecao, 3: [1000, 1000] }), null); // completa hoje: não procura nos seguintes (o ciclo 7 teria 2000)
   assert.equal(
     roda(3, { 3: [0, 1000], 4: [0, 1000], 5: [0, 1000], 6: [0, 1000], 7: [0, 1000] }),
     null
   ); // não fecha
   assert.equal(roda(3, { 3: [0, 0] }), null); // sem meta
-  assert.match(
-    graficos,
-    / <span class=limiteRotulo>·<\/span> <b>\$\{nomePeriodoAbrev\(Estado\.ciclos\[idxCompleta\]\)\}<\/b>/
+});
+
+test('indicador da Reserva mostra a data em que a meta completa, ou "depois de" o último ciclo', async () => {
+  const ciclos = Array.from({ length: 14 }, (_, i) => ({
+    id: i + 1,
+    inicio: new Date(Date.UTC(2026, 8 + i, 15)).toISOString().slice(0, 10),
+    fim: i === 13 ? null : new Date(Date.UTC(2026, 9 + i, 14)).toISOString().slice(0, 10),
+  }));
+
+  const l = (id, nome, valor, extra = {}) => ({
+    id,
+    nome,
+    data: '2026-10-17',
+    valor,
+    categ: 'Compras',
+    cred: false,
+    pago: true,
+    fatura: null,
+    freq: null,
+    ...extra,
+  });
+
+  const indicador = async (maisEntradas) => {
+    const tela = carregarTela({
+      dados: {
+        fin_ciclo: ciclos,
+        fin_meta: [],
+        fin: [
+          l(1, 'Salário', 9000, { data: '2026-10-15', categ: 'Salário' }),
+          ...maisEntradas,
+          l(2, 'Obra', -1000, { reserva: true, data: '2026-10-16' }),
+          l(3, 'Obra', -1000, { reserva: true, data: '2026-11-16' }),
+          l(4, 'Poupança', -300, { categ: 'Investimento', data: '2026-10-18' }),
+        ],
+      },
+    });
+
+    await tela.bruto('carregarDados()');
+    tela.bruto('Estado.idxHoje = 1');
+    tela.bruto('atualizarIndicadoresFinanceiros(Estado.idxHoje)');
+
+    return tela.ctx.document.getElementById('indicadorReserva').innerHTML;
+  };
+
+  // Outro salário em dezembro fecha a meta de 9 meses nesse ciclo
+  assert.equal(
+    await indicador([
+      l(5, 'Salário', 9000, { data: '2026-12-15', categ: 'Salário', pago: false }),
+    ]),
+    'Reserva <b class="pct am">88,9%</b> <span class=limiteRotulo>da meta</span> <span class=limiteRotulo>·</span> <b>Dez/26</b>'
   );
-  assert.match(
-    graficos,
-    / <span class=limiteRotulo>· depois de<\/span> <b>\$\{nomePeriodoAbrev\(ultimoCiclo\)\}<\/b>/
+  // Sem mais entradas, o guardado nunca chega: "depois de" o último ciclo carregado
+  assert.equal(
+    await indicador([]),
+    'Reserva <b class="pct am">88,9%</b> <span class=limiteRotulo>da meta</span> <span class=limiteRotulo>· depois de</span> <b>Out/27</b>'
   );
 });
 

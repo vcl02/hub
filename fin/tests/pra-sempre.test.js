@@ -7,6 +7,7 @@ const test = require('node:test');
 const vm = require('node:vm');
 const { carregarTela } = require('./helpers/tela-sem-navegador');
 const { trazer } = require('./helpers/trazer-funcao');
+const { elementoPorId } = require('./helpers/html');
 const { declaracoes, regras: regrasCss } = require('./helpers/regras-css');
 
 const pagina = fs.readFileSync('index.html', 'utf8');
@@ -148,16 +149,10 @@ test('cadastro: checkbox desmarcado, herdado por Editar/Duplicar, escondido sem 
   assert.equal(sem.el('fPraSempreRotulo').hidden, true);
 
   // O checkbox nasce sem o atributo "checked" no HTML (a tag lida como texto; o resto do rótulo está em preferencias-interface.test.js)
-  const posicao = pagina.indexOf('id="fPraSempre"');
+  const { attrs } = elementoPorId(pagina, 'fPraSempre', { obrigatorio: true });
 
-  assert.ok(posicao >= 0, 'checkbox fPraSempre não está em index.html');
-
-  const tag = pagina.slice(
-    pagina.lastIndexOf('<input', posicao),
-    pagina.indexOf('>', posicao)
-  );
-
-  assert.ok(tag.includes('type="checkbox"') && !tag.includes('checked'), tag);
+  assert.equal(attrs.type, 'checkbox');
+  assert.ok(!('checked' in attrs));
 });
 
 test('cadastro novo manda pra_sempre ao lote; Editar grava no PATCH; sem a coluna o campo nem vai', async () => {

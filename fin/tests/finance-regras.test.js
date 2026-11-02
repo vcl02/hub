@@ -3,6 +3,8 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { carregarTela } = require('./helpers/tela-sem-navegador');
+const { declaracoes } = require('./helpers/regras-css');
 
 const fonte = fs.readFileSync('js/finance.js', 'utf8');
 const inicio = fonte.indexOf('function totalBaseDoCiclo(');
@@ -308,23 +310,107 @@ test('garantia Nubank só com aporte/resgate pago; Liberdade usa também os aber
   assert.equal(r.guardadoRealAte(linhas, 1), 700);
 });
 
-test('aviso "Resgatou tudo" na linha de resgate, calculada ou real', () => {
-  const tabelas = fs.readFileSync('js/tables.js', 'utf8');
-  const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
-  const graficos = fs.readFileSync('js/charts.js', 'utf8');
+// Aviso "Resgatou tudo": o ciclo desenhado de verdade (carga e desenho reais, banco falso). Ciclo 1 (set): salário 1.000 vira
+// guardado; ciclo 2 (out): a despesa e o resgate abaixo mexem nesse guardado.
+const lancamento = (id, nome, data, valor, categ) => ({
+  id,
+  nome,
+  data,
+  valor,
+  categ,
+  cred: false,
+  pago: true,
+  fatura: null,
+  freq: null,
+});
+
+const doGuardado = (...mais) => ({
+  fin_ciclo: [
+    { id: 1, inicio: '2026-09-15', fim: '2026-10-14' },
+    { id: 2, inicio: '2026-10-15', fim: null },
+  ],
+  fin: [lancamento(1, 'Salário', '2026-09-16', 1000, 'Salário'), ...mais],
+  fin_meta: [],
+});
+
+const AVISO = /⚠ Resgatou tudo/;
+
+test('aviso "Resgatou tudo" na linha de resgate calculada (Resgate necessário)', async () => {
+  // déficit 1.500 maior que o guardado 1.000: o resgate leva tudo
+  const tudo = await carregarTela({
+    dados: doGuardado(lancamento(2, 'Reforma', '2026-10-20', -1500, 'Casa')),
+  }).desenharCiclo(1);
+
+  assert.match(tudo.texto, /Resgate necessário ⚠ Resgatou tudo/);
+
+  // déficit 600 cabe no guardado: o resgate não é "tudo"
+  const folga = await carregarTela({
+    dados: doGuardado(lancamento(2, 'Reforma', '2026-10-20', -600, 'Casa')),
+  }).desenharCiclo(1);
+
+  assert.match(folga.texto, /Resgate necessário/);
+  assert.doesNotMatch(folga.html, AVISO);
+});
+
+test('aviso "Resgatou tudo" na linha de resgate real: só quando o guardado acaba no ciclo', async () => {
+  const levouTudo = await carregarTela({
+    dados: doGuardado(
+      lancamento(2, 'Reforma', '2026-10-20', -1500, 'Casa'),
+      lancamento(3, 'Resgate', '2026-10-21', 1000, 'Investimento')
+    ),
+  }).desenharCiclo(1);
+
+  assert.match(levouTudo.texto, /Resgate ⚠ Resgatou tudo/);
+
+  const sobrou = await carregarTela({
+    dados: doGuardado(
+      lancamento(2, 'Reforma', '2026-10-20', -300, 'Casa'),
+      lancamento(3, 'Resgate', '2026-10-21', 400, 'Investimento')
+    ),
+  }).desenharCiclo(1);
+
+  assert.match(sobrou.texto, /Resgate/);
+  assert.doesNotMatch(sobrou.html, AVISO);
+});
+
+test('a evolução separa Resgatado de Aportado pelo sinal: o resgate diminuído (negativo) não conta como resgatado', async () => {
+  const evolucao = async (...mais) => {
+    const t = carregarTela({ dados: doGuardado(...mais) });
+
+    await t.bruto('carregarDados()');
+
+    return t.rodar('dadosEvolucao(1, 1)')[0];
+  };
+
+  const comum = await evolucao(lancamento(2, 'Reforma', '2026-10-20', -1500, 'Casa'));
+
+  assert.deepEqual(
+    comum.linhasDe.Resgatado.map((l) => [l.nome, l.v]),
+    [['Resgate necessário', 1000]]
+  );
+  assert.deepEqual(comum.linhasDe.Aportado, []);
+
+  // o resgate real (1.500) passa do guardado (1.000): o ajuste o diminui em 500 e vai para Aportado
+  const diminuido = await evolucao(
+    lancamento(2, 'Reforma', '2026-10-20', -1500, 'Casa'),
+    lancamento(3, 'Resgate', '2026-10-21', 1500, 'Investimento')
+  );
+
+  assert.deepEqual(
+    diminuido.linhasDe.Resgatado.map((l) => [l.nome, l.v]),
+    [['Resgate', 1500]]
+  );
+  assert.deepEqual(
+    diminuido.linhasDe.Aportado.map((l) => [l.nome, l.v]),
+    [['Resgate necessário', -500]]
+  );
+  assert.equal(diminuido.resgatado, 1500);
+  assert.equal(diminuido.aportado, 500);
+});
+
+test('o guardado nunca fica negativo e o aviso está documentado', () => {
   const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 
-  assert.match(visoes, /_res: 1,\s*\n\s*_resgatouTudo: !!ajuste\.resgatouTudo/);
-  assert.match(
-    tabelas,
-    /const resgatouTudo = r\._res \? r\._resgatouTudo\s*\n\s*: ehLinhaReal\(r\) && r\.inv && r\.v > 0 && r\.periodoIdx != null && guardadoAte\(r\.periodoIdx\) <= TOLERANCIA_FINANCEIRA;/
-  );
-  assert.match(
-    tabelas,
-    /<span class=tagAviso title="O guardado acabou[^"]*">⚠ Resgatou tudo<\/span>/
-  );
-  // Evolução separa por sinal: o resgate diminuído (negativo) não conta como resgatado.
-  assert.match(graficos, /linhasDe\[ajuste\.v > 0 \? 'Resgatado' : 'Aportado'\]/);
   assert.match(regras, /O \*\*guardado nunca fica negativo\*\*/);
   assert.match(
     regras,
@@ -332,17 +418,37 @@ test('aviso "Resgatou tudo" na linha de resgate, calculada ou real', () => {
   );
 });
 
-test('no Nome só o texto é cortado com "…"; as marcas ficam inteiras', () => {
-  const tabelas = fs.readFileSync('js/tables.js', 'utf8');
-  const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
+test('no Nome só o texto é cortado com "…"; as marcas ficam inteiras', async () => {
+  // a célula de Nome de uma linha com as três marcas: o texto primeiro, depois Fatura, Resgatou tudo e Atrasado, tudo dentro de .nomeLinha
+  const t = carregarTela({
+    dados: {
+      fin_ciclo: [{ id: 1, inicio: '2026-09-15', fim: null }],
+      fin: [],
+      fin_meta: [],
+    },
+  });
+
+  await t.bruto('carregarDados()');
+
+  const html = t.rodar(
+    "celNome({ _res: 1, _resgatouTudo: true, _atrasado: true, nome: 'Transf', categ: 'Antecipação Fatura', cred: false, fatura: '2026-11-12', v: -100, id: -2, _sid: 'res:1' })"
+  );
 
   assert.match(
-    tabelas,
-    /return `<span class=nomeLinha>\$\{sim\}\$\{textoNome\}\$\{badgeFatura\}\$\{badgeResgate\}\$\{badgeAtrasado\}<\/span>`;/
+    html,
+    /^<span class=nomeLinha><span class=nomeTexto>Transf<\/span> <span class="tagFatura"[^>]*>[^<]*<\/span> <span class=tagAviso[^>]*>⚠ Resgatou tudo<\/span> <span class=tagAviso[^>]*>Atrasado<\/span><\/span>$/
   );
-  assert.match(
-    estilos,
-    /\.nomeLinha > \.nomeTexto \{\s*\n\s*flex: 0 1 auto;\s*\n\s*min-width: 0;\s*\n\s*overflow: hidden;\s*\n\s*text-overflow: ellipsis;/
-  );
-  assert.match(estilos, /\.nomeLinha > \* \{\s*\n\s*flex: none;/);
+
+  // só o texto do nome encolhe e ganha reticências; as marcas (filhas diretas) nunca encolhem
+  const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
+  const texto = declaracoes(estilos, '.nomeLinha > .nomeTexto');
+
+  for (const regra of [
+    'flex: 0 1 auto',
+    'min-width: 0',
+    'overflow: hidden',
+    'text-overflow: ellipsis',
+  ])
+    assert.ok(texto.includes(regra), regra);
+  assert.ok(declaracoes(estilos, '.nomeLinha > *').includes('flex: none'));
 });

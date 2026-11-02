@@ -4,6 +4,7 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { elementoPorId } = require('./helpers/html');
 
 const formulario = fs.readFileSync('js/form.js', 'utf8');
 const financas = fs.readFileSync('js/finance.js', 'utf8');
@@ -113,23 +114,111 @@ test('escondido fora de compra nova no Crédito', () => {
   assert.equal(conferir({ editando: true }).aviso.hidden, true);
 });
 
-test('regra única do Livre Hoje, gatilhos e documentação', () => {
-  assert.match(
-    trecho(financas, 'function limiteLivreHojeDoCartao(linhas, idx, cartao) {'),
-    /return limiteCartaoLivre\(linhas, abatimentoDoCartao\(abatidoPago, cartao\), garantido, -Infinity, cartao, aprovadoDoCiclo\(idx, cartao\)\);/
+// A conta única do Livre Hoje: a função real, com as peças de que depende simuladas, recebe o que cada cartão pede.
+function livreHoje(cartao) {
+  const chamadas = [];
+
+  const ctx = {
+    CARTAO_NUBANK: 'nubank',
+    guardadoGarantidoAte: (linhas, idx) => `guardado@${idx}`,
+    garantiaDoCiclo: (idx, guardado) => ({
+      efetiva: guardado === 'guardado@4' ? 700 : -1,
+    }),
+    ehTransferenciaFatura: (r) => r.antecipacao === true,
+    alocacaoAntecipacoes: (linhas) => ({ pagas: linhas.map((r) => r.id) }),
+    abatimentoDoCartao: (abatido, c) => `abate:${c}:${abatido.pagas.join('+')}`,
+    aprovadoDoCiclo: (idx, c) => `aprovado:${idx}:${c}`,
+    limiteCartaoLivre: (...args) => {
+      chamadas.push(args);
+
+      return 123;
+    },
+  };
+
+  const linhas = [
+    { id: 1 },
+    { id: 2, antecipacao: true, pago: false }, // antecipação em aberto: fica de fora
+    { id: 3, antecipacao: true, pago: true },
+  ];
+
+  vm.runInNewContext(
+    `${trecho(financas, 'function limiteLivreHojeDoCartao(linhas, idx, cartao) {')}\nthis.r = limiteLivreHojeDoCartao(linhas, 4, cartao);`,
+    Object.assign(ctx, { linhas, cartao })
   );
-  assert.match(pagina, /<small id=fLimiteCartao class=limiteNoCadastro hidden><\/small>/);
-  assert.match(
-    trecho(formulario, 'function atualizaSinalUI() {'),
-    /conferirLimiteNoCadastro\(\);/
+
+  return { retorno: ctx.r, chamadas: JSON.parse(JSON.stringify(chamadas)), linhas };
+}
+
+test('regra única do Livre Hoje: o Nubank conta a garantia do ciclo, o Mercado Pago não', () => {
+  const nubank = livreHoje('nubank');
+
+  assert.equal(nubank.retorno, 123);
+  assert.deepEqual(nubank.chamadas, [
+    [nubank.linhas, 'abate:nubank:1+3', 700, null, 'nubank', 'aprovado:4:nubank'],
+  ]);
+
+  const mp = livreHoje('mp');
+
+  assert.deepEqual(mp.chamadas, [
+    [mp.linhas, 'abate:mp:1+3', 0, null, 'mp', 'aprovado:4:mp'],
+  ]);
+});
+
+test('os gatilhos do aviso: valor, Crédito/Vezes/Dividir e qualquer mudança do formulário', () => {
+  const conferir = () => chamadas.push('conferir');
+  let chamadas = [];
+
+  // atualizaSinalUI (todo lugar que muda o valor passa por ela) atualiza as parcelas e confere o limite
+  const sinal = { disabled: null, classList: { toggle() {} }, textContent: '' };
+
+  vm.runInNewContext(
+    `${trecho(formulario, 'function atualizaSinalUI() {')}\natualizaSinalUI();`,
+    {
+      el: (id) => (id === 'fSinal' ? sinal : { value: '50' }),
+      valorMascaraParaNumero: () => 50,
+      sinalPositivo: false,
+      atualizarParcelaNasVezes: () => chamadas.push('parcelas'),
+      conferirLimiteNoCadastro: conferir,
+    }
   );
-  assert.match(
-    trecho(formulario, 'function sugereModoValorParcelas() {'),
-    /conferirLimiteNoCadastro\(\);/
+  assert.deepEqual(chamadas, ['parcelas', 'conferir']);
+
+  // trocar Crédito/Dividir (sugereModoValorParcelas) também confere
+  chamadas = [];
+  vm.runInNewContext(
+    `${trecho(formulario, 'function sugereModoValorParcelas() {')}\nsugereModoValorParcelas();`,
+    {
+      el: () => ({ checked: true }),
+      atualizarParcelaNasVezes: () => chamadas.push('parcelas'),
+      conferirLimiteNoCadastro: conferir,
+    }
   );
-  assert.match(
-    formulario,
-    /el\('formNovo'\)\.addEventListener\('change', \(\) => conferirLimiteNoCadastro\(\)\);/
+  assert.deepEqual(chamadas, ['parcelas', 'conferir']);
+
+  // o formulário inteiro: qualquer change nele (Fatura, Frequência…) refaz a conferência
+  chamadas = [];
+  const ouvintes = [];
+  const linha = "el('formNovo').addEventListener('change'";
+  const inicio = formulario.indexOf(linha);
+
+  vm.runInNewContext(formulario.slice(inicio, formulario.indexOf('\n', inicio)), {
+    el: (id) => ({
+      addEventListener: (tipo, fn) => ouvintes.push([id, tipo, fn]),
+    }),
+    conferirLimiteNoCadastro: conferir,
+  });
+  assert.deepEqual(
+    ouvintes.map(([id, tipo]) => [id, tipo]),
+    [['formNovo', 'change']]
   );
+  ouvintes[0][2]();
+  assert.deepEqual(chamadas, ['conferir']);
   assert.match(regras, /\*\*Limite na hora da compra:\*\* num cadastro novo no Crédito/);
+});
+
+test('o aviso do limite existe na página, escondido até a conta decidir mostrar', () => {
+  assert.deepEqual(elementoPorId(pagina, 'fLimiteCartao'), {
+    tag: 'small',
+    attrs: { id: 'fLimiteCartao', class: 'limiteNoCadastro', hidden: '' },
+  });
 });

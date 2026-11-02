@@ -3,6 +3,7 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { montarCadastro } = require('./helpers/cadastro');
 
 const form = fs.readFileSync('js/form.js', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
@@ -71,7 +72,34 @@ test('espera a tela ficar livre e nunca roda na simulação', () => {
   assert.equal(s.chamadas.length, 0);
 });
 
-test('o salvamento real liga a consolidação e a regra está documentada', () => {
-  assert.match(form, /if \(!Estado\.simulando\) consolidarAoFecharCadastro = true;/);
+// O Salvar de verdade (submeteNovoLancamento) junto com o fechar do modal: só o salvamento real liga a consolidação.
+test('o salvamento real liga a consolidação ao fechar; simulado ou recusado, não', async () => {
+  const real = montarCadastro();
+
+  await real.salvar();
+  assert.equal(real.chamadas.gravados.length, 1);
+  assert.equal(real.chamadas.consolidacoes.length, 0); // o modal não fecha ao salvar
+  real.fecharModal();
+  assert.equal(
+    JSON.stringify(real.chamadas.consolidacoes),
+    JSON.stringify([['recarregar', { silencioso: true }]])
+  );
+
+  const simulado = montarCadastro({ simulando: true });
+
+  await simulado.salvar();
+  assert.equal(simulado.chamadas.simulados.length, 1);
+  simulado.fecharModal();
+  assert.equal(simulado.chamadas.consolidacoes.length, 0);
+
+  const semNome = montarCadastro({ campos: { fNome: '' } }); // validação recusou: nada foi salvo
+
+  await semNome.salvar();
+  assert.equal(semNome.chamadas.gravados.length, 0);
+  semNome.fecharModal();
+  assert.equal(semNome.chamadas.consolidacoes.length, 0);
+});
+
+test('a regra está documentada', () => {
   assert.match(regras, /\*\*Consolidar depois do cadastro:\*\*/);
 });

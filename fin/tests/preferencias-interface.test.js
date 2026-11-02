@@ -4,6 +4,9 @@ const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
 const { carregarTela } = require('./helpers/tela-sem-navegador');
+const { abrirCadastro } = require('./helpers/cadastro');
+const { dom, mencionaNoHtml } = require('./helpers/html-texto');
+const { declaracoes, regras: regrasCss } = require('./helpers/regras-css');
 
 const lanc = (id, nome, data, valor, extra = {}) => ({
   id,
@@ -59,6 +62,17 @@ async function telaCarregada(dados) {
 }
 
 const pagina = fs.readFileSync('index.html', 'utf8');
+
+// O index.html como árvore de elementos (helpers/html-texto): os testes de tela perguntam por elemento, atributo e ordem.
+const arvore = dom(pagina);
+const { nos } = arvore;
+const noPorId = arvore.porId;
+const comClasse = (classe) => nos.filter((n) => n.classes.includes(classe));
+
+// O CSS como regras (helpers/regras-css): existe uma regra com esse seletor?
+const temSeletor = (css, seletor) =>
+  regrasCss(css).some((r) => r.seletores.includes(seletor));
+
 const agentes = fs.readFileSync('AGENTS.md', 'utf8');
 const decisoes = fs.readFileSync('docs/DECISOES.md', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
@@ -85,12 +99,15 @@ test('mantém tooltips e descrições auxiliares curtos', async () => {
     regras,
     /Tooltips, rótulos auxiliares e descrições visíveis devem ser curtos/
   );
-  assert.match(pagina, /title="Simular \(não salva\)"/);
-  assert.match(
-    pagina,
-    /title="Recarregar, voltar ao ciclo atual, limpar filtros e consolidar tudo"/
+  assert.equal(noPorId('toggleSimulacao').attrs.title, 'Simular (não salva)');
+
+  assert.equal(
+    noPorId('recarregar').attrs.title,
+    'Recarregar, voltar ao ciclo atual, limpar filtros e consolidar tudo'
   );
-  assert.doesNotMatch(pagina, /injeta lançamentos hipotéticos|ignora os filtros acima/);
+
+  for (const frase of ['injeta lançamentos hipotéticos', 'ignora os filtros acima'])
+    assert.ok(!mencionaNoHtml(pagina, frase), frase);
   // O ícone de editar a data da linha, no desenho real da tabela.
   const tela = await telaCarregada(dadosSimples);
 
@@ -101,65 +118,110 @@ test('mantém tooltips e descrições auxiliares curtos', async () => {
 });
 
 test('cadastro compacto usa ícones e defaults de crédito e pago', () => {
-  assert.match(pagina, /id=fCred checked aria-label="Crédito"/);
-  assert.match(pagina, /id=fPago checked aria-label="Pago"/);
-  assert.match(pagina, /id=fDivide checked aria-label="Dividir a compra entre parcelas"/);
-  assert.match(pagina, /forms\.css\?v=20260924-valor-sinal/);
-  assert.match(pagina, /class=parcelasLinha/);
-  assert.match(pagina, /<option value=1>À vista/);
-  assert.doesNotMatch(pagina, /À vista \(1x\)|Separe mais de uma categoria por vírgula/);
+  for (const [id, rotulo] of [
+    ['fCred', 'Crédito'],
+    ['fPago', 'Pago'],
+    ['fDivide', 'Dividir a compra entre parcelas'],
+  ]) {
+    const campo = noPorId(id);
+
+    assert.equal(campo.attrs.type, 'checkbox', id);
+    assert.ok('checked' in campo.attrs, `${id} começa marcado`);
+    assert.equal(campo.attrs['aria-label'], rotulo, id);
+  }
+
+  assert.ok(
+    nos.some(
+      (n) => n.tag === 'link' && n.attrs.href === './css/forms.css?v=20260924-valor-sinal'
+    )
+  );
+  assert.equal(comClasse('parcelasLinha').length, 1);
+
+  const vezes = nos.find((n) => n.tag === 'option' && n.attrs.value === '1');
+
+  assert.equal(arvore.texto(vezes).trim(), 'À vista');
+
+  for (const frase of ['À vista (1x)', 'Separe mais de uma categoria por vírgula'])
+    assert.ok(!mencionaNoHtml(pagina, frase), frase);
   const estilosForm = fs.readFileSync('css/forms.css', 'utf8');
 
-  assert.match(estilosForm, /\.fmChkIco/);
+  assert.ok(temSeletor(estilosForm, '.fmChkIco'));
   // os 4 ícones (Crédito/Pago/Reserva/Comprometido) + o fechar ficam numa linha só (flex),
   // não mais numa grade 2x2 (ver teste do cabeçalho pra essa regra em detalhe).
-  assert.match(estilosForm, /\.fmChecks\s*\{\s*\n\s*display:\s*flex;/);
-  assert.match(estilosForm, /\.parcelasLinha/);
+  assert.ok(declaracoes(estilosForm, '.fmChecks').includes('display: flex'));
+  assert.ok(temSeletor(estilosForm, '.parcelasLinha'));
 });
 
 test('título do cadastro é só pra leitor de tela (.srOnly); Crédito/Pago/Reserva/Comprometido e o fechar dividem uma única linha; o sinal fica ao lado do valor', () => {
   // título vira o 1º filho de #formNovo, sem wrapper .modalHead: por ser position:
   // absolute, não participa do flex nem consome gap — não sobra linha vazia por causa dele.
-  assert.match(
-    pagina,
-    /<form id=formNovo method=dialog>\s*\n\s*<h2 id=tituloNovo class=srOnly>Novo lançamento<\/h2>/
+  const cadastro = noPorId('formNovo');
+  const titulo = noPorId('tituloNovo');
+
+  assert.equal(cadastro.attrs.method, 'dialog');
+  assert.equal(titulo.pai, cadastro);
+  assert.equal(cadastro.filhos[0], titulo);
+  assert.equal(titulo.tag, 'h2');
+  assert.ok(titulo.classes.includes('srOnly'));
+  assert.equal(arvore.texto(titulo).trim(), 'Novo lançamento');
+  // os 4 ícones E o fechar (nessa ordem) ficam juntos na mesma .fmChecks, logo depois do título.
+  const checks = cadastro.filhos[1];
+
+  assert.ok(checks.classes.includes('fmChecks'));
+
+  assert.deepEqual(
+    checks.filhos.map((n) => n.attrs.title || n.attrs.id),
+    ['Crédito', 'Pago', 'Reserva', 'Comprometido', 'Pra sempre', 'Fechar']
   );
-  assert.doesNotMatch(pagina, /class=modalHead>\s*\n\s*<h2 id=tituloNovo/);
-  // os 4 ícones E o fechar (nessa ordem) ficam juntos na mesma .fmChecks.
-  assert.match(
-    pagina,
-    /<div class=fmChecks>\s*\n\s*<label class="fmChk fmChkIco" title="Crédito">/
+  assert.ok(checks.filhos[0].classes.includes('fmChk'));
+  assert.equal(checks.filhos.at(-1).tag, 'button');
+  // o título e os ícones não ficam dentro de um .modalTituloAcoes (o do modal de visualização)
+  assert.ok(!cadastro.filhos.some((n) => n.classes.includes('modalTituloAcoes')));
+  assert.ok(!noPorId('fCred').pai.pai.classes.includes('modalTituloAcoes'));
+  // o sinal fica ao lado do valor, na mesma linha, fora do campo com o R$
+  const linha = noPorId('fSinal').pai;
+
+  assert.ok(linha.classes.includes('moneyLinha'));
+
+  assert.deepEqual(
+    linha.filhos.map((n) => n.attrs.id || n.classes[0]),
+    ['moneyWrap', 'fSinal']
   );
-  assert.match(
-    pagina,
-    /title="Pra sempre" id=fPraSempreRotulo>[\s\S]{0,400}<\/label>\s*\n\s*<button type=button id=fechaNovo/
-  );
-  assert.doesNotMatch(pagina, /class=modalTituloAcoes>[\s\S]{0,200}id=fCred/);
-  assert.match(
-    pagina,
-    /class=moneyLinha>[\s\S]*class=moneyWrap[\s\S]*id=fValor[\s\S]*<\/div>\s*<button type=button id=fSinal/
-  );
-  assert.doesNotMatch(pagina, /id=abreCalc|id=modalCalc/);
-  assert.doesNotMatch(pagina, /class=moneyPrefix/);
+  assert.equal(noPorId('fValor').pai, linha.filhos[0]);
+  assert.equal(noPorId('abreCalc'), undefined);
+  assert.equal(noPorId('modalCalc'), undefined);
+  assert.equal(comClasse('moneyPrefix').length, 0);
+  const fechar = noPorId('fechaNovo');
+
+  assert.equal(fechar.attrs.title, 'Fechar');
+  assert.equal(fechar.attrs['aria-label'], 'Fechar');
+  assert.equal(fechar.filhos[0].tag, 'svg');
   const estilosForm = fs.readFileSync('css/forms.css', 'utf8');
 
-  assert.match(estilosForm, /\.modalTituloAcoes/); // continua existindo, usado por outro modal (modalVisualizacao)
-  assert.match(estilosForm, /\.moneyLinha/);
-  assert.match(pagina, /id=fechaNovo title="Fechar" aria-label="Fechar">\s*<svg/);
+  assert.ok(temSeletor(estilosForm, '.modalTituloAcoes')); // continua existindo, usado por outro modal (modalVisualizacao)
+  assert.ok(temSeletor(estilosForm, '.moneyLinha'));
   // .fmChecks virou flex row (não mais grid 4 colunas) pra caber o fechar na mesma linha,
   // empurrado pro canto direito por margem automática — continua vermelho/destrutivo,
   // não um 5º ícone igual aos outros.
-  assert.match(
-    estilosForm,
-    /\.fmChecks\s*\{\s*\n\s*display:\s*flex;\s*\n\s*align-items:\s*center;\s*\n\s*gap:\s*\.6rem;\s*\n\s*\}/
+
+  assert.deepEqual(declaracoes(estilosForm, '.fmChecks'), [
+    'display: flex',
+    'align-items: center',
+    'gap: 0.6rem',
+  ]);
+  assert.deepEqual(declaracoes(estilosForm, '.fmChecks #fechaNovo'), [
+    'margin-left: auto',
+  ]);
+  const seletores = regrasCss(estilosForm).flatMap((r) => r.seletores);
+
+  assert.ok(!seletores.includes('#formNovo .modalHead'));
+  assert.ok(!seletores.includes('#formNovo .modalTituloAcoes'));
+
+  assert.ok(
+    !regrasCss(estilosForm).some((r) =>
+      r.declaracoes.includes('grid-template-columns: repeat(4, 2.9rem)')
+    )
   );
-  assert.match(
-    estilosForm,
-    /\.fmChecks #fechaNovo\s*\{\s*\n\s*margin-left:\s*auto;\s*\n\s*\}/
-  );
-  assert.doesNotMatch(estilosForm, /#formNovo \.modalHead/);
-  assert.doesNotMatch(estilosForm, /#formNovo \.modalTituloAcoes/);
-  assert.doesNotMatch(estilosForm, /grid-template-columns: repeat\(4, 2\.9rem\)/);
   assert.match(
     regras,
     /O título "Novo\/Duplicar\/Editar lançamento"\/"Simular compra" \(`#tituloNovo`\) continua existindo e mudando conforme o modo[\s\S]*?mas é só pra leitor de tela \(`\.srOnly`\)/
@@ -170,17 +232,36 @@ test('título do cadastro é só pra leitor de tela (.srOnly); Crédito/Pago/Res
   );
 });
 
+// O cadastro roda de verdade (abreModalNovo, com a tela falsa): a consulta de largura responde como a tela de 640 ou 641 px.
 test('cadastro abre sem foco automático no mobile', () => {
-  assert.match(formulario, /window\.matchMedia\('\(min-width: 641px\)'\)\.matches/);
+  for (const largura of [320, 640])
+    assert.deepEqual(abrirCadastro({ largura }).passarTempo(), [], `${largura}px`);
+  // No desktop (641 px ou mais): do zero vai para Nome; duplicando, para Valor.
+  assert.deepEqual(abrirCadastro({ largura: 641 }).passarTempo(), ['fNome']);
+  const original = { id: 7, nome: 'Sofá', categ: 'Casa', data: '2026-09-21', v: -300 };
+
+  assert.deepEqual(abrirCadastro({ largura: 1280, prefill: original }).passarTempo(), [
+    'fValor',
+  ]);
+  assert.deepEqual(abrirCadastro({ largura: 640, prefill: original }).passarTempo(), []);
 });
 
 test('cadastro mantém margem visível em todos os lados no mobile', () => {
   const estilosMobile = fs.readFileSync('css/mobile.css', 'utf8');
 
-  assert.match(
+  const caixa = declaracoes(
     estilosMobile,
-    /dialog#modalNovo\s*\{[\s\S]*width: calc\(100vw - 2rem\);[\s\S]*height: calc\(100dvh - 2rem\);[\s\S]*border-radius: 16px;[\s\S]*margin: 1rem auto;/
+    'dialog#modalNovo',
+    '@media (max-width: 640px)'
   );
+
+  for (const d of [
+    'width: calc(100vw - 2rem)',
+    'height: calc(100dvh - 2rem)',
+    'border-radius: 16px',
+    'margin: 1rem auto',
+  ])
+    assert.ok(caixa.includes(d), d);
 });
 
 test('fatura à vista não repete o rótulo nem o asterisco', () => {
@@ -193,21 +274,36 @@ test('fatura à vista não repete o rótulo nem o asterisco', () => {
     tela.ctx
   );
   assert.equal(tela.rodar("nomeFatura({ vencimento: '2026-11-12' })"), '12/11/2026');
-  assert.match(pagina, /id=fFaturasWrap>\s*<span>Fatura<\/span>/);
+  // O rótulo "Fatura" aparece uma vez só, sem asterisco, como 1º filho do campo.
+  const rotulo = noPorId('fFaturasWrap').filhos[0];
+
+  assert.equal(rotulo.tag, 'span');
+  assert.equal(arvore.texto(rotulo).trim(), 'Fatura');
 });
 
 test('visualizações usam um único dropdown com acompanhamentos fixos', () => {
-  assert.match(
-    pagina,
-    /<div id=visMenu class=menuIcone role=menu aria-label="Visualizações" hidden><\/div>/
-  );
-  assert.doesNotMatch(pagina, /id=visAlvo/);
-  assert.doesNotMatch(pagina, /id=visTipo|id=visAlvoRotulo/);
-  assert.doesNotMatch(
-    pagina,
-    /id=btVisualizacoes|id=modalVisualizacoes|id=abreVisualizacao|id=voltaVisualizacoes/
-  );
-  assert.doesNotMatch(pagina, /id=btRoberta|id=btEmprestimo|id=btIphone/);
+  const menu = noPorId('visMenu');
+
+  assert.equal(menu.tag, 'div');
+  assert.ok(menu.classes.includes('menuIcone'));
+  assert.equal(menu.attrs.role, 'menu');
+  assert.equal(menu.attrs['aria-label'], 'Visualizações');
+  assert.ok('hidden' in menu.attrs);
+  assert.equal(menu.filhos.length, 0);
+
+  for (const id of [
+    'visAlvo',
+    'visTipo',
+    'visAlvoRotulo',
+    'btVisualizacoes',
+    'modalVisualizacoes',
+    'abreVisualizacao',
+    'voltaVisualizacoes',
+    'btRoberta',
+    'btEmprestimo',
+    'btIphone',
+  ])
+    assert.equal(noPorId(id), undefined, id);
   // As opções fixas: a primeira filtra pela categoria que contém Roberta; o resto, pelo nome.
   const opcoes = carregarTela().rodar('OPCOES_VISUALIZACOES');
 
@@ -224,109 +320,131 @@ test('visualizações usam um único dropdown com acompanhamentos fixos', () => 
 });
 
 test('indicadores financeiros ficam no cabeçalho, entre a navegação e os botões, separados por pipe', () => {
-  const acoes = pagina.slice(pagina.indexOf('id="rowVis"'));
+  const ordem = (id) => nos.indexOf(noPorId(id));
 
   // Ordem: Reserva, Gastos (em Reserva), Comprometido, Liberdade.
-  assert.ok(
-    acoes.indexOf('id="indicadorReserva"') <
-      acoes.indexOf('id="indicadorProporcaoReserva"')
-  );
-  assert.ok(
-    acoes.indexOf('id="indicadorProporcaoReserva"') <
-      acoes.indexOf('id="indicadorComprometido"')
-  );
-  assert.ok(
-    acoes.indexOf('id="indicadorComprometido"') < acoes.indexOf('id="indicadorLiberdade"')
+  const ids = [
+    'indicadorReserva',
+    'indicadorProporcaoReserva',
+    'indicadorComprometido',
+    'indicadorLiberdade',
+  ];
+
+  assert.deepEqual(
+    ids.map(ordem),
+    ids.map(ordem).toSorted((a, b) => a - b)
   );
 
   // No cabeçalho: depois da navegação de ciclo e antes dos botões de ação.
-  const cabecalho = pagina.slice(
-    pagina.indexOf('<div class="head">'),
-    pagina.indexOf('<p class="sub">')
-  );
+  const cabecalho = noPorId('rowVis').pai;
 
-  assert.ok(cabecalho.indexOf('id="fciclNav"') < cabecalho.indexOf('id="rowVis"'));
-  assert.ok(cabecalho.indexOf('id="rowVis"') < cabecalho.indexOf('id="toggleSimulacao"'));
-  assert.doesNotMatch(
-    pagina.slice(pagina.indexOf('<div class="tool">'), pagina.indexOf('<div id="out">')),
-    /id=rowVis/
+  assert.ok(cabecalho.classes.includes('head'));
+
+  const filhosDoCabecalho = cabecalho.filhos.map((n) => n.attrs.id || n.classes[0]);
+
+  assert.ok(filhosDoCabecalho.indexOf('fciclNav') < filhosDoCabecalho.indexOf('rowVis'));
+  assert.ok(
+    filhosDoCabecalho.indexOf('rowVis') < filhosDoCabecalho.indexOf('acoesCabecalho')
   );
-  assert.doesNotMatch(pagina, /id=fpago|id=origem|id=fsit|id=forigem/);
+  assert.ok(noPorId('toggleSimulacao').pai.classes.includes('acoesCabecalho'));
+  // Fora da faixa de filtros (.tool): o bloco dos indicadores não mora lá.
+  assert.ok(ordem('rowVis') < nos.indexOf(comClasse('tool')[0]));
+
+  for (const id of ['fpago', 'origem', 'fsit', 'forigem'])
+    assert.equal(noPorId(id), undefined, id);
   const estilosPainel = fs.readFileSync('css/dashboard.css', 'utf8');
 
-  assert.match(estilosPainel, /\.tool > \.row\s*\{[\s\S]*flex-wrap:\s*nowrap/);
+  assert.ok(declaracoes(estilosPainel, '.tool > .row').includes('flex-wrap: nowrap'));
+
   // Cada variação mora no mesmo item do seu indicador, logo depois dele.
-  assert.match(
-    pagina,
-    /<span class=indicadorItem id=itemReserva>\s*\n\s*<span id=indicadorReserva [^>]*>Reserva —<\/span>\s*\n\s*<span id=variacaoReserva class=variacaoLinha hidden><\/span>/
-  );
-  assert.match(
-    pagina,
-    /<span class=indicadorItem id=itemComprometido>\s*\n\s*<span id=indicadorComprometido [^>]*>Comprometido —<\/span>\s*\n\s*<span id=variacaoComprometido class=variacaoLinha hidden><\/span>/
-  );
-  assert.doesNotMatch(pagina, /indicadorPipe|indicadoresResumo|indicadoresVariacao/);
-  assert.match(pagina, /id=variacaoReserva class=variacaoLinha hidden/);
-  assert.match(pagina, /id=variacaoComprometido class=variacaoLinha hidden/);
+  for (const [item, indicador, variacao, rotulo] of [
+    ['itemReserva', 'indicadorReserva', 'variacaoReserva', 'Reserva —'],
+    [
+      'itemComprometido',
+      'indicadorComprometido',
+      'variacaoComprometido',
+      'Comprometido —',
+    ],
+    [
+      'itemProporcaoReserva',
+      'indicadorProporcaoReserva',
+      'variacaoProporcaoReserva',
+      'Gastos —',
+    ],
+  ]) {
+    const caixa = noPorId(item);
+
+    assert.ok(caixa.classes.includes('indicadorItem'), item);
+    assert.deepEqual(
+      caixa.filhos.map((n) => n.attrs.id),
+      [indicador, variacao],
+      item
+    );
+    assert.equal(arvore.texto(noPorId(indicador)).trim(), rotulo, indicador);
+    assert.ok(noPorId(variacao).classes.includes('variacaoLinha'), variacao);
+    assert.ok('hidden' in noPorId(variacao).attrs, `${variacao} começa escondida`);
+  }
+
+  for (const nome of ['indicadorPipe', 'indicadoresResumo', 'indicadoresVariacao'])
+    assert.ok(!mencionaNoHtml(pagina, nome), nome);
   // Mesmo desenho dos itens da faixa: rótulo, percentual em negrito (largura de 100%) e complemento apagado.
-  assert.match(estilosPainel, /\.indicadorRegra b\.pct \{\s*\n\s*min-width: 5ch;/);
-  // Gastos no formato do Comprometido: fatia em Reserva, complemento e variação; Demais só no hover.
-  assert.match(
-    pagina,
-    /<span id=indicadorProporcaoReserva [^>]*>Gastos —<\/span>\s*\n\s*<span id=variacaoProporcaoReserva class=variacaoLinha hidden><\/span>/
+  assert.ok(
+    declaracoes(estilosPainel, '.indicadorRegra b.pct').includes('min-width: 5ch')
   );
-  assert.doesNotMatch(estilosPainel, /indicadorPercentual/);
+  assert.ok(!temSeletor(estilosPainel, '.indicadorPercentual'));
   assert.match(regras, /Gastos 48,6% em Reserva/);
 
   // Fluxo com quebra de linha: itens inteiros, divisor na borda esquerda cortado no início da linha.
-  assert.match(
-    estilosPainel,
-    /\.listaIndicadores \{\s*\n\s*display: flex;\s*\n\s*flex-wrap: wrap;/
+  const lista = declaracoes(estilosPainel, '.listaIndicadores');
+
+  assert.ok(lista.includes('display: flex') && lista.includes('flex-wrap: wrap'));
+  assert.ok(lista.includes('margin-left: calc(-0.8rem - 1px)'));
+
+  assert.deepEqual(
+    declaracoes(estilosPainel, '#indicadoresFinanceiros', '').slice(0, 2),
+    ['min-width: 0', 'overflow: hidden']
   );
-  assert.match(
-    estilosPainel,
-    /#indicadoresFinanceiros \{\s*\n\s*min-width: 0;\s*\n\s*overflow: hidden;/
-  );
-  assert.match(
-    estilosPainel,
-    /\.listaIndicadores \{[\s\S]*?margin-left: calc\(-\.8rem - 1px\);/
-  );
-  assert.match(estilosPainel, /#rowVis \{\s*\n\s*display: flex;\s*\n\s*flex: 1 1 0;/);
+
+  assert.deepEqual(declaracoes(estilosPainel, '#rowVis', '').slice(0, 2), [
+    'display: flex',
+    'flex: 1 1 0',
+  ]);
   // Variação em texto miúdo colado no indicador, sem parênteses nem fundo.
-  assert.match(estilosPainel, /\.variacaoLinha \{\s*\n\s*white-space: nowrap;\s*\n\s*\}/);
+  assert.deepEqual(declaracoes(estilosPainel, '.variacaoLinha'), ['white-space: nowrap']);
   // Sem divisor nem folga antes da tabela Débito.
-  assert.doesNotMatch(
-    estilosPainel.slice(
-      estilosPainel.indexOf('  .tool {'),
-      estilosPainel.indexOf('  .row {')
-    ),
-    /border-bottom/
+  assert.ok(
+    declaracoes(estilosPainel, '.tool').every((d) => !d.startsWith('border-bottom'))
   );
-  assert.match(
-    estilosPainel,
-    /\.tool:not\(:has\(\.f:not\(\[hidden\]\)\)\) \{\s*\n\s*display: none;/
+  assert.ok(
+    declaracoes(estilosPainel, '.tool:not(:has(.f:not([hidden])))').includes(
+      'display: none'
+    )
   );
-  assert.match(
-    fs.readFileSync('css/base.css', 'utf8'),
-    /\.sub:has\(#st:empty\) \{\s*\n\s*display: none;/
+
+  assert.ok(
+    declaracoes(fs.readFileSync('css/base.css', 'utf8'), '.sub:has(#st:empty)').includes(
+      'display: none'
+    )
   );
   assert.match(
     regras,
     /A tabela Débito começa logo abaixo do cabeçalho, sem linha divisória nem espaço reservado/
   );
   // Janela estreita: o bloco desce pra uma linha própria, navegação e botões seguem juntos.
-  assert.match(
-    estilosPainel,
-    /@media \(max-width: 1250px\) \{\s*\n\s*#rowVis \{\s*\n\s*order: 1;\s*\n\s*flex-basis: 100%;/
-  );
-  assert.match(
-    fs.readFileSync('css/base.css', 'utf8'),
-    /\.head \{\s*\n\s*display: flex;\s*\n\s*flex-wrap: wrap;/
+  const estreita = declaracoes(estilosPainel, '#rowVis', '@media (max-width: 1250px)');
+
+  assert.ok(estreita.includes('order: 1') && estreita.includes('flex-basis: 100%'));
+
+  assert.deepEqual(
+    declaracoes(fs.readFileSync('css/base.css', 'utf8'), '.head').slice(0, 2),
+    ['display: flex', 'flex-wrap: wrap']
   );
   assert.match(
     regras,
     /Na comparação \(De ≠ Até\) não há Débito, então ficam no cabeçalho, na mesma linha da navegação de ciclo e dos botões de ação/
   );
-  assert.doesNotMatch(pagina, /id=btMetaReservaEmergencia|id=btCompromissos/);
+  assert.equal(noPorId('btMetaReservaEmergencia'), undefined);
+  assert.equal(noPorId('btCompromissos'), undefined);
 });
 
 test('os quatro indicadores desenhados: rótulo antes do número, complemento apagado e a variação sobre o ciclo anterior', async () => {
@@ -400,17 +518,85 @@ test('os quatro indicadores desenhados: rótulo antes do número, complemento ap
   assert.equal(semMeta.ctx.document.getElementById('variacaoReserva').hidden, true);
 });
 
-test('edição inline de data não apaga a data ao perder o foco com dígito incompleto', () => {
-  // Fica conferido no código: no navegador do teste, o Chromium completa sozinho o segmento incompleto ("0" vira "01")
-  // depois de ~1 s e dispara change, então o caso não se reproduz na tela de forma confiável (e não se sabe se o Chrome
-  // do celular ou do computador faz igual). O "19 não vira 1" está na tela em navegador-linhas.test.js.
-  // "0" sozinho no dia nao e' um dia valido: o navegador marca badInput e deixa
-  // input.value vazio, igual a quando a data e' apagada de proposito. Sem essa checagem,
-  // perder o foco no meio da digitacao mandaria o lancamento pro Backlog sem querer.
-  assert.match(
-    interacoes,
-    /if \(input\.validity && input\.validity\.badInput\) \{ desenhar\(\); return; \}/
+// O editor da Data roda de verdade (o ouvinte de clique de #out, de js/interactions.js) com um campo falso: o campo guarda os
+// ouvintes e o `validity.badInput` que o navegador marca quando a digitação ficou pela metade.
+function editarDataComCampo({ valor, digitacaoIncompleta }) {
+  const comeco =
+    "el('out').addEventListener('click', (e) => {\n  const span = e.target.closest('[data-tog-data]');";
+
+  const inicio = interacoes.indexOf(comeco);
+  let ouvinte;
+
+  const ctx = {
+    Estado: {
+      simulando: false,
+      lancamentos: [{ id: 5, data: '2026-10-20' }],
+    },
+    dataISO: (d) => String(d || '').slice(0, 10),
+    desenhos: 0,
+    gravados: [],
+    desenhar: () => ctx.desenhos++,
+    atualizarLancamento: async (id, campos) => ctx.gravados.push([id, campos]),
+    reclassificaPeriodo() {},
+    mostrarToast() {},
+    setTimeout: () => 0,
+    clearTimeout() {},
+    el: () => ({ addEventListener: (tipo, f) => (ouvinte = f) }),
+  };
+
+  vm.runInNewContext(
+    interacoes.slice(inicio, interacoes.indexOf('\n});\n', inicio) + 5),
+    ctx
   );
+
+  const ouvintes = {};
+
+  const campo = {
+    value: valor,
+    // um dia "0" sozinho não é válido: o navegador marca badInput e deixa o value vazio
+    validity: { badInput: digitacaoIncompleta },
+    addEventListener: (tipo, f) => (ouvintes[tipo] = f),
+    focus() {},
+  };
+
+  ouvinte({
+    target: {
+      closest: () => ({
+        classList: { contains: () => false, add() {} },
+        dataset: { togData: '5' },
+        querySelector: () => campo,
+      }),
+    },
+    stopImmediatePropagation() {},
+  });
+
+  return {
+    ctx,
+    confirmar: async () => {
+      ouvintes.keydown({ key: 'Enter', preventDefault() {} });
+      await new Promise((ok) => setImmediate(ok));
+    },
+  };
+}
+
+test('edição inline de data não apaga a data ao perder o foco com dígito incompleto', async () => {
+  // No navegador do teste, o Chromium completa sozinho o segmento incompleto ("0" vira "01") depois de ~1 s e dispara
+  // change, então o caso não se reproduz na tela de forma confiável (e não se sabe se o Chrome do celular ou do computador
+  // faz igual). O "19 não vira 1" está na tela em navegador-linhas.test.js. Aqui o editor roda de verdade com o campo falso.
+  // "0" sozinho no dia nao e' um dia valido: o navegador marca badInput e deixa input.value vazio, igual a quando a data
+  // e' apagada de proposito. Sem essa checagem, perder o foco no meio da digitacao mandaria o lancamento pro Backlog sem querer.
+  const incompleto = editarDataComCampo({ valor: '', digitacaoIncompleta: true });
+
+  await incompleto.confirmar();
+  assert.deepEqual(incompleto.ctx.gravados, []); // não gravou nada
+  assert.equal(incompleto.ctx.desenhos, 1); // só voltou a desenhar a linha como estava
+  assert.equal(incompleto.ctx.Estado.lancamentos[0].data, '2026-10-20');
+  // Apagar a data de propósito (campo vazio, sem digitação pela metade) manda o lançamento pro Backlog
+  const apagada = editarDataComCampo({ valor: '', digitacaoIncompleta: false });
+
+  await apagada.confirmar();
+  assert.equal(JSON.stringify(apagada.ctx.gravados), '[[5,{"data":null}]]');
+  assert.equal(apagada.ctx.Estado.lancamentos[0].data, null);
 });
 
 test('Excluir com várias linhas marcadas (regra documentada; na tela em navegador-linhas.test.js)', () => {
@@ -421,10 +607,16 @@ test('Excluir com várias linhas marcadas (regra documentada; na tela em navegad
 });
 
 test('comparar: Todas ou Diferentes entre dois ciclos (regra documentada; na tela em navegador-linhas.test.js)', () => {
-  assert.match(
-    pagina,
-    /id=somenteDif>[\s\S]*?<option value=N>Todas[\s\S]*?<option value=D>Diferentes/
-  ); // o estado do filtro
+  // o estado do filtro: um seletor escondido com as duas opções
+  const filtro = noPorId('somenteDif');
+
+  assert.deepEqual(
+    filtro.filhos.map((o) => [o.attrs.value, arvore.texto(o).trim()]),
+    [
+      ['N', 'Todas'],
+      ['D', 'Diferentes'],
+    ]
+  );
   assert.match(regras, /dois ciclos seguintes/);
 });
 
@@ -434,7 +626,8 @@ test('conta da Isabella saiu: nenhuma casca restrita, login só do mantenedor', 
   });
   // Flag antiga de modo restrito (form com checkbox fIsa) continua fora. `reserva` em
   // formulario é o bit fin.reserva do PRÓPRIO lançamento (reserva de emergência).
-  assert.doesNotMatch(pagina, /id=fIsa|id=fReservaEmergencia/);
+  assert.equal(noPorId('fIsa'), undefined);
+  assert.equal(noPorId('fReservaEmergencia'), undefined);
   // A categoria textual "Isabella" (teto e fatura do cartão dela) é outro conceito e fica.
   assert.match(regras, /A categoria `Isabella` identifica esses lançamentos/);
   assert.doesNotMatch(regras, /## Conta restrita/);
@@ -453,11 +646,16 @@ test('mobile tem paridade total: mesmas colunas, edição e ações do desktop',
 });
 
 test('indicadores sem olho: os quatro sempre visíveis, no padrão da faixa', () => {
-  assert.doesNotMatch(pagina, /btOlho|nomeOlho/);
-  assert.doesNotMatch(
-    fs.readFileSync('css/dashboard.css', 'utf8'),
-    /btOlho|nomeOlho|\.indicadorItem\.fechado/
-  );
+  for (const nome of ['btOlho', 'nomeOlho'])
+    assert.ok(!mencionaNoHtml(pagina, nome), nome);
+  const painel = regrasCss(fs.readFileSync('css/dashboard.css', 'utf8'));
+
+  for (const r of painel)
+    for (const texto of [...r.seletores, ...r.declaracoes]) {
+      assert.ok(!texto.includes('btOlho') && !texto.includes('nomeOlho'), texto);
+      assert.notEqual(texto, '.indicadorItem.fechado');
+    }
+
   assert.match(
     regras,
     /Não há olho para esconder indicador: os quatro aparecem sempre\./
@@ -657,7 +855,7 @@ test('"N registros · período" fica encaixado no fim da faixa Futuro do título
   );
   const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 
-  assert.match(estilos, /\.resumoMeta \{\s*\n\s*margin-left: auto;/);
+  assert.ok(declaracoes(estilos, '.resumoMeta').includes('margin-left: auto'));
   assert.match(
     regras,
     /"N registros · período" fica encaixado no fim da faixa \*\*Futuro\*\*/
@@ -680,29 +878,38 @@ test('De/Até mostram o mês abreviado, com o nome completo no tooltip', async (
 });
 
 test('entre De e Até não há texto nem traço', () => {
-  assert.doesNotMatch(pagina, /navCompararAte/);
-  assert.match(
-    pagina,
-    /<select id=compDe aria-label="De"><\/select>\s*<\/label>\s*<label class=fInline id=fate>/
-  );
+  assert.ok(!mencionaNoHtml(pagina, 'navCompararAte'));
+  // O select De mora sozinho no rótulo dele, e o rótulo do Até vem logo depois, sem nada no meio
+  const de = noPorId('compDe');
+  const rotuloDe = de.pai;
+
+  assert.equal(de.attrs['aria-label'], 'De');
+  assert.equal(rotuloDe.tag, 'label');
+  assert.deepEqual(rotuloDe.filhos, [rotuloDe.filhos[0], de]);
+  assert.ok(rotuloDe.filhos[0].classes.includes('srOnly')); // o "De" é só pra leitor de tela
+  assert.equal(arvore.texto(rotuloDe).trim(), 'De');
+  const irmaos = rotuloDe.pai.filhos;
+  const ate = irmaos[irmaos.indexOf(rotuloDe) + 1];
+
+  assert.equal(ate, noPorId('fate'));
+  assert.ok(ate.classes.includes('fInline'));
   assert.match(regras, /Os dois ficam lado a lado, sem texto ou traço entre eles/);
 });
 
 test('botões de ação do cabeçalho ficam num bloco que quebra de linha inteiro', () => {
-  const grupo = pagina.slice(
-    pagina.indexOf('<div class="acoesCabecalho">'),
-    pagina.indexOf('<p class="sub">')
-  );
+  const grupo = comClasse('acoesCabecalho')[0];
+  const dentro = (no) => no.pai === grupo || (no.pai && dentro(no.pai));
 
   for (const id of ['toggleSimulacao', 'abreNovo', 'recarregar', 'btDiagnostico'])
-    assert.match(grupo, new RegExp(`id="${id}"`));
-  assert.match(
-    fs.readFileSync('css/base.css', 'utf8'),
-    /\.acoesCabecalho \{\s*\n\s*display: flex;\s*\n\s*flex-wrap: nowrap;/
-  );
-  assert.doesNotMatch(
-    fs.readFileSync('css/mobile.css', 'utf8'),
-    /#abreNovo \{\s*\n\s*margin-left: auto;/
+    assert.ok(dentro(noPorId(id)), id);
+  const base = declaracoes(fs.readFileSync('css/base.css', 'utf8'), '.acoesCabecalho');
+
+  assert.ok(base.includes('display: flex') && base.includes('flex-wrap: nowrap'));
+
+  assert.ok(
+    declaracoes(fs.readFileSync('css/mobile.css', 'utf8'), '#abreNovo').every(
+      (d) => !d.startsWith('margin-left')
+    )
   );
   assert.match(
     regras,
@@ -713,17 +920,15 @@ test('botões de ação do cabeçalho ficam num bloco que quebra de linha inteir
 test('botões que descem de linha ficam à esquerda; na mesma linha, à direita', () => {
   const base = fs.readFileSync('css/base.css', 'utf8');
 
-  const bloco = base.slice(
-    base.indexOf('.acoesCabecalho {'),
-    base.indexOf('}', base.indexOf('.acoesCabecalho {'))
-  );
-
   // margin-left:auto empurraria o bloco pra direita também quando ele está sozinho numa linha.
-  assert.doesNotMatch(bloco, /margin-left/);
+  assert.ok(
+    declaracoes(base, '.acoesCabecalho').every((d) => !d.startsWith('margin-left'))
+  );
   // Na mesma linha da navegação, é a margem automática dela que joga os botões pra direita.
-  assert.match(
-    fs.readFileSync('css/dashboard.css', 'utf8'),
-    /#fciclNav \{[^}]*margin: 0 auto 0 0;/
+  assert.ok(
+    declaracoes(fs.readFileSync('css/dashboard.css', 'utf8'), '#fciclNav').includes(
+      'margin: 0 auto 0 0'
+    )
   );
 });
 
@@ -731,19 +936,25 @@ test('controle desativado mostra o cursor de bloqueado vermelho', () => {
   const base = fs.readFileSync('css/base.css', 'utf8');
 
   // SVG do círculo cortado no vermelho do tema (--erro da base, #F06A61), com not-allowed de reserva.
-  assert.match(
-    base,
-    /--cursor-bloqueado:\s*url\("data:image\/svg\+xml,[^"]*stroke='%23F06A61'[^"]*"\)\s*12 12,\s*not-allowed;/i
+  const cursor = declaracoes(base, ':root').find((d) =>
+    d.startsWith('--cursor-bloqueado:')
   );
-  assert.match(base, /:disabled \{\s*cursor: var\(--cursor-bloqueado\) !important;/);
+
+  assert.ok(cursor.startsWith('--cursor-bloqueado: url("data:image/svg+xml,'));
+  assert.ok(cursor.toLowerCase().includes("stroke='%23f06a61'"));
+  assert.ok(cursor.endsWith('") 12 12, not-allowed'));
+  assert.ok(
+    declaracoes(base, ':disabled').includes('cursor: var(--cursor-bloqueado) !important')
+  );
 
   // Nenhuma regra de desativado volta a impor o cursor padrão ou o nativo.
-  for (const arquivo of ['css/dashboard.css', 'css/forms.css', 'css/mobile.css']) {
-    const css = fs.readFileSync(arquivo, 'utf8');
-
-    for (const [, corpo] of css.matchAll(/:disabled[^{]*\{([^}]*)\}/g))
-      assert.doesNotMatch(corpo, /cursor:/, arquivo);
-  }
+  for (const arquivo of ['css/dashboard.css', 'css/forms.css', 'css/mobile.css'])
+    for (const r of regrasCss(fs.readFileSync(arquivo, 'utf8')))
+      if (r.seletores.some((s) => s.includes(':disabled')))
+        assert.ok(
+          r.declaracoes.every((d) => !d.startsWith('cursor:')),
+          `${arquivo}: ${r.seletores}`
+        );
 
   assert.match(
     regras,
@@ -754,10 +965,12 @@ test('controle desativado mostra o cursor de bloqueado vermelho', () => {
 test('Simular é sempre laranja, como o Recarregar é sempre verde; ligado fica preenchido', () => {
   const base = fs.readFileSync('css/base.css', 'utf8');
 
-  assert.match(
-    base,
-    /#toggleSimulacao:hover,\s*\n\s*#toggleSimulacao\.ativo \{\s*\n\s*color: #10231A;\s*\n\s*background: #F0A83A;/
-  );
+  for (const seletor of ['#toggleSimulacao:hover', '#toggleSimulacao.ativo'])
+    assert.deepEqual(
+      declaracoes(base, seletor).map((d) => d.toLowerCase()),
+      ['color: #10231a', 'background: #f0a83a'],
+      seletor
+    );
   assert.match(
     regras,
     /O botão \*\*Simular\*\* \(lançamentos provisórios\) é sempre laranja/

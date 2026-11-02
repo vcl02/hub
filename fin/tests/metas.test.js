@@ -7,9 +7,14 @@ const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
 
+const { declaracoes } = require('./helpers/regras-css');
+const { etiquetas } = require('./helpers/html');
+const { ouvinteDe } = require('./helpers/ouvintes');
+const { carregarTela } = require('./helpers/tela-sem-navegador');
+const { trazer } = require('./helpers/trazer-funcao');
+
 const ler = (arquivo) => fs.readFileSync(arquivo, 'utf8');
 const graficos = ler('js/charts.js');
-const interacoes = ler('js/interactions.js');
 const visoes = ler('js/cycle-views.js');
 
 assert.ok(ler('js/supabase-api.js'), 'js/supabase-api.js existe');
@@ -359,7 +364,7 @@ test('mês da meta: débito começa nele, cartão compra nele; sem entrada, o m�
   );
 });
 
-test('plano em pílulas: situação, entrada, parcelas, Comprometido e falta, com cores', () => {
+test('plano em pílulas: situação, entrada, parcelas, Comprometido e falta, com cores', async () => {
   // Só o trecho do plano (cycle-views.js), com domain/shared reais e 12 ciclos.
   const trecho = visoes.slice(
     visoes.indexOf('const mesAbrev'),
@@ -492,14 +497,49 @@ test('plano em pílulas: situação, entrada, parcelas, Comprometido e falta, co
     regras,
     /mudar o mês da 1ª parcela\/compra, ou pôr uma entrada onde não havia, volta o mês dela pra 1 mês antes, e mudar o Mês da entrada ou o valor de uma entrada que já existe mantém o escolhido/
   );
-  // As vezes ficam junto do valor total (linha de cima); o mês da entrada embaixo, só com entrada.
-  const campos = visoes.replace(/\s+/g, ''); // o Prettier quebra a chamada em linhas: compara sem espaços
 
-  assert.ok(
-    campos.indexOf("campo('mcValor'") < campos.indexOf("campo('mcVezes'") &&
-      campos.indexOf("campo('mcVezes'") < campos.indexOf("campo('mcMes'")
-  );
-  assert.ok(campos.includes("campo('mcMes'"));
+  // As vezes ficam junto do valor total (linha de cima); o mês da entrada embaixo, só com entrada.
+  // O modal desenhado pela função real: a ordem dos campos (label.metaCampo mcX) no HTML devolvido.
+  const t = carregarTela({
+    dados: {
+      fin_ciclo: Array.from({ length: 6 }, (_, i) => ({
+        id: i + 1,
+        inicio: new Date(Date.UTC(2026, 8 + i, 15)).toISOString().slice(0, 10),
+        fim:
+          i === 5 ? null : new Date(Date.UTC(2026, 9 + i, 14)).toISOString().slice(0, 10),
+      })),
+      fin_meta: [
+        {
+          id: 7,
+          nome: 'Carro',
+          valor: 6000,
+          mes: '2026-12-01',
+          forma: 'financiamento',
+          parcelas: 3,
+          entrada: 1000,
+          meses_ate_parcela: 1,
+          status: 'aberta',
+        },
+      ],
+      fin: [],
+    },
+  });
+
+  await t.bruto('carregarDados()');
+
+  const ordem = etiquetas(t.bruto('htmlModalMetas(planoDasMetas())'))
+    .filter((e) => e.tag === 'label')
+    .map((e) => e.attrs.class.split(' ')[1]);
+
+  assert.deepEqual(ordem, [
+    'mcNome',
+    'mcValor',
+    'mcVezes',
+    'mcMes',
+    'mcForma',
+    'mcEntrada',
+    'mcMesEntrada',
+  ]);
 });
 
 test('parcelado no meu cartão sem limite em nenhum cartão: não cabe e o plano diz por quê', () => {
@@ -657,15 +697,20 @@ test('mês da entrada: campo embaixo, gravado como meses antes do mês da meta (
 test('modal: todo campo com rótulo em cima, numa grade de colunas fixas', () => {
   const css = ler('css/forms.css');
 
-  assert.match(
-    css,
-    /grid-template-columns: minmax\(0, 1fr\) 7\.5rem 6\.5rem 10rem 10\.5rem auto;/
+  assert.ok(
+    declaracoes(css, '.metaGrade').includes(
+      'grid-template-columns: minmax(0, 1fr) 7.5rem 6.5rem 10rem 10.5rem auto'
+    )
   );
-  assert.match(css, /\.mcEntrada \{ grid-column: 2; grid-row: 2; \}/);
-  assert.match(css, /\.mcMesEntrada \{ grid-column: 4; grid-row: 2; \}/);
-  assert.match(
-    ler('css/mobile.css'),
-    /\.metaGrade \{ grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\); \}/
+  assert.deepEqual(declaracoes(css, '.mcEntrada'), ['grid-column: 2', 'grid-row: 2']);
+  assert.deepEqual(declaracoes(css, '.mcMesEntrada'), ['grid-column: 4', 'grid-row: 2']);
+
+  assert.ok(
+    declaracoes(
+      ler('css/mobile.css'),
+      '.metaGrade',
+      '@media (max-width: 640px)'
+    ).includes('grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)')
   );
   assert.match(
     regras,
@@ -779,18 +824,65 @@ test('mês a mês: botão em cada meta, modal próprio e refeito a cada desenho'
     /\*\*Mês a mês\*\* \(botão-ícone de calendário em cada meta\) abre um modal/
   );
   // No celular, cada mês vira um cartão com o rótulo em cima de cada número (sem rolar de lado).
-  assert.match(
-    ler('css/mobile.css'),
-    /\.pmTabela td\[data-rotulo\]::before \{\s*content: attr\(data-rotulo\);/
+  assert.ok(
+    declaracoes(ler('css/mobile.css'), '.pmTabela td[data-rotulo]::before').includes(
+      'content: attr(data-rotulo)'
+    )
   );
 });
 
 test('campo de mês das metas não grava ano pela metade nem o mês da meta apagado', () => {
-  // A guarda vem antes de qualquer gravação ou aviso.
-  assert.ok(
-    interacoes.indexOf("campo === 'mes_entrada') && (input.value") <
-      interacoes.indexOf('let valor = valorDoCampoDaMeta(campo, input.value);')
+  // O ouvinte real de "change" de #corpoMetas, com as dependências trocadas por registradores de chamadas.
+  const chamadas = [];
+
+  const { ouvinte } = ouvinteDe(
+    'js/interactions.js',
+    "(campo === 'mes' || campo === 'mes_entrada') &&",
+    {
+      Estado: { metas: [{ id: 5, mes: '2026-11-01' }] },
+      formaDaMeta: () => 'financiamento',
+      valorDoCampoDaMeta: (campo, texto) => {
+        chamadas.push(`ler:${campo}`);
+
+        return texto ? `${texto}-01` : null;
+      },
+      mostrarToast: (titulo) => chamadas.push(`toast:${titulo}`),
+      desenhar: () => chamadas.push('desenhar'),
+      gravarMudancaDaMeta: (acao, id, campos) =>
+        chamadas.push(`gravar:${acao}:${id}:${JSON.stringify(campos)}`),
+    },
+    { evento: 'change' }
   );
+
+  const muda = (campo, valor) => {
+    chamadas.length = 0;
+    ouvinte({
+      target: {
+        closest: (sel) =>
+          sel === '[data-campo]'
+            ? { dataset: { campo }, value: valor }
+            : { dataset: { meta: '5' } },
+      },
+    });
+
+    return [...chamadas];
+  };
+
+  // A guarda vem antes de qualquer leitura, gravação ou aviso: ano pela metade e mês da meta apagado não fazem nada.
+  assert.deepEqual(muda('mes_entrada', '0202-05'), []);
+  assert.deepEqual(muda('mes', '0020-01'), []);
+  assert.deepEqual(muda('mes', ''), []);
+  // Mês da entrada vazio é escolha (volta ao padrão): passa pela guarda; como a meta já está no padrão, nada a gravar.
+  assert.deepEqual(muda('mes_entrada', ''), ['ler:mes_entrada']);
+  assert.deepEqual(muda('mes_entrada', '2026-10'), [
+    'ler:mes_entrada',
+    'gravar:atualizar:5:{"meses_ate_parcela":1}',
+  ]);
+  assert.deepEqual(muda('mes_entrada', '2027-03'), [
+    'ler:mes_entrada',
+    'toast:Mês inválido',
+    'desenhar',
+  ]);
   assert.match(regras, /Campo de mês só grava mês completo, de 2000 em diante/);
 });
 
@@ -933,16 +1025,36 @@ test('pra caber: receitas da meta que não cabe e "Em Nx" sem cortar', () => {
 });
 
 test('pra caber: modal, Simular só na memória e regra documentada', () => {
-  const simular = interacoes.slice(
-    interacoes.indexOf('function simularReceitaPraCaber('),
-    interacoes.indexOf('\n}\n', interacoes.indexOf('function simularReceitaPraCaber('))
-  );
+  // A função real: liga a simulação e guarda o retrato ANTES de cortar; nada de gravar no banco.
+  const tela = carregarTela();
+  let desenhos = 0;
 
-  // Liga a simulação e guarda o retrato ANTES de mexer; nada de gravar no banco.
-  assert.ok(
-    simular.indexOf('guardarRetratoAntesDaSimulacao()') <
-      simular.indexOf('receita.cortes.forEach')
-  );
+  trazer(tela.ctx, 'js/form.js', ['guardarRetratoAntesDaSimulacao']);
+  trazer(tela.ctx, 'js/interactions.js', ['simularReceitaPraCaber']);
+  tela.ctx.atualizaBotaoSimulacao = () => {};
+
+  tela.ctx.desenhar = () => desenhos++;
+  tela.bruto(`(() => {
+    Estado.simulando = false;
+    Estado.metas = [];
+    Estado.limitesPorCiclo = new Map();
+    Estado.lancamentos = [{ id: 1 }, { id: 2 }, { id: 3 }];
+  })()`);
+  const ids = (lista) => Array.from(tela.bruto(lista), (l) => l.id);
+
+  tela.bruto('simularReceitaPraCaber')(undefined);
+  assert.equal(tela.bruto('Estado.simulando'), false);
+
+  tela.bruto('simularReceitaPraCaber')({ cortes: [{ id: 1 }] });
+  assert.equal(tela.bruto('Estado.simulando'), true);
+  assert.deepEqual(ids('Estado.retratoAntesDaSimulacao.lancamentos'), [1, 2, 3]); // retrato antes do corte
+  assert.deepEqual(ids('Estado.lancamentos'), [2, 3]);
+  // Segundo corte na mesma simulação: o retrato continua o do começo
+  tela.bruto('simularReceitaPraCaber')({ cortes: [{ id: 2 }] });
+  assert.deepEqual(ids('Estado.retratoAntesDaSimulacao.lancamentos'), [1, 2, 3]);
+  assert.deepEqual(ids('Estado.lancamentos'), [3]);
+  assert.equal(desenhos, 2);
+
   assert.match(
     regras,
     /\*\*Pra caber\*\* \(no Mês a mês de uma meta que não cabe por falta de dinheiro\)/

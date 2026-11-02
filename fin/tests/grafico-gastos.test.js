@@ -3,6 +3,8 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { carregarTela } = require('./helpers/tela-sem-navegador');
+const { ouvinteDe } = require('./helpers/ouvintes');
 
 const fonte = fs.readFileSync('js/charts.js', 'utf8');
 const regrasMd = fs.readFileSync('docs/REGRAS.md', 'utf8');
@@ -130,19 +132,82 @@ test('comando do seletor alterna entre incluir e excluir todas as categorias do 
     Array.from(regras.proximaExclusaoDasCategorias(['Casa', 'Lazer'], ['Casa', 'Outra'])),
     ['Outra']
   );
-  assert.match(fonte, /id=excluirCatTudo/);
 });
+
+// O seletor de categorias do modal do gráfico: abrirGraficoGastos de verdade (carga e desenho reais, banco falso, Chart.js falso).
+async function abrirGrafico() {
+  const l = (id, nome, data, valor, categ) => ({
+    id,
+    nome,
+    data,
+    valor,
+    categ,
+    cred: false,
+    pago: true,
+    fatura: null,
+    freq: null,
+  });
+
+  const t = carregarTela({
+    dados: {
+      fin_ciclo: [{ id: 1, inicio: '2026-10-15', fim: null }],
+      fin_meta: [],
+      fin: [
+        l(1, 'Salário', '2026-10-15', 9000, 'Salário'),
+        l(2, 'Mercado', '2026-10-16', -300, 'Mercado'),
+        l(3, 'Contador', '2026-10-16', -200, 'Contabilidade'),
+      ],
+    },
+  });
+
+  await t.bruto('carregarDados()');
+  t.bruto('abrirGraficoGastos(0)');
+
+  return { t, lista: t.ctx.document.getElementById('excluirCatDrop').innerHTML };
+}
+
+test('o seletor tem o comando de selecionar/desmarcar tudo e a categoria excluída por padrão continua reincluível', async () => {
+  const { lista } = await abrirGrafico();
+
+  // com Contabilidade fora, nem todas estão incluídas: o comando oferece selecionar tudo
+  assert.match(
+    lista,
+    /<button type=button id=excluirCatTudo class=multiSelAll[^>]*>Selecionar tudo<\/button>/
+  );
+  // a lista traz todas as categorias do ciclo: as incluídas marcadas e a excluída desmarcada (dá para reincluir)
+  assert.match(lista, /<input type=checkbox value="Mercado" checked /);
+  assert.match(lista, /<input type=checkbox value="Contabilidade" {2}onchange=/);
+});
+
+// Tocar fora do seletor fecha o dropdown antes de o gráfico tratar o gesto: os dois ouvintes reais de js/charts.js.
+function tocarForaDoSeletor(evento, marcador, { dentro }) {
+  let aberto = true;
+
+  const { ouvinte } = ouvinteDe(
+    'js/charts.js',
+    marcador,
+    (registra) => ({
+      el: (id) =>
+        id === 'excluirCatDrop'
+          ? { classList: { remove: () => (aberto = false) } }
+          : { addEventListener: registra },
+    }),
+    { evento }
+  );
+
+  ouvinte({ target: { closest: () => (dentro ? {} : null) } });
+
+  return aberto;
+}
 
 test('clique fora do seletor no modal fecha o dropdown antes do gráfico tratar o gesto', () => {
-  assert.match(fonte, /modalGrafico'\)\.addEventListener\('pointerdown'/);
-  assert.match(fonte, /!e\.target\.closest\('#excluirCatWrap'\)/);
-});
+  const pointerdown = "'pointerdown'";
+  const clique = "if (!e.target.closest('#excluirCatWrap')) el('excluirCatDrop')";
 
-test('categoria continua reincluível no seletor: só o estado INICIAL muda, não a lista de categorias disponíveis', () => {
-  assert.match(
-    fonte,
-    /montaExcluirCatDrop\(todasCategorias, categoriasCompartilhadas\);/
-  );
+  assert.equal(tocarForaDoSeletor('pointerdown', pointerdown, { dentro: false }), false); // fechou
+  assert.equal(tocarForaDoSeletor('pointerdown', pointerdown, { dentro: true }), true); // dentro do seletor: segue aberto
+  assert.equal(tocarForaDoSeletor('click', clique, { dentro: false }), false);
+  assert.equal(tocarForaDoSeletor('click', clique, { dentro: true }), true);
 });
 
 test('regra documentada em REGRAS.md', () => {

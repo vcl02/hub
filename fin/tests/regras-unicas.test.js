@@ -4,6 +4,8 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { carregarTela } = require('./helpers/tela-sem-navegador');
+const { trazer } = require('./helpers/trazer-funcao');
 
 const compartilhado = fs.readFileSync('js/shared.js', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
@@ -58,21 +60,63 @@ test('ciclo: Crédito pela fatura (mesmo sem data), Débito pela data, sem nada 
   assert.equal(periodo({ cred: false, data: '2026-01-01' }), null); // fora dos ciclos
 });
 
-test('ninguém mais tem cópia própria das regras', () => {
-  for (const arquivo of ['js/form.js', 'js/supabase-api.js', 'js/interactions.js']) {
-    const fonte = fs.readFileSync(arquivo, 'utf8');
+test('ninguém mais tem cópia própria das regras: a carga e a reclassificação concordam com a regra única', async () => {
+  const linha = (id, extra) => ({
+    id,
+    nome: `L${id}`,
+    data: '2026-10-17',
+    valor: -10,
+    categ: 'Compras',
+    cred: false,
+    pago: true,
+    fatura: null,
+    freq: null,
+    ...extra,
+  });
 
-    assert.doesNotMatch(fonte, /\/\^investimento\$\/i/, arquivo);
-    assert.doesNotMatch(fonte, /periodoIdx != null && periodoIdx >= 0/, arquivo);
+  const tela = carregarTela({
+    dados: {
+      fin: [
+        linha(1, { categ: 'Investimento, Reserva', data: '2026-10-16' }), // lista: um item é Investimento
+        linha(2, { categ: ' investimento ' }),
+        linha(3, { categ: 'Investimentos' }), // item inteiro: não é
+        linha(4, { cred: true, data: null, fatura: '2026-11-12' }), // Crédito sem data: pela fatura
+        linha(5, { data: null }), // sem nada: Backlog
+      ],
+      fin_ciclo: [
+        { id: 1, inicio: '2026-09-15', fim: '2026-10-14' },
+        { id: 2, inicio: '2026-10-15', fim: null },
+      ],
+      fin_meta: [],
+    },
+  });
+
+  await tela.bruto('carregarDados()');
+  trazer(tela.ctx, 'js/interactions.js', ['reclassificaPeriodo']);
+
+  const lancamentos = tela.rodar('Estado.lancamentos.filter(l => l.id > 0)');
+
+  assert.equal(lancamentos.length, 5);
+
+  for (const l of lancamentos) {
+    // Mesma conta que a regra única faz sobre a linha
+    tela.ctx.l = l;
+    assert.equal(l.inv, tela.bruto('ehCategoriaInvestimento(l.categ)'), l.nome);
+    assert.equal(l.periodoIdx, tela.bruto('periodoDoLancamento(l)'), l.nome);
+
+    // Reclassificar na tela (editar data, fatura ou Crédito) dá o mesmo ciclo da carga
+    tela.ctx.copia = { ...l, periodoIdx: 'velho' };
+    tela.bruto('reclassificaPeriodo(copia)');
+    assert.equal(tela.ctx.copia.periodoIdx, l.periodoIdx, l.nome);
   }
 
-  assert.match(
-    fs.readFileSync('js/supabase-api.js', 'utf8'),
-    /inv: ehCategoriaInvestimento\(categ\),\s*\n\s*periodoIdx: periodoDoLancamento\(r\),/
+  assert.deepEqual(
+    lancamentos.map((l) => l.inv),
+    [true, true, false, false, false]
   );
-  assert.match(
-    fs.readFileSync('js/interactions.js', 'utf8'),
-    /function reclassificaPeriodo\(r\) \{\s*\n\s*r\.periodoIdx = periodoDoLancamento\(r\);/
+  assert.deepEqual(
+    lancamentos.map((l) => l.periodoIdx),
+    [1, 1, 1, 1, null]
   );
   assert.match(regras, /"é investimento" e o ciclo de um lançamento seguem uma regra só/);
 });

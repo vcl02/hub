@@ -97,8 +97,6 @@ test('REGRAS.md: compra no cartão da Isabella é Débito "Isabella, Fatura", se
     regras,
     /quando a fatura real fechar, ela recebe o total da fatura \*\*menos\*\* os itens já lançados naquele mês/
   );
-  // As regras que sustentam a convenção continuam no código: "Fatura" tira do teto Isabella e
-  // só "Antecipação" + "Fatura" é transferência.
-  fs.readFileSync('js/charts.js', 'utf8');
-  fs.readFileSync('js/shared.js', 'utf8');
+  // As regras que sustentam a convenção ("Fatura" tira do teto Isabella; só "Antecipação" + "Fatura" é transferência)
+  // rodam como função em limite-besteira.test.js.
 });

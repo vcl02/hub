@@ -9,6 +9,7 @@ const test = require('node:test');
 const vm = require('node:vm');
 const { carregarTela } = require('./helpers/tela-sem-navegador');
 const { trazer } = require('./helpers/trazer-funcao');
+const { etiquetas } = require('./helpers/html');
 const { declaracoes, regras: regrasCss } = require('./helpers/regras-css');
 
 const compartilhado = fs.readFileSync('js/shared.js', 'utf8');
@@ -162,14 +163,18 @@ function preencherCadastro(el, campos) {
 }
 
 test('Frequência vem antes de Vezes e os dois ficam fora do grid dos demais campos, em linha fixa', () => {
-  const ordem = ['id="fFreqWrap"', 'id="parcelasLinha"', 'id="fParcelasWrap"'].map(
-    (marca) => pagina.indexOf(marca)
-  );
+  const elementos = etiquetas(pagina);
+  const posicao = (id) => elementos.findIndex((e) => e.attrs.id === id);
+  const ordem = ['fFreqWrap', 'parcelasLinha', 'fParcelasWrap'].map(posicao);
 
-  assert.ok(pagina.indexOf('id="fFreq"') < pagina.indexOf('id="fParcelas"'));
+  assert.ok(posicao('fFreq') >= 0 && posicao('fFreq') < posicao('fParcelas'));
   assert.ok(ordem[0] >= 0 && ordem[0] < ordem[1] && ordem[1] < ordem[2], String(ordem));
-  assert.ok(pagina.includes('for="fFreq"'));
-  assert.ok(pagina.includes('for="fCateg"'));
+
+  for (const alvo of ['fFreq', 'fCateg'])
+    assert.ok(
+      elementos.some((e) => e.tag === 'label' && e.attrs.for === alvo),
+      alvo
+    );
   assert.deepEqual(declaracoes(estilos, '.parcelasLinha', ''), [
     'display: flex',
     'gap: 0.6rem',

@@ -86,10 +86,54 @@ test('ciclo aberto usa fechamento provisório, nunca 31/12/9999', () => {
   assert.equal(ctx.f({ ini: '2026-10-05', fat: '9999-12-31' }), '2026-11-04');
   assert.equal(ctx.f({ ini: '2027-01-31', fat: '9999-12-31' }), '2027-02-27');
   assert.equal(ctx.f({ ini: '2026-10-05', fat: '2026-11-04' }), '2026-11-04');
-  assert.match(
-    fs.readFileSync('js/form.js', 'utf8'),
-    /const data = dataDeFechamentoDoCiclo\(Estado\.ciclos\[idx\]\) \|\| null;/
-  );
   assert.match(regras, /nunca a data técnica 31\/12\/9999/);
   assert.match(regras, /\*\*Consolidação automática:\*\* a cada 15 minutos/);
+});
+
+// O Aporte/Resgate gravado no ciclo aberto leva o fechamento provisório, nunca 9999-12-31: materializaOuConsolidaAjuste real.
+test('o Aporte criado no ciclo aberto, real ou simulado, leva a data de fechamento provisória', async () => {
+  const fonteForm = fs.readFileSync('js/form.js', 'utf8');
+  const iniDatas = compartilhado.indexOf('function somaMeses(iso, n) {');
+
+  const fimDatas =
+    compartilhado.indexOf(
+      '\n}\n',
+      compartilhado.indexOf('function dataDeFechamentoDoCiclo(ciclo) {')
+    ) + 3;
+
+  const iniFuncao = fonteForm.indexOf('async function materializaOuConsolidaAjuste(');
+  const fimFuncao = fonteForm.indexOf('\n}\n', iniFuncao) + 3;
+
+  async function materializar(simulando) {
+    const gravados = [];
+
+    const ctx = {
+      Estado: {
+        simulando,
+        ciclos: [{ ini: '2026-10-05', fat: '9999-12-31' }],
+        lancamentos: [],
+      },
+      dataISO: (s) => String(s || '').slice(0, 10),
+      movimentoAporteOuResgateDoCiclo: () => null, // ainda não há Aporte no ciclo
+      ehCategoriaInvestimento: () => true,
+      periodoDoLancamento: () => 0,
+      simulaLancamentoParcelado: (campos) => gravados.push(campos.data),
+      inserirLancamento: async (campos) => {
+        gravados.push(campos.data);
+
+        return { ...campos, id: 9 };
+      },
+    };
+
+    vm.runInNewContext(
+      `${compartilhado.slice(iniDatas, fimDatas)}\n${fonteForm.slice(iniFuncao, fimFuncao)}\nthis.f = materializaOuConsolidaAjuste;`,
+      ctx
+    );
+    await ctx.f(0, true, 'Investimento', -500);
+
+    return gravados;
+  }
+
+  assert.deepEqual(await materializar(false), ['2026-11-04']);
+  assert.deepEqual(await materializar(true), ['2026-11-04']);
 });

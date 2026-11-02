@@ -3,6 +3,7 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { carregarTela } = require('./helpers/tela-sem-navegador');
 
 const fonte = fs.readFileSync('js/cycle-views.js', 'utf8');
 const regrasDocumentadas = fs.readFileSync('docs/REGRAS.md', 'utf8');
@@ -112,8 +113,63 @@ test('confirma acabou, começou e único somente com dois ciclos futuros', () =>
   });
 });
 
-test('comparar exclui transferências e não cria abatimento de fatura', () => {
-  assert.match(fonte, /mudancaInteiramenteExplicadaPorDuplicidade\(chave, estado\)/);
+// Exclusão de transferências e a ausência de abatimento de fatura na matriz: ciclo-desenhado.test.js (comparar dois ciclos).
+// Aqui, o filtro "Diferentes" da tela desenhada: a recorrência que caiu duas vezes no mesmo ciclo (datas em meses distintos)
+// não conta como categoria que começou, mas outro nome na mesma categoria faz ela voltar à lista.
+const lancamento = (id, nome, data, valor, categ) => ({
+  id,
+  nome,
+  data,
+  valor,
+  categ,
+  cred: false,
+  pago: true,
+  fatura: null,
+  freq: null,
+});
+
+const quatroCiclos = (...lancamentos) => ({
+  fin_ciclo: [
+    { id: 1, inicio: '2026-09-15', fim: '2026-10-14' },
+    { id: 2, inicio: '2026-10-15', fim: '2026-11-14' },
+    { id: 3, inicio: '2026-11-15', fim: '2026-12-14' },
+    { id: 4, inicio: '2026-12-15', fim: null },
+  ],
+  fin: [
+    lancamento(1, 'Salário', '2026-10-15', 9000, 'Salário'),
+    lancamento(4, 'Luz', '2026-10-20', -150, 'Casa'),
+    lancamento(6, 'Gás', '2026-09-20', -80, 'Mercado'), // os dois ciclos comparados têm lançamento
+    lancamento(7, 'Gás', '2026-10-20', -80, 'Mercado'),
+    ...lancamentos,
+  ],
+  fin_meta: [],
+});
+
+test('Diferentes tira a categoria que só começou por recorrência duplicada no ciclo e mantém as outras', async () => {
+  const dados = quatroCiclos(
+    lancamento(2, 'Ammi', '2026-10-16', -36.98, 'Isabella'),
+    lancamento(3, 'Ammi', '2026-11-10', -50, 'Isabella') // o mesmo nome, mês diferente, no mesmo ciclo
+  );
+
+  const todas = await carregarTela({ dados }).desenharComparacao(0, 1, 'N');
+  const diferentes = await carregarTela({ dados }).desenharComparacao(0, 1, 'D');
+
+  assert.match(todas.texto, /Isabella ✓ \* /); // com o aviso de possível recorrência duplicada
+  assert.match(todas.texto, /Casa ✓ /);
+  assert.doesNotMatch(diferentes.texto, /Isabella/);
+  assert.match(diferentes.texto, /Casa ✓ /); // Luz começou de verdade
+});
+
+test('Diferentes mantém a categoria quando outro nome também a fez começar', async () => {
+  const dados = quatroCiclos(
+    lancamento(2, 'Ammi', '2026-10-16', -36.98, 'Isabella'),
+    lancamento(3, 'Ammi', '2026-11-10', -50, 'Isabella'),
+    lancamento(5, 'Sabonete', '2026-10-17', -99.3, 'Isabella')
+  );
+
+  const { texto } = await carregarTela({ dados }).desenharComparacao(0, 1, 'D');
+
+  assert.match(texto, /Isabella /);
 });
 
 test('comparar aplica exclusões depois de unir linhas reais e sintéticas', () => {

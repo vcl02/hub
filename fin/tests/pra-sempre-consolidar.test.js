@@ -128,30 +128,85 @@ test('Frequência, Crédito e o que fica de fora', () => {
   );
 });
 
-test('Consolidar tudo: só no clique, antes do Aporte/Resgate, nunca na simulação; regra documentada', () => {
-  assert.match(
-    formulario,
-    /const \{ criadas: praSempre, log: logPraSempre \} = silencioso \? \{ criadas: 0, log: \[\] \} : await estenderPraSempre\(\);/
+// Roda a estenderPraSempre real (js/form.js) com a busca das ocorrências e o banco simulados; anota cada passo.
+async function estender({ simulando = false, temPraSempre = true, grupos }) {
+  const eventos = [];
+  let proxima = 100;
+
+  const ctx = {
+    Estado: { simulando, temPraSempre, lancamentos: [{ id: 1 }] },
+    ocorrenciasPraSempreQueFaltam: () => grupos,
+    proximaRecorrencia: async () => {
+      eventos.push('proximaRecorrencia');
+
+      return proxima++;
+    },
+    atualizarLancamentos: async (ids, campos) => eventos.push(['atualiza', ids, campos]),
+    inserirLancamentos: async (linhas) => {
+      eventos.push(['insere', linhas.map((n) => [n.data, n.recorrencia_id])]);
+
+      return linhas.map((n, i) => ({ ...n, id: 900 + i, valor: -500 }));
+    },
+    ehCategoriaInvestimento: () => false,
+    periodoDoLancamento: () => 4,
+    limparCachesFinanceiros: () => eventos.push('limpaCaches'),
+    nomePeriodoAbrev: ({ ini }) => ini.slice(0, 7),
+  };
+
+  vm.createContext(ctx);
+  vm.runInContext(
+    `${formulario.slice(formulario.indexOf('async function estenderPraSempre('), formulario.indexOf('async function consolidarTudo('))}\nthis.estenderPraSempre = estenderPraSempre;`,
+    ctx
   );
-  assert.ok(
-    formulario.indexOf("etapa('Estendendo pra sempre…');") <
-      formulario.indexOf("etapa('Consolidando…');")
-  );
-  assert.match(
-    formulario,
-    /if \(Estado\.simulando \|\| !Estado\.temPraSempre\) return \{ criadas: 0, log: \[\] \};/
-  );
+
+  const retorno = await ctx.estenderPraSempre();
+
+  return {
+    retorno: JSON.parse(JSON.stringify(retorno)),
+    eventos: JSON.parse(JSON.stringify(eventos)),
+    ctx,
+  };
+}
+
+const grupoSemLote = () => ({
+  modelo: { id: 11, nome: 'Condomínio', recorrencia_id: null },
+  novas: [
+    { data: '2029-01-15', recorrencia_id: null },
+    { data: '2029-02-15', recorrencia_id: null },
+  ],
+});
+
+test('Pra sempre no Consolidar tudo: nunca na simulação nem sem lançamento pra sempre; o lote vem antes do INSERT único', async () => {
+  // O encaixe no Consolidar tudo (só no clique, antes do Aporte/Resgate) está em consolidar-tudo.test.js.
+  for (const parametros of [{ simulando: true }, { temPraSempre: false }]) {
+    const nada = await estender({ ...parametros, grupos: [grupoSemLote()] });
+
+    assert.deepEqual(nada.retorno, { criadas: 0, log: [] });
+    assert.deepEqual(nada.eventos, []); // nem número de lote, nem INSERT
+  }
+
+  assert.deepEqual((await estender({ grupos: [] })).retorno, { criadas: 0, log: [] });
 
   // Modelo sem lote: próximo número da sequência pra ele e pras novas, antes do INSERT único.
-  const estender = formulario.slice(
-    formulario.indexOf('async function estenderPraSempre('),
-    formulario.indexOf('async function consolidarTudo(')
-  );
+  const r = await estender({ grupos: [grupoSemLote()] });
 
-  assert.ok(
-    estender.indexOf('await proximaRecorrencia()') <
-      estender.indexOf('await inserirLancamentos(')
-  );
+  assert.deepEqual(r.eventos, [
+    'proximaRecorrencia',
+    ['atualiza', [11], { recorrencia_id: 100 }],
+    [
+      'insere',
+      [
+        ['2029-01-15', 100],
+        ['2029-02-15', 100],
+      ],
+    ],
+    'limpaCaches',
+  ]);
+  assert.deepEqual(r.retorno, {
+    criadas: 2,
+    log: ['Pra sempre: Condomínio — 2 ocorrência(s), de 2029-01 a 2029-02.'],
+  });
+  assert.equal(r.ctx.Estado.lancamentos.length, 3); // 1 + 2 criadas, já na tela
   assert.match(regras, /\*\*Pra sempre até o limite:\*\* o Consolidar tudo pelo clique/);
   assert.match(
     regras,

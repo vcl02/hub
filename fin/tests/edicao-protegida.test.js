@@ -4,6 +4,8 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { carregarTela } = require('./helpers/tela-sem-navegador');
+const { trazer } = require('./helpers/trazer-funcao');
 
 const dadosUi = fs.readFileSync('js/data-ui.js', 'utf8');
 const formulario = fs.readFileSync('js/form.js', 'utf8');
@@ -87,11 +89,59 @@ test('campo fora da tabela (ex.: busca no cadastro) não segura o redesenho', ()
   assert.equal(ctx.desenhos, 1);
 });
 
-test('load e consolidação silenciosos usam a espera; o clique redesenha direto', () => {
-  assert.match(
-    fs.readFileSync('js/interactions.js', 'utf8'),
-    /function desenhar\(\) \{\s*\n\s*Estado\.redesenhoPendente = false;/
-  );
+// A recarga silenciosa (load) e a consolidação automática chamam desenharQuandoLivre: gravacao-recarga.test.js (load) e
+// consolidar-tudo.test.js (consolidarTudo). O clique, a edição confirmada e o resto chamam desenhar() direto, que é o
+// desenho de verdade (js/interactions.js, com os desenhos auxiliares de tela trocados por funções vazias):
+test('o desenho direto (clique) pinta o ciclo e apaga o redesenho pendente', async () => {
+  const l = (id, nome, data, valor, categ) => ({
+    id,
+    nome,
+    data,
+    valor,
+    categ,
+    cred: false,
+    pago: true,
+    fatura: null,
+    freq: null,
+  });
+
+  const t = carregarTela({
+    dados: {
+      fin_ciclo: [
+        { id: 1, inicio: '2026-09-15', fim: '2026-10-14' },
+        { id: 2, inicio: '2026-10-15', fim: null },
+      ],
+      fin: [l(1, 'Salário', '2026-10-15', 9000, 'Salário')],
+      fin_meta: [],
+    },
+  });
+
+  await t.bruto('carregarDados()');
+
+  for (const nome of [
+    'sincronizarCicloNaUrl',
+    'popularAlvosVisualizacao',
+    'atualizarIndicadoresFinanceiros',
+    'encaixarIndicadoresNoDebito',
+    'alinharResumosDosTitulos',
+    'atualizarCartoes',
+    'atualizarMetas',
+    'atualizarBotaoSomenteDif',
+    'recolherBloco',
+  ])
+    t.ctx[nome] = () => {};
+
+  trazer(t.ctx, 'js/interactions.js', ['desenhar']);
+
+  const el = t.ctx.document.getElementById;
+
+  el('compDe').value = '1';
+  el('compAte').value = '1';
+  t.bruto('Estado.idxHoje = 1');
+  t.bruto('Estado.redesenhoPendente = true'); // uma recarga silenciosa ficou esperando a edição acabar
+  t.bruto('desenhar()');
+  assert.equal(t.rodar('Estado.redesenhoPendente'), false);
+  assert.match(el('out').innerHTML, /Salário/);
 });
 
 async function desligarSimulacao({ recargaOk }) {

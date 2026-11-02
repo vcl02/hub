@@ -10,6 +10,7 @@ const test = require('node:test');
 const vm = require('node:vm');
 const { extrairTrecho } = require('./helpers/carregar-funcoes');
 const { carregarTela } = require('./helpers/tela-sem-navegador');
+const { declaracoes } = require('./helpers/regras-css');
 
 const formulario = fs.readFileSync('js/form.js', 'utf8');
 const inicializacao = fs.readFileSync('js/bootstrap.js', 'utf8');
@@ -449,9 +450,13 @@ test('tocar fora do modal do resultado o fecha; tocar dentro não', () => {
 test('o fundo escurecido do modal do resultado é o mesmo do diagnóstico (CSS)', () => {
   const css = fs.readFileSync('css/forms.css', 'utf8');
 
-  assert.match(
-    css,
-    /dialog#modalDiagnostico::backdrop,\s*dialog#modalConsolidarTudo::backdrop \{[^}]*rgba\(0, 0, 0, \.68\)/
+  const escurecido = 'background: rgba(0, 0, 0, 0.68)';
+
+  assert.ok(
+    declaracoes(css, 'dialog#modalConsolidarTudo::backdrop', '').includes(escurecido)
+  );
+  assert.ok(
+    declaracoes(css, 'dialog#modalDiagnostico::backdrop', '').includes(escurecido)
   );
 });
 

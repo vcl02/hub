@@ -4,10 +4,15 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { carregarTela } = require('./helpers/tela-sem-navegador');
+const { trazer } = require('./helpers/trazer-funcao');
+const { declaracoes } = require('./helpers/regras-css');
 
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
+
+const plano = (valor) => JSON.parse(JSON.stringify(valor));
 
 // Roda encaixarIndicadoresNoDebito do arquivo real com um DOM falso mínimo.
 function encaixar(noCicloUnico, faixaDoDebito) {
@@ -59,38 +64,76 @@ test('comparação (ou sem Débito na tela): ficam no cabeçalho', () => {
   assert.ok(!encaixar(true, null).classes.has('semIndicadores'));
 });
 
-test('o nó volta pro cabeçalho antes de #out ser reescrito, e é encaixado depois', () => {
-  const corpo = interacoes.slice(interacoes.indexOf('function desenhar() {'));
+test('o nó volta pro cabeçalho antes de #out ser reescrito, e é encaixado depois', async () => {
+  const tela = carregarTela({
+    dados: {
+      fin: [],
+      fin_ciclo: [{ id: 1, inicio: '2026-09-15', fim: null }],
+      fin_meta: [],
+    },
+  });
 
-  const volta = corpo.indexOf(
-    "el('acoesAcompanhamento').append(el('indicadoresFinanceiros'));"
-  );
+  await tela.bruto('carregarDados()');
+  trazer(tela.ctx, 'js/interactions.js', ['desenhar']);
 
-  const reescrita = corpo.indexOf(
-    "el('out').innerHTML = modoBlocos ? vCiclo() : vComp();"
-  );
+  const el = (id) => tela.ctx.document.getElementById(id);
+  const ordem = [];
+  const indicadores = el('indicadoresFinanceiros');
 
-  const encaixe = corpo.indexOf(
-    'encaixarIndicadoresNoDebito(temCicloParaIndicadores && modoBlocos);'
-  );
+  tela.ctx.ordem = ordem;
+  el('acoesAcompanhamento').append = (no) => ordem.push(['volta', no === indicadores]);
+  Object.defineProperty(el('out'), 'innerHTML', {
+    get: () => 'HTML',
+    set: (v) => {
+      ordem.push(['reescreve', v]);
+    },
+  });
+  tela.bruto(`(() => {
+    sincronizarCicloNaUrl = () => {};
+    popularAlvosVisualizacao = () => {};
+    atualizarIndicadoresFinanceiros = () => {};
+    vCiclo = () => 'CICLO';
+    vComp = () => 'MATRIZ';
+    encaixarIndicadoresNoDebito = (noDebito) => ordem.push(['encaixa', noDebito]);
+    alinharResumosDosTitulos = () => {};
+    atualizarCartoes = () => {};
+    atualizarMetas = () => {};
+    atualizarBotaoSomenteDif = () => {};
+  })()`);
 
-  assert.ok(volta > 0 && volta < reescrita && reescrita < encaixe);
+  el('compDe').value = '1';
+  el('compAte').value = '1';
+  tela.bruto('desenhar')();
+  ordem.push('---');
+  el('compAte').value = '2';
+  tela.bruto('desenhar')();
+
+  assert.deepEqual(plano(ordem), [
+    ['volta', true],
+    ['reescreve', 'CICLO'],
+    ['encaixa', true], // ciclo único com ciclo válido: indicadores na faixa do Débito
+    '---',
+    ['volta', true],
+    ['reescreve', 'MATRIZ'],
+    ['encaixa', false], // comparação: ficam no cabeçalho
+  ]);
 });
 
 test('estilo: linha própria dentro da faixa; sem linha vazia no cabeçalho estreito', () => {
-  assert.match(
-    estilos,
-    /\.resumoDados > #indicadoresFinanceiros \{\s*\n\s*flex: 1 1 100%;/
-  );
-  assert.match(estilos, /\.resumoDados \.indicadorRegra \{\s*\n\s*font-size: inherit;/);
+  assert.deepEqual(declaracoes(estilos, '.resumoDados > #indicadoresFinanceiros'), [
+    'flex: 1 1 100%',
+  ]);
+  assert.deepEqual(declaracoes(estilos, '.resumoDados .indicadorRegra'), [
+    'font-size: inherit',
+  ]);
   // A faixa herda nowrap; o texto do indicador volta a quebrar pra não cortar no celular.
-  assert.match(
-    estilos,
-    /\.indicadorRegra \{\s*\n\s*font-size: \.84rem;\s*\n\s*white-space: normal;/
-  );
-  assert.match(
-    estilos,
-    /@media \(max-width: 1250px\) \{[\s\S]*?#rowVis\.semIndicadores \{\s*\n\s*display: none;/
+  assert.deepEqual(declaracoes(estilos, '.indicadorRegra'), [
+    'font-size: 0.84rem',
+    'white-space: normal',
+  ]);
+  assert.deepEqual(
+    declaracoes(estilos, '#rowVis.semIndicadores', '@media (max-width: 1250px)'),
+    ['display: none']
   );
 });
 
@@ -239,14 +282,35 @@ test('se esticar fizer um item descer de linha, desfaz e para', () => {
 });
 
 test('alinhamento dos divisores roda junto com o das faixas (desenho, largura e fonte)', () => {
-  assert.match(
-    interacoes,
-    /igualarLarguras\(colunas\);\s*\n\s*\}\);\s*\n\s*alinharDivisoresDosIndicadores\(\);\s*\n\}/
-  );
-  assert.match(
-    interacoes,
-    /document\.fonts\?\.ready\.then\(\(\) => requestAnimationFrame\(alinharResumosDosTitulos\)\);/
-  );
+  // O alinhamento das faixas termina chamando o dos divisores (mesmo sem faixas para alinhar).
+  const inicio = interacoes.indexOf('function alinharResumosDosTitulos() {');
+  const fim = interacoes.indexOf('\n}\n', inicio) + 3;
+  const chamadas = [];
+  const vazio = { querySelectorAll: () => [] };
+
+  vm.runInNewContext(`${interacoes.slice(inicio, fim)}\nalinharResumosDosTitulos();`, {
+    el: () => vazio,
+    Math,
+    alinharDivisoresDosIndicadores: () => chamadas.push('divisores'),
+  });
+  assert.deepEqual(chamadas, ['divisores']);
+
+  // Quando a fonte da página chega, o alinhamento das faixas é refeito no quadro seguinte.
+  const ini = interacoes.indexOf('document.fonts?.ready.then(');
+  const quadros = [];
+  const alinhar = () => {};
+
+  let fonteChegou;
+
+  vm.runInNewContext(interacoes.slice(ini, interacoes.indexOf('\n', ini)), {
+    document: { fonts: { ready: { then: (fn) => (fonteChegou = fn) } } },
+    requestAnimationFrame: (fn) => quadros.push(fn),
+    alinharResumosDosTitulos: alinhar,
+  });
+  assert.equal(quadros.length, 0); // a fonte ainda não chegou
+  fonteChegou();
+  assert.deepEqual(quadros, [alinhar]);
+  // O desenho (que também refaz o alinhamento) é conferido em "o nó volta pro cabeçalho" e em resumo-alinhado.test.js.
   assert.match(
     regras,
     /os divisores da linha dos indicadores ficam embaixo dos da linha de cima/

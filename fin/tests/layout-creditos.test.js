@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
 const { carregarTela } = require('./helpers/tela-sem-navegador');
+const { declaracoes } = require('./helpers/regras-css');
 
 const script = fs.readFileSync('js/finance.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
@@ -165,7 +166,7 @@ test('o CSS do título de Crédito define o campo editável e o aviso', () => {
     'resumoTitulo',
     'resumoLinha',
   ])
-    assert.ok(estilos.includes(`.${classe}`), classe);
+    assert.ok(declaracoes(estilos, `.${classe}`).length > 0, classe);
 });
 
 test('títulos distinguem o retrato pago até hoje da previsão futura', async () => {
@@ -202,10 +203,19 @@ test('títulos distinguem o retrato pago até hoje da previsão futura', async (
   assert.match(atual.html, /<span class="alertaTitulo alertaSaldo vazio"/);
 
   // Grade do resumo (rótulo + dados) e, no celular, a faixa usa a largura toda. CSS é texto.
-  assert.match(estilos, /grid-template-columns:\s*3\.65rem\s+minmax\(0,\s*1fr\)/);
-  assert.match(
-    estilosMobile,
-    /\.resumoTitulo\s*\{\s*flex-basis:\s*100%;\s*margin-left:\s*0;/
+  assert.ok(
+    declaracoes(estilos, '.resumoLinha').includes(
+      'grid-template-columns: 3.65rem minmax(0, 1fr)'
+    )
+  );
+
+  assert.deepEqual(
+    declaracoes(
+      estilosMobile,
+      '.blk h3:has(.resumoTitulo) .resumoTitulo',
+      '@media (max-width: 640px)'
+    ),
+    ['flex-basis: 100%', 'margin-left: 0']
   );
 });
 

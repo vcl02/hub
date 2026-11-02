@@ -3,6 +3,7 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
+const { balanceamento } = require('./helpers/html');
 
 const pagina = fs.readFileSync('index.html', 'utf8');
 const estilos = fs.readdirSync('css').filter((arquivo) => arquivo.endsWith('.css'));
@@ -35,18 +36,10 @@ function semComentariosEStrings(css) {
 }
 
 test('as divs do HTML fecham na ordem em que foram abertas', () => {
-  const pilha = [];
-  const tags = pagina.matchAll(/<\/?div\b[^>]*>/gi);
+  const { soltos, pendentes } = balanceamento(pagina, 'div');
 
-  for (const tag of tags) {
-    if (tag[0].startsWith('</')) {
-      assert.ok(pilha.pop(), `</div> sem abertura na posição ${tag.index}`);
-    } else {
-      pilha.push(tag.index);
-    }
-  }
-
-  assert.deepEqual(pilha, [], `Há ${pilha.length} <div> sem fechamento.`);
+  assert.equal(soltos, 0, `Há ${soltos} </div> sem abertura.`);
+  assert.equal(pendentes, 0, `Há ${pendentes} <div> sem fechamento.`);
 });
 
 test('todos os stylesheets têm chaves CSS balanceadas', () => {

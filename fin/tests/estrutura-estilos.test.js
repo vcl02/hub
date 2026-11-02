@@ -2,6 +2,8 @@
 const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
+const { declaracoes, regras } = require('./helpers/regras-css');
+const { etiquetas } = require('./helpers/html');
 
 const html = fs.readFileSync('index.html', 'utf8');
 
@@ -15,19 +17,28 @@ const estilos = [
 ];
 
 test('carrega os estilos em camadas e mantém o responsivo por último', () => {
-  const posicoes = estilos.map((arquivo) => html.indexOf(`./${arquivo}`));
+  // as folhas do Fin, na ordem em que a página as declara (link rel=stylesheet, por href; ?v= de cache ignorado)
+  const declaradas = etiquetas(html)
+    .filter((e) => e.tag === 'link' && e.attrs.rel === 'stylesheet')
+    .map((e) => e.attrs.href.split('?')[0])
+    .filter((href) => href.startsWith('./css/'))
+    .map((href) => href.slice(2));
 
-  assert.ok(posicoes.every((posicao) => posicao >= 0));
-  assert.deepEqual(
-    [...posicoes].sort((a, b) => a - b),
-    posicoes
-  );
+  assert.deepEqual(declaradas, estilos);
 });
 
 test('cada camada possui a responsabilidade esperada', () => {
-  assert.match(fs.readFileSync('css/base.css', 'utf8'), /:root/);
-  assert.match(fs.readFileSync('css/dashboard.css', 'utf8'), /\.tool/);
-  assert.match(fs.readFileSync('css/forms.css', 'utf8'), /#modalNovo/);
-  assert.match(fs.readFileSync('css/charts.css', 'utf8'), /#modalGrafico/);
-  assert.match(fs.readFileSync('css/mobile.css', 'utf8'), /@media \(max-width: 640px\)/);
+  const css = (arquivo) => fs.readFileSync(arquivo, 'utf8');
+
+  // lidos como regras de CSS: o seletor existe e tem declarações de verdade
+  assert.ok(declaracoes(css('css/base.css'), ':root').length > 0); // variáveis de tema
+  assert.ok(declaracoes(css('css/dashboard.css'), '.tool').length > 0); // painel
+  assert.ok(declaracoes(css('css/forms.css'), 'dialog#modalNovo').length > 0); // cadastro
+  assert.ok(declaracoes(css('css/charts.css'), '#modalGrafico').length > 0); // gráficos
+  // o responsivo do celular: há regras dentro da consulta de largura
+  assert.ok(
+    regras(css('css/mobile.css')).some(
+      (regra) => regra.contexto === '@media (max-width: 640px)'
+    )
+  );
 });

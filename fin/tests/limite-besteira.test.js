@@ -6,6 +6,7 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { etiquetas } = require('./helpers/html');
 const { declaracoes } = require('./helpers/regras-css');
 const { carregarTela } = require('./helpers/tela-sem-navegador');
 
@@ -250,10 +251,13 @@ test('regra documentada em REGRAS.md', () => {
 });
 
 test('guia de categorias só no hover do rótulo Categorias: Besteira solo, Isabella com Lazer ou sozinha, fatura dela e Comprometido fora', () => {
-  assert.ok(
-    html.includes(
-      'title="Besteira: seus caprichos, sozinho (só o seu teto). Isabella: com Lazer, o que fizer com ela; sozinha, presente ou mimo (teto dela). Fora do teto dela: fatura do cartão dela e o Comprometido."'
-    )
+  const dica =
+    'Besteira: seus caprichos, sozinho (só o seu teto). Isabella: com Lazer, o que fizer com ela; sozinha, presente ou mimo (teto dela). Fora do teto dela: fatura do cartão dela e o Comprometido.';
+
+  // A dica é o title do rótulo (um span dentro do label), sem botão nem modal de ajuda
+  assert.deepEqual(
+    etiquetas(html).filter((e) => e.attrs.title === dica),
+    [{ tag: 'span', attrs: { title: dica } }]
   );
 });
 

@@ -72,14 +72,47 @@ test('sem valor: só a quantidade', () => {
 });
 
 test('atualiza ao digitar o valor, ao trocar Dividir e quando o crédito sugere o modo', () => {
-  assert.match(trecho('function atualizaSinalUI() {'), /atualizarParcelaNasVezes\(\);/);
-  assert.match(
-    trecho('function sugereModoValorParcelas() {'),
-    /atualizarParcelaNasVezes\(\);/
+  const chamadas = [];
+  const parcelas = () => chamadas.push('parcelas');
+
+  // Digitar o valor (todo lugar que muda o valor passa por atualizaSinalUI)
+  vm.runInNewContext(`${trecho('function atualizaSinalUI() {')}\natualizaSinalUI();`, {
+    el: () => ({
+      value: '50',
+      disabled: null,
+      classList: { toggle() {} },
+      textContent: '',
+    }),
+    valorMascaraParaNumero: () => 50,
+    sinalPositivo: false,
+    atualizarParcelaNasVezes: parcelas,
+    conferirLimiteNoCadastro: () => {},
+  });
+  assert.deepEqual(chamadas, ['parcelas']);
+
+  // Crédito sugerindo o modo Dividir
+  vm.runInNewContext(
+    `${trecho('function sugereModoValorParcelas() {')}\nsugereModoValorParcelas();`,
+    {
+      el: () => ({ checked: true }),
+      atualizarParcelaNasVezes: parcelas,
+      conferirLimiteNoCadastro: () => {},
+    }
   );
-  assert.match(
-    formulario,
-    /el\('fDivide'\)\.addEventListener\('change', atualizarParcelaNasVezes\);/
+  assert.deepEqual(chamadas, ['parcelas', 'parcelas']);
+
+  // Trocar o Dividir registra a própria atualização como ouvinte do change
+  const ouvintes = [];
+  const linha = "el('fDivide').addEventListener('change'";
+  const inicio = formulario.indexOf(linha);
+
+  vm.runInNewContext(formulario.slice(inicio, formulario.indexOf('\n', inicio)), {
+    el: (id) => ({ addEventListener: (tipo, fn) => ouvintes.push([id, tipo, fn]) }),
+    atualizarParcelaNasVezes: parcelas,
+  });
+  assert.deepEqual(
+    ouvintes.map(([id, tipo, fn]) => [id, tipo, fn === parcelas]),
+    [['fDivide', 'change', true]]
   );
   assert.match(
     regras,

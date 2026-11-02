@@ -56,8 +56,18 @@ test('Esc sem nada aberto volta para o hub; com modal aberto, tecla já usada ou
 
   m.ouvinte(tecla());
   assert.equal(m.saiu, 0); // o <dialog> fecha sozinho com Esc
-  assert.match(boot, /function sairDoApp\(\) \{ location\.href = '\.\.\/'; \}/);
   assert.match(regras, /Esc/);
+});
+
+test('sair do app leva à página inicial do hub (../)', () => {
+  const inicio = boot.indexOf('function sairDoApp()');
+  const ctx = { location: {} };
+
+  vm.runInNewContext(
+    `${boot.slice(inicio, boot.indexOf('\n}\n', inicio) + 3)}\nsairDoApp();`,
+    ctx
+  );
+  assert.equal(ctx.location.href, '../');
 });
 
 test('Esc num campo de texto só tira o foco', () => {

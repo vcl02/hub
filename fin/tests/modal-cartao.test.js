@@ -8,7 +8,8 @@ const vm = require('node:vm');
 
 const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
-const pagina = fs.readFileSync('index.html', 'utf8');
+const { dom } = require('./helpers/html-texto');
+const arvore = dom(fs.readFileSync('index.html', 'utf8'));
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const { declaracoes, regras: regrasCss } = require('./helpers/regras-css');
 const { extrairTrecho } = require('./helpers/carregar-funcoes');
@@ -100,7 +101,10 @@ test('modal limpo: sem lista de compras e sem botão de fechar', () => {
 
   assert.doesNotMatch(html, /cartaoCompras|Compras da fatura|<summary>/);
   // Sem o ×, o 1º foco seria o campo Aprovado (teclado no celular, Esc só desfaria o campo).
-  assert.match(pagina, /<dialog id=modalCartao tabindex=-1>/);
+  const modal = arvore.porId('modalCartao');
+
+  assert.equal(modal.tag, 'dialog');
+  assert.equal(modal.attrs.tabindex, '-1');
 
   const seletores = regrasCss(fs.readFileSync('css/forms.css', 'utf8')).flatMap(
     (r) => r.seletores
@@ -132,12 +136,26 @@ test('sem dados do cartão no ciclo exibido, o modal avisa em vez de quebrar', (
 
 test('botões no cabeçalho, desativados sem dados; modal refeito a cada desenho', () => {
   // Sem título visível: o nome do cartão fica só pra leitor de tela.
-  assert.match(pagina, /<h2 id=tituloCartao class=srOnly>Cartão<\/h2>/);
+  const titulo = arvore.porId('tituloCartao');
+
+  assert.equal(titulo.tag, 'h2');
+  assert.ok(titulo.classes.includes('srOnly'));
+  assert.equal(arvore.texto(titulo).trim(), 'Cartão');
   // O Aprovado/Garantido gravar pelos mesmos handlers dentro do modal (fora do #out) está em navegador-cartao.test.js.
-  // O Estado.cartoesDoCiclo = null a cada desenho (Comparar e Backlog ficam sem dados e os botões, desativados) fica preso
-  // na função de redesenho da tela (interactions.js), grande demais para sair sem navegador.
-  assert.match(interacoes, /Estado\.cartoesDoCiclo = null;/);
-  assert.match(interacoes, /alinharResumosDosTitulos\(\);\s*\n\s*atualizarCartoes\(\);/);
+  // O desenho da tela (`desenhar`, de interactions.js) roda de verdade, com o resto da página trocado por marcadores:
+  // zera os dados dos cartões antes de desenhar e só depois alinha os resumos e atualiza os botões.
+  const blocos = desenharComMarcadores({ de: '1', ate: '1' });
+
+  // Ciclo único: o desenho do ciclo (vCiclo) preenche os dados e o botão os enxerga, sem sobra do desenho anterior
+  assert.deepEqual(blocos.cartoesNaAtualizacao, { novo: true });
+  const alinhar = blocos.chamadas.indexOf('alinharResumosDosTitulos');
+
+  assert.ok(alinhar >= 0);
+  assert.equal(blocos.chamadas[alinhar + 1], 'atualizarCartoes');
+  // Comparação (De ≠ Até): não há ciclo de cartão, os dados do desenho anterior não sobram e os botões ficam desativados
+  const matriz = desenharComMarcadores({ de: '0', ate: '1' });
+
+  assert.equal(matriz.cartoesNaAtualizacao, null);
 
   const { atualizar, botoes, estado } = carregaAtualizarCartoes();
   const corpo = botoes.corpoCartao;
@@ -274,6 +292,77 @@ test('ciclo passado: fatura fechada com compras brutas, pago/antecipado e o que 
 
 // Roda deslizarFatura real com o combo De/Até simulado: a navegação é a de navegaCiclo.
 // Roda atualizarCartoes/preencherModalCartao reais (js/interactions.js) com os elementos simulados.
+// Roda o `desenhar` de verdade (js/interactions.js) com a página trocada por marcadores: `el` devolve elementos falsos, o
+// desenho do ciclo (`vCiclo`) preenche os dados dos cartões como o real e o da comparação (`vComp`) não preenche. Toda função
+// que o `desenhar` chama e não existe aqui vira um marcador que só anota a chamada (descobertas pelo ReferenceError, uma a uma).
+// Devolve a ordem das chamadas e o que `Estado.cartoesDoCiclo` valia quando `atualizarCartoes` foi chamado; o desenho anterior
+// deixou dados na tela (`{ velho: true }`), que não podem sobrar.
+function desenharComMarcadores({ de, ate }) {
+  const inicio = interacoes.indexOf('function desenhar() {');
+  const codigo = interacoes.slice(inicio, interacoes.indexOf('\n}\n', inicio) + 3);
+  const marcadores = new Set();
+
+  for (;;) {
+    const chamadas = [];
+    const elementos = {};
+    let cartoesNaAtualizacao;
+
+    const el = (id) =>
+      (elementos[id] ||= {
+        id,
+        value: '',
+        hidden: false,
+        disabled: false,
+        dataset: {},
+        style: {},
+        classList: { add() {}, remove() {} },
+        querySelectorAll: () => [],
+        append() {},
+      });
+
+    const ctx = {
+      el,
+      Estado: {
+        simulando: false,
+        idxHoje: 1,
+        selecionados: new Set(),
+        cartoesDoCiclo: { velho: true },
+      },
+      document: { createElement: () => el('novo') },
+      vCiclo: () => {
+        chamadas.push('vCiclo');
+        ctx.Estado.cartoesDoCiclo = { novo: true };
+
+        return '';
+      },
+      vComp: () => {
+        chamadas.push('vComp');
+
+        return '';
+      },
+      atualizarCartoes: () => {
+        chamadas.push('atualizarCartoes');
+        cartoesNaAtualizacao = ctx.Estado.cartoesDoCiclo;
+      },
+    };
+
+    for (const nome of marcadores) ctx[nome] = () => chamadas.push(nome);
+    vm.createContext(ctx);
+    vm.runInContext(codigo, ctx);
+    el('compDe').value = de;
+    el('compAte').value = ate;
+
+    try {
+      ctx.desenhar();
+
+      return { chamadas, cartoesNaAtualizacao };
+    } catch (erro) {
+      if (erro.name !== 'ReferenceError') throw erro;
+      marcadores.add(erro.message.split(' is not defined')[0]);
+    }
+  }
+}
+
 function carregaAtualizarCartoes() {
   const botoes = {};
 

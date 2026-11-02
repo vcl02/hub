@@ -6,6 +6,7 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { regras: regrasCss } = require('./helpers/regras-css');
 
 const estado = fs.readFileSync('js/app-state.js', 'utf8');
 const tabelas = fs.readFileSync('js/tables.js', 'utf8');
@@ -119,14 +120,38 @@ test('clique em Prio abre um <input type=number>, aceita limpar (volta a null) e
 });
 
 test('estilos cobrem .togPrio/.inpPrio reaproveitando o padrão visual das demais colunas livres', () => {
-  assert.match(
-    estilos,
-    /\.togData, \.togNome, \.togCateg, \.togFreq, \.togPrio, \.togObs, \.togCanal \{/
-  );
-  assert.match(
-    estilos,
-    /\.inpValor, \.inpNome, \.inpCateg, \.inpFreq, \.inpPrio, \.inpObs, \.inpCanal \{/
-  );
+  // Uma regra só lista as colunas livres: a de Prio tem o mesmo visual das outras
+  const regraDoGrupo = (seletores) =>
+    regrasCss(estilos).filter(
+      (r) =>
+        r.seletores.length === seletores.length &&
+        seletores.every((s) => r.seletores.includes(s))
+    );
+
+  const toggles = [
+    '.togData',
+    '.togNome',
+    '.togCateg',
+    '.togFreq',
+    '.togPrio',
+    '.togObs',
+    '.togCanal',
+  ];
+
+  const inputs = [
+    '.inpValor',
+    '.inpNome',
+    '.inpCateg',
+    '.inpFreq',
+    '.inpPrio',
+    '.inpObs',
+    '.inpCanal',
+  ];
+
+  assert.equal(regraDoGrupo(toggles).length, 1);
+  assert.ok(regraDoGrupo(toggles)[0].declaracoes.length > 0);
+  assert.equal(regraDoGrupo(inputs).length, 1);
+  assert.ok(regraDoGrupo(inputs)[0].declaracoes.length > 0);
 });
 
 test('migration versionada adiciona a coluna, não aplicada automaticamente (mantenedor roda manualmente)', () => {
