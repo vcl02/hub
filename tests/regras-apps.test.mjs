@@ -153,6 +153,62 @@ test('água: lembretes de hora em hora (de 2 em 2 nos dias presenciais e no fim 
   ); // depois das 17, nada
 });
 
+test('água: lembretes no celular — a vez, o atrasado, o feito de antes das 10 e o fim do dia; quarta e sábado de 2 em 2 horas', () => {
+  const C = (dia, agora, aguas = [], hoje = dia) =>
+    carregar(
+      'agua/js/conta.js',
+      ['lembretes', 'lembreteAgora'],
+      contextoAgua(hoje, agora, aguas)
+    );
+
+  const estados = (dia, agora, aguas, hoje) =>
+    json(C(dia, agora, aguas, hoje).lembretes(dia, agora)).map((x) => x.estado);
+
+  // segunda 19/10 (em casa), 11:20, nada bebido: o das 10 e o das 11 atrasaram, o das 11 é a vez
+  assert.deepEqual(estados('2026-10-19', '11:20'), [
+    'atrasado',
+    'atrasado',
+    'depois',
+    'depois',
+    'depois',
+    'depois',
+    'depois',
+  ]);
+  assert.equal(C('2026-10-19', '11:20').lembreteAgora('2026-10-19').hora, '11:00');
+  // bebeu às 11:05: o das 11 está feito e ninguém chama
+  assert.equal(
+    C('2026-10-19', '11:20', [{ hora: '11:05' }]).lembreteAgora('2026-10-19'),
+    null
+  );
+  // 16:40, o das 16 atrasado ainda chama; às 17:10 ninguém chama mais, mas a etiqueta segue atrasada
+  assert.equal(C('2026-10-19', '16:40').lembreteAgora('2026-10-19').hora, '16:00');
+  assert.equal(C('2026-10-19', '17:10').lembreteAgora('2026-10-19'), null);
+  assert.equal(estados('2026-10-19', '17:10').at(-1), 'atrasado');
+  // sexta 9:40 (antes das 10): beber conta para o das 10 e nada está atrasado
+  assert.deepEqual(estados('2026-10-23', '09:50', [{ hora: '09:40' }]).slice(0, 2), [
+    'feito',
+    'depois',
+  ]);
+  assert.equal(estados('2026-10-23', '09:50').includes('atrasado'), false);
+  // um dia que já passou: o que não foi bebido ficou atrasado, sem vez
+  assert.deepEqual(
+    estados('2026-10-18', '09:00', [{ hora: '10:10' }], '2026-10-19').slice(0, 3),
+    ['feito', 'atrasado', 'atrasado']
+  );
+  assert.equal(
+    C('2026-10-18', '09:00', [], '2026-10-19').lembreteAgora('2026-10-18'),
+    null
+  );
+
+  // quarta (presencial) e sábado: de 2 em 2 horas
+  for (const dia of ['2026-10-21', '2026-10-24'])
+    assert.deepEqual(
+      json(C(dia, '08:00').lembretes(dia, '08:00')).map((x) => x.hora),
+      ['10:00', '12:00', '14:00', '16:00'],
+      dia
+    );
+});
+
 test('água: a limpeza do db tira o formato antigo (xixis), horário ou ml inválido e dia vazio; bebida vira a água dela', () => {
   const { preparar } = carregar('agua/js/banco.js', ['hhmmOk', 'preparar'], {
     BEBIDAS: { suco: { agua: 0.88 } },

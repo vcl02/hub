@@ -26,7 +26,7 @@
 Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para todos fica lá).
 
 - **Migrations:** `migrations/` 00 a 05, formato DataGrip, RLS só do Victor; a 00 não roda de novo (lê `tr_medida`, já apagada). Conferido em `tests/estrutura.test.mjs`, numeração em `../tests/documentacao.test.mjs`.
-- **Testes:** navegador em `tests/corpo.test.mjs` (Playwright da raiz, Supabase falso em `tests/helpers/app.mjs`); estrutura em `tests/estrutura.test.mjs`. As funções de `perfil.js` (idade, basal, calorias, pesagens) são testadas em `../tests/hub.test.mjs`.
+- **Testes:** navegador em `tests/corpo.test.mjs` (19 testes, Playwright da raiz, Supabase falso em `tests/helpers/app.mjs`); sem navegador, `tests/regras.test.mjs` (IMC e faixas, horário de sempre, validação das medidas, bexiga, texto do sono, cópia das pesagens, limiar do arrasto) e `tests/helpers/rodar.mjs` (service worker e `bootstrap.js` em `node:vm`); estrutura em `tests/estrutura.test.mjs`. As funções de `perfil.js` (idade, basal, calorias, pesagens) são testadas em `../tests/hub.test.mjs`. Auditoria de 02/11/2026 em `docs/DECISOES.md`.
 - **Pacotes:** sem `package.json`. `../supabase.js` da raiz e o Playwright da raiz.
 - **Backups:** cópia no aparelho (`corpo.db.<conta>`, base em `corpo.base.<conta>`) e `hub_historico` com `corpo_medida` e `corpo_dia`. O perfil está no código (git).
 - **Domínio:** `/hub/corpo/`. Externo: só o Supabase.

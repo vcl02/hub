@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { carregar } from './funcoes.mjs';
 
 const RAIZ = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ler = (arquivo) => readFileSync(path.join(RAIZ, arquivo), 'utf8');
@@ -52,7 +53,7 @@ test('lista de hábitos: treino, alimentação (déficit), corpo (peso e sono), 
   ]);
   assert.equal(
     H.META_AGUA_ML,
-    +ler('agua/js/config.js').match(/const META_ML = (\d+);/)[1]
+    carregar(path.join(RAIZ, 'agua/js/config.js'), ['META_ML']).META_ML
   ); // a mesma meta da Água
   assert.equal(H.PROTECOES_MAX, 2);
 });

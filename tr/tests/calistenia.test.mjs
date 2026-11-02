@@ -1,4 +1,5 @@
-// Flexão, barra e antebraço: séries sem peso (corpo) e em segundos (pendurar), plano por mês e o cronômetro de segurar.
+// Flexão, barra e antebraço no navegador: séries sem peso (corpo) e em segundos (pendurar), o plano por mês na tela e o cronômetro
+// de segurar. As contas do plano (etapas, semanas, o que o plano escolhe) rodam como função em piramide.test.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { prepararApp, abrirApp, linhas, sincronizado } from './helpers/app.mjs';
@@ -66,64 +67,6 @@ async function abrirComCalistenia(relogio) {
 }
 
 const texto = async (pg, sel) => (await pg.textContent(sel)).replace(/\s+/g, ' ').trim();
-
-test('plano por mês: cada etapa vale 1 mês a partir do início, com o alvo de cada semana; a última continua', async () => {
-  const { ctx, pg, erros } = await abrirComCalistenia('2026-10-28T19:00:00');
-
-  const etapas = await pg.evaluate(() =>
-    [
-      '2026-10-20',
-      '2026-10-28',
-      '2026-11-04',
-      '2026-11-27',
-      '2026-11-28',
-      '2026-12-28',
-      '2027-06-01',
-    ].map((d) => {
-      const x = etapaDoPlano(PLANOS.barrafix, d);
-
-      return [x.k, x.semana, x.ate];
-    })
-  );
-
-  assert.deepEqual(etapas, [
-    [0, 0, '2026-11-28'],
-    [0, 0, '2026-11-28'],
-    [0, 1, '2026-11-28'],
-    [0, 3, '2026-11-28'],
-    [1, 0, '2026-12-28'],
-    [2, 0, null],
-    [2, 3, null],
-  ]);
-  assert.equal(await pg.evaluate(() => maisMeses('2027-01-31', 1)), '2027-02-28'); // fim de mês mais curto
-
-  // O plano escolhe variação, séries e reps (mesmo alvo em todas): 2ª semana do 1º mês, 2º mês e 3º mês
-  const no = (d) =>
-    pg.evaluate((dia) => {
-      aplicarPlanos(dia);
-
-      return ['flexao', 'barrafix'].map((id) => {
-        const e = db.exercicios.find((x) => x.id === id);
-
-        return [e.variacoes[e.ativo].nome, e.series, e.reps, e.modo];
-      });
-    }, d);
-
-  assert.deepEqual(await no('2026-11-05'), [
-    ['Flexão com joelhos apoiados', 3, 8, 'reta'],
-    ['Pendurar na barra', 3, 20, 'reta'],
-  ]);
-  assert.deepEqual(await no('2026-12-01'), [
-    ['Flexão completa', 3, 3, 'reta'],
-    ['Negativa na barra', 3, 3, 'reta'],
-  ]);
-  assert.deepEqual(await no('2027-01-20'), [
-    ['Flexão completa', 3, 12, 'reta'],
-    ['Barra fixa', 3, 3, 'reta'],
-  ]);
-  assert.deepEqual(erros, []);
-  await ctx.close();
-});
 
 test('flexão: sem campo de peso nem aquecimento, marca as séries só com reps e salva (kg 0) até na nuvem', async () => {
   const { ctx, pg, erros, nuvem } = await abrirComCalistenia('2026-10-28T19:00:00'); // quarta, 1º dia do plano

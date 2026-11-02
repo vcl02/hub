@@ -129,3 +129,81 @@ for (const app of ['agua', 'al', 'corpo']) {
     assert.equal(repetido('+300'), false); // 0,6 s depois: vale de novo
   });
 }
+
+// ---------- fetchComTeto(url, op): todo pedido ao Supabase tem limite de tempo (15 s; a função, 40 s) ----------
+// Pedido que perde o sinal no meio (metrô) vira falha de rede comum ("Failed to fetch"); o que o chamador cancelou segue como cancelado.
+for (const arquivo of [
+  'hub.js',
+  'agua/js/banco.js',
+  'al/js/banco.js',
+  'corpo/js/banco.js',
+  'tr/js/banco.js',
+]) {
+  test(`${arquivo}: fetchComTeto desiste em 15 s (40 s na função), vira "Failed to fetch" e não segura o pedido`, async () => {
+    const prazos = [],
+      limpos = [];
+
+    // fetch que só termina se o sinal de cancelamento disparar
+    const pendurado = (url, op) =>
+      new Promise((_, rejeita) =>
+        op.signal.addEventListener('abort', () =>
+          rejeita(Object.assign(new Error('abortado'), { name: 'AbortError' }))
+        )
+      );
+
+    const com = (fetch) =>
+      carregar(arquivo, ['TETO_REDE_MS', 'fetchComTeto'], {
+        AbortController,
+        Response,
+        TypeError,
+        setTimeout: (f, ms) => {
+          prazos.push({ f, ms });
+
+          return prazos.length;
+        },
+        clearTimeout: (id) => limpos.push(id),
+        fetch,
+      }).fetchComTeto;
+
+    // 1) resposta normal: devolve o corpo e limpa o prazo
+    const resposta = await com(async () => new Response('dados', { status: 200 }))(
+      'https://x.supabase.co/rest/v1/t'
+    );
+
+    assert.equal(await resposta.text(), 'dados');
+    assert.equal(prazos[0].ms, 15000);
+    assert.deepEqual(limpos, [1]);
+
+    // 2) sem resposta nenhuma: ao estourar o prazo vira falha de rede
+    prazos.length = 0;
+    const espera = com(pendurado)('https://x.supabase.co/rest/v1/t');
+
+    prazos[0].f(); // passaram os 15 s
+    await assert.rejects(
+      espera,
+      (e) => e instanceof TypeError && /^Failed to fetch/.test(e.message)
+    );
+
+    // 3) a função (IA) tem mais tempo
+    prazos.length = 0;
+    const funcao = com(pendurado)('https://x.supabase.co/functions/v1/estimar');
+
+    assert.equal(prazos[0].ms, 40000);
+    prazos[0].f();
+    await assert.rejects(funcao, /Failed to fetch/);
+
+    // 4) sem corpo (204): não tenta ler
+    const vazio = await com(async () => new Response(null, { status: 204 }))(
+      'https://x/y'
+    );
+
+    assert.equal(vazio.status, 204);
+
+    // 5) cancelado por quem pediu: o erro original passa, não vira falha de rede
+    const dono = new AbortController(),
+      cancelado = com(pendurado)('https://x/y', { signal: dono.signal });
+
+    dono.abort();
+    await assert.rejects(cancelado, (e) => e.name === 'AbortError');
+  });
+}

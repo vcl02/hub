@@ -1,12 +1,20 @@
 // Estrutura da Água (sem navegador): cabeçalhos, ordem de carga, service worker, PWA, migration/RLS e segredos.
+// O objeto destes testes é o arquivo como texto (cabeçalho, SQL, segredos) ou a estrutura lida por leitores (HTML como
+// elementos, CSS como regras, listas e funções rodadas num contexto isolado); o comportamento está em funcoes.test.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { carregar } from '../../tests/funcoes.mjs';
+import { rodarSw } from '../../tests/sw-falso.mjs';
+import { etiquetas, balanceamento, chavesDoCss } from '../../tests/leitores.mjs';
 
 const RAIZ = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ler = (arquivo) => readFileSync(path.join(RAIZ, arquivo), 'utf8');
+
+const doApp = (arquivo, nomes, contexto, depois) =>
+  carregar(path.join(RAIZ, arquivo), nomes, contexto, depois);
 
 const listar = (pasta, ext) =>
   readdirSync(path.join(RAIZ, pasta))
@@ -15,11 +23,13 @@ const listar = (pasta, ext) =>
 
 const html = ler('index.html');
 
-const jsDoHtml = [...html.matchAll(/<script src="(js\/[^"]+)"><\/script>/g)].map(
-  (m) => m[1]
-);
+// Os <script src> do index.html, na ordem em que carregam (o corpo dos scripts não conta)
+const scripts = etiquetas(html)
+  .filter((e) => e.tag === 'script' && e.attrs.src)
+  .map((e) => e.attrs.src);
 
-const DONO = ler('js/config.js').match(/const DONO = '([0-9a-f-]{36})'/)[1];
+const jsDoHtml = scripts.filter((f) => f.startsWith('js/'));
+const DONO = doApp('js/config.js', ['DONO']).DONO;
 const FUNCAO = 'supabase/functions/agua-lembrete/index.ts';
 
 test('todo arquivo de código começa com um comentário de responsabilidade', () => {
@@ -40,29 +50,26 @@ test('todo arquivo de código começa com um comentário de responsabilidade', (
   for (const f of listar('migrations', '.sql')) assert.match(ler(f), /^-- /, f);
 });
 
-test('index.html: tags de bloco fecham na ordem certa e o css tem chaves balanceadas', () => {
-  const pilha = [];
+test('index.html: as tags de bloco fecham e o css tem chaves balanceadas', () => {
+  for (const tag of [
+    'div',
+    'section',
+    'form',
+    'ul',
+    'header',
+    'fieldset',
+    'button',
+    'p',
+  ]) {
+    const { soltos, pendentes } = balanceamento(html, tag);
 
-  for (const [, fecha, tag] of html
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .matchAll(/<(\/?)(div|section|form|ul|header|fieldset|button|p)\b[^>]*>/g)) {
-    if (!fecha) {
-      pilha.push(tag);
-      continue;
-    }
-
-    assert.equal(pilha.pop(), tag, `</${tag}> fora de ordem`);
+    assert.deepEqual([soltos, pendentes], [0, 0], `<${tag}> sem par`);
   }
 
-  assert.deepEqual(pilha, [], 'tags sem fechar');
-  let n = 0;
+  const { abertas, fechadas, nuncaNegativo } = chavesDoCss(ler('css/agua.css'));
 
-  for (const c of ler('css/agua.css').replace(/\/\*[\s\S]*?\*\//g, '')) {
-    n += c === '{' ? 1 : c === '}' ? -1 : 0;
-    assert.ok(n >= 0);
-  }
-
-  assert.equal(n, 0);
+  assert.ok(abertas > 0 && nuncaNegativo);
+  assert.equal(abertas, fechadas);
 });
 
 test('ordem de carga: supabase do hub e módulo do Corpo antes dos módulos; o service worker guarda tudo', () => {
@@ -76,20 +83,14 @@ test('ordem de carga: supabase do hub e módulo do Corpo antes dos módulos; o s
     'js/telas.js',
     'js/bootstrap.js',
   ]);
-
-  const todosScripts = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map(
-    (m) => m[1]
-  );
-
-  assert.deepEqual(todosScripts.slice(0, 4), [
+  assert.deepEqual(scripts.slice(0, 4), [
     '../supabase.js',
     '../corpo/perfil.js',
     'bebidas.js',
     'js/config.js',
   ]);
 
-  const sw = ler('sw.js'),
-    guardados = [...sw.matchAll(/'(\.\.?\/[^']*)'/g)].map((m) => m[1]);
+  const guardados = doApp('sw.js', ['ARQUIVOS_ESTATICOS']).ARQUIVOS_ESTATICOS;
 
   for (const f of [
     './index.html',
@@ -104,26 +105,74 @@ test('ordem de carga: supabase do hub e módulo do Corpo antes dos módulos; o s
 
   for (const f of guardados)
     assert.ok(existsSync(path.join(RAIZ, f)), `sw.js guarda ${f}, que não existe`);
-  assert.match(sw, /k\.startsWith\('agua-'\) && k !== CACHE_ESTATICO/);
 });
 
-test('PWA: manifest válido, ícones existem e o service worker é registrado', () => {
+test('service worker: ao ativar apaga só os caches antigos da Água, nunca os dos outros apps; atende a página (também com ?dia, sem internet) e não atende outros domínios nem POST', async () => {
+  const sw = path.join(RAIZ, 'sw.js');
+
+  const vizinhos = [
+    'carga-estatico',
+    'al-estatico',
+    'corpo-estatico',
+    'fin-estatico',
+    'hub-estatico',
+  ];
+
+  const ativado = rodarSw(sw, {
+    existentes: ['agua-estatico', 'agua-v1', 'agua-antigo', ...vizinhos],
+  });
+
+  await ativado.ativar();
+  assert.deepEqual(ativado.apagados, ['agua-v1', 'agua-antigo']);
+
+  const rede = rodarSw(sw);
+  const agua = 'https://vcl02.github.io/hub/agua/';
+
+  assert.equal((await rede.atende(agua + 'js/util.js')).atendeu, true);
+  assert.equal(
+    (await rede.atende('https://yzmyncxoskvqzdczaill.supabase.co/rest/v1/x')).atendeu,
+    false
+  );
+  assert.equal(
+    (await rede.atende(agua + 'js/util.js', { metodo: 'POST' })).atendeu,
+    false
+  );
+  assert.equal((await rede.atende(agua + 'js/util.js?v=2')).atendeu, false); // outras buscas vão direto à rede
+  assert.equal(
+    (await rede.atende(agua + '?dia=2026-10-18', { modo: 'navigate' })).atendeu,
+    true
+  );
+
+  const semInternet = rodarSw(sw, { rede: false, cacheado: { './': 'pagina do cache' } });
+
+  assert.equal(
+    (await semInternet.atende(agua + '?dia=2026-10-18', { modo: 'navigate' })).resposta,
+    'pagina do cache'
+  ); // a página com ?dia abre do cache
+});
+
+test('PWA: manifest válido e ícones existem', () => {
   const m = JSON.parse(ler('manifest.webmanifest'));
 
   assert.equal(m.display, 'standalone');
   assert.equal(m.start_url, './');
 
   for (const i of m.icons) assert.ok(existsSync(path.join(RAIZ, i.src)), i.src);
-  assert.match(
-    ler('js/bootstrap.js'),
-    /serviceWorker\.register\('sw\.js', \{ updateViaCache: 'none' \}\)/
-  );
 });
 
 test('localStorage só com prefixo agua.', () => {
-  for (const f of listar('js', '.js'))
-    for (const [, chave] of ler(f).matchAll(/K_\w+ = id => '([^']+)'/g))
-      assert.ok(chave.startsWith('agua.'), chave);
+  const chaves = doApp(
+    'js/banco.js',
+    ['K_LOCAL'],
+    {},
+    '__saida.todas = [K_LOCAL, K_BASE, K_VOO];'
+  ).todas;
+
+  assert.deepEqual(JSON.parse(JSON.stringify(chaves.map((chave) => chave('conta')))), [
+    'agua.db.conta',
+    'agua.base.conta',
+    'agua.voo.conta',
+  ]);
 });
 
 test('migration no formato do DataGrip e RLS só do Victor', () => {
@@ -228,18 +277,14 @@ test('migration dos dentes: agenda 20 min depois de comida nova de hoje, fila se
   );
 });
 
-test('app e função falam a mesma língua: mesmo dono, mesmo nome e horários', () => {
-  const funcao = ler(FUNCAO),
-    config = ler('js/config.js');
+test('app e função falam a mesma língua: o nome da função que o app chama é a pasta da função e o da migration', () => {
+  const { FUNCAO_PUSH } = doApp('js/notificacoes.js', ['FUNCAO_PUSH']);
 
-  assert.equal(funcao.match(/const DONO = ['"]([0-9a-f-]+)['"]/)[1], DONO);
-  assert.match(ler('js/notificacoes.js'), /const FUNCAO_PUSH = 'agua-lembrete'/);
-  assert.match(
-    funcao,
-    new RegExp(
-      `const INICIO = ${config.match(/LEMBRETE_INICIO = (\d+)/)[1]},\\s*FIM = ${config.match(/LEMBRETE_FIM = (\d+)/)[1]};`
-    )
+  assert.ok(existsSync(path.join(RAIZ, 'supabase/functions', FUNCAO_PUSH, 'index.ts')));
+  assert.ok(
+    ler('migrations/01-notificacoes.sql').includes(`functions/v1/${FUNCAO_PUSH}'`)
   );
+  // o mesmo dono, os horários e a rotina na função: conferidos pelo comportamento em funcao.test.mjs
 });
 
 test('nenhum segredo', () => {
@@ -254,5 +299,7 @@ test('nenhum segredo', () => {
   ])
     assert.doesNotMatch(ler(f), /service_role|sb_secret_/, f);
   assert.doesNotMatch(ler(FUNCAO), /service_role|sb_secret_|BEGIN PRIVATE/);
-  assert.match(ler('js/config.js'), /const SUPABASE_KEY = 'sb_publishable_/);
+  assert.ok(
+    doApp('js/config.js', ['SUPABASE_KEY']).SUPABASE_KEY.startsWith('sb_publishable_')
+  ); // só a chave publicável
 });

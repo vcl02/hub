@@ -1,10 +1,15 @@
-// Estrutura do repositório (sem navegador): cabeçalhos, HTML/CSS balanceados, ordem de carga, PWA, migrations/RLS e segredos.
+// Estrutura do repositório (sem navegador): cabeçalhos, HTML/CSS balanceados, ordem de carga, PWA e service worker (rodado como
+// função), migrations/RLS e segredos. O HTML é lido como elementos (tests/leitores.mjs); regex só onde o objeto é texto: SQL,
+// documentação, cabeçalho dos arquivos e ausência de segredos.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import vm from 'node:vm';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { etiquetas, elementoPorId, balanceamento } from '../../tests/leitores.mjs';
+import { carregarTr } from './helpers/js.mjs';
 
 const RAIZ = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ler = (arquivo) => readFileSync(path.join(RAIZ, arquivo), 'utf8');
@@ -14,15 +19,22 @@ const listar = (pasta, ext) =>
     .filter((n) => n.endsWith(ext))
     .map((n) => `${pasta}/${n}`);
 
-const html = ler('index.html');
+const html = ler('index.html'),
+  tags = etiquetas(html);
 
-const cssDoHtml = [
-  ...html.matchAll(/<link\s+rel="stylesheet"\s+href="(css\/[^"]+)"\s*\/?>/g),
-].map((m) => m[1]);
+const folhas = tags
+  .filter(
+    (e) =>
+      e.tag === 'link' && e.attrs.rel === 'stylesheet' && !/^https?:/.test(e.attrs.href)
+  )
+  .map((e) => e.attrs.href);
 
-const jsDoHtml = [...html.matchAll(/<script src="(js\/[^"]+)"><\/script>/g)].map(
-  (m) => m[1]
-);
+const scripts = tags
+  .filter((e) => e.tag === 'script' && e.attrs.src)
+  .map((e) => e.attrs.src);
+
+const cssDoHtml = folhas.filter((h) => h.startsWith('css/')),
+  jsDoHtml = scripts.filter((s) => s.startsWith('js/'));
 
 test('todo arquivo de código começa com um comentário de responsabilidade', () => {
   for (const f of listar('js', '.js'))
@@ -41,22 +53,22 @@ test('todo arquivo de código começa com um comentário de responsabilidade', (
   for (const f of listar('migrations', '.sql')) assert.match(ler(f), /^-- /, f);
 });
 
-test('index.html: tags de bloco fecham na ordem certa', () => {
-  const pilha = [],
-    semComentario = html.replace(/<!--[\s\S]*?-->/g, '');
+test('index.html: as tags de bloco abrem e fecham na mesma conta', () => {
+  for (const tag of [
+    'div',
+    'section',
+    'form',
+    'ul',
+    'ol',
+    'details',
+    'label',
+    'button',
+    'p',
+  ]) {
+    const { soltos, pendentes } = balanceamento(html, tag);
 
-  for (const [, fecha, tag] of semComentario.matchAll(
-    /<(\/?)(div|section|form|ul|ol|details|label|button|p)\b[^>]*>/g
-  )) {
-    if (!fecha) {
-      pilha.push(tag);
-      continue;
-    }
-
-    assert.equal(pilha.pop(), tag, `</${tag}> fora de ordem`);
+    assert.deepEqual([soltos, pendentes], [0, 0], `<${tag}> sem par`);
   }
-
-  assert.deepEqual(pilha, [], 'tags sem fechar');
 });
 
 test('cada stylesheet tem chaves balanceadas', () => {
@@ -72,51 +84,154 @@ test('cada stylesheet tem chaves balanceadas', () => {
   }
 });
 
-test('index.html carrega todos os css/ e js/, e o service worker guarda os mesmos arquivos', () => {
+test('index.html carrega todos os css/ e js/ na ordem certa e o que não pertence ao Treino não está na tela', () => {
   assert.deepEqual([...cssDoHtml].sort(), listar('css', '.css').sort());
   assert.deepEqual([...jsDoHtml].sort(), listar('js', '.js').sort());
   assert.equal(jsDoHtml[0], 'js/config.js');
   assert.equal(jsDoHtml.at(-1), 'js/bootstrap.js');
-  assert.ok(
-    html.indexOf('src="supabase.js"') < html.indexOf('src="js/'),
-    'supabase.js antes dos módulos'
-  );
-  assert.ok(
-    html.indexOf('src="../corpo/perfil.js"') > 0 &&
-      html.indexOf('src="../corpo/perfil.js"') < html.indexOf('src="js/'),
-    '../corpo/perfil.js (módulo do app Corpo) antes dos módulos'
-  );
-  assert.match(
-    ler('sw.js'),
-    /'\.\.\/corpo\/perfil\.js'/,
-    'sw.js guarda ../corpo/perfil.js'
-  );
+  // supabase.js e o módulo do app Corpo (../corpo/perfil.js) antes dos módulos do Treino
+  assert.deepEqual(scripts.slice(0, 2), ['supabase.js', '../corpo/perfil.js']);
 
-  const sw = ler('sw.js'),
-    guardados = [...sw.matchAll(/'\.\/([^']*)'/g)].map((m) => m[1]);
-
-  for (const f of [
-    ...cssDoHtml,
-    ...jsDoHtml,
-    'index.html',
-    'supabase.js',
-    'manifest.webmanifest',
+  // pesagem é do app Corpo; sem backup manual, senha mestra, sair ou trocar senha; sem histórico de treinos em lista
+  for (const id of [
+    'i-corpo',
+    'v-corpo',
+    'v-backup',
+    'm-form',
+    'v-senha',
+    'a-sair',
+    'sair',
+    'v-ajustes',
+    'i-treinos',
+    'v-treinos',
   ])
-    assert.ok(guardados.includes(f), `sw.js não guarda ${f}`);
+    assert.equal(elementoPorId(html, id), undefined, `#${id} não pertence ao Treino`);
 
-  for (const f of guardados.filter(Boolean))
+  for (const dest of ['backup', 'senha'])
+    assert.equal(
+      tags.filter((e) => e.attrs['data-ir'] === dest).length,
+      0,
+      `data-ir=${dest}`
+    );
+  assert.deepEqual(
+    tags
+      .filter((e) => e.tag === 'input' && e.attrs.type === 'password')
+      .map((e) => e.attrs.id),
+    ['l-senha'] // a única senha é a do login
+  );
+});
+
+test('login: campos com o nome dentro (placeholder) e a marca do hub na tela inicial volta para ../', () => {
+  assert.equal(
+    elementoPorId(html, 'l-email', { obrigatorio: true }).attrs.placeholder,
+    'Usuário'
+  );
+  assert.equal(
+    elementoPorId(html, 'l-senha', { obrigatorio: true }).attrs.placeholder,
+    'Senha'
+  );
+
+  const hub = elementoPorId(html, 'i-hub', { obrigatorio: true });
+
+  assert.deepEqual(hub, {
+    tag: 'a',
+    attrs: {
+      class: 'bt-ic',
+      href: '../',
+      id: 'i-hub',
+      title: 'Hub',
+      'aria-label': 'Hub',
+    },
+  });
+  // fica antes da engrenagem, no topo
+  const ids = tags.map((e) => e.attrs.id || e.attrs['data-ir']);
+
+  assert.ok(ids.indexOf('i-hub') < ids.indexOf('editar'));
+});
+
+// O service worker rodado de verdade num contexto isolado, com caches e rede falsos
+async function rodarSw(chaves = []) {
+  const ouvintes = {},
+    guardados = [],
+    apagados = [],
+    estado = { claims: 0, skips: 0 };
+
+  vm.runInNewContext(ler('sw.js'), {
+    self: {
+      addEventListener: (tipo, fn) => (ouvintes[tipo] = fn),
+      skipWaiting: () => estado.skips++,
+      clients: { claim: () => estado.claims++ },
+      location: { origin: 'http://localhost' },
+    },
+    caches: {
+      open: async () => ({ put: async (arquivo) => guardados.push(arquivo) }),
+      keys: async () => chaves,
+      delete: async (k) => apagados.push(k),
+    },
+    fetch: async () => ({ ok: true }),
+    URL,
+  });
+
+  const disparar = async (tipo) => {
+    let espera;
+
+    ouvintes[tipo]({ waitUntil: (p) => (espera = p) });
+    // install e activate têm de segurar o evento (waitUntil); sem isso o navegador o encerraria antes do fim
+    assert.ok(espera, `service worker: o evento ${tipo} não chamou waitUntil`);
+    await espera;
+  };
+
+  return { disparar, guardados, apagados, estado, tipos: Object.keys(ouvintes) };
+}
+
+test('service worker: instala guardando todo css/js/index/manifest/ícones que existem, e o que a página carrega', async () => {
+  const sw = await rodarSw();
+
+  assert.deepEqual(sw.tipos.sort(), ['activate', 'fetch', 'install']);
+  await sw.disparar('install');
+  assert.equal(sw.estado.skips, 1);
+
+  const norm = (p) => path.posix.normalize(p);
+  const guardados = new Set(sw.guardados.map(norm));
+
+  for (const f of [...folhas, ...scripts, 'index.html', 'manifest.webmanifest'])
+    assert.ok(guardados.has(norm(f)), `sw.js não guarda ${f}`);
+  assert.ok(guardados.has('../corpo/perfil.js')); // módulo do app Corpo, para abrir offline
+
+  for (const f of sw.guardados)
     assert.ok(existsSync(path.join(RAIZ, f)), `sw.js guarda ${f}, que não existe`);
 });
 
-test('PWA: manifest válido, ícones existem e o service worker é registrado', () => {
+test('service worker: ao ativar só apaga os caches "carga-" antigos (fin e a página inicial dividem a origem)', async () => {
+  const sw = await rodarSw([
+    'carga-estatico',
+    'carga-v21',
+    'carga-outro',
+    'fin-cache',
+    'hub-estatico',
+    'al-x',
+  ]);
+
+  await sw.disparar('activate');
+  assert.deepEqual(sw.apagados, ['carga-v21', 'carga-outro']);
+  assert.equal(sw.estado.claims, 1);
+});
+
+test('PWA: manifest válido, ícones existem e a página aponta para o manifest', () => {
   const m = JSON.parse(ler('manifest.webmanifest'));
 
   assert.equal(m.display, 'standalone');
   assert.ok(m.name && m.start_url);
 
   for (const i of m.icons) assert.ok(existsSync(path.join(RAIZ, i.src)), i.src);
-  assert.match(html, /<link rel="manifest" href="manifest.webmanifest"\s*\/?>/);
-  assert.match(ler('js/bootstrap.js'), /serviceWorker\s*\.register\('sw\.js'/);
+  assert.ok(
+    tags.some(
+      (e) =>
+        e.tag === 'link' &&
+        e.attrs.rel === 'manifest' &&
+        e.attrs.href === 'manifest.webmanifest'
+    )
+  );
 });
 
 test('migrations no formato do DataGrip e RLS só do dono em todas as tabelas tr_', () => {
@@ -132,7 +247,7 @@ test('migrations no formato do DataGrip e RLS só do dono em todas as tabelas tr
     assert.match(s, /^commit;$/m);
   }
 
-  const dono = ler('js/config.js').match(/const DONO = '([0-9a-f-]{36})'/)[1];
+  const { DONO: dono } = carregarTr();
 
   for (const [, t] of tudo.matchAll(/create table public\.(tr_\w+)/g)) {
     assert.match(
@@ -159,9 +274,9 @@ test('migrations no formato do DataGrip e RLS só do dono em todas as tabelas tr
 });
 
 test('exercício incluído por migration tem a descrição e a posição no GUIA (js/config.js)', () => {
-  const config = ler('js/config.js');
+  const { GUIA } = carregarTr();
 
-  // linhas de tr_variacao: (user_id, id, exercicio_id, ordem, nome, unidade, …)
+  // linhas de tr_variacao nas migrations: (user_id, id, exercicio_id, ordem, nome, unidade, …)
   const nomes = listar('migrations', '.sql')
     .flatMap((f) =>
       [
@@ -185,8 +300,7 @@ test('exercício incluído por migration tem a descrição e a posição no GUIA
     'Rosca de punho invertida com halteres',
   ]);
 
-  for (const nome of nomes)
-    assert.ok(config.includes(`'${nome.toLowerCase()}': [`), `${nome} sem GUIA`);
+  for (const nome of nomes) assert.ok(GUIA[nome.toLowerCase()], `${nome} sem GUIA`);
 });
 
 test('nenhum segredo no repositório; a chave do Supabase é a publicável', () => {
@@ -200,7 +314,7 @@ test('nenhum segredo no repositório; a chave do Supabase é a publicável', () 
   ];
 
   for (const f of textos) assert.doesNotMatch(ler(f), /service_role|sb_secret_/, f);
-  assert.match(ler('js/config.js'), /const SUPABASE_KEY = 'sb_publishable_/);
+  assert.ok(carregarTr().SUPABASE_KEY.startsWith('sb_publishable_'));
 });
 
 test('higiene textual do .editorconfig (scripts/check-style.mjs)', () => {
@@ -212,38 +326,10 @@ test('higiene textual do .editorconfig (scripts/check-style.mjs)', () => {
   assert.equal(r.status, 0, r.stderr);
 });
 
-test('hub: marca do hub na tela inicial volta para ../ e o service worker só apaga os próprios caches', () => {
-  assert.match(
-    html,
-    /<a\s+class="bt-ic"\s+href="\.\.\/"\s+id="i-hub"\s+title="Hub"\s+aria-label="Hub"\s*>/
-  );
-  assert.ok(html.indexOf('id="i-hub"') < html.indexOf('data-ir="editar"'));
-  assert.doesNotMatch(html, /id="(i-corpo|v-corpo)"/); // pesagem é do app Corpo
-  // fin e a página inicial do hub dividem a origem (e os caches) com o tr.
-  assert.match(
-    ler('sw.js'),
-    /\.filter\(\(?k\)? => k\.startsWith\('carga-'\) && k !== CACHE_ESTATICO\)/
-  );
-  assert.match(ler('docs/REGRAS.md'), /marca do hub \(volta ao hub, `\.\.\/`\)/);
-});
+test('documentação: Sair só no hub e a marca do hub (volta ao hub, ../), login e voltar do hub', () => {
+  const regras = ler('docs/REGRAS.md');
 
-test('sem sessão dentro do hub, vai pro login do hub; servido fora dele (como nos testes), login próprio', () => {
-  const boot = ler('js/bootstrap.js');
-
-  assert.match(
-    boot,
-    /if \(!\/\\\/tr\\\/\(index\\\.html\)\?\$\/\.test\(location\.pathname\)\) return false;/
-  );
-  assert.match(
-    boot,
-    /location\.replace\(\s*'\.\.\/\?volta=' \+ encodeURIComponent\('tr\/' \+ location\.search \+ location\.hash\)\s*\);/
-  );
-  assert.match(
-    boot,
-    /if \(data\.session\) carregar\(data\.session\.user\);\s*else if \(!irParaLoginDoHub\(\)\) telaLogin\(\);/
-  );
-  assert.match(
-    ler('docs/REGRAS.md'),
-    /sem sessão, o tr vai direto para `\.\.\/\?volta=tr\/`/
-  );
+  assert.match(regras, /o login e o Sair ficam só na página inicial do hub/);
+  assert.match(regras, /marca do hub \(volta ao hub, `\.\.\/`\)/);
+  assert.match(regras, /sem sessão, o tr vai direto para `\.\.\/\?volta=tr\/`/);
 });

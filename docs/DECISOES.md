@@ -120,3 +120,12 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md` (página inicial), `
 - `fin/.editorconfig`: `indent_size` passou de 4 para 2, igual ao `.prettierrc`. O código do Fin já segue 2 espaços; com 4, o editor e o Prettier discordariam.
 - `hub.js` (`dadosComPendentes`): se a cópia do al (`al.db`) ou a base dele (`al.base`) estiver ilegível, a página inicial fica só com os dados da nuvem. Antes, um `al.base` ilegível com `al.db` válido contava todo dia como pendente. `al.db` sem base (o al nunca sincronizou) continua valendo como pendente. Teste: `tests/regras-apps.test.mjs`.
 - `fin/tests/helpers/assert-tolerante.js`: o `match` tolerante ignora maiúsculas e parênteses, para aceitar o que o Prettier reescreve; o `doesNotMatch` continua estrito. Limite conhecido: um `match` pode aceitar caixa ou parênteses diferentes do código. O que precisa sumir do código fica com `doesNotMatch`.
+
+## Auditoria dos testes (02/11/2026)
+
+- Critérios iguais aos do Fin, em `docs/DIRETRIZES.md`, seção 3: a função rodando primeiro; Playwright só onde a função não prova; regex só onde o objeto é texto.
+- Sem navegador agora: `tests/hub.test.mjs` lê o `index.html` como elementos (`tests/leitores.mjs`), roda o `hub.js` com o HTML real (`tests/hub-falso.mjs`) e roda os service workers em `node:vm` (`tests/sw-falso.mjs`), em vez de procurar trechos do código com regex. `tests/navegacao.test.mjs` caiu de 14 para 8 testes de navegador (contagem de 02/11/2026).
+- Continua em Playwright: login, hábitos com os dados dos apps e cada app abrindo com a mesma sessão e no dia escolhido. É a ligação entre a página inicial e os apps, que nenhuma função prova sozinha.
+- Ressalvas, pendentes:
+  - `tests/hub.test.mjs` ainda tem uma regex `var(--teal…)` sobre o HTML e o JS (lint de nomes antigos da base comum, seção 8 das diretrizes). É regex sobre código; fica até o lint passar a ler o arquivo como elementos e regras.
+  - Em `destinoDaVolta` (volta do login para a página), a mutação `.app:not(.externo)` → `.app` é equivalente: o `//` já barra links externos. O teste não a pega e não deve pegar.

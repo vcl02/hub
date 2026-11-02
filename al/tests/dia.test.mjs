@@ -8,7 +8,6 @@ import {
   comTreino,
   sincronizado,
   texto,
-  app,
   DIA,
 } from './helpers/app.mjs';
 
@@ -65,7 +64,7 @@ test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei +" soma cada 
   assert.equal(await pg.locator('#s-gasto').count(), 0); // sem a conta do gasto
   assert.equal(await pg.isVisible('#andei'), true);
   assert.equal(await texto(pg, '#c-kcal'), ''); // sem trecho, sem caminhada
-  await pg.click('#c-mais'); // fui: sem tempo nem distância = 20 min
+  await pg.dblclick('#c-mais'); // fui (toque duplo sem querer: um trecho só): sem tempo nem distância = 20 min
   // Padrão 20 min a 5 km/h: MET (0,1 × 83,3 + 3,5) ÷ 3,5 = 3,38 · (3,38 − 1) × 1998 ÷ 24 × 20/60 = 66
   assert.deepEqual(await trechos(pg), ['15:30 · 20 min ×']);
   assert.equal(await texto(pg, '#c-kcal'), '−66 kcal');
@@ -128,23 +127,6 @@ test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei +" soma cada 
   await ctx.close();
 });
 
-test('cardio na esteira do Treino (tr_treino.cardio) entra no gasto, só o que passa da basal', async () => {
-  const nuvem = comTreino(novaNuvem());
-
-  nuvem.tabelas.tr_treino[0].cardio = {
-    inicio: Date.parse('2026-09-18T14:00:00+00:00'),
-    ms: 30 * 6e4,
-    vel: 6,
-    incl: 0,
-  };
-  const { ctx, pg, erros } = await abrirApp({ nuvem });
-
-  // 30 min a 6 km/h no plano: MET 3,86 × 1998 ÷ 24 × 0,5 h = 161, menos a basal dessa meia hora (42) = 119 · meta 2106 + 119
-  assert.equal(await texto(pg, '#s-valor'), '2.225');
-  assert.deepEqual(erros, []);
-  await ctx.close();
-});
-
 test('dois aparelhos no mesmo dia: a caminhada mescla com a nuvem (nada do outro aparelho some)', async () => {
   const { ctx, pg, nuvem, erros } = await abrirApp({ nuvem: comTreino(novaNuvem()) }); // 18/09, 15:30
 
@@ -170,15 +152,6 @@ test('dois aparelhos no mesmo dia: a caminhada mescla com a nuvem (nada do outro
   await ctx.close();
 });
 
-test('toque duplo sem querer no "Andei +" lança um trecho só', async () => {
-  const { ctx, pg, erros } = await abrirApp({ nuvem: comTreino(novaNuvem()) });
-
-  await pg.dblclick('#c-mais');
-  assert.deepEqual(await trechos(pg), ['15:30 · 20 min ×']);
-  assert.deepEqual(erros, []);
-  await ctx.close();
-});
-
 test('metrô: o envio da caminhada chega ao banco mas a resposta se perde; o próximo não soma o mesmo trecho de novo', async () => {
   const { ctx, pg, nuvem, erros } = await abrirApp({ nuvem: comTreino(novaNuvem()) }); // 18/09, 15:30
 
@@ -197,18 +170,6 @@ test('metrô: o envio da caminhada chega ao banco mas a resposta se perde; o pr�
   await ctx.close();
 });
 
-test('sem pesagem no Corpo não há gasto nem saldo, só o que foi comido', async () => {
-  const { ctx, pg } = await abrirApp();
-
-  assert.equal(await texto(pg, '#s-valor'), '—');
-  assert.deepEqual(await linhasDe(pg, '#s-conta'), [
-    'Comi 0 kcal',
-    'Sem pesagem no Corpo para calcular o gasto',
-  ]);
-  assert.equal(await pg.isVisible('#andei'), false);
-  await ctx.close();
-});
-
 test('IA: a frase vira itens na prévia (quantas × porção, com o total), dá pra corrigir; hoje entra o total e fica salva 1 porção', async () => {
   const nuvem = comTreino(novaNuvem());
 
@@ -218,6 +179,10 @@ test('IA: a frase vira itens na prévia (quantas × porção, com o total), dá 
   await descrever(pg, '2 ovos mexidos e 1 pão francês');
   await pg.waitForSelector('#previa:not([hidden])');
   assert.equal(nuvem.chamadasIA, 1);
+  assert.ok(
+    await pg.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    'prévia cabe na largura do celular'
+  );
   assert.equal(await pg.locator('#p-lista li').count(), 2);
   assert.deepEqual(
     [
@@ -231,6 +196,10 @@ test('IA: a frase vira itens na prévia (quantas × porção, com o total), dá 
   await pg.click('#p-adicionar');
   await pg.waitForSelector('#previa', { state: 'hidden' });
   assert.equal(await pg.inputValue('#f-texto'), '');
+  assert.ok(
+    await pg.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    'lista cabe na largura do celular'
+  );
   assert.equal(await pg.locator('#lista li').count(), 2);
   assert.match(
     await texto(pg, '#lista li:first-child'),
@@ -527,30 +496,6 @@ test('marmita: × com toque duplo joga fora; sem a tabela (migration 03 pendente
   await b.ctx.close();
 });
 
-test('hoje passou da meta mas ainda abaixo do gasto: diz que ainda está em déficit (menor que os 500 planejados)', async () => {
-  const nuvem = comTreino(novaNuvem());
-
-  nuvem.ia = iaCom({
-    nome: 'Marmita',
-    porcao: '1',
-    kcal: 2300,
-    prot: 100,
-    carb: 250,
-    gord: 80,
-  });
-  const { ctx, pg, erros } = await abrirApp({ nuvem });
-
-  assert.equal(await pg.isVisible('#s-ainda'), false); // dentro da meta: nada
-  await descrever(pg, 'marmita');
-  await pg.click('#p-adicionar');
-  assert.equal(await texto(pg, '#s-valor'), '194'); // 2300 − 2106
-  assert.equal(await texto(pg, '#s-rotulo'), 'kcal acima da meta');
-  assert.equal(await texto(pg, '#s-ainda'), 'Ainda em déficit de 306 kcal'); // 2606 − 2300
-  assert.match(await pg.getAttribute('#s-ainda', 'class'), /bom/);
-  assert.deepEqual(erros, []);
-  await ctx.close();
-});
-
 test('hoje passou da meta: mostra quanto passou (vermelho), e os macros que passaram; dia passado mostra o saldo final', async () => {
   const nuvem = comTreino(novaNuvem());
 
@@ -705,54 +650,6 @@ test('segunda (treino opcional) passando da meta sem ter treinado: alerta urgent
   await ctx.close();
 });
 
-test('dias fixos (quarta e quinta) e dias passados não têm o alerta urgente, mesmo passando da meta', async () => {
-  const nuvem = novaNuvem();
-
-  nuvem.tabelas.corpo_medida.push({
-    user_id: 'x',
-    data: '2026-09-10',
-    hora: '',
-    peso: '100',
-    cintura: null,
-  });
-  nuvem.tabelas.al_registro.push({
-    user_id: 'x',
-    id: 'r1',
-    data: '2026-09-14',
-    hora: '20:00',
-    item_id: null,
-    nome: 'Rodízio',
-    porcao: '1',
-    qtd: '1',
-    kcal: '3000',
-    prot: '1',
-    carb: '1',
-    gord: '1',
-  });
-  nuvem.ia = iaCom({
-    nome: 'Rodízio',
-    porcao: '1',
-    kcal: 3000,
-    prot: 1,
-    carb: 1,
-    gord: 1,
-  });
-
-  const { ctx, pg } = await abrirApp({
-    nuvem,
-    relogio: new Date('2026-09-16T20:00:00-03:00'),
-  }); // quarta (fixo)
-
-  await descrever(pg, 'rodízio');
-  await pg.click('#p-adicionar');
-  assert.equal(await texto(pg, '#s-rotulo'), 'kcal acima da meta');
-  assert.equal(await pg.isVisible('#s-alerta'), false);
-  assert.equal(await pg.isVisible('#s-previsto'), true);
-  await pg.click('#semana [data-dia="2026-09-14"]'); // a segunda que passou: dia fechado, sem alerta
-  assert.equal(await pg.isVisible('#s-alerta'), false);
-  await ctx.close();
-});
-
 test('IA fora do ar: avisa e abre a prévia para digitar à mão, com o nome já preenchido', async () => {
   const nuvem = novaNuvem();
 
@@ -778,6 +675,12 @@ test('lista do dia: porções mudam o total e apagar pede toque duplo', async ()
   nuvem.ia = iaCom(PAO);
   const { ctx, pg } = await abrirApp({ nuvem });
 
+  assert.equal(await texto(pg, '#s-valor'), '—'); // sem pesagem no Corpo não há gasto nem saldo
+  assert.equal(await pg.isVisible('#andei'), false);
+  assert.equal(await pg.isDisabled('#d-ant'), true); // app novo começa hoje: sem dia anterior
+  assert.equal(await pg.isDisabled('#d-prox'), true);
+  assert.equal(await pg.locator('#semana li').count(), 1);
+  assert.match(await texto(pg, '#semana li'), /^Hoje/);
   await descrever(pg, 'pão');
   await pg.click('#p-adicionar');
   await pg.selectOption('#lista select', '2');
@@ -793,19 +696,6 @@ test('lista do dia: porções mudam o total e apagar pede toque duplo', async ()
   await sincronizado(pg);
   assert.deepEqual(nuvem.tabelas.al_registro, []);
   assert.equal(nuvem.tabelas.al_item.length, 1); // a comida salva continua
-  await ctx.close();
-});
-
-test('app novo começa hoje: sem dia anterior para ver e só hoje nos últimos 7 dias', async () => {
-  const nuvem = comTreino(novaNuvem());
-
-  nuvem.tabelas.al_dia.push({ user_id: 'x', data: '2026-09-12', andou: false }); // "não andei" de uma versão antiga: não conta
-  const { ctx, pg } = await abrirApp({ nuvem });
-
-  assert.equal(await pg.isDisabled('#d-ant'), true);
-  assert.equal(await pg.isDisabled('#d-prox'), true);
-  assert.equal(await pg.locator('#semana li').count(), 1);
-  assert.match(await texto(pg, '#semana li'), /^Hoje/);
   await ctx.close();
 });
 
@@ -1042,6 +932,14 @@ test('sem internet: abre com a cópia do aparelho e envia o que ficou pendente a
   await pg.evaluate(() => enviar());
   await sincronizado(pg);
   assert.equal(nuvem.tabelas.al_registro.length, 2);
+  // tudo o que o app guardou no aparelho tem o prefixo al. (de fora só a sessão do Supabase e a cópia das pesagens do Corpo)
+  const chaves = await pg.evaluate(() => Object.keys(localStorage));
+
+  assert.ok(chaves.some((k) => k.startsWith('al.db.')));
+  assert.deepEqual(
+    chaves.filter((k) => !['al.', 'sb-', 'corpo.medidas.'].some((p) => k.startsWith(p))),
+    []
+  );
   await ctx.close();
 });
 
@@ -1051,26 +949,5 @@ test('outra conta entra no Supabase mas não passa do login', async () => {
   await pg.waitForFunction(() => document.getElementById('l-erro').textContent);
   assert.equal(await texto(pg, '#l-erro'), 'Esta conta não tem acesso.');
   assert.equal(await pg.isVisible('#v-dia'), false);
-  await ctx.close();
-});
-
-test('tela no celular sem rolagem para o lado', async () => {
-  const nuvem = comTreino(novaNuvem());
-
-  nuvem.ia = iaCom(OVO, PAO);
-  const { ctx, pg } = await abrirApp({ nuvem });
-
-  await descrever(pg, 'café');
-  await pg.waitForSelector('#previa:not([hidden])');
-  assert.ok(
-    await pg.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
-    'prévia cabe na largura'
-  );
-  await pg.click('#p-adicionar');
-  assert.ok(
-    await pg.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
-    'lista cabe na largura'
-  );
-  assert.ok(app.url);
   await ctx.close();
 });

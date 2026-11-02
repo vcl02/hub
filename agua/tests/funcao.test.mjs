@@ -7,6 +7,7 @@ import vm from 'node:vm';
 import { stripTypeScriptTypes } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { carregar as doApp, carregarArquivos } from '../../tests/funcoes.mjs';
 
 const RAIZ = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -146,21 +147,55 @@ const enviados = (f) => f.rede.filter((r) => r.url === ENDPOINT);
 
 test('nenhum segredo no código: chaves VAPID e token nascem na função e ficam só no banco', () => {
   assert.doesNotMatch(fonte, /service_role|sb_secret_|["']d["']:|BEGIN PRIVATE/);
-  assert.match(fonte, /Deno\.env\.get\(['"]SUPABASE_SERVICE_ROLE_KEY['"]\)/);
 });
 
-test('mesma rotina do Corpo: presencial é o ROTINA.presencial de corpo/perfil.js', () => {
-  const contexto = {};
-
-  vm.createContext(contexto);
-  vm.runInContext(
-    readFileSync(path.join(RAIZ, '..', 'corpo', 'perfil.js'), 'utf8') +
-      '\nglobalThis.R = ROTINA;',
-    contexto
+test('mesma língua do app: o dono é o do config.js e o horário de lembrete é o LEMBRETE_INICIO a LEMBRETE_FIM', async () => {
+  const C = doApp(
+    path.join(RAIZ, 'js/config.js'),
+    ['DONO', 'LEMBRETE_INICIO'],
+    {},
+    '__saida.LEMBRETE_FIM = LEMBRETE_FIM;'
   );
-  assert.deepEqual(JSON.parse(fonte.match(/const PRESENCIAL = (\[[^\]]*\])/)[1]), [
-    ...contexto.R.presencial,
-  ]);
+
+  const f = carregar({ agora: '2026-10-23T13:01:00-03:00' }); // sexta (em casa)
+
+  await agendado(f);
+  assert.ok(
+    f.rede.some((r) =>
+      r.url.includes('push_inscricao?select=endpoint&user_id=eq.' + C.DONO)
+    )
+  );
+  assert.ok(
+    f.rede.some((r) => r.url.includes('agua_dia?select=aguas&user_id=eq.' + C.DONO))
+  );
+
+  for (let hora = 0; hora < 24; hora++) {
+    const g = carregar({
+      agora: `2026-10-23T${String(hora).padStart(2, '0')}:01:00-03:00`,
+    });
+
+    assert.equal(
+      (await agendado(g)).corpo.enviado,
+      hora >= C.LEMBRETE_INICIO && hora <= C.LEMBRETE_FIM,
+      `${hora}h`
+    );
+  }
+});
+
+test('mesma rotina do Corpo: os dias presenciais de corpo/perfil.js recebem lembrete de 2 em 2 horas, os outros dias úteis de hora em hora', async () => {
+  const { ROTINA } = carregarArquivos(
+    [path.join(RAIZ, '..', 'corpo', 'perfil.js')],
+    ['ROTINA']
+  );
+
+  // 19/10/2026 é segunda; às 11:01 (hora ímpar) só manda quem é de hora em hora
+  for (let semana = 0; semana < 7; semana++) {
+    const data = `2026-10-${19 + ((semana + 6) % 7)}`; // domingo(0) = 25/10, segunda(1) = 19/10...
+    const f = carregar({ agora: `${data}T11:01:00-03:00` });
+    const deHoraEmHora = ![0, 6, ...ROTINA.presencial].includes(semana);
+
+    assert.equal((await agendado(f)).corpo.enviado, deHoraEmHora, data);
+  }
 });
 
 test('GET ?chave gera as chaves uma vez só e devolve só a pública (65 bytes, P-256)', async () => {

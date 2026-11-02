@@ -40,3 +40,13 @@ O porquê das escolhas do Treino. A regra vigente fica em `REGRAS.md`; o jeito d
 ## Botões com texto, por enquanto
 
 - O mantenedor quer migrar para botões só com ícone, como no Fin, depois de se acostumar com o app; até ele pedir, fica o texto.
+
+## Auditoria dos testes (02/11/2026)
+
+- Sem navegador agora: `tests/banco.test.mjs` (formato do db com os formatos antigos, linhas para o Supabase e de volta, junção com a versão antiga, login por usuário), `tests/piramide.test.mjs` (pirâmide, unidades, planos por mês) e `tests/sessao.test.mjs` (início do treino, fechamento por inatividade, um treino por dia, passagem entre dias). As funções saem dos `js/` publicados por `tests/helpers/js.mjs`, com relógio fixo e o estado do app. `tests/funcoes.mjs` ganhou o parâmetro `depois` em `carregar`, que expõe um `let` do arquivo.
+- Navegador: de 59 para 27 testes, contando os arquivos de `tr/tests` que abrem o navegador (contagem de 02/11/2026; o relatório dizia 41 para 22, a conferir).
+- Continua em Playwright: `treino`, `calistenia` e `cardio` (série, descanso e finalização na tela, com o que a tela grava), `nuvem` (dois aparelhos, sem internet, login), `dias` (arrasto, ‹ ›, ← →, `?dia`) e `ajustes` (Esc, atualização da versão, ícones). Gesto e layout ficam aqui porque só o navegador mede.
+- Ressalvas, pendentes:
+  - `tests/estrutura.test.mjs`: `balanceamento` confere cada tag por si (abre e fecha o mesmo número de vezes). Perdeu a ordem de fechamento entre tags diferentes: um fechamento fora de lugar pode passar. Não há regex no lugar; essa ordem fica sem teste.
+  - `js/bootstrap.js`: a linha `else if (!irParaLoginDoHub()) telaLogin()` não tem teste próprio. `irParaLoginDoHub` é testado em `tests/ajustes.test.mjs`; a ramificação só roda no navegador.
+  - Concorrência (observado em 02/11/2026): rodando os 11 arquivos de `tr/tests` juntos (`node --test`), 3 testes de navegador falharam (um clique esperou 30 s; dois valores de tela não bateram). Cada arquivo, sozinho, passou. Pode ser máquina ocupada: antes de dar um teste de navegador por estável, rodar 5 vezes (`docs/DIRETRIZES.md`, seção 3).

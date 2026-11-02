@@ -1,5 +1,6 @@
-// No navegador: serve a raiz do hub em /hub/, faz login na página inicial, mostra os hábitos com os dados dos apps e abre
-// o fin e o tr com a mesma sessão.
+// No navegador (poucos casos, os que precisam de tela e de banco): serve a raiz do hub em /hub/, faz login na página inicial,
+// mostra os hábitos com os dados dos apps e abre os apps com a mesma sessão. As regras do login (mensagens, outra conta, ?volta),
+// do toque e do service worker são funções testadas em hub.test.mjs.
 // Usa o Playwright e o Supabase falso do tr (tr/tests/helpers); nada sai pra rede.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -108,52 +109,15 @@ const entrar = async (pg, usuario, senha) => {
   await pg.press('#l-senha', 'Enter');
 };
 
-test('login antes de tudo: sem sessão só aparece o login; senha errada e usuário desconhecido dão a mesma mensagem', async () => {
-  const { ctx, pg, erros } = await abrir(base);
+test('entrou no hub: login no tema escuro, os apps abrem direto com a mesma sessão, sem login próprio', async () => {
+  const { ctx, pg, faltando, erros } = await abrir(base);
 
   await pg.waitForSelector('#v-login:not([hidden])');
-  assert.equal(await pg.isVisible('#v-apps'), false);
+  assert.equal(await pg.isVisible('#v-apps'), false); // sem sessão só aparece o login
   assert.equal(
     await pg.evaluate(() => getComputedStyle(document.body).backgroundColor),
     'rgb(27, 30, 33)'
   );
-  await entrar(pg, 'eu@teste.com', 'errada');
-  await pg.waitForFunction(() => document.getElementById('l-erro').textContent);
-  assert.equal(await pg.textContent('#l-erro'), 'Usuário ou senha inválidos.');
-  await entrar(pg, 'fulano', 'senha123'); // nem chega ao Supabase
-  assert.equal(await pg.textContent('#l-erro'), 'Usuário ou senha inválidos.');
-  assert.equal(await pg.isVisible('#v-apps'), false);
-  assert.deepEqual(erros, []);
-  await ctx.close();
-});
-
-test('sem internet no login: avisa que é a conexão, não a senha', async () => {
-  const nuvem = novaNuvem();
-
-  nuvem.online = false;
-  const { ctx, pg } = await abrir(base, { nuvem });
-
-  await entrar(pg, 'eu@teste.com', 'senha123');
-  await pg.waitForFunction(() => document.getElementById('l-erro').textContent);
-  assert.equal(await pg.textContent('#l-erro'), 'Sem conexão. Tente de novo.');
-  assert.equal(await pg.isEnabled('#l-usuario'), true); // destrava pra tentar de novo
-  assert.equal(await pg.textContent('#l-botao'), 'Entrar');
-  await ctx.close();
-});
-
-test('outra conta entra no Supabase mas não passa do login', async () => {
-  const { ctx, pg } = await abrir(base, { conta: 'outra-conta' });
-
-  await entrar(pg, 'eu@teste.com', 'senha123');
-  await pg.waitForFunction(() => document.getElementById('l-erro').textContent);
-  assert.equal(await pg.textContent('#l-erro'), 'Esta conta não tem acesso.');
-  assert.equal(await pg.isVisible('#v-apps'), false);
-  await ctx.close();
-});
-
-test('entrou no hub: os apps abrem direto com a mesma sessão, sem login próprio', async () => {
-  const { ctx, pg, faltando, erros } = await abrir(base);
-
   await entrar(pg, 'eu@teste.com', 'senha123');
   await pg.waitForSelector('#v-apps:not([hidden])');
   assert.deepEqual(await pg.$$eval('.app-nome', (s) => s.map((x) => x.textContent)), [
@@ -397,41 +361,6 @@ test('hábitos com os dados dos apps: valor de hoje, ofensivas, dias perfeitos e
   await ctx.close();
 });
 
-test('dia anterior: o hábito abre o app naquele dia, só leitura (a Água)', async () => {
-  const nuvem = novaNuvem();
-
-  nuvem.tabelas.agua_dia.push({
-    data: '2026-10-25',
-    aguas: [{ hora: '10:00', ml: 700 }],
-    xixis: [],
-  });
-  const { ctx, pg, erros } = await abrir(base, { nuvem });
-
-  await pg.clock.install({ time: new Date('2026-10-26T12:00:00-03:00') });
-  await pg.reload();
-  await entrar(pg, 'eu@teste.com', 'senha123');
-  await pg.waitForFunction(
-    () =>
-      document.querySelector('[data-habito="agua"] .hab-valor').textContent ===
-      '0 / 1.000 ml'
-  );
-  await pg.click('#h-anterior'); // no computador, o ‹
-  assert.equal(
-    await pg.getAttribute('[data-habito="agua"]', 'href'),
-    'agua/?dia=2026-10-25'
-  );
-  await pg.click('[data-habito="agua"]');
-  await pg.waitForURL(`${base}agua/?dia=2026-10-25`);
-  await pg.waitForFunction(() => document.getElementById('t-ml')?.textContent === '700');
-  assert.equal(await pg.isVisible('#dia-visto'), true);
-  assert.equal(await pg.isVisible('#b-form'), false);
-  assert.deepEqual(
-    erros.filter((e) => !/tabela\?|404|Falh|carreg/i.test(e)),
-    []
-  ); // o falso não tem as tabelas do fin
-  await ctx.close();
-});
-
 test('cada hábito entra no app no dia selecionado na tela inicial: num dia anterior, naquele dia; em hoje, em hoje', async () => {
   const nuvem = novaNuvem();
 
@@ -597,30 +526,4 @@ test('Água sem sessão: login no hub e volta pra Água, que abre com a mesma se
   assert.deepEqual(faltando, []);
   assert.deepEqual(erros, []);
   await ctx.close();
-});
-
-test('?volta só leva para a pasta de um app do hub, nunca para fora', async () => {
-  for (const volta of [
-    'https://exemplo.test/',
-    '//exemplo.test/',
-    'fin/../../x',
-    'javascript:alert(1)',
-    'outro/',
-  ]) {
-    const { ctx, pg } = await abrir(`${base}?volta=${encodeURIComponent(volta)}`);
-
-    await entrar(pg, 'eu@teste.com', 'senha123');
-    await pg.waitForSelector('#v-apps:not([hidden])'); // fica nos hábitos
-    assert.ok(pg.url().startsWith(base), volta);
-    await ctx.close();
-  }
-});
-
-test('fin, tr, al, Corpo e Água carregam todos os próprios arquivos em subpasta (caminhos relativos)', async () => {
-  for (const app of ['fin/', 'tr/', 'al/', 'corpo/', 'agua/']) {
-    const { ctx, faltando } = await abrir(base + app);
-
-    assert.deepEqual(faltando, [], app);
-    await ctx.close();
-  }
 });

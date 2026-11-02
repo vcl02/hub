@@ -72,12 +72,14 @@ function trecho(src, nome) {
   return src.slice(m.index, i);
 }
 
-export function carregar(arquivo, nomes, contexto = {}) {
+// `depois`: código extra que roda no mesmo contexto, depois das declarações (ex.: expor o estado de um `let` do arquivo com
+// getters e setters em `__saida`, para o teste ler e trocar `db`, `usuario`…).
+export function carregar(arquivo, nomes, contexto = {}, depois = '') {
   const src = readFileSync(arquivo, 'utf8'),
     saida = {};
 
   vm.runInNewContext(
-    `${nomes.map((n) => trecho(src, n)).join('\n')}\n;Object.assign(__saida, { ${nomes.join(', ')} });`,
+    `${nomes.map((n) => trecho(src, n)).join('\n')}\n;Object.assign(__saida, { ${nomes.join(', ')} });\n${depois}`,
     { ...contexto, __saida: saida },
     { filename: arquivo }
   );

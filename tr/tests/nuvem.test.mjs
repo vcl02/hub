@@ -1,7 +1,7 @@
-// Login e sincronização com o Supabase (falso): outro aparelho, offline, migração da versão antiga, conta única.
+// Login e sincronização com o Supabase (falso), no navegador: outro aparelho, offline, migração da versão antiga, conta única.
+// A forma dos dados (linhas, diferença, junção, e-mail do usuário) roda como função em banco.test.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import {
   prepararApp,
   app,
@@ -60,19 +60,76 @@ test('sem internet guarda no aparelho e envia ao reconectar', async () => {
   await ctx.close();
 });
 
-test('senha errada não entra', async () => {
-  const ctx = await app.navegador.newContext();
+test('login: senha errada, usuário desconhecido e conta de outra pessoa não entram; o usuário vale no lugar do e-mail', async () => {
+  const ctx = await app.navegador.newContext(),
+    nuvem = novaNuvem(),
+    emails = [];
 
-  await fakeSupabase(ctx, novaNuvem());
+  await fakeSupabase(ctx, nuvem);
+  ctx.on('request', (r) => {
+    if (r.url().includes('/auth/v1/token')) emails.push(r.postDataJSON()?.email);
+  });
   const pg = await ctx.newPage();
 
   await pg.goto(app.url);
+  await pg.waitForFunction(
+    async () => !!(await navigator.serviceWorker.getRegistration())
+  ); // o app se instala para abrir offline
   await pg.fill('#l-email', 'eu@teste.com');
   await pg.fill('#l-senha', 'errada');
   await pg.press('#l-senha', 'Enter');
   await pg.waitForFunction(() => $('l-erro').textContent);
   assert.match(await pg.textContent('#l-erro'), /inválidos/);
   assert.equal(await pg.isVisible('#v-inicio'), false);
+  await pg.fill('#l-email', 'fulano'); // não é e-mail nem usuário conhecido: nem chega ao Supabase
+  await pg.fill('#l-senha', 'x');
+  await pg.press('#l-senha', 'Enter');
+  assert.match(await pg.textContent('#l-erro'), /Usuário ou senha inválidos/);
+  await pg.fill('#l-email', 'Victor');
+  await pg.fill('#l-senha', 'senha123');
+  await pg.press('#l-senha', 'Enter');
+  await pg.waitForSelector('#v-inicio:not([hidden])');
+  assert.deepEqual(emails, ['eu@teste.com', 'victor.cabrera0209@gmail.com']);
+
+  // outra conta do Supabase (não é a do dono) não entra
+  const outro = await app.navegador.newContext();
+
+  await fakeSupabase(outro, novaNuvem(), 'outra-conta');
+  const pg2 = await outro.newPage();
+
+  await pg2.goto(app.url);
+  await pg2.fill('#l-email', 'eu@teste.com');
+  await pg2.fill('#l-senha', 'senha123');
+  await pg2.press('#l-senha', 'Enter');
+  await pg2.waitForFunction(() => $('l-erro').textContent);
+  assert.match(await pg2.textContent('#l-erro'), /não tem acesso/);
+  assert.equal(await pg2.isVisible('#v-inicio'), false);
+  await outro.close();
+  await ctx.close();
+});
+
+test('login: campos na cor das superfícies sobre o fundo escuro; trava e mostra "Entrando…" sem apagar a senha', async () => {
+  const ctx = await app.navegador.newContext(),
+    nuvem = novaNuvem();
+
+  await fakeSupabase(ctx, nuvem);
+  const pg = await ctx.newPage();
+
+  await pg.goto(app.url);
+  await pg.waitForSelector('#v-bloqueio:not([hidden])');
+  assert.equal(
+    await pg.evaluate(() => getComputedStyle($('l-email')).backgroundColor),
+    'rgb(36, 39, 43)'
+  );
+  nuvem.atraso = 800;
+  await pg.fill('#l-email', 'victor');
+  await pg.fill('#l-senha', 'senha123');
+  await pg.press('#l-senha', 'Enter');
+  assert.equal(await pg.isVisible('#l-carregando'), true);
+  assert.equal(await pg.isDisabled('#l-senha'), true);
+  assert.equal(await pg.inputValue('#l-senha'), 'senha123'); // não some enquanto entra
+  await pg.waitForSelector('#v-inicio:not([hidden])', { timeout: 15000 });
+  assert.equal(await pg.inputValue('#l-senha'), '');
   await ctx.close();
 });
 
@@ -124,94 +181,6 @@ test('junta à conta o banco criptografado da versão antiga', async () => {
   );
   assert.equal(await pg.evaluate(() => localStorage.getItem('carga.vault.v1')), null);
   assert.deepEqual(erros, []);
-  await ctx.close();
-});
-
-test('sem botão de sair: o Sair fica só no hub', async () => {
-  const { ctx, pg } = await abrirApp();
-
-  assert.equal(await pg.locator('#sair').count(), 0);
-  assert.match(
-    readFileSync(new URL('../docs/REGRAS.md', import.meta.url), 'utf8'),
-    /o login e o Sair ficam só na página inicial do hub/
-  );
-  await ctx.close();
-});
-
-test('outra conta do Supabase não entra', async () => {
-  const ctx = await app.navegador.newContext();
-
-  await fakeSupabase(ctx, novaNuvem(), 'outra-conta');
-  const pg = await ctx.newPage();
-
-  await pg.goto(app.url);
-  await pg.fill('#l-email', 'eu@teste.com');
-  await pg.fill('#l-senha', 'senha123');
-  await pg.press('#l-senha', 'Enter');
-  await pg.waitForFunction(() => $('l-erro').textContent);
-  assert.match(await pg.textContent('#l-erro'), /não tem acesso/);
-  assert.equal(await pg.isVisible('#v-inicio'), false);
-  await ctx.close();
-});
-
-test('login aceita o usuário no lugar do e-mail; usuário desconhecido nem chega ao Supabase', async () => {
-  const ctx = await app.navegador.newContext(),
-    nuvem = novaNuvem(),
-    emails = [];
-
-  await fakeSupabase(ctx, nuvem);
-  ctx.on('request', (r) => {
-    if (r.url().includes('/auth/v1/token')) emails.push(r.postDataJSON()?.email);
-  });
-  const pg = await ctx.newPage();
-
-  await pg.goto(app.url);
-  await pg.fill('#l-email', 'fulano');
-  await pg.fill('#l-senha', 'x');
-  await pg.press('#l-senha', 'Enter');
-  assert.match(await pg.textContent('#l-erro'), /Usuário ou senha inválidos/);
-  await pg.fill('#l-email', 'Victor');
-  await pg.fill('#l-senha', 'senha123');
-  await pg.press('#l-senha', 'Enter');
-  await pg.waitForSelector('#v-inicio:not([hidden])');
-  assert.deepEqual(emails, ['victor.cabrera0209@gmail.com']);
-  await ctx.close();
-});
-
-test('login: campos na cor das superfícies sobre o fundo escuro, com o nome dentro', async () => {
-  const ctx = await app.navegador.newContext();
-
-  await fakeSupabase(ctx, novaNuvem());
-  const pg = await ctx.newPage();
-
-  await pg.goto(app.url);
-  await pg.waitForSelector('#v-bloqueio:not([hidden])');
-  assert.equal(
-    await pg.evaluate(() => getComputedStyle($('l-email')).backgroundColor),
-    'rgb(36, 39, 43)'
-  );
-  assert.equal(await pg.getAttribute('#l-email', 'placeholder'), 'Usuário');
-  assert.equal(await pg.getAttribute('#l-senha', 'placeholder'), 'Senha');
-  await ctx.close();
-});
-
-test('login trava os campos e mostra "Entrando…" sem apagar a senha antes de entrar', async () => {
-  const ctx = await app.navegador.newContext(),
-    nuvem = novaNuvem();
-
-  await fakeSupabase(ctx, nuvem);
-  const pg = await ctx.newPage();
-
-  await pg.goto(app.url);
-  nuvem.atraso = 800;
-  await pg.fill('#l-email', 'victor');
-  await pg.fill('#l-senha', 'senha123');
-  await pg.press('#l-senha', 'Enter');
-  assert.equal(await pg.isVisible('#l-carregando'), true);
-  assert.equal(await pg.isDisabled('#l-senha'), true);
-  assert.equal(await pg.inputValue('#l-senha'), 'senha123'); // não some enquanto entra
-  await pg.waitForSelector('#v-inicio:not([hidden])', { timeout: 15000 });
-  assert.equal(await pg.inputValue('#l-senha'), '');
   await ctx.close();
 });
 

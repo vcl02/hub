@@ -82,17 +82,15 @@ function pintarSaldo() {
 
   // Passou da meta (que já tem os 500 kcal de déficit planejado): o dia ainda pode fechar em déficit, só menor que o planejado.
   // Quanto falta para o gasto do dia inteiro (sem comer mais nada): "Ainda em déficit de 306 kcal"; passou do gasto, superávit.
-  const acima = !!g && aberto && resto < 0,
-    ainda = g ? g.total - c.kcal : 0;
+  const acima = !!g && aberto && resto < 0;
 
   $('s-ainda').hidden = !acima;
 
   if (acima) {
-    $('s-ainda').className = 'saldo-ainda ' + (ainda >= 0 ? 'bom' : 'ruim');
-    $('s-ainda').textContent =
-      ainda >= 0
-        ? `Ainda em déficit de ${inteiro(ainda)} kcal`
-        : `Já em superávit de ${inteiro(-ainda)} kcal`;
+    const aviso = avisoAinda(g, c.kcal);
+
+    $('s-ainda').className = 'saldo-ainda ' + aviso.classe;
+    $('s-ainda').textContent = aviso.texto;
   }
 
   $('s-conta').innerHTML = !g
@@ -103,30 +101,14 @@ function pintarSaldo() {
   // Hoje é dia de treino e ainda não treinou: quanto a mais dá para comer depois do treino
   // Dia de treino opcional (extra) em que já passou da meta e ainda não treinou: o treino vira obrigatório. Alerta urgente
   // com o quanto o treino ajuda (volta para a meta ou só diminui o excesso), o risco de fechar em superávit e o botão do Treino.
-  const urgente = aberto && g?.previsto?.extra && resto < 0;
+  const urgente = alertaUrgente(g, resto, aberto);
 
   $('s-alerta').hidden = !urgente;
 
-  if (urgente) {
-    const p = g.previsto,
-      passou = -resto,
-      depois = passou - p.kcal,
-      superavit = c.kcal - g.total,
-      comTreino = c.kcal - g.total - p.kcal;
-
-    $('s-alerta-txt').innerHTML = [
-      `Passou <b>${inteiro(passou)} kcal</b> da meta.`,
-      depois <= 0
-        ? `Se treinar, você ganha ${inteiro(p.kcal)} kcal e <b>volta para a meta</b>.`
-        : `Se treinar, você ganha ${inteiro(p.kcal)} kcal e o excesso cai para <b>${inteiro(depois)} kcal</b>.`,
-      superavit > 0
-        ? `Sem treino o dia fecha em <b>superávit de ${inteiro(superavit)} kcal</b>${comTreino <= 0 ? '; treinando, ainda fecha em déficit' : ''}.`
-        : '',
-    ]
-      .filter(Boolean)
+  if (urgente)
+    $('s-alerta-txt').innerHTML = linhasDoAlerta(g, c.kcal, resto)
       .map((t) => `<span>${t}</span>`)
       .join('');
-  }
 
   $('s-previsto').hidden = !(aberto && g?.previsto) || urgente;
 

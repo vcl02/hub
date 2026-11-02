@@ -85,6 +85,9 @@ test('pesagem de hoje: horário livre (vem a hora de agora), 1 por dia, e só re
   assert.equal(await pg.isVisible('#c-aviso'), false);
   await salvar(pg, { hora: '07:00', peso: '90' });
   assert.match(await texto(pg, '#c-historico'), /07:00 90 kg/);
+  await pg.fill('#c-hora', '07:30');
+  await pg.dispatchEvent('#c-hora', 'input');
+  assert.equal(await pg.isVisible('#c-aviso'), false); // até 1 h do horário de sempre: sem aviso
   await pg.fill('#c-hora', '15:30');
   await pg.dispatchEvent('#c-hora', 'input');
   assert.match(await texto(pg, '#c-aviso'), /Fora do seu horário de sempre \(07:00\)/);
@@ -96,42 +99,16 @@ test('pesagem de hoje: horário livre (vem a hora de agora), 1 por dia, e só re
     nuvem.tabelas.corpo_medida.map((m) => [m.user_id, m.data, m.hora, m.peso, m.cintura]),
     [[DONO, '2026-10-22', '15:30', 89.5, null]]
   );
-  assert.deepEqual(erros, []);
-  await ctx.close();
-});
 
-test('horário de sempre: a mediana das últimas 7 pesagens com horário; uma fora da rotina não muda', async () => {
-  const { ctx, pg, erros } = await abrirApp(); // 22/10, 08:00
+  // gráficos só com 2 medidas ou mais (sem caixa vazia nem título)
+  for (const id of ['#c-grafico', '#c-grafico-cint']) {
+    assert.equal(await pg.isVisible(id), false, id);
+    assert.equal(await pg.isVisible(`h3.sec:has(+ ${id})`), false, id);
+  }
 
-  const aviso = async (h) => {
-    await pg.fill('#c-hora', h);
-    await pg.dispatchEvent('#c-hora', 'input');
-
-    return pg.isVisible('#c-aviso') ? texto(pg, '#c-aviso') : '';
-  };
-
-  await semear(
-    pg,
-    [
-      ['14', '06:50'],
-      ['15', '07:10'],
-      ['16', '07:00'],
-      ['17', '07:05'],
-      ['18', '06:55'],
-      ['19', '07:00'],
-      ['20', '21:00'],
-    ].map(([d, hora]) => ({ data: `2026-10-${d}`, hora, peso: 90 }))
-  );
-  assert.equal(await pg.evaluate(() => horaHabitual()), '07:00'); // a das 21:00 (a mais recente) não muda
-  assert.equal(await aviso('07:30'), '');
-  assert.match(await aviso('09:00'), /Fora do seu horário de sempre \(07:00\)/);
-  await semear(pg, [
-    { data: '2026-10-21', hora: '21:10', peso: 90 },
-    { data: '2026-10-12', hora: '21:05', peso: 90 },
-    { data: '2026-10-13', hora: '21:05', peso: 90 },
-  ]); // 12 e 13: antigas, fora das últimas 7
-  await salvar(pg, { hora: '21:10', peso: '90' });
-  assert.equal(await pg.evaluate(() => horaHabitual()), '07:05'); // 06:55 07:00 07:00 [07:05] 21:00 21:10 21:10: 3 noites ainda não viram a rotina
+  await semear(pg, [{ data: '2026-10-21', hora: '07:00', peso: 103 }]);
+  assert.equal(await pg.isVisible('#c-grafico svg'), true);
+  assert.equal(await pg.isVisible('#c-grafico-cint'), false); // barriga só em 1 dia
   assert.deepEqual(erros, []);
   await ctx.close();
 });
@@ -168,75 +145,6 @@ test('barriga sem peso (e peso sem barriga) num dia; outro dia pela data, só le
   );
   await salvar(pg, { peso: '20' });
   assert.equal(await texto(pg, '#toast'), 'Peso entre 30 e 300 kg');
-  await ctx.close();
-});
-
-test('IMC com 1,78 m, faixa, quanto falta, perfil e variação desde a 1ª pesagem', async () => {
-  const nuvem = novaNuvem();
-
-  nuvem.tabelas.corpo_medida.push({
-    user_id: DONO,
-    data: '2026-10-15',
-    hora: '07:00',
-    peso: '92',
-    cintura: '104',
-  });
-  const { ctx, pg } = await abrirApp({ nuvem });
-
-  await salvar(pg, { peso: '90', cintura: '102' });
-  assert.match(await texto(pg, '#c-historico'), /90 kg · 102 cm · IMC 28,4/); // 90 / 1,78²
-  const resumo = await texto(pg, '#c-resumo');
-
-  assert.match(
-    resumo,
-    /^90kg IMC 28,4 · Sobrepeso 11 kg até Normal −2 kg desde 15\/10 Barriga 102 cm · −2 cm$/
-  );
-  assert.equal(await texto(pg, '#c-perfil'), '24 anos · 1,78 m · basal ~1.898 kcal/dia');
-
-  const faixa = await pg.evaluate(() =>
-    [15.9, 16, 17, 18.4, 18.5, 24.9, 25, 29.9, 30, 34.9, 35, 39.9, 40].map(faixaImc)
-  );
-
-  assert.deepEqual(faixa, [
-    'Magreza III',
-    'Magreza II',
-    'Magreza I',
-    'Magreza I',
-    'Normal',
-    'Normal',
-    'Sobrepeso',
-    'Sobrepeso',
-    'Obesidade I',
-    'Obesidade I',
-    'Obesidade II',
-    'Obesidade II',
-    'Obesidade III',
-  ]);
-  assert.deepEqual(await pg.evaluate(() => [102.3, 75, 50].map(rumoAoNormal)), [
-    '7,5 kg até Sobrepeso',
-    '',
-    '0,6 kg até Magreza II',
-  ]);
-  assert.deepEqual(await pg.evaluate(() => [faixaImc(imc(94.8)), faixaImc(imc(94.9))]), [
-    'Sobrepeso',
-    'Obesidade I',
-  ]);
-  await ctx.close();
-});
-
-test('gráficos só com 2 medidas ou mais (sem caixa vazia nem título)', async () => {
-  const { ctx, pg } = await abrirApp();
-
-  await salvar(pg, { peso: '102,3', cintura: '110' });
-
-  for (const id of ['#c-grafico', '#c-grafico-cint']) {
-    assert.equal(await pg.isVisible(id), false, id);
-    assert.equal(await pg.isVisible(`h3.sec:has(+ ${id})`), false, id);
-  }
-
-  await semear(pg, [{ data: '2026-10-21', hora: '07:00', peso: 103 }]);
-  assert.equal(await pg.isVisible('#c-grafico svg'), true);
-  assert.equal(await pg.isVisible('#c-grafico-cint'), false); // barriga só em 1 dia
   await ctx.close();
 });
 
@@ -318,6 +226,12 @@ test('histórico: só a medida de hoje se edita (horário, peso e barriga) ou ap
   const { ctx, pg } = await abrirApp({ nuvem });
 
   await salvar(pg, { peso: '90' });
+  // IMC, faixa, quanto falta, variação desde a 1ª pesagem e o perfil (as contas rodam em regras.test.mjs)
+  assert.match(
+    await texto(pg, '#c-resumo'),
+    /^90kg IMC 28,4 · Sobrepeso 11 kg até Normal −1 kg desde 15\/10$/
+  );
+  assert.equal(await texto(pg, '#c-perfil'), '24 anos · 1,78 m · basal ~1.898 kcal/dia');
   assert.equal(await pg.isDisabled('[data-editar="2026-10-15"]'), true);
   assert.equal(await pg.isDisabled('[data-apagar="2026-10-15"]'), true);
   await pg.click('[data-editar="2026-10-22"]');
@@ -358,7 +272,7 @@ test('evacuação: +1 grava com o horário de agora, conta, tira com toque duplo
 
   assert.equal(await texto(pg, '#ev-total'), '0');
   assert.equal(await texto(pg, '#ev-ultima'), '3 dias sem evacuar (última em 19/10)'); // só aparece com 3 dias ou mais
-  await pg.click('#ev-mais');
+  await pg.dblclick('#ev-mais'); // toque duplo sem querer: conta uma vez só
   await sincronizado(pg); // já na nuvem: o +1 seguinte também precisa subir
   await pg.clock.fastForward('06:30:00');
   await pg.click('#ev-mais'); // 14:30
@@ -437,7 +351,7 @@ test('xixi: +1 com o horário de agora, tira com toque duplo; bexiga com xixis p
     '3 h entre um e outro',
     '200 ml bebidos por xixi',
   ]);
-  await pg.click('#x-mais');
+  await pg.dblclick('#x-mais'); // toque duplo sem querer: conta uma vez só
   await sincronizado(pg);
   await pg.clock.fastForward('02:30:00');
   await pg.click('#x-mais'); // 10:30
@@ -595,17 +509,6 @@ test('‹ › e arrastar de lado trocam o dia (até o 1º dia com registro e at�
   await pg.keyboard.press('ArrowRight');
   assert.equal(await texto(pg, '#d-nome'), 'Hoje');
   assert.equal(await pg.isDisabled('#x-mais'), false); // hoje: lança de novo
-  assert.deepEqual(erros, []);
-  await ctx.close();
-});
-
-test('toque duplo sem querer no +1 conta uma vez só', async () => {
-  const { ctx, pg, erros } = await abrirApp();
-
-  await pg.dblclick('#x-mais');
-  await pg.dblclick('#ev-mais');
-  assert.equal(await texto(pg, '#x-total'), '1');
-  assert.equal(await texto(pg, '#ev-total'), '1');
   assert.deepEqual(erros, []);
   await ctx.close();
 });
@@ -768,32 +671,6 @@ test('cópia do aparelho da versão anterior (base só com pesagens) continua si
   await ctx.close();
 });
 
-test('a cópia para os outros apps (corpo.medidas.<conta>) acompanha cada mudança, e pesoNoDia lê dela', async () => {
-  const { ctx, pg } = await abrirApp();
-
-  await semear(pg, [{ data: '2026-10-20', hora: '08:00', peso: 91 }]);
-  await salvar(pg, { peso: '90', cintura: '100' });
-  const L = await pg.evaluate((id) => medidasGuardadas(id), DONO);
-
-  assert.match(L[1].pesoEm, /^2026-10-22T11:00/); // quando o peso foi lançado
-  assert.deepEqual(L, [
-    { data: '2026-10-20', hora: '08:00', peso: 91 },
-    { data: '2026-10-22', hora: '08:00', peso: 90, cintura: 100, pesoEm: L[1].pesoEm },
-  ]);
-  assert.deepEqual(
-    await pg.evaluate(
-      (L) => [
-        pesoNoDia(L, '2026-10-19'),
-        pesoNoDia(L, '2026-10-22'),
-        pesoNoDia([], '2026-10-22'),
-      ],
-      L
-    ),
-    [91, 90, null]
-  );
-  await ctx.close();
-});
-
 test('quando o peso e o sono foram lançados (peso_em, sono_em): o primeiro lançamento fica e vai para a nuvem', async () => {
   const { ctx, pg, nuvem, erros } = await abrirApp();
 
@@ -811,6 +688,14 @@ test('quando o peso e o sono foram lançados (peso_em, sono_em): o primeiro lan�
   );
 
   assert.deepEqual(M, { '2026-10-22': '2026-10-22T11:00' });
+  // a cópia para os outros apps (corpo.medidas.<conta>) acompanha a mudança
+  assert.deepEqual(
+    await pg.evaluate(
+      (id) => medidasGuardadas(id).map((m) => [m.data, m.peso, m.cintura]),
+      DONO
+    ),
+    [['2026-10-22', 89.8, 100]]
+  );
   assert.deepEqual(
     nuvem.tabelas.corpo_dia.map((x) => [x.data, x.sono, minuto(x.sono_em)]),
     [['2026-10-22', 8, '2026-10-22T13:00']]
@@ -844,6 +729,14 @@ test('sem internet: abre com a cópia do aparelho e envia ao reconectar', async 
   assert.deepEqual(
     nuvem.tabelas.corpo_medida.map((m) => [m.peso, m.cintura]),
     [[90, 101]]
+  );
+  // tudo o que o app guardou no aparelho tem o prefixo corpo. (de fora só a sessão do Supabase)
+  const chaves = await pg.evaluate(() => Object.keys(localStorage));
+
+  assert.ok(chaves.includes('corpo.db.' + DONO) && chaves.includes('corpo.base.' + DONO));
+  assert.deepEqual(
+    chaves.filter((k) => !['corpo.', 'sb-'].some((p) => k.startsWith(p))),
+    []
   );
   await ctx.close();
 });

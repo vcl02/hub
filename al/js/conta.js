@@ -53,3 +53,40 @@ function saldoDoDia(dia) {
 
   return { gasto: g, comido: c, saldo: g ? c.kcal - g.total : null };
 }
+
+// Passou da meta (que já tem o déficit planejado): o dia ainda pode fechar em déficit, só menor que o planejado, ou já em
+// superávit. kcal que faltam para o gasto do dia inteiro, sem comer mais nada.
+function avisoAinda(g, kcalComidas) {
+  const ainda = g.total - kcalComidas;
+
+  return {
+    classe: ainda >= 0 ? 'bom' : 'ruim',
+    texto:
+      ainda >= 0
+        ? `Ainda em déficit de ${inteiro(ainda)} kcal`
+        : `Já em superávit de ${inteiro(-ainda)} kcal`,
+  };
+}
+
+// Dia de treino opcional (extra) em que já passou da meta e ainda não treinou: o treino vira obrigatório
+const alertaUrgente = (g, resto, aberto) => !!aberto && !!g?.previsto?.extra && resto < 0;
+
+// As linhas do alerta urgente: quanto passou, o que o treino ajuda (volta para a meta ou só diminui o excesso) e o risco de
+// fechar em superávit
+function linhasDoAlerta(g, kcalComidas, resto) {
+  const p = g.previsto,
+    passou = -resto,
+    depois = passou - p.kcal,
+    superavit = kcalComidas - g.total,
+    comTreino = kcalComidas - g.total - p.kcal;
+
+  return [
+    `Passou <b>${inteiro(passou)} kcal</b> da meta.`,
+    depois <= 0
+      ? `Se treinar, você ganha ${inteiro(p.kcal)} kcal e <b>volta para a meta</b>.`
+      : `Se treinar, você ganha ${inteiro(p.kcal)} kcal e o excesso cai para <b>${inteiro(depois)} kcal</b>.`,
+    superavit > 0
+      ? `Sem treino o dia fecha em <b>superávit de ${inteiro(superavit)} kcal</b>${comTreino <= 0 ? '; treinando, ainda fecha em déficit' : ''}.`
+      : '',
+  ].filter(Boolean);
+}

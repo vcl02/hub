@@ -1,94 +1,14 @@
-// Notificações de verdade: ativar inscreve o aparelho (push simulado no navegador) e o service
-// worker mostra a notificação e abre a Água ao tocar (sw.js num contexto falso).
+// Service worker da Água (sw.js num contexto falso, sem navegador): o push mostra a notificação do último lembrete e tocar nela
+// foca o app aberto ou abre. Inscrever o aparelho, a permissão negada e o que a linha mostra são funções testadas em
+// funcoes.test.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { prepararApp, abrirApp, novaNuvem, texto, DONO } from './helpers/app.mjs';
 
-prepararApp();
 const RAIZ = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-
-// Push simulado: permissão (a resposta vem de window.__resposta), service worker pronto e inscrição em memória
-function pushFalso({ resposta = 'granted', semPush = false } = {}) {
-  let permissao = 'default',
-    sub = null;
-
-  window.__inscreveu = null;
-
-  if (semPush) {
-    delete window.PushManager;
-
-    return;
-  }
-
-  window.PushManager ||= function () {};
-
-  Object.defineProperty(Notification, 'permission', { get: () => permissao });
-  Notification.requestPermission = async () => (permissao = resposta);
-
-  const pushManager = {
-    getSubscription: async () => sub,
-    subscribe: async (o) => {
-      window.__inscreveu = {
-        userVisibleOnly: o.userVisibleOnly,
-        chave: [...o.applicationServerKey],
-      };
-
-      return (sub = { endpoint: 'https://push.exemplo.test/abc' });
-    },
-  };
-
-  Object.defineProperty(navigator.serviceWorker, 'ready', {
-    get: () => Promise.resolve({ pushManager }),
-  });
-}
-
-const visiveis = (pg) =>
-  pg.$$eval('#n-linha > *', (L) => L.filter((x) => !x.hidden).map((x) => x.id));
-
-test('ativar: pede permissão, inscreve com a chave da função e grava o aparelho; sem botão de testar', async () => {
-  const nuvem = novaNuvem();
-  const { ctx, pg, erros } = await abrirApp({ nuvem, iniciar: [pushFalso, {}] });
-
-  assert.deepEqual(await visiveis(pg), ['n-ativar']);
-  await pg.click('#n-ativar');
-  await pg.waitForSelector('#n-ligadas:not([hidden])');
-  assert.equal(await texto(pg, '#toast'), 'Notificações ligadas');
-  assert.deepEqual(await visiveis(pg), ['n-ligadas']);
-  const inscreveu = await pg.evaluate(() => window.__inscreveu);
-
-  assert.equal(inscreveu.userVisibleOnly, true);
-  assert.deepEqual(inscreveu.chave, [4, ...Array.from({ length: 64 }, (_, i) => i + 1)]); // a chave pública decodificada
-  assert.deepEqual(nuvem.tabelas.push_inscricao, [
-    { user_id: DONO, endpoint: 'https://push.exemplo.test/abc', app: 'agua' },
-  ]);
-  assert.deepEqual(
-    nuvem.funcao.map((x) => [x.metodo, x.busca]),
-    [['GET', '?chave']]
-  );
-  assert.equal(await pg.$('#n-testar'), null);
-  assert.deepEqual(erros, []);
-  await ctx.close();
-});
-
-test('permissão negada: avisa e mostra que está bloqueado; sem push no navegador a linha some', async () => {
-  const a = await abrirApp({ iniciar: [pushFalso, { resposta: 'denied' }] });
-
-  await a.pg.click('#n-ativar');
-  await a.pg.waitForSelector('#n-negado:not([hidden])');
-  assert.equal(await texto(a.pg, '#toast'), 'Notificações bloqueadas no celular.');
-  assert.deepEqual(await visiveis(a.pg), ['n-negado']);
-  assert.equal(a.nuvem.tabelas.push_inscricao.length, 0);
-  await a.ctx.close();
-  const b = await abrirApp({ iniciar: [pushFalso, { semPush: true }] }); // ex.: iPhone fora da tela inicial
-
-  assert.equal(await b.pg.isVisible('#n-linha'), false);
-  assert.deepEqual(b.erros, []);
-  await b.ctx.close();
-});
 
 test('service worker: push mostra o último lembrete (água, ou sem resposta da função; dentes); tocar foca o app aberto ou abre', async () => {
   const ouvintes = {},

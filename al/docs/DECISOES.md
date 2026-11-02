@@ -37,3 +37,10 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md`; o jeito de trabalha
 ## Fora do al
 
 - Água e outros hábitos (sem doce etc.) não entram aqui: são módulos próprios (a Água já existe).
+
+## Auditoria dos testes (02/11/2026)
+
+- Sem navegador agora: `tests/regras.test.mjs` (13 testes) roda as contas do dia, os avisos do saldo, as comidas salvas, as marmitas e as respostas da IA, com as funções tiradas dos arquivos publicados. `tests/helpers/rodar.mjs` roda o `sw.js` e o `bootstrap.js` em `node:vm`. O navegador de `tests/dia.test.mjs` caiu de 27 para 20 testes.
+- Mudança de código, só para poder testar (02/11/2026): `avisoAinda`, `alertaUrgente` e `linhasDoAlerta` saíram de `pintarSaldo` (`js/telas.js`) para `js/conta.js`, com o mesmo texto. `pintarSaldo` só chama essas funções e grava o HTML. O aviso "ainda em déficit" e o alerta do treino extra são regra, e agora rodam sem tela. Nada muda para quem usa; `docs/REGRAS.md` não muda.
+- Continua em Playwright: lançar e apagar com a ligação ao banco, a caminhada entre dois aparelhos e no "metrô", a IA na prévia, a marmita na tela, a lista do dia, a troca de dia (`?dia`, arrasto, ← →), o Esc e o caso sem internet.
+- Lacunas: nenhuma registrada nesta rodada.

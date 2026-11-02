@@ -30,3 +30,9 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md`; o jeito de trabalha
 
 - Uma cópia velha do celular apagou a água do dia porque o envio sobrescrevia o dia inteiro.
   Desde então o envio mescla as listas do dia com a nuvem (ver `../../docs/DECISOES.md`).
+
+## Auditoria dos testes (02/11/2026)
+
+- Sem navegador agora: `tests/funcoes.test.mjs` (23 testes) é o lugar das regras da Água: beber (cada bebida, limites, dia anterior, toque repetido), o dia no endereço, o arrasto e ← →, o Esc, o envio ao Supabase com dois aparelhos, o envio sem resposta e o formato antigo (com uma nuvem falsa), o limite de rede, as notificações e o registro do service worker. `tests/notificacoes.test.mjs` ficou com 1 teste de função. O navegador de `tests/agua.test.mjs` tem 5 testes (contagem de 02/11/2026; no HEAD eram 17, e o relatório dizia 15).
+- Continua em Playwright: beber e ver o botão na tela, os lembretes desenhados, os dias (gestos e `?dia`), os últimos 7 dias com o caso sem internet, e login, tema e rolagem no celular.
+- Ressalva: o ramo "com sessão salva entra" de `js/bootstrap.js` só é coberto pelos testes de navegador. Al e Corpo rodam o bootstrap em `node:vm` (`rodar.mjs`); a Água ainda não.
