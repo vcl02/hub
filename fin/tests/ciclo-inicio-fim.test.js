@@ -8,19 +8,41 @@ const test = require('node:test');
 const migracao = fs.readFileSync('migrations/26-ciclo-com-inicio-e-fim.sql', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 
-const js = fs
-  .readdirSync('js')
-  .map((arquivo) => fs.readFileSync(`js/${arquivo}`, 'utf8'))
-  .join('\n');
+const { carregarTela } = require('./helpers/tela-sem-navegador');
 
-test('nenhum código procura "Faturamento PJ" nem âncora de ciclo', () => {
-  assert.doesNotMatch(
-    js,
-    /Faturamento PJ|NOME_ANCORA_CICLO|ancora_id|ancoraId|limitesPorAncora/
-  );
-  assert.match(
-    js,
-    /const \{ ciclos, avisos: avisosDosCiclos \} = ciclosDeFinCiclo\(linhasCiclo\);/
+test('os ciclos vêm só de fin_ciclo: um "Faturamento PJ" nos lançamentos não cria nem muda ciclo', async () => {
+  const faturamento = (id, data) => ({
+    id: String(id),
+    nome: 'Faturamento PJ',
+    data,
+    valor: 5000,
+    categ: 'Salário',
+    cred: false,
+    pago: true,
+    fatura: null,
+    freq: null,
+  });
+
+  const tela = carregarTela({
+    hoje: '2026-10-20',
+    dados: {
+      fin_ciclo: [
+        { id: 1, inicio: '2026-09-20', fim: '2026-10-14' },
+        { id: 2, inicio: '2026-10-15', fim: null },
+      ],
+      fin: [faturamento(1, '2026-08-05'), faturamento(2, '2026-10-03')],
+      fin_meta: [],
+    },
+  });
+
+  await tela.bruto('carregarDados()');
+  // início e fim vêm das linhas de fin_ciclo (fim vazio = aberto), nunca da data dos "Faturamento PJ"
+  assert.deepEqual(
+    tela.rodar('Estado.ciclos').map((c) => [c.ini, c.fat]),
+    [
+      ['2026-09-20', '2026-10-14'],
+      ['2026-10-15', '9999-12-31'],
+    ]
   );
 });
 

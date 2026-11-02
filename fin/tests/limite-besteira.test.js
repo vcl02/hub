@@ -1,20 +1,19 @@
 // Regressão: indicadores de limite por categoria (Besteira, Isabella) no título Débito do
 // ciclo atual — somam Débito e Crédito do mesmo ciclo (pela DATA da compra) contra um teto
 // fixo em código, cada um com o seu. Na tela (Hoje só o pago, Futuro com o em aberto, Ultrapassado e quanto passou, a dica
-// e o filtro pelo nome): navegador-tetos.test.js.
+// e o filtro pelo nome): telas-por-funcao.test.js.
 const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { declaracoes } = require('./helpers/regras-css');
+const { carregarTela } = require('./helpers/tela-sem-navegador');
 
 fs.readFileSync('js/domain.js', 'utf8');
 const graficos = fs.readFileSync('js/charts.js', 'utf8');
-const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
 const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
-const estilosForm = fs.readFileSync('css/forms.css', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 const html = fs.readFileSync('index.html', 'utf8');
-const formulario = fs.readFileSync('js/form.js', 'utf8');
 
 // Extrai dadosLimiteCategoriaDoCiclo E ehGastoIsabella do arquivo real (não reescreve a
 // regra à mão) e roda num contexto isolado, com os globais de que dependem simulados.
@@ -149,18 +148,53 @@ test('indicador Isabella soma tudo com a categoria Isabella (com Lazer ou sozinh
   assert.equal(resultado.valorTotal, 140);
 });
 
-test('aparece no título Débito de qualquer ciclo (inclusive passados), com o Crédito pela MESMA prévia da tabela Crédito (fatura de i+1)', () => {
-  // Igual à regra geral de Crédito ("no ciclo N ela mostra os créditos da competência
-  // N+1"): ciclo que começa em outubro conta, no Crédito, o que vai entrar na fatura de
-  // novembro — nem pela data da compra, nem pelo periodoIdx cru do lançamento.
+test('aparece no título Débito de qualquer ciclo (inclusive passados), com o Crédito pela MESMA prévia da tabela Crédito (fatura de i+1)', async () => {
   // A compra prevista (_prev) é justamente o que falta até o teto: nunca entra no indicador.
+  // Com hoje no ciclo 1, as previstas de Besteira/Isabella caem no Crédito exibido no ciclo 1 e
+  // o indicador continua mostrando só o que foi gasto de verdade (R$ 50 de Besteira, R$ 120 de Isabella).
+  const lanc = (id, nome, data, valor, categ) => ({
+    id,
+    nome,
+    data,
+    valor,
+    categ,
+    cred: false,
+    pago: true,
+    fatura: null,
+    freq: null,
+  });
+
+  const tela = carregarTela({
+    dados: {
+      fin_ciclo: [
+        { id: 1, inicio: '2026-09-15', fim: '2026-10-14' },
+        { id: 2, inicio: '2026-10-15', fim: '2026-11-14' },
+        { id: 3, inicio: '2026-11-15', fim: null },
+      ],
+      fin: [
+        lanc(1, 'Faturamento', '2026-10-15', 10000, 'Renda'),
+        lanc(2, 'Café', '2026-10-16', -50, 'Besteira'),
+        lanc(3, 'Cinema', '2026-10-17', -120, 'Lazer, Isabella'),
+      ],
+      fin_meta: [],
+    },
+  });
+
+  tela.ctx.recolherBloco = () => {}; // vem de js/interactions.js, fora da tela sem navegador
+
+  await tela.bruto('carregarDados()');
+  tela.bruto('Estado.idxHoje = 1');
+  assert.equal(tela.rodar('lancamentosComPrevistas().filter(l => l._prev).length'), 2);
+
+  const { texto } = await tela.desenharCiclo(1);
+
+  assert.match(texto, /Besteira Usado 20% · Livre R\$ 200,00/);
+  assert.match(texto, /Isabella Usado 17% · Livre R\$ 580,00/);
+  // Ciclo seguinte (sem gasto real): usado 0%, não os 100% das previstas.
   assert.match(
-    visoes,
-    /const linhasDaPreviaNoCiclo = \[\.\.\.debitos, \.\.\.creditosExibidosNoCiclo\(visiveis, i\)\]\.filter\(r => !r\._prev\);/
+    (await tela.desenharCiclo(2)).texto,
+    /Besteira Usado 0% · Livre R\$ 250,00/
   );
-  // Além do %, quanto ainda cabe no teto (Hoje: pago; Futuro: pago + aberto) ou quanto passou.
-  // Rótulo antes do número: "Usado 0%" e "Livre R$ 100,00", nunca "0% Usado · R$ 100,00 Livre".
-  // Teto do próprio ciclo (linha âncora) e indicador do ciclo atual em diante.
 });
 
 test('regra documentada em REGRAS.md', () => {
@@ -216,13 +250,11 @@ test('regra documentada em REGRAS.md', () => {
 });
 
 test('guia de categorias só no hover do rótulo Categorias: Besteira solo, Isabella com Lazer ou sozinha, fatura dela e Comprometido fora', () => {
-  assert.match(
-    html,
-    /<span title="Besteira: seus caprichos, sozinho \(só o seu teto\)\. Isabella: com Lazer, o que fizer com ela; sozinha, presente ou mimo \(teto dela\)\. Fora do teto dela: fatura do cartão dela e o Comprometido\.">Categorias/
+  assert.ok(
+    html.includes(
+      'title="Besteira: seus caprichos, sozinho (só o seu teto). Isabella: com Lazer, o que fizer com ela; sozinha, presente ou mimo (teto dela). Fora do teto dela: fatura do cartão dela e o Comprometido."'
+    )
   );
-  assert.doesNotMatch(html, /modalAjudaCategorias|ajudaCategorias/);
-  assert.doesNotMatch(formulario, /ajudaCategorias/);
-  assert.doesNotMatch(estilosForm, /btAjudaMini|\.ajudaCategorias/);
 });
 
 test('cor do indicador: verde com folga, laranja a partir de 70%, vermelho acima do teto', () => {
@@ -241,9 +273,8 @@ test('cor do indicador: verde com folga, laranja a partir de 70%, vermelho acima
   assert.equal(contexto.cor(70), 'am');
   assert.equal(contexto.cor(100), 'am');
   assert.equal(contexto.cor(100.1), 'vm');
-  assert.match(
-    fs.readFileSync('css/dashboard.css', 'utf8'),
-    /\.am \{\s*\n\s*color: #F0A83A;/
+  assert.ok(
+    estilos.length > 0 && declaracoes(estilos, '.am', '').includes('color: #f0a83a')
   );
   assert.match(regras, /verde até 70%, laranja de 70% a 100% e vermelho acima do teto/);
   assert.match(
@@ -266,8 +297,8 @@ test('nome de Besteira e Isabella no título explica o que entra no teto (toolti
 });
 
 test('em Besteira/Isabella o valor fica colado no rótulo (regra geral das faixas)', () => {
-  assert.match(
-    estilos,
-    /\.resumoDados b \{\s*\n\s*display: inline-block;\s*\n\s*text-align: left;/
-  );
+  assert.deepEqual(declaracoes(estilos, '.resumoDados b', ''), [
+    'display: inline-block',
+    'text-align: left',
+  ]);
 });

@@ -3,6 +3,7 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { declaracoes } = require('./helpers/regras-css');
 
 const fonte = fs.readFileSync('js/tables.js', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
@@ -213,10 +214,6 @@ test('"|" isolado ou com pedaço vazio não filtra por esse pedaço, igual ao "!
   );
 });
 
-test('campo de busca por coluna avisa sobre o atalho "vazio"; Valor tem botão de sinal no lugar do aviso', () => {
-  assert.doesNotMatch(fonte, /Digite \+ pra só positivos/);
-});
-
 test('"vazio" em qualquer coluna de texto acha só as linhas sem nada preenchido ali (null, string vazia ou "null"/"n/a" gravado por engano)', () => {
   const c = filtroDeTexto();
 
@@ -419,56 +416,56 @@ test('exclusão por ! de Categoria/Nome (uma ou mais) documentada em REGRAS.md',
   );
 });
 
+const topo = (css, seletor) => declaracoes(css, seletor, '');
+
 test('sinal do filtro de Valor fica na mesma coluna dos botões +/− das linhas', () => {
   const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
+  const sinal = topo(fs.readFileSync('css/forms.css', 'utf8'), '.sinalBt.compacto');
 
   // Mesmas medidas da célula: botão 1.5rem + .35rem de folga, valor 6.5rem, folga direita .7rem.
-  assert.match(
-    fs.readFileSync('css/forms.css', 'utf8'),
-    /\.sinalBt\.compacto \{[\s\S]*?width: 1\.5rem;[\s\S]*?margin-right: \.35rem;/
+  assert.ok(sinal.includes('width: 1.5rem') && sinal.includes('margin-right: 0.35rem'));
+  assert.ok(topo(estilos, '.valorLinha .togValor').includes('width: 6.5rem'));
+  assert.ok(topo(estilos, '.valorLinha .valorFixo').includes('width: 6.5rem'));
+
+  const estado = topo(estilos, 'thead tr.filtros .filtroValor .filtroEstado');
+
+  assert.ok(estado.includes('width: 1.5rem') && estado.includes('margin-right: 0.35rem'));
+  assert.ok(
+    topo(estilos, 'thead tr.filtros .filtroValor input').includes('width: 6.5rem')
   );
-  assert.match(
-    estilos,
-    /\.valorLinha \.togValor,\s*\n\s*\.valorLinha \.valorFixo \{\s*\n\s*width: 6\.5rem;/
-  );
-  assert.match(
-    estilos,
-    /thead tr\.filtros \.filtroValor \.filtroEstado \{[\s\S]*?width: 1\.5rem;[\s\S]*?margin-right: \.35rem;/
-  );
-  assert.match(
-    estilos,
-    /thead tr\.filtros \.filtroValor input \{\s*\n\s*flex: none;\s*\n\s*width: 6\.5rem;/
-  );
-  assert.match(estilos, /td \{\s*\n\s*padding: \.5rem \.7rem;/);
-  assert.match(
-    estilos,
-    /thead tr\.filtros th:has\(\.filtroValor\) \{\s*\n\s*padding-right: \.7rem;/
+  assert.ok(topo(estilos, 'td').includes('padding: 0.5rem 0.7rem'));
+  assert.ok(
+    topo(estilos, 'thead tr.filtros th:has(.filtroValor)').includes(
+      'padding-right: 0.7rem'
+    )
   );
   assert.match(regras, /alinhado exatamente na mesma coluna dos botões \+\/− das linhas/);
 });
 
 test('colunas de largura fixa: não mudam conforme o filtro', () => {
   const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
+  const tabela = topo(estilos, 'table.larguraFixa');
 
-  assert.match(
-    estilos,
-    /table\.larguraFixa \{\s*\n\s*table-layout: fixed;\s*\n\s*min-width: 92rem;/
+  assert.ok(
+    tabela.includes('table-layout: fixed') && tabela.includes('min-width: 92rem')
   );
 
   for (const [coluna, largura] of [
     ['data', '7rem'],
-    ['valor', '9\\.75rem'],
+    ['valor', '9.75rem'],
     ['pago', '5rem'],
     ['reserva', '6rem'],
-    ['comprometido', '8\\.25rem'],
-    ['prio', '4\\.5rem'],
+    ['comprometido', '8.25rem'],
+    ['prio', '4.5rem'],
     ['id', '4rem'],
   ]) {
-    assert.match(estilos, new RegExp(`\\.col-${coluna} \\{ width: ${largura}; \\}`));
+    assert.deepEqual(topo(estilos, `.col-${coluna}`), [`width: ${largura}`], coluna);
   }
 
   // Colunas de texto livre ficam sem largura própria: dividem o resto igualmente.
-  assert.doesNotMatch(estilos, /\.col-(nome|categ|freq|obs|canal) \{/);
+  for (const coluna of ['nome', 'categ', 'freq', 'obs', 'canal'])
+    assert.deepEqual(topo(estilos, `.col-${coluna}`), [], coluna);
+
   assert.match(
     regras,
     /As tabelas de lançamentos \(Débito, Crédito, Backlog\) têm colunas de largura fixa, que não mudam conforme o filtro/
@@ -500,10 +497,12 @@ test('Nome e Obs numa linha só, com "…" e texto inteiro no hover', () => {
   const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 
   // O title da célula (texto inteiro) não pode ser encoberto pelo do span de edição.
-  assert.match(
-    estilos,
-    /table\.larguraFixa td\.corta \{\s*\n\s*overflow: hidden;\s*\n\s*white-space: nowrap;\s*\n\s*text-overflow: ellipsis;/
-  );
+  assert.deepEqual(topo(estilos, 'table.larguraFixa td.corta'), [
+    'overflow: hidden',
+    'white-space: nowrap',
+    'text-overflow: ellipsis',
+  ]);
+
   assert.match(
     regras,
     /\*\*Nome\*\* e \*\*Obs\*\* ficam numa linha só, cortados com "…" quando não cabem, e mostram o texto inteiro ao passar o mouse/

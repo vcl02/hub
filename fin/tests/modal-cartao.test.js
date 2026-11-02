@@ -10,6 +10,8 @@ const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const pagina = fs.readFileSync('index.html', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
+const { declaracoes, regras: regrasCss } = require('./helpers/regras-css');
+const { extrairTrecho } = require('./helpers/carregar-funcoes');
 
 function carrega() {
   const inicio = visoes.indexOf('function htmlModalCartao(');
@@ -99,10 +101,13 @@ test('modal limpo: sem lista de compras e sem botão de fechar', () => {
   assert.doesNotMatch(html, /cartaoCompras|Compras da fatura|<summary>/);
   // Sem o ×, o 1º foco seria o campo Aprovado (teclado no celular, Esc só desfaria o campo).
   assert.match(pagina, /<dialog id=modalCartao tabindex=-1>/);
-  assert.doesNotMatch(
-    fs.readFileSync('css/forms.css', 'utf8'),
-    /fechaCartao|cartaoCompras|#modalCartao \.modalHead/
+
+  const seletores = regrasCss(fs.readFileSync('css/forms.css', 'utf8')).flatMap(
+    (r) => r.seletores
   );
+
+  for (const removido of ['.fechaCartao', '.cartaoCompras', '#modalCartao .modalHead'])
+    assert.ok(!seletores.includes(removido), removido);
   // Continua fechando com Esc (nativo do <dialog>) e com o clique fora do cartão.
   assert.match(
     regras,
@@ -126,30 +131,53 @@ test('sem dados do cartão no ciclo exibido, o modal avisa em vez de quebrar', (
 });
 
 test('botões no cabeçalho, desativados sem dados; modal refeito a cada desenho', () => {
-  assert.match(pagina, /<dialog id=modalCartao tabindex=-1>/);
   // Sem título visível: o nome do cartão fica só pra leitor de tela.
   assert.match(pagina, /<h2 id=tituloCartao class=srOnly>Cartão<\/h2>/);
-  assert.match(interacoes, /if \(el\('modalCartao'\)\.open\) preencherModalCartao\(\);/);
+  // O Aprovado/Garantido gravar pelos mesmos handlers dentro do modal (fora do #out) está em navegador-cartao.test.js.
+  // O Estado.cartoesDoCiclo = null a cada desenho (Comparar e Backlog ficam sem dados e os botões, desativados) fica preso
+  // na função de redesenho da tela (interactions.js), grande demais para sair sem navegador.
   assert.match(interacoes, /Estado\.cartoesDoCiclo = null;/);
   assert.match(interacoes, /alinharResumosDosTitulos\(\);\s*\n\s*atualizarCartoes\(\);/);
-  // Aprovado/Garantido gravam pelos mesmos handlers no modal (fora do #out).
-  assert.match(
-    interacoes,
-    /ligarCamposDeLimite\(el\('out'\)\);\s*\n\s*ligarCamposDeLimite\(el\('modalCartao'\)\);/
+
+  const { atualizar, botoes, estado } = carregaAtualizarCartoes();
+  const corpo = botoes.corpoCartao;
+
+  // Sem dados do cartão no ciclo (Comparar, Backlog, cartão que não existe no título): botão desativado
+  estado.cartoesDoCiclo = null;
+  atualizar();
+  assert.deepEqual(
+    [botoes.btNubank.disabled, botoes.btMercadoPago.disabled],
+    [true, true]
   );
+  estado.cartoesDoCiclo = { cartoes: { mp: {} } };
+  atualizar();
+  assert.deepEqual(
+    [botoes.btNubank.disabled, botoes.btMercadoPago.disabled],
+    [true, false]
+  );
+  assert.equal(corpo.innerHTML, ''); // modal fechado: nada refeito
+
+  // Modal aberto: refeito com os números novos do redesenho (ex.: depois de gravar um Aprovado lá dentro)
+  botoes.modalCartao.open = true;
+  atualizar();
+  assert.equal(corpo.innerHTML, 'html:mp');
+  assert.equal(botoes.tituloCartao.textContent, 'Mercado Pago');
 });
 
 test('Hoje/Futuro com o rótulo em cima e as três colunas na largura toda; cabeçalho quebra no celular', () => {
   const formularios = fs.readFileSync('css/forms.css', 'utf8');
 
-  assert.match(
-    formularios,
-    /\.cartaoLinha \{\s*\n\s*display: grid;\s*\n\s*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/
+  const linha = declaracoes(formularios, '.cartaoLinha');
+
+  assert.ok(linha.includes('display: grid'));
+  assert.ok(linha.includes('grid-template-columns: repeat(3, minmax(0, 1fr))'));
+  assert.ok(
+    declaracoes(formularios, '.cartaoLinhaRotulo').includes('grid-column: 1 / -1')
   );
-  assert.match(formularios, /\.cartaoLinhaRotulo \{\s*\n\s*grid-column: 1 \/ -1;/);
-  assert.match(
-    fs.readFileSync('css/mobile.css', 'utf8'),
-    /\.acoesCabecalho \{\s*\n\s*display: grid;/
+  assert.ok(
+    declaracoes(fs.readFileSync('css/mobile.css', 'utf8'), '.acoesCabecalho').includes(
+      'display: grid'
+    )
   );
   assert.match(
     regras,
@@ -245,6 +273,81 @@ test('ciclo passado: fatura fechada com compras brutas, pago/antecipado e o que 
 });
 
 // Roda deslizarFatura real com o combo De/Até simulado: a navegação é a de navegaCiclo.
+// Roda atualizarCartoes/preencherModalCartao reais (js/interactions.js) com os elementos simulados.
+function carregaAtualizarCartoes() {
+  const botoes = {};
+
+  const contexto = {
+    CARTAO_NUBANK: 'nubank',
+    CARTAO_MERCADO_PAGO: 'mp',
+    NOME_CARTAO: { nubank: 'Nubank', mp: 'Mercado Pago' },
+    Estado: { cartoesDoCiclo: null },
+    htmlModalCartao: (_dados, cartao) => `html:${cartao}`,
+    el: (id) =>
+      (botoes[id] ||= {
+        disabled: false,
+        open: false,
+        innerHTML: '',
+        textContent: '',
+        dataset: id == 'modalCartao' ? { cartao: 'mp' } : {},
+      }),
+  };
+
+  for (const id of [
+    'btNubank',
+    'btMercadoPago',
+    'modalCartao',
+    'tituloCartao',
+    'corpoCartao',
+  ])
+    contexto.el(id);
+
+  vm.createContext(contexto);
+  vm.runInContext(
+    `${extrairTrecho(interacoes, 'const BOTAO_DO_CARTAO', '\n};')}\n};
+${extrairTrecho(interacoes, 'function preencherModalCartao(', '\n}\n')}\n}
+${extrairTrecho(interacoes, 'function atualizarCartoes(', '\n}\n')}\n}
+globalThis.atualizar = atualizarCartoes;`,
+    contexto
+  );
+
+  return { atualizar: contexto.atualizar, botoes, estado: contexto.Estado };
+}
+
+// Roda o ouvinte de rolagem horizontal (trackpad) real do modal, com deslizarFatura e o relógio simulados.
+function carregaTrackpad() {
+  const chamadas = [];
+  let ouvinte = null;
+
+  const contexto = {
+    agora: 1000,
+    Date: { now: () => contexto.agora },
+    deslizarFatura: (d) => chamadas.push(d),
+    el: () => ({ addEventListener: (_tipo, f) => (ouvinte = f) }),
+  };
+
+  vm.createContext(contexto);
+  vm.runInContext(
+    `${extrairTrecho(interacoes, 'let rolagemHorizontal = 0', '\n);')}\n);`,
+    contexto
+  );
+
+  const rolar = (deltaX, deltaY = 0) => {
+    const evento = {
+      deltaX,
+      deltaY,
+      impedido: false,
+      preventDefault: () => (evento.impedido = true),
+    };
+
+    ouvinte(evento);
+
+    return evento;
+  };
+
+  return { rolar, chamadas, contexto };
+}
+
 function carregaDeslize(valores, atual) {
   const inicio = interacoes.indexOf('function animarCartao(');
   const fim = interacoes.indexOf('let arrasteCartao = null;');
@@ -295,14 +398,41 @@ test('deslizar anda um ciclo pelo navegaCiclo, nunca para o Backlog nem além do
 });
 
 test('gestos: arrasto (toque/mouse), trackpad e setas; arrasto não fecha o modal', () => {
-  assert.match(
-    interacoes,
-    /addEventListener\('wheel', e => \{[\s\S]*?deslizarFatura\(rolagemHorizontal > 0 \? 1 : -1\);[\s\S]*?\}, \{ passive: false \}\);/
-  );
+  const trackpad = carregaTrackpad();
+
+  // Rolagem mais vertical que horizontal é da própria página: não é gesto
+  assert.equal(trackpad.rolar(10, 40).impedido, false);
+  assert.deepEqual(trackpad.chamadas, []);
+  // O gesto soma os eventos até 60; só então troca de fatura (para a esquerda, a seguinte)
+  assert.equal(trackpad.rolar(30).impedido, true);
+  assert.deepEqual(trackpad.chamadas, []);
+  trackpad.rolar(35);
+  assert.deepEqual(trackpad.chamadas, [1]);
+  // Um gesto dispara vários eventos: os seguintes, na janela de 600 ms, não trocam de novo
+  trackpad.rolar(-80);
+  assert.deepEqual(trackpad.chamadas, [1]);
+  trackpad.contexto.agora += 601;
+  trackpad.rolar(-80);
+  assert.deepEqual(trackpad.chamadas, [1, -1]);
+
   const formularios = fs.readFileSync('css/forms.css', 'utf8');
 
-  assert.match(formularios, /#modalCartao \{\s*\n\s*touch-action: pan-y;/);
-  assert.match(formularios, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.ok(declaracoes(formularios, '#modalCartao').includes('touch-action: pan-y'));
+
+  // Com movimento reduzido, a animação de vir de um lado e a de bater no limite param
+  for (const seletor of [
+    '.cartaoArte.cartaoVemDaDireita',
+    '.cartaoArte.cartaoVemDaEsquerda',
+    '.cartaoArte.cartaoNoLimite',
+  ])
+    assert.ok(
+      declaracoes(
+        formularios,
+        seletor,
+        '@media (prefers-reduced-motion: reduce)'
+      ).includes('animation: none'),
+      seletor
+    );
   assert.match(
     regras,
     /\*\*Deslizar troca de fatura:\*\* puxar o modal para a esquerda vai para a fatura seguinte/
@@ -341,9 +471,10 @@ test('vencimento sem compra na fatura: o dia do cartão dentro do ciclo, nunca o
 });
 
 test('modal largo o bastante pra Teto, Aprovado e Garantido numa linha no desktop', () => {
-  assert.match(
-    fs.readFileSync('css/forms.css', 'utf8'),
-    /dialog#modalCartao \{[\s\S]*?width: min\(34rem, 92vw\);/
+  assert.ok(
+    declaracoes(fs.readFileSync('css/forms.css', 'utf8'), 'dialog#modalCartao').includes(
+      'width: min(34rem, 92vw)'
+    )
   );
   assert.match(
     regras,

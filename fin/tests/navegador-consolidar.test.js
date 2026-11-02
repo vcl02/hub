@@ -1,6 +1,6 @@
-// No navegador: o Consolidar tudo, que roda no toque do Recarregar (antes só conferido procurando o texto do código).
-// Cada ciclo do atual até o último com lançamento ganha o Aporte (ou Resgate) da sobra dele, com a data do fim do ciclo;
-// um resumo diz ciclo a ciclo o que foi feito; recarregar de novo não duplica nada; sem rede, não consolida.
+// No navegador: o Consolidar tudo, que roda no toque do Recarregar (a ligação tela↔banco: grava uma vez só e sem rede não grava).
+// Cada ciclo do atual até o último com lançamento ganha o Aporte (ou Resgate) da sobra dele, com a data do fim do ciclo; um
+// resumo diz ciclo a ciclo o que foi feito. O código de consolidar-tudo.test.js confere a regra no texto do código.
 const assert = require('./helpers/assert-tolerante');
 const { test } = require('node:test');
 const { prepararNavegador, abrirFin, dadosDeExemplo } = require('./helpers/navegador');
@@ -16,8 +16,9 @@ async function recarregar(pg, ocioso) {
   return (await pg.textContent('#modalConsolidarTudo')).replace(/\s+/g, ' ');
 }
 
-test('Recarregar consolida: o ciclo de hoje ganha o Aporte da sobra, no fim do ciclo, e o resumo conta ciclo a ciclo', async () => {
+test('Recarregar consolida uma vez só: o ciclo de hoje ganha o Aporte da sobra, no fim do ciclo, e recarregar de novo não duplica', async () => {
   const { ctx, pg, erros, dados, escritas, ocioso } = await abrirFin();
+
   const resumo = await recarregar(pg, ocioso);
 
   assert.deepEqual(
@@ -27,18 +28,10 @@ test('Recarregar consolida: o ciclo de hoje ganha o Aporte da sobra, no fim do c
   assert.deepEqual(escritas, [['POST', 'fin']]);
   assert.match(resumo, /1 materializado\(s\), 0 consolidado\(s\)/);
   assert.match(resumo, /Outubro 2026: Materializado Aporte de R\$\s6\.679,50/);
-  assert.deepEqual(erros, []);
-  await ctx.close();
-});
-
-test('Recarregar de novo não duplica: o Aporte já está lá e nada novo é gravado', async () => {
-  const { ctx, pg, dados, escritas, ocioso } = await abrirFin();
-
-  await recarregar(pg, ocioso);
   await pg.keyboard.press('Escape');
   const n = escritas.length;
 
-  await pg.click('#recarregar');
+  await pg.click('#recarregar'); // de novo: o Aporte já está lá
   await ocioso();
   await new Promise((ok) => setTimeout(ok, 300));
   assert.equal(ajustes(dados).length, 1);
@@ -47,6 +40,7 @@ test('Recarregar de novo não duplica: o Aporte já está lá e nada novo é gra
     escritas.length - n <= 1,
     `gravou de novo: ${JSON.stringify(escritas.slice(n))}`
   ); // no máximo confirma o mesmo valor
+  assert.deepEqual(erros, []);
   await ctx.close();
 });
 

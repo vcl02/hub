@@ -6,7 +6,6 @@ const fs = require('node:fs');
 const test = require('node:test');
 
 const tabelas = fs.readFileSync('js/tables.js', 'utf8');
-const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 
 const migration = fs.readFileSync(
@@ -14,69 +13,190 @@ const migration = fs.readFileSync(
   'utf8'
 );
 
-test('clique no badge Reserva/Comprometido faz PATCH imediato, com a mesma guarda de simulação', () => {
-  const inicio = interacoes.indexOf('const ROTULO_FLAG_TOGGLE = {');
+const { carregarTela } = require('./helpers/tela-sem-navegador');
+const { declaracoes } = require('./helpers/regras-css');
 
-  assert.ok(inicio >= 0, 'não achou o handler de togFlag');
-  const trecho = interacoes.slice(inicio, interacoes.indexOf('\n});', inicio) + 4);
-
-  assert.match(trecho, /const badge = e\.target\.closest\('\[data-tog-flag\]'\);/);
-  assert.match(trecho, /const \[campo, id\] = badge\.dataset\.togFlag\.split\(':'\);/);
-  assert.match(trecho, /const novoValor = !r\[campo\];/);
-  // Simulação lida uma vez; um só PATCH (tudo ou nada) pras linhas reais; memória depois.
-  assert.match(
-    trecho,
-    /const simulando = Estado\.simulando;\s*\n\s*const reais = simulando \? \[\] : mesmoNome\.filter\(linha => !linha\._sim\);/
-  );
-  assert.match(
-    trecho,
-    /if \(reais\.length\) await atualizarLancamentos\(reais\.map\(linha => linha\.id\), \{ \[campo\]: novoValor \}\);/
-  );
-  assert.doesNotMatch(trecho, /for \(const linha of mesmoNome\)/);
-  assert.match(
-    trecho,
-    /mesmoNome\.forEach\(linha => \{ linha\[campo\] = novoValor; \}\);/
-  );
-  assert.match(trecho, /mostrarToast\('Falhou ao atualizar', err\.message\);/);
-});
-
-test('marcar/desmarcar Reserva ou Comprometido propaga pros lançamentos com o mesmo nome E a mesma categoria', () => {
-  const inicio = interacoes.indexOf('const ROTULO_FLAG_TOGGLE = {');
-  const trecho = interacoes.slice(inicio, interacoes.indexOf('\n});', inicio) + 4);
-  const def = trecho.match(/const chaveDoCompromisso = (\(x\) =>\s*`[^`]*`);/);
-
-  assert.ok(def, 'não achou chaveDoCompromisso');
-
-  const semAcento = (s) =>
-    String(s ?? '')
-      .normalize('NFD')
-      .replace(/[̀-ͯ]/g, '')
-      .toLowerCase();
-
-  const categoriasSeparadas = (v) =>
-    String(v ?? '')
-      .split(',')
-      .map((c) => c.trim())
-      .filter(Boolean);
-
-  const chaveDoCompromisso = require('node:vm').runInNewContext(def[1], {
-    semAcento,
-    categoriasSeparadas,
+// Roda o handler de clique de verdade (o trecho de js/interactions.js que o registra em #out), com o banco falso: cada PATCH
+// em fin vira uma chamada registrada, e `falhar` faz o banco responder erro.
+async function montarToggle(lancamentos, { simulando = false } = {}) {
+  const tela = carregarTela({
+    hoje: '2026-10-20',
+    dados: {
+      fin: [],
+      fin_ciclo: [{ id: 1, inicio: '2026-09-20', fim: null }],
+      fin_meta: [],
+    },
   });
 
-  const k = (nome, categ) => chaveDoCompromisso({ nome, categ });
+  const { ctx, bruto } = tela;
+  const patches = [];
+  const toasts = [];
+  const estado = { falhar: false, desenhos: 0 };
+  const fetchDosDados = ctx.fetch;
 
-  assert.equal(k('Iphone', 'Isabella'), k(' iphone ', 'ISABELLA'));
-  assert.equal(k('Cinema', 'Lazer, Isabella'), k('Cinema', 'Isabella, Lazer'));
-  assert.notEqual(k('Uber', 'Transporte'), k('Uber', 'Besteira'));
-  assert.notEqual(k('Uber', 'Transporte'), k('Uber 99', 'Transporte'));
-  assert.match(
-    trecho,
-    /const mesmoNome = Estado\.lancamentos\.filter\(x => !x\._sid && chaveDoCompromisso\(x\) === chave\);/
+  ctx.fetch = async (url, opcoes = {}) => {
+    if (opcoes.method !== 'PATCH') return fetchDosDados(url, opcoes);
+
+    if (estado.falhar) return { ok: false, status: 500, text: async () => 'sem rede' };
+
+    const ids = new URL(url).searchParams
+      .get('id')
+      .replace(/^in\.\(|\)$|^eq\./g, '')
+      .split(',');
+
+    patches.push({ ids, campos: JSON.parse(opcoes.body) });
+
+    return {
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify(ids.map((id) => ({ id }))),
+    };
+  };
+
+  await bruto('carregarDados()');
+  ctx.lancamentos = lancamentos;
+  ctx.toasts = toasts;
+  ctx.estado = estado;
+  ctx.cliqueDoOut = [];
+  ctx.document.getElementById('out').addEventListener = (tipo, fn) => {
+    if (tipo === 'click') ctx.cliqueDoOut.push(fn);
+  };
+
+  bruto(`(() => {
+    Estado.lancamentos = lancamentos;
+    Estado.simulando = ${simulando};
+    globalThis.togglesNoAr = new Set();
+    globalThis.COR_FLAG = { reserva: 'flagReserva', comprometido: 'flagComprometido', pra_sempre: 'flagPraSempre' };
+    globalThis.desenhar = () => { estado.desenhos++; };
+    globalThis.mostrarToast = (titulo, texto) => { toasts.push(titulo + "|" + texto); };
+  })()`);
+
+  const fs = require('node:fs');
+  const fonte = fs.readFileSync('js/interactions.js', 'utf8');
+  const inicio = fonte.indexOf('const ROTULO_FLAG_TOGGLE = {');
+  const fim = fonte.indexOf('\n});\n', inicio) + 5;
+
+  require('node:vm').runInContext(fonte.slice(inicio, fim), ctx);
+
+  // Clica no selo `campo` da linha `id`; devolve o selo (classes, texto) depois do clique
+  const clicar = async (campo, id) => {
+    const classes = new Set();
+
+    const selo = {
+      dataset: { togFlag: `${campo}:${id}` },
+      classList: { toggle: (c, ligado) => (ligado ? classes.add(c) : classes.delete(c)) },
+      style: {},
+      textContent: '',
+      classes,
+    };
+
+    await ctx.cliqueDoOut[0]({
+      target: { closest: () => selo },
+      stopImmediatePropagation() {},
+    });
+
+    return selo;
+  };
+
+  return { clicar, patches, toasts, estado, lancamentos };
+}
+
+const linhaFlag = (id, nome, categ, extra = {}) => ({
+  id,
+  nome,
+  categ,
+  v: -10,
+  ...extra,
+});
+
+test('clique no selo Reserva/Comprometido faz um só PATCH em todas as linhas reais do compromisso e atualiza a memória', async () => {
+  const t = await montarToggle([
+    linhaFlag(1, 'Iphone', 'Isabella'),
+    linhaFlag(2, ' iphone ', 'ISABELLA'), // mesmo nome (sem acento/caixa) e categoria
+    linhaFlag(3, 'Iphone', 'Isabella', { _sim: true }), // simulada: só na memória
+    linhaFlag(4, 'Iphone', 'Lazer'), // outra categoria: outro compromisso
+    linhaFlag(5, 'Iphone 15', 'Isabella'), // outro nome
+  ]);
+
+  const selo = await t.clicar('reserva', '1');
+
+  assert.deepEqual(t.patches, [{ ids: ['1', '2'], campos: { reserva: true } }]);
+  assert.deepEqual(
+    t.lancamentos.map((l) => !!l.reserva),
+    [true, true, true, false, false]
   );
-  // toast só quando a varredura de fato pegou mais de um lançamento.
-  assert.match(trecho, /if \(mesmoNome\.length > 1\) \{/);
-  assert.match(regras, /identificado pelo \*\*nome e pela categoria juntos\*\*/);
+  assert.equal(selo.textContent, 'Reserva');
+  assert.ok(selo.classes.has('flagReserva'));
+  assert.equal(t.estado.desenhos, 1);
+  assert.deepEqual(t.toasts, ['Atualizado|Reserva marcado em 3 lançamentos "Iphone".']);
+});
+
+test('a ordem das categorias não importa para ser o mesmo compromisso; desmarcar volta para "—"', async () => {
+  const t = await montarToggle([
+    linhaFlag(1, 'Cinema', 'Lazer, Isabella', { comprometido: true }),
+    linhaFlag(2, 'Cinema', 'Isabella, Lazer', { comprometido: true }),
+  ]);
+
+  const selo = await t.clicar('comprometido', '1');
+
+  assert.deepEqual(t.patches, [{ ids: ['1', '2'], campos: { comprometido: false } }]);
+  assert.equal(selo.textContent, '—');
+  assert.deepEqual(
+    t.lancamentos.map((l) => l.comprometido),
+    [false, false]
+  );
+  assert.deepEqual(t.toasts, [
+    'Atualizado|Comprometido desmarcado em 2 lançamentos "Cinema".',
+  ]);
+});
+
+test('uma linha só: sem aviso de propagação', async () => {
+  const t = await montarToggle([linhaFlag(1, 'Uber', 'Transporte')]);
+
+  await t.clicar('pra_sempre', '1');
+  assert.deepEqual(t.patches, [{ ids: ['1'], campos: { pra_sempre: true } }]);
+  assert.deepEqual(t.toasts, []);
+});
+
+test('na simulação nada vai ao banco: o compromisso muda só na memória', async () => {
+  const t = await montarToggle(
+    [linhaFlag(1, 'Uber', 'Transporte'), linhaFlag(2, 'Uber', 'Transporte')],
+    { simulando: true }
+  );
+
+  await t.clicar('reserva', '1');
+  assert.deepEqual(t.patches, []);
+  assert.deepEqual(
+    t.lancamentos.map((l) => l.reserva),
+    [true, true]
+  );
+});
+
+test('falha na gravação: tudo ou nada (a memória não muda), avisa o erro e libera o selo', async () => {
+  const t = await montarToggle([
+    linhaFlag(1, 'Uber', 'Transporte'),
+    linhaFlag(2, 'Uber', 'Transporte'),
+  ]);
+
+  t.estado.falhar = true;
+  await t.clicar('reserva', '1');
+  assert.deepEqual(
+    t.lancamentos.map((l) => l.reserva),
+    [undefined, undefined]
+  );
+  assert.deepEqual(t.toasts, ['Falhou ao atualizar|atualizar: 500 sem rede']);
+
+  t.estado.falhar = false;
+  await t.clicar('reserva', '1'); // liberado: dá para tentar de novo
+  assert.equal(t.patches.length, 1);
+});
+
+test('clique repetido enquanto o PATCH está no ar é ignorado', async () => {
+  const t = await montarToggle([linhaFlag(1, 'Uber', 'Transporte')]);
+  const [a, b] = await Promise.all([t.clicar('reserva', '1'), t.clicar('reserva', '1')]);
+
+  assert.equal(t.patches.length, 1);
+  assert.ok(a && b);
 });
 
 test('migration 22 cria os dois bits e extrai dos tokens exatos em categ, sem deixar o texto', () => {
@@ -127,8 +247,8 @@ test('Comprometido marcado em laranja escuro e Reserva em amarelo claro, inclusi
   // O clique troca a mesma classe da marca, nunca o verde de Pago.
   const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 
-  assert.match(estilos, /\.flagComprometido \{\s*\n\s*color: #D9741E;/);
-  assert.match(estilos, /\.flagReserva \{\s*\n\s*color: #F6E58D;/);
+  assert.ok(declaracoes(estilos, '.flagComprometido').includes('color: #d9741e'));
+  assert.ok(declaracoes(estilos, '.flagReserva').includes('color: #f6e58d'));
   assert.match(
     regras,
     /\*\*Comprometido em laranja escuro\*\* e \*\*Reserva em amarelo claro\*\*/

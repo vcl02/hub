@@ -5,6 +5,7 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { declaracoes } = require('./helpers/regras-css');
 
 const tabelas = fs.readFileSync('js/tables.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
@@ -65,16 +66,32 @@ test('linha não-real também trunca o texto do Canal (celCanalTexto), só sem o
 });
 
 test('estilos: Canal tem largura fixa com reticências; os ícones de copiar/link ficam em evidência, sem serem cortados', () => {
-  assert.match(estilos, /\.togCanal, \.celCanalTexto \{/);
-  assert.match(
-    estilos,
-    /max-width: 9rem;\s*\n\s*overflow: hidden;\s*\n\s*text-overflow: ellipsis;\s*\n\s*white-space: nowrap;/
-  );
-  assert.match(estilos, /\.linkCanal, \.copiarCanal \{[\s\S]*?flex: none;/);
-  assert.match(estilos, /\.linkCanal, \.copiarCanal \{[\s\S]*?border-radius: 50%;/);
-  // o <button> de copiar não herda a mãozinha do <a> por padrão — precisa do cursor
-  // explícito, senão parece não-clicável.
-  assert.match(estilos, /\.linkCanal, \.copiarCanal \{[\s\S]*?cursor: pointer;/);
+  const caixa = declaracoes(estilos, '.togCanal');
+
+  assert.ok(caixa.includes('max-width: 9rem'));
+  assert.ok(caixa.includes('overflow: hidden'));
+  assert.ok(caixa.includes('text-overflow: ellipsis'));
+  assert.ok(caixa.includes('white-space: nowrap'));
+  assert.deepEqual(
+    declaracoes(estilos, '.celCanalTexto').filter((d) => caixa.includes(d)),
+    [
+      'display: inline-block',
+      'max-width: 9rem',
+      'overflow: hidden',
+      'text-overflow: ellipsis',
+      'white-space: nowrap',
+      'vertical-align: middle',
+    ]
+  ); // a linha não-real usa a mesma caixa
+
+  for (const seletor of ['.linkCanal', '.copiarCanal']) {
+    const icone = declaracoes(estilos, seletor);
+
+    assert.ok(icone.includes('flex: none'), seletor); // não é espremido pelo texto truncado
+    assert.ok(icone.includes('border-radius: 50%'), seletor);
+    // o <button> de copiar não herda a mãozinha do <a> por padrão: o cursor tem que ser explícito
+    assert.ok(icone.includes('cursor: pointer'), seletor);
+  }
 });
 
 test('clique em Obs abre input de texto livre; clique em Canal idem, com placeholder de URL', async () => {
@@ -96,17 +113,81 @@ test('clique em Obs abre input de texto livre; clique em Canal idem, com placeho
   assert.deepEqual(r.gravado, { canal: null });
 });
 
-test('clique no ícone de copiar do Canal usa a Clipboard API e nunca entra em edição', () => {
-  assert.match(
-    interacoes,
-    /const botao = e\.target\.closest\('\[data-copiar-canal\]'\);\s*\n\s*if \(!botao\) return;\s*\n\s*e\.stopImmediatePropagation\(\);/
+// Roda o ouvinte de clique real (js/interactions.js) que copia o Canal, com a área de transferência e o toast simulados.
+function carregaCopiarCanal({ copiaFalha = false } = {}) {
+  const inicio = interacoes.indexOf(
+    "const botao = e.target.closest('[data-copiar-canal]')"
   );
-  assert.match(
-    interacoes,
-    /navigator\.clipboard\.writeText\(String\(r\.canal\)\)\.then\(/
+
+  if (inicio < 0)
+    throw Error('Não encontrou o clique de copiar Canal em interactions.js.');
+  const fim = interacoes.indexOf('\n});', inicio) + 4;
+  const registro = { copiados: [], toasts: [], parou: 0 };
+  let ouvinte = null;
+
+  const contexto = {
+    el: () => ({ addEventListener: (_tipo, f) => (ouvinte = f) }),
+    Estado: {
+      lancamentos: [
+        { id: 9, canal: 'chave-pix@banco.com' },
+        { id: 10, canal: null },
+      ],
+    },
+    navigator: {
+      clipboard: {
+        writeText: (texto) => {
+          registro.copiados.push(texto);
+
+          return copiaFalha ? Promise.reject(Error('negado')) : Promise.resolve();
+        },
+      },
+    },
+    mostrarToast: (titulo, texto) => registro.toasts.push([titulo, texto]),
+  };
+
+  vm.createContext(contexto);
+  vm.runInContext(
+    `el('out').addEventListener('click', (e) => {\n${interacoes.slice(inicio, fim)}`,
+    contexto
   );
-  assert.match(interacoes, /mostrarToast\('Copiado', String\(r\.canal\)\)/);
-  assert.match(interacoes, /mostrarToast\('Falhou ao copiar'/);
+
+  // Clique dentro do ícone de copiar da linha `id` (ou fora de qualquer ícone: id = null)
+  const clicar = async (id) => {
+    const alvo = {
+      closest: (seletor) =>
+        id != null && seletor == '[data-copiar-canal]'
+          ? { dataset: { copiarCanal: String(id) } }
+          : null,
+    };
+
+    ouvinte({ target: alvo, stopImmediatePropagation: () => registro.parou++ });
+    await new Promise((ok) => setTimeout(ok, 0));
+  };
+
+  return { clicar, registro };
+}
+
+test('clique no ícone de copiar do Canal usa a área de transferência, avisa e nunca entra em edição', async () => {
+  const t = carregaCopiarCanal();
+
+  await t.clicar(9);
+  assert.deepEqual(t.registro.copiados, ['chave-pix@banco.com']);
+  assert.deepEqual(t.registro.toasts, [['Copiado', 'chave-pix@banco.com']]);
+  assert.equal(t.registro.parou, 1); // não chega ao clique de edição nem seleciona a linha
+
+  await t.clicar(10); // linha sem Canal: nada a copiar
+  await t.clicar(null); // clique fora do ícone: o ouvinte não faz nada
+  assert.equal(t.registro.copiados.length, 1);
+  assert.equal(t.registro.parou, 2);
+});
+
+test('área de transferência negada: avisa que falhou ao copiar', async () => {
+  const t = carregaCopiarCanal({ copiaFalha: true });
+
+  await t.clicar(9);
+  assert.deepEqual(t.registro.toasts, [
+    ['Falhou ao copiar', 'Tente selecionar e copiar manualmente.'],
+  ]);
 });
 
 test('migration já aplicada pelo mantenedor, documentada no repo', () => {

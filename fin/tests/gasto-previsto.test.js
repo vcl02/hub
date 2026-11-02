@@ -7,6 +7,8 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { carregarTela } = require('./helpers/tela-sem-navegador');
+const { extrairTrecho } = require('./helpers/carregar-funcoes');
 
 const ler = (arquivo) => fs.readFileSync(arquivo, 'utf8');
 const graficos = ler('js/charts.js');
@@ -205,36 +207,197 @@ test('a base dos cálculos (filtrarLancamentos) inclui as previstas, montada uma
   );
 });
 
-test('tabelas e cálculos usam a mesma base; o indicador ignora a prevista', () => {
-  assert.match(
-    ler('js/tables.js'),
-    /const filtrarLancamentos = \(\) => lancamentosComPrevistas\(\);/
+// Três ciclos com o 2º no meio (hoje): as previstas do ciclo 2 caem no 3º. Com os tetos zerados não há previstas.
+const lanc = (id, nome, data, valor, extra = {}) => ({
+  id,
+  nome,
+  data,
+  valor,
+  categ: 'Casa',
+  cred: false,
+  pago: true,
+  fatura: null,
+  freq: null,
+  ...extra,
+});
+
+const dadosTresCiclos = (tetos = {}, extra = {}) => ({
+  fin_ciclo: [
+    { id: 1, inicio: '2026-09-15', fim: '2026-10-14' },
+    { id: 2, inicio: '2026-10-15', fim: '2026-11-14', ...tetos },
+    { id: 3, inicio: '2026-11-15', fim: null },
+  ],
+  fin: [
+    lanc(1, 'Faturamento', '2026-09-15', 10000, { categ: 'Renda' }),
+    lanc(2, 'Aluguel', '2026-09-16', -1000, { reserva: true, ...extra }),
+    lanc(3, 'Faturamento', '2026-10-15', 10000, { categ: 'Renda' }),
+    lanc(4, 'Aluguel', '2026-10-16', -1000, { reserva: true, ...extra }),
+    lanc(5, 'Faturamento', '2026-11-15', 10000, { categ: 'Renda' }),
+    lanc(6, 'Aluguel', '2026-11-16', -1000, { reserva: true, ...extra }),
+  ],
+  fin_meta: [],
+});
+
+async function telaTresCiclos(tetos, extra) {
+  const tela = carregarTela({ dados: dadosTresCiclos(tetos, extra) });
+
+  await tela.bruto('carregarDados()');
+  tela.bruto('Estado.idxHoje = 1');
+  tela.ctx.recolherBloco = () => {}; // vem de js/interactions.js, fora da tela sem navegador
+
+  return tela;
+}
+
+const SEM_TETOS = { limite_besteira: 0, limite_isabella: 0 };
+
+test('tabelas e cálculos usam a mesma base (com as previstas), montada uma vez por desenho', async () => {
+  const tela = await telaTresCiclos();
+
+  assert.equal(tela.bruto('filtrarLancamentos() === lancamentosComPrevistas()'), true);
+  assert.deepEqual(
+    tela.rodar('filtrarLancamentos().filter(l => l._prev).map(l => l._sid)'),
+    ['prev:besteira:1', 'prev:isabella:1']
   );
-  assert.match(ler('js/finance.js'), /_lancamentosComPrevistas = null;\s*\n\}/);
-  assert.match(
-    ler('js/domain.js'),
-    /const PREFIXO_LINHA_SINTETICA = \/\^\(fat\|cp\|sal\|res\|sug\|abt\|prev\):\/;/
+  // Cache: a mesma lista até limparCachesFinanceiros, que força montar de novo.
+  assert.deepEqual(
+    tela.rodar(
+      '(() => { const a = lancamentosComPrevistas(); const b = lancamentosComPrevistas(); limparCachesFinanceiros(); const c = lancamentosComPrevistas(); return [a === b, a === c, a.length === c.length]; })()'
+    ),
+    [true, false, true]
+  );
+  // Linha calculada é a que tem prefixo (fat, cp, sal, res, sug, abt, prev); o resto é real.
+  assert.deepEqual(
+    tela.rodar(
+      "['fat:1', 'cp:2', 'sal:3', 'res:4', 'sug:5', 'abt:6', 'prev:besteira:1', 'x:1', 'fatura'].map(s => PREFIXO_LINHA_SINTETICA.test(s))"
+    ),
+    [true, true, true, true, true, true, true, false, false]
   );
 });
 
-test('teto editável no título de cada ciclo (inclusive os passados, ver REGRAS); grava em fin_ciclo, vazio = padrão', () => {
-  assert.match(
+// Trecho real de js/interactions.js (numeroDoLimiteDigitado, colunaDoCampoDeLimite e
+// confirmarLimiteDoCiclo) com os globais de que depende simulados: o teste confere o que
+// ele grava e mostra.
+function carregaConfirmacaoDoLimite({ simulando = false, falhaAoSalvar = false } = {}) {
+  const numero = extrairTrecho(
     interacoes,
-    /if \(input\.dataset\.limiteCategoria\) return input\.dataset\.limiteCategoria === 'isabella' \? 'limite_isabella' : 'limite_besteira';/
+    'function numeroDoLimiteDigitado(',
+    '\nrestaurarLimiteCartaoLocal();'
   );
-  assert.match(
+
+  const confirmacao = extrairTrecho(
     interacoes,
-    /const valor = texto \? Math\.round\(numeroDoLimiteDigitado\(texto\) \* 100\) \/ 100 : null;/
+    'function colunaDoCampoDeLimite(',
+    '// redesenha a tela conforme o modo ativo'
   );
-  assert.match(
-    interacoes,
-    /const gravada = !Estado\.simulando \? await salvarLimiteDoCiclo\(cicloId, campo, valor\) : null;/
+
+  const registro = { salvas: [], toasts: [], desenhos: 0 };
+
+  const contexto = {
+    CARTAO_MERCADO_PAGO: 'mp',
+    Estado: {
+      simulando,
+      ciclos: [{ cicloId: 7 }, { cicloId: 8 }],
+      limitesPorCiclo: new Map([[7, { id: 7, limite_besteira: 250 }]]),
+    },
+    salvarLimiteDoCiclo: async (cicloId, campo, valor) => {
+      if (falhaAoSalvar) throw Error('sem rede');
+      registro.salvas.push([cicloId, campo, valor]);
+
+      return { id: cicloId, [campo]: valor };
+    },
+    mostrarToast: (titulo, texto) => registro.toasts.push([titulo, texto]),
+    desenhar: () => registro.desenhos++,
+  };
+
+  vm.createContext(contexto);
+  vm.runInContext(
+    `${numero}\n${confirmacao}\nglobalThis.f = { colunaDoCampoDeLimite, confirmarLimiteDoCiclo };`,
+    contexto
   );
-  assert.match(
-    interacoes,
-    /Estado\.limitesPorCiclo\.set\(cicloId, gravada \|\| \{ \.\.\.salvos, \[campo\]: valor \}\);/
+
+  return { ...contexto.f, registro, Estado: contexto.Estado };
+}
+
+const campoDeLimite = (valor, dataset = { limiteCategoria: 'besteira', ciclo: '0' }) => ({
+  value: valor,
+  dataset,
+  disabled: false,
+});
+
+test('teto editável no título de cada ciclo: coluna certa, grava em fin_ciclo, vazio = padrão', async () => {
+  const c = carregaConfirmacaoDoLimite();
+
+  assert.deepEqual(
+    [
+      { limiteCategoria: 'besteira' },
+      { limiteCategoria: 'isabella' },
+      { garantiaCartao: '' },
+      { limiteCartao: 'mp' },
+      { limiteCartao: 'nu' },
+    ].map((dataset) => c.colunaDoCampoDeLimite({ dataset })),
+    [
+      'limite_besteira',
+      'limite_isabella',
+      'limite_garantia_nubank',
+      'limite_aprovado_mp',
+      'limite_aprovado_nubank',
+    ]
   );
-  assert.match(interacoes, /if \(input\) confirmarLimiteDoCiclo\(input\);/);
+
+  // Valor digitado vai arredondado a 2 casas para o ciclo do campo (cicloId, não o índice).
+  await c.confirmarLimiteDoCiclo(
+    campoDeLimite('300,456', { limiteCategoria: 'isabella', ciclo: '1' })
+  );
+  assert.deepEqual(c.registro.salvas, [[8, 'limite_isabella', 300.46]]);
+  assert.equal(c.Estado.limitesPorCiclo.get(8).limite_isabella, 300.46);
+  assert.equal(c.registro.desenhos, 1);
+
+  // Vazio grava null (volta ao padrão do código).
+  await c.confirmarLimiteDoCiclo(campoDeLimite(''));
+  assert.deepEqual(c.registro.salvas[1], [7, 'limite_besteira', null]);
+  assert.equal(c.Estado.limitesPorCiclo.get(7).limite_besteira, null);
+});
+
+test('teto editável: igual ao salvo, inválido, ciclo inexistente, simulação e falha de rede não gravam no banco', async () => {
+  const igual = carregaConfirmacaoDoLimite();
+
+  await igual.confirmarLimiteDoCiclo(campoDeLimite('250,00'));
+  assert.deepEqual([igual.registro.salvas, igual.registro.toasts], [[], []]);
+  assert.equal(igual.registro.desenhos, 1);
+
+  const invalido = carregaConfirmacaoDoLimite();
+
+  await invalido.confirmarLimiteDoCiclo(campoDeLimite('abc'));
+  await invalido.confirmarLimiteDoCiclo(campoDeLimite('-5'));
+  assert.deepEqual(invalido.registro.salvas, []);
+  assert.deepEqual(
+    invalido.registro.toasts.map((t) => t[0]),
+    ['Limite inválido', 'Limite inválido']
+  );
+
+  const semCiclo = carregaConfirmacaoDoLimite();
+
+  await semCiclo.confirmarLimiteDoCiclo(
+    campoDeLimite('100', { limiteCategoria: 'besteira', ciclo: '9' })
+  );
+  assert.deepEqual(semCiclo.registro.salvas, []);
+  assert.equal(semCiclo.registro.toasts[0][0], 'Limite não salvo');
+
+  // Simulação só altera a memória, como qualquer outra edição.
+  const simulado = carregaConfirmacaoDoLimite({ simulando: true });
+
+  await simulado.confirmarLimiteDoCiclo(campoDeLimite('400'));
+  assert.deepEqual(simulado.registro.salvas, []);
+  assert.deepEqual(JSON.parse(JSON.stringify(simulado.Estado.limitesPorCiclo.get(7))), {
+    id: 7,
+    limite_besteira: 400,
+  });
+
+  const caiu = carregaConfirmacaoDoLimite({ falhaAoSalvar: true });
+
+  await caiu.confirmarLimiteDoCiclo(campoDeLimite('400'));
+  assert.deepEqual(caiu.registro.toasts, [['Falhou ao salvar limite', 'sem rede']]);
+  assert.equal(caiu.Estado.limitesPorCiclo.get(7).limite_besteira, 250);
 });
 
 test('migration 23 só adiciona colunas nulas e não negativas na própria fin', () => {
@@ -258,7 +421,7 @@ test('regra documentada em REGRAS.md', () => {
   assert.match(regras, /`migrations\/23-limites-categoria-por-ciclo\.sql`/);
 });
 
-test('previstas e faturas: Mensal, Aberto e Pra sempre só na exibição (Comprometido só nas faturas), somente leitura, ids distintos', () => {
+test('previstas e faturas: Mensal, Aberto e Pra sempre só na exibição (Comprometido só nas faturas), somente leitura, ids distintos', async () => {
   const r = carrega([...linhasCiclo]);
   const [besteira, isabella] = r.previstasDoCiclo(1, [...linhasCiclo]);
 
@@ -276,36 +439,42 @@ test('previstas e faturas: Mensal, Aberto e Pra sempre só na exibição (Compro
   );
   assert.equal(isabella.comprometido, false);
 
-  // Nenhum cálculo lê pra_sempre: só a coluna e o filtro por clique dela.
-  for (const arquivo of [
-    'js/finance.js',
-    'js/charts.js',
-    'js/shared.js',
-    'js/cycle-views.js',
-  ]) {
-    assert.doesNotMatch(
-      ler(arquivo).replace(/pra_sempre: true,/g, ''),
-      /\.pra_sempre|\[['"]pra_sempre['"]\]/,
-      arquivo
-    );
-  }
+  // Nenhum cálculo lê pra_sempre: só a coluna e o filtro por clique dela. Marcar todas as
+  // linhas como "pra sempre" não muda a base nem os indicadores.
+  const calculos = async (extra) => {
+    const tela = await telaTresCiclos(undefined, extra);
 
-  // Pago clicável só em lançamento real; linha calculada mostra texto.
-  assert.match(
-    ler('js/tables.js'),
-    /\(!ehLinhaReal\(r\) \? `<span class="\$\{r\[chave\] \? 'vd' : 'vm'\}">/
-  );
-  // Marcado em linha só leitura fica na mesma cor das linhas reais.
-  assert.match(
-    ler('js/tables.js'),
-    /: \(marcado \? `<span class=\$\{COR_FLAG\[chave\]\}>\$\{texto\}<\/span>` : texto\);/
-  );
-  // O indicador Comprometido continua lendo só lançamentos reais.
-  // Comprometido: lançamentos reais e as linhas do plano das metas — nunca as previstas de Besteira/Isabella.
-  assert.match(
-    graficos,
-    /const linhas = \[\.\.\.Estado\.lancamentos, \.\.\.linhasDasMetas\(\)\]\s*\n\s*\.filter\(r => r\.periodoIdx == idxPeriodo\)/
-  );
+    tela.bruto('atualizarIndicadoresFinanceiros(2)');
+    const caixa = (id) => tela.ctx.document.getElementById(id);
+
+    return {
+      indicadores: [
+        'indicadorReserva',
+        'indicadorComprometido',
+        'indicadorProporcaoReserva',
+        'indicadorLiberdade',
+      ].map((id) => [caixa(id).innerHTML, caixa(id).title]),
+      base: tela.rodar(
+        'lancamentosComPrevistas().map(l => [l.id, l.v, l.periodoIdx, l.cred, l.pago])'
+      ),
+    };
+  };
+
+  assert.deepEqual(await calculos({ pra_sempre: true }), await calculos({}));
+
+  // Pago clicável só em lançamento real; linha calculada mostra texto (e, marcado, na
+  // mesma cor das linhas reais: ver celulas-tabela.test.js).
+  const tela = await telaTresCiclos();
+
+  const celulas = (linha) =>
+    tela.bruto(`celulasDaLinha(${JSON.stringify(linha)}, 'debito')`);
+
+  const real = lanc(4, 'Aluguel', '2026-10-16', -1000, { v: -1000, categ: 'Casa' });
+  const prevista = tela.rodar('lancamentosComPrevistas().find(l => l._prev)');
+
+  assert.match(celulas(real), /class="vd togPago" data-tog-pago="4"/);
+  assert.doesNotMatch(celulas(prevista), /togPago/);
+  assert.match(celulas(prevista), /<span class="vm">Aberto<\/span>/);
   assert.match(
     regras,
     /Mostram Frequência \*\*Mensal\*\*, Pago \*\*Aberto\*\* e \*\*Pra sempre\*\*/
@@ -313,7 +482,7 @@ test('previstas e faturas: Mensal, Aberto e Pra sempre só na exibição (Compro
   assert.match(regras, /as previstas não são Comprometido/);
 });
 
-test('indicadores Gastos e Liberdade contam as previstas como compras de verdade (sem as metas)', () => {
+test('indicadores Gastos e Liberdade contam as previstas como compras de verdade; o Comprometido não', async () => {
   const r = carrega([...linhasCiclo]);
 
   assert.equal(
@@ -323,12 +492,38 @@ test('indicadores Gastos e Liberdade contam as previstas como compras de verdade
       .join(),
     'prev:besteira:1,prev:isabella:1'
   );
-  assert.match(
-    graficos,
-    /const comPrevistas = \[\.\.\.Estado\.lancamentos, \.\.\.previstasDosTetos\(\)\];/
+
+  const indicadores = async (tetos) => {
+    const tela = await telaTresCiclos(tetos);
+
+    tela.bruto('atualizarIndicadoresFinanceiros(2)');
+    const caixa = (id) => tela.ctx.document.getElementById(id);
+
+    return Object.fromEntries(
+      ['Reserva', 'Comprometido', 'ProporcaoReserva', 'Liberdade'].map((nome) => [
+        nome,
+        caixa(`indicador${nome}`).title.replaceAll(String.fromCharCode(0xa0), ' '),
+      ])
+    );
+  };
+
+  const com = await indicadores({});
+  const sem = await indicadores(SEM_TETOS);
+
+  // Gastos: as previstas (R$ 250 + R$ 700) entram no total do ciclo; só a Reserva real conta como Reserva.
+  assert.equal(
+    sem.ProporcaoReserva,
+    'Reserva R$ 1.000,00 de R$ 1.000,00 em gastos; demais R$ 0,00'
   );
-  assert.match(graficos, /dadosProporcaoReservaDoCiclo\(\s*comPrevistas\s*\.filter/);
-  assert.match(graficos, /dadosLiberdadeFinanceira\(\s*comPrevistas\.map/);
+  assert.equal(
+    com.ProporcaoReserva,
+    'Reserva R$ 1.000,00 de R$ 1.950,00 em gastos; demais R$ 950,00'
+  );
+  // Liberdade: a média de gasto por ciclo sobe com elas.
+  assert.match(sem.Liberdade, /média R\$ 1\.000,00\/mês em 3 ciclos/);
+  assert.match(com.Liberdade, /média R\$ 1\.316,67\/mês em 3 ciclos/);
+  // Comprometido segue só com o que é real (lançamentos e plano das metas).
+  assert.equal(com.Comprometido, sem.Comprometido);
   assert.match(
     regras,
     /contam como gasto nos indicadores \*\*Gastos\*\* e \*\*Liberdade\*\*/

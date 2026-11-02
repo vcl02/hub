@@ -190,3 +190,18 @@ A fundação paralela `hub/Vcl.FinHub` (.NET, ABP, Angular, PostgreSQL local) fo
 - Novo lançamento virou o `.bt-ic.ok` da base, preenchido na cor do Fin (era branco).
 - O foco do teclado é o da base (contorno na cor do módulo); o do Fin (verde com o botão meio apagado) saiu.
 - Celular: a grade de 6 colunas continua, com a altura da base (40 px; era 2,5 rem, o mesmo). ‹ De Até › seguem numa linha; o conteúdo desce 5 px porque ‹ › cresceram. Conferido medindo no navegador (`navegador-estilos.test.js`).
+
+## Testes do Fin: telas por função e lacunas (01/11/2026)
+
+- Os testes de navegador passaram de 11 arquivos e 54 testes para 8 arquivos e 30 testes. Saíram `navegador-tetos.test.js`, `navegador-cartoes.test.js` e `navegador-diagnostico.test.js`; os demais foram reduzidos ou fundidos. Os estratégicos (`navegador.test.js`, `navegador-celular.test.js` e `navegador-linhas.test.js`) ficaram como estavam.
+- O que era conferido na tela e não depende de toque, foco ou banco de verdade roda agora como função, em `telas-por-funcao.test.js` (18 testes, com `carregarTela`): o ciclo desenhado, os cartões, o diagnóstico, as metas e as dicas do cabeçalho. O `scripts/check.mjs` do Fin caiu de ~43 s para ~30 s.
+- A única mudança de código de produção foi extrair `textoDoCadastroSalvo` de `submeteNovoLancamento` (`js/form.js`), com o mesmo texto, para o teste rodar a função.
+- CSS: os testes leem o CSS como regras (`tests/helpers/regras-css.js`, `declaracoes`), não por regex.
+
+Lacunas conhecidas (cobertura que ficou mais fraca, sem teste de função ou de navegador):
+
+- A regra do rótulo do cadastro ("Parcela única", "1ª fatura" ou "Fatura da parcela 1") não tem teste de função; hoje está em `js/form.js`, dentro do desenho do seletor.
+- A máscara de dinheiro não é conferida ligada ao campo de limite do cartão.
+- `resumoDebitoIgual` (o Débito recolhido quando Hoje e Futuro são iguais, em `js/cycle-views.js`) não é alcançado pelos dados fixos dos testes.
+- Os handlers `badInput` da edição inline de data (`js/interactions.js`) e o `matchMedia` do foco no cadastro do celular (`js/form.js`) não têm teste de função.
+- `Estado.cartoesDoCiclo = null` (`js/interactions.js`) só é conferido por regex.

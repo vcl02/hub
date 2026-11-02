@@ -296,6 +296,13 @@ function nomeFatura(fatura) {
 const rotuloFaturaComCartao = (vencimento) =>
   `${nomeFatura({ vencimento })} · ${NOME_CARTAO[cartaoDaFatura(vencimento)]}`;
 
+// Título do 1º seletor de fatura: com Frequência é a 1ª fatura da série; sem, depende de ser parcelado.
+function tituloDaPrimeiraFatura(freq, parcelas) {
+  if (freq) return '1ª fatura';
+
+  return parcelas > 1 ? 'Fatura da parcela 1' : 'Parcela única';
+}
+
 // Próximos vencimentos dos dois cartões, do mês passado até o fim da série
 // (DATA_LIMITE_RECORRENCIA), mesmo sem compra cadastrada neles: sem isso a 1ª compra num
 // cartão novo (ou num mês ainda vazio) não teria fatura pra escolher.
@@ -481,13 +488,7 @@ function atualizarFaturasDoFormulario(
     );
   };
 
-  const tituloPrincipal = freq
-    ? '1ª fatura'
-    : parcelas > 1
-      ? 'Fatura da parcela 1'
-      : 'Parcela única';
-
-  principal.innerHTML = seletor(0, tituloPrincipal);
+  principal.innerHTML = seletor(0, tituloDaPrimeiraFatura(freq, parcelas));
 
   if (estavaDesativada) animaTrocaDeEstado(principal.querySelector('select'));
   demais.innerHTML = Array.from(
@@ -1810,16 +1811,12 @@ async function submeteNovoLancamento() {
 
     // sucesso: NAO fecha o modal. Limpa so valor/data e mantem as opcoes do cadastro
     // pro proximo lancamento da mesma sessao (ex: varios itens do mesmo mercado).
-    const totalAssinado = valores.reduce((s, v) => s + v, 0);
-
-    el('erroNovo').textContent =
-      (Estado.simulando ? 'Simulado: ' : 'Salvo: ') +
-      (parcelas > 1
-        ? valores[0] == null
-          ? `${parcelas}x sem valor`
-          : `${parcelas}x ${brl(Math.abs(valores[0]))} · ${brl(Math.abs(totalAssinado))} no total`
-        : brl(totalAssinado)) +
-      (aviso ? ` · ${aviso}` : '');
+    el('erroNovo').textContent = textoDoCadastroSalvo({
+      simulando: Estado.simulando,
+      parcelas,
+      valores,
+      aviso,
+    });
     el('erroNovo').classList.add('ok');
     el('fNome').value = '';
     el('fValor').value = '';
@@ -2201,6 +2198,22 @@ el('toggleSimulacao').onclick = async () => {
     desenhar();
   }
 };
+
+// Aviso verde que fica no cadastro depois de salvar (ou simular): quanto foi e, se algo secundário falhou
+// (o vínculo de lote), o aviso no fim. Texto puro, sem tocar na tela.
+function textoDoCadastroSalvo({ simulando, parcelas, valores, aviso }) {
+  const totalAssinado = valores.reduce((s, v) => s + v, 0);
+
+  return (
+    (simulando ? 'Simulado: ' : 'Salvo: ') +
+    (parcelas > 1
+      ? valores[0] == null
+        ? `${parcelas}x sem valor`
+        : `${parcelas}x ${brl(Math.abs(valores[0]))} · ${brl(Math.abs(totalAssinado))} no total`
+      : brl(totalAssinado)) +
+    (aviso ? ` · ${aviso}` : '')
+  );
+}
 
 // cria N lancamentos simulados (parcelas), um por periodo seguinte, injetados direto em
 // Estado.lancamentos com _sim=true. Cada parcela p ganha sua PROPRIA data (a digitada

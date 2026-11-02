@@ -7,6 +7,8 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { extrairTrecho } = require('./helpers/carregar-funcoes');
+const { carregarTela } = require('./helpers/tela-sem-navegador');
 
 const formulario = fs.readFileSync('js/form.js', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
@@ -57,6 +59,47 @@ function carregaSalvarLote({ falhaPatch, falhaNumero } = {}) {
   return { salvar: contexto.salvar, chamadas, Estado: contexto.Estado };
 }
 
+// A função inteira de js/form.js (do `function nome(` até o `}` que fecha, na coluna 0)
+const funcao = (nome) => `${extrairTrecho(formulario, `function ${nome}(`, '\n}\n')}\n}`;
+
+// Textos do cadastro e a simulação, de js/form.js, com o que precisam simulado
+function carregaTexto() {
+  const contexto = { brl: (v) => `R$ ${v.toFixed(2).replace('.', ',')}` };
+
+  vm.createContext(contexto);
+  vm.runInContext(
+    `${funcao('textoDoCadastroSalvo')}\nglobalThis.textoDoCadastroSalvo = textoDoCadastroSalvo;`,
+    contexto
+  );
+
+  return contexto;
+}
+
+function carregaSimulacao() {
+  const contexto = {
+    Estado: { lancamentos: [], _proxIdSimulado: 0 },
+    ehAntecipacaoFatura: () => false,
+    dataISO: (v) => v,
+    dataDaOcorrencia: (data, p) => `2026-${10 + p}-15`,
+    ehCategoriaInvestimento: () => false,
+    periodoDoLancamento: () => 0,
+  };
+
+  vm.createContext(contexto);
+  vm.runInContext(
+    `${funcao('simulaLancamentoParcelado')}\nglobalThis.simula = simulaLancamentoParcelado;`,
+    contexto
+  );
+
+  return (compra) => {
+    const antes = contexto.Estado.lancamentos.length;
+
+    contexto.simula(compra);
+
+    return contexto.Estado.lancamentos.slice(antes);
+  };
+}
+
 const base = {
   nome: 'Academia',
   categ: 'Saúde',
@@ -87,7 +130,7 @@ test('lote real: um único INSERT com todas as parcelas e um PATCH em lote com o
       [52, 154],
     ]
   );
-  assert.doesNotMatch(formulario, /recorrenciaId = criadas\[0\]\.id/);
+  // (o número é o da sequência do banco, 154, e nunca o id de uma parcela, 50: conferido acima)
 });
 
 test('lançamento único (Vezes = 1) nunca grava recorrencia_id, mesmo com Frequência marcada', async () => {
@@ -106,16 +149,60 @@ test('falha só no vínculo de lote vira aviso: as linhas já gravadas aparecem 
   assert.match(aviso, /^sem o vínculo de lote \(recorrencia_id\): sem resposta$/);
   assert.equal(chamadas.inserts.length, 1);
   assert.equal(Estado.lancamentos.length, 2);
-  assert.match(formulario, /\(aviso \? ` · \$\{aviso\}` : ''\)/);
+  assert.equal(
+    carregaTexto().textoDoCadastroSalvo({
+      simulando: false,
+      parcelas: 2,
+      valores: [-5, -5],
+      aviso,
+    }),
+    'Salvo: 2x R$ 5,00 · R$ 10,00 no total · sem o vínculo de lote (recorrencia_id): sem resposta'
+  );
+});
+
+test('texto do cadastro salvo: Salvo/Simulado, parcelas com total, sem valor e o aviso só quando há', () => {
+  const { textoDoCadastroSalvo } = carregaTexto();
+
+  assert.equal(
+    textoDoCadastroSalvo({ simulando: false, parcelas: 1, valores: [-10], aviso: '' }),
+    'Salvo: R$ -10,00'
+  );
+  assert.equal(
+    textoDoCadastroSalvo({
+      simulando: true,
+      parcelas: 3,
+      valores: [-10, -10, -10],
+      aviso: '',
+    }),
+    'Simulado: 3x R$ 10,00 · R$ 30,00 no total'
+  );
+  assert.equal(
+    textoDoCadastroSalvo({
+      simulando: false,
+      parcelas: 2,
+      valores: [null, null],
+      aviso: 'x',
+    }),
+    'Salvo: 2x sem valor · x'
+  );
 });
 
 test('simulação espelha o mesmo critério (parcelas > 1), usando o contador de simulação como id de lote', () => {
-  const inicio = formulario.indexOf('function simulaLancamentoParcelado(');
+  const simular = carregaSimulacao();
 
-  assert.ok(inicio >= 0, 'não achou simulaLancamentoParcelado');
-  const trecho = formulario.slice(inicio, formulario.indexOf('\n}\n', inicio) + 3);
+  const em = (parcelas, valores) => {
+    const lancamentos = simular({ ...base, parcelas, valores });
 
-  assert.match(trecho, /recorrencia_id: parcelas > 1 \? grupoSimulado : null,/);
+    return lancamentos.map((l) => [l.id, l.recorrencia_id, l._sim, l.data]);
+  };
+
+  assert.deepEqual(em(3, [-10, -10, -10]), [
+    ['sim-1-0', 1, true, '2026-10-15'],
+    ['sim-1-1', 1, true, '2026-11-15'],
+    ['sim-1-2', 1, true, '2026-12-15'],
+  ]);
+  // o contador anda a cada compra simulada; lançamento único (Vezes = 1) nunca ganha lote
+  assert.deepEqual(em(1, [-10]), [['sim-2-0', null, true, '2026-10-15']]);
 });
 
 test('coluna é a da migration 15, não uma nova', () => {
@@ -146,17 +233,39 @@ test('sem número da sequência (ex.: migration 28 não aplicada) as linhas fica
   );
 });
 
-test('proximaRecorrencia chama a função da migration 28, uma vez só, e valida a resposta', () => {
-  const api = fs.readFileSync('js/supabase-api.js', 'utf8');
+test('proximaRecorrencia chama a função da migration 28, uma vez só, e valida a resposta', async () => {
+  const t = carregarTela();
+  let pedidos = [];
+  let resposta = { ok: true, status: 200, texto: '154' };
 
-  const corpo = api.slice(
-    api.indexOf('const proximaRecorrencia'),
-    api.indexOf('const atualizarLancamento =')
-  );
+  t.ctx.fetch = async (url, opcoes) => {
+    pedidos.push([new URL(url).pathname, opcoes.method]);
 
-  assert.match(corpo, /\/rest\/v1\/rpc\/proxima_recorrencia/);
-  assert.doesNotMatch(corpo, /comRetentativas/); // não idempotente: cada chamada consome um número
-  assert.match(corpo, /if \(!Number\.isInteger\(numero\) \|\| numero <= 0\)/);
+    return {
+      ok: resposta.ok,
+      status: resposta.status,
+      text: async () => resposta.texto,
+    };
+  };
+
+  assert.equal(await t.bruto('proximaRecorrencia()'), 154);
+  assert.deepEqual(pedidos, [['/rest/v1/rpc/proxima_recorrencia', 'POST']]);
+
+  // não é idempotente (cada chamada consome um número): erro de rede/servidor não repete o pedido
+  pedidos = [];
+  resposta = { ok: false, status: 500, texto: 'erro' };
+  await assert.rejects(t.bruto('proximaRecorrencia()'), /numerar recorrência: 500 erro/);
+  assert.equal(pedidos.length, 1);
+
+  for (const texto of ['0', '-3', '1.5', '"x"']) {
+    resposta = { ok: true, status: 200, texto };
+    await assert.rejects(
+      t.bruto('proximaRecorrencia()'),
+      /numerar recorrência: resposta inválida/,
+      texto
+    );
+  }
+
   assert.match(regras, /O `recorrencia_id` é \*\*sempre sequencial\*\*/);
 });
 

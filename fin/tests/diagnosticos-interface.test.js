@@ -1,5 +1,5 @@
 // Contrato de diagnóstico: métricas resumidas no Console e problemas visíveis em modal. O comportamento na tela (botão aceso,
-// inconsistências e avisos separados, carga lenta, falha de carga) está em navegador-diagnostico.test.js; aqui, o estilo do
+// inconsistências e avisos separados, carga lenta, falha de carga) está em telas-por-funcao.test.js; aqui, o estilo do
 // modal e a política de caixas nativas (só as 4 confirmações das REGRAS).
 const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
@@ -20,7 +20,7 @@ const fontesJs = fs
   .map((arquivo) => fs.readFileSync(path.join('js', arquivo), 'utf8'))
   .join('\n');
 
-test('modal de diagnóstico: larguras e lista que quebra palavras longas (o comportamento na tela está em navegador-diagnostico.test.js)', () => {
+test('modal de diagnóstico: larguras e lista que quebra palavras longas (o comportamento na tela está em telas-por-funcao.test.js)', () => {
   assert.match(estilos, /dialog#modalDiagnostico/);
   assert.match(
     estilos,

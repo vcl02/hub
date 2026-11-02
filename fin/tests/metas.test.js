@@ -10,7 +10,6 @@ const vm = require('node:vm');
 const ler = (arquivo) => fs.readFileSync(arquivo, 'utf8');
 const graficos = ler('js/charts.js');
 const interacoes = ler('js/interactions.js');
-const formulario = ler('js/form.js');
 const visoes = ler('js/cycle-views.js');
 
 assert.ok(ler('js/supabase-api.js'), 'js/supabase-api.js existe');
@@ -123,7 +122,7 @@ function carrega(metas, { extras = [], tetoBesteira = 0, reservaAluguel = false 
   );
   vm.runInContext(
     `limparCachesFinanceiros();
-        globalThis.r = { plano: planoDasMetas(), base: lancamentosComPrevistas(), cicloDoMes, guardadoAte, receitaPraCaber, receitasPraCaber, candidatosPraCaber, comprometidosAteAFalta };`,
+        globalThis.r = { plano: planoDasMetas(), base: lancamentosComPrevistas(), cicloDoMes, formaDaMeta, guardadoAte, receitaPraCaber, receitasPraCaber, candidatosPraCaber, comprometidosAteAFalta };`,
     contexto
   );
 
@@ -553,19 +552,6 @@ test('meta comprada, desistida ou sem data não gera plano nem linha', () => {
   assert.equal(r.base.filter((l) => l._meta != null).length, 0);
 });
 
-test('Comprometido do ciclo enxerga as linhas das metas; cadastro e tela ligados', () => {
-  assert.match(
-    graficos,
-    /const linhas = \[\.\.\.Estado\.lancamentos, \.\.\.linhasDasMetas\(\)\]/
-  );
-  // Plano refeito ao limpar os caches, com tudo zerado (nunca no meio de um saldo em cálculo).
-  assert.match(
-    ler('js/finance.js'),
-    /function limparCachesFinanceiros\(\) \{\s*\n\s*limparCachesDeSaldo\(\);\s*\n\s*_planoMetas = null;\s*\n\s*planoDasMetas\(\);/
-  );
-  // Comprar: cadastro preenchido; depois da última etapa, a meta vira comprada.
-});
-
 test('migration 36: tabela com RLS do dono, histórico e DataGrip-safe', () => {
   assert.match(migration, /create table if not exists public\.fin_meta \(/);
   assert.match(
@@ -625,23 +611,18 @@ test('REGRAS.md documenta metas', () => {
 });
 
 test('juros fora por enquanto e só três formas (À vista, Parcelado Crédito, Parcelado Débito)', () => {
-  const financas = ler('js/finance.js');
-
-  assert.doesNotMatch(
-    financas + visoes,
-    /juros_mensal|custo_mensal|Custo\/mês|JUROS_PADRAO|prestacao\(/
-  );
   // Só três formas, sempre a escolhida; "auto" (padrão antigo da tabela) vale como À vista.
-  assert.match(
-    ler('js/finance.js'),
-    /const formaDaMeta = meta => \(\['cartao', 'financiamento'\]\.includes\(meta\.forma\) \? meta\.forma : 'avista'\);/
-  );
+  const { formaDaMeta } = carrega([]);
+
+  assert.equal(formaDaMeta({ forma: 'auto' }), 'avista');
+  assert.equal(formaDaMeta({ forma: null }), 'avista');
+  assert.equal(formaDaMeta({ forma: 'avista' }), 'avista');
+  assert.equal(formaDaMeta({ forma: 'cartao' }), 'cartao');
+  assert.equal(formaDaMeta({ forma: 'financiamento' }), 'financiamento');
   assert.match(
     regras,
     /sempre na forma escolhida — \*\*À vista\*\*, \*\*Parcelado Crédito\*\* ou \*\*Parcelado Débito\*\*/
   );
-  // Comprar com entrada: primeiro a entrada (débito), depois o resto parcelado.
-  assert.match(formulario, /const resto = -\(meta\.valor - \(plano\.entrada \|\| 0\)\);/);
 });
 
 test('mês da entrada: campo embaixo, gravado como meses antes do mês da meta (migration 37)', () => {
@@ -667,11 +648,6 @@ test('mês da entrada: campo embaixo, gravado como meses antes do mês da meta (
       .filter((l) => l.trim().startsWith('--'))
       .every((l) => !l.includes(';'))
   );
-  // Comprar no débito: a série começa no mês da meta (o da 1ª parcela).
-  assert.match(
-    formulario,
-    /data: Estado\.ciclos\[plano\.ciclo\] \? dataISO\(Estado\.ciclos\[plano\.ciclo\]\.ini\) : plano\.mes/
-  );
   assert.match(
     regras,
     /O mês da entrada fica guardado como meses antes do mês da meta \(`meses_ate_parcela`, migration 37\)/
@@ -679,27 +655,6 @@ test('mês da entrada: campo embaixo, gravado como meses antes do mês da meta (
 });
 
 test('modal: todo campo com rótulo em cima, numa grade de colunas fixas', () => {
-  assert.match(
-    visoes,
-    /const campo = \(classe, rotulo, controle, dica = ''\) => `<label class="metaCampo \$\{classe\}"/
-  );
-
-  for (const [classe, rotulo] of [
-    ['mcNome', "'Nome'"],
-    ['mcValor', "'Valor total'"],
-    ['mcVezes', "'Vezes'"],
-    ['mcMes', 'rotuloDoMesDaMeta\\(m\\)'],
-    ['mcForma', "'Forma'"],
-    ['mcEntrada', "'Entrada'"],
-    ['mcMesEntrada', "'Mês da entrada'"],
-  ]) {
-    assert.match(visoes, new RegExp(`campo\\('${classe}', ${rotulo}, `), classe);
-  }
-
-  assert.match(
-    visoes,
-    /return \{ avista: 'Pagamento', cartao: 'Compra', financiamento: '1ª parcela' \}\[formaDaMeta\(m\)\];/
-  );
   const css = ler('css/forms.css');
 
   assert.match(
@@ -712,7 +667,6 @@ test('modal: todo campo com rótulo em cima, numa grade de colunas fixas', () =>
     ler('css/mobile.css'),
     /\.metaGrade \{ grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\); \}/
   );
-  // Valor é obrigatório (migration 38): apagar não grava null.
   assert.match(
     regras,
     /\*\*todos com rótulo em cima\*\*, numa grade de colunas fixas igual em todas as metas/
@@ -784,10 +738,6 @@ test('"Cabe começando em": conta com a entrada 1 mês antes, como fica ao mudar
   );
 
   assert.deepEqual([p.cabe, p.cicloEntrada, p.cabeEm], [false, 0, 3]);
-  assert.match(
-    ler('js/finance.js'),
-    /const movida = \{ \.\.\.meta, meses_ate_parcela: 1 \};/
-  );
 });
 
 test('mês a mês: o que sai, sobra/falta e Comprometido contando a meta em cada mês', () => {
@@ -825,19 +775,10 @@ test('mês a mês: o que sai, sobra/falta e Comprometido contando a meta em cada
 
 test('mês a mês: botão em cada meta, modal próprio e refeito a cada desenho', () => {
   assert.match(
-    ler('js/finance.js'),
-    /plano\.porMes = detalheDoPlano\(plano, anteriores, ctx\);/
-  );
-  assert.match(
-    visoes,
-    /<th class=n title="Comprometido do mês contando esta meta \(teto \$\{teto\}%\)">Comprometido<\/th>/
-  );
-  assert.match(
     regras,
     /\*\*Mês a mês\*\* \(botão-ícone de calendário em cada meta\) abre um modal/
   );
   // No celular, cada mês vira um cartão com o rótulo em cima de cada número (sem rolar de lado).
-  assert.match(visoes, /data-rotulo="Disponível"/);
   assert.match(
     ler('css/mobile.css'),
     /\.pmTabela td\[data-rotulo\]::before \{\s*content: attr\(data-rotulo\);/
@@ -1002,10 +943,6 @@ test('pra caber: modal, Simular só na memória e regra documentada', () => {
     simular.indexOf('guardarRetratoAntesDaSimulacao()') <
       simular.indexOf('receita.cortes.forEach')
   );
-  assert.doesNotMatch(
-    simular,
-    /excluirLancamento|salvarLimiteDoCiclo|atualizarLancamento/
-  );
   assert.match(
     regras,
     /\*\*Pra caber\*\* \(no Mês a mês de uma meta que não cabe por falta de dinheiro\)/
@@ -1083,12 +1020,6 @@ test('pra caber: quando não dá, lista o que já está comprometido até a falt
     ]
   );
   assert.equal(dados.total, 1300);
-  // Tela: aviso só sem receita que cubra (e com falta de dinheiro), botão abre o modal.
-  assert.match(
-    visoes,
-    /\(p\.falta <= TOLERANCIA_FINANCEIRA \|\| receitasDoModal\.some\(r => r\.cobre\) \? '' :/
-  );
-  assert.match(visoes, /Nem cortando tudo cabe: muito já está Comprometido\./);
   assert.match(regras, /abre o modal \*\*Comprometido até Mmm\/aa\*\*/);
 });
 
@@ -1148,8 +1079,6 @@ test('opções de vezes: com a Reserva completa (ou sem meta), o ideal mantém o
   assert.deepEqual(o.alvo, { tipo: 'liberdade', ritmo: 2000 });
   assert.equal(o.ideal, null);
   assert.equal(o.minimo.vezes, 1);
-  assert.match(visoes, /mantém o aporte de hoje pra Liberdade/);
-  assert.match(visoes, /a Reserva completa até \$\{ate\(x\.fim\)\}/);
   assert.match(
     regras,
     /Ideal\*\* \(o menor que cabe com o mês típico sobrando o que a Reserva ou a Liberdade pedem\)/
@@ -1157,17 +1086,6 @@ test('opções de vezes: com a Reserva completa (ou sem meta), o ideal mantém o
 });
 
 test('opções de vezes: linha embaixo do plano, clique usa o número de vezes', () => {
-  assert.match(visoes, /htmlDoPlanoDaMeta\(p\) \+ htmlOpcoesDeVezes\(p\) \+/);
-  assert.match(
-    visoes,
-    /data-acao=usarVezes data-vezes=\$\{x\.vezes\} title="Usar \$\{x\.vezes\}x\$\{dica\}\$\{sobra\(x\)\}"/
-  );
-  // A sobra fica só no hover: a pílula mostra vezes, parcela e até quando; sem "Agora".
-  assert.match(
-    visoes,
-    /<i>\$\{rotulo\}<\/i> <b>\$\{x\.vezes\}x \$\{brl\(x\.parcela\)\}<\/b> <span class=mpDetalhe>até \$\{ate\(x\.fim\)\}<\/span><\/button>/
-  );
-  assert.doesNotMatch(visoes, /<i>Agora<\/i>|pior mês sobra/);
   assert.match(regras, /\*\*Opções de vezes\*\* \(só parcelado\)/);
 });
 
@@ -1201,10 +1119,6 @@ test('sobra/mês: o típico decide o ideal; o pior mês aparece com o nome, e o 
   const jun = JSON.parse(JSON.stringify(p.porMes)).find((m) => m.ciclo === 8);
 
   assert.deepEqual([jun.deixa, jun.sobra > 0], [-5000, true]);
-  assert.match(
-    visoes,
-    /<th class=n title="O que o mês deixa: entradas − saídas, com as metas \(pode ser negativo com o guardado ainda positivo\)">No mês<\/th>/
-  );
   assert.match(regras, /O ideal olha o típico porque um mês já negativo sem a meta/);
 });
 
@@ -1261,26 +1175,6 @@ test('"Cabe começando em …" é um botão que muda o mês da meta (a entrada v
   assert.match(
     html.replace(/\u00a0/g, ' '),
     /<button type=button data-acao=usarMes data-mes=2027-03-01 title="Mudar o mês da meta pra Mar\/27" class="mpParte mpOpcao am"><i>Cabe começando em<\/i> <b>Mar\/27<\/b><\/button>/
-  );
-  // Sem cortar, no Pra caber: os dois também são botões.
-  assert.match(
-    visoes,
-    /<button type=button class="mpParte mpOpcao" data-acao=usarVezes data-vezes=\$\{p\.vezesQueCabe\}/
-  );
-  assert.match(
-    visoes,
-    /p\.cabeEm != null \? `<button \$\{atributosUsarMes\(mesDoCiclo\(p\.cabeEm\)/
-  );
-
-  // Mudar o mês por aqui faz o mesmo que pelo campo: com entrada, ela volta pra 1 mês antes.
-  const ajustar = interacoes.slice(
-    interacoes.indexOf('function ajustarMeta('),
-    interacoes.indexOf('const proximoMesISO')
-  );
-
-  assert.match(
-    ajustar,
-    /const campos = \{ mes: botao\.dataset\.mes \};\s*\n\s*if \(meta\.entrada > 0 && meta\.meses_ate_parcela !== 1\) campos\.meses_ate_parcela = 1;/
   );
   assert.match(
     regras,

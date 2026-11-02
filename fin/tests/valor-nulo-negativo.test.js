@@ -6,10 +6,10 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { carregarTela } = require('./helpers/tela-sem-navegador');
 
 const compartilhado = fs.readFileSync('js/shared.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
-const graficos = fs.readFileSync('js/charts.js', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 
 // Extrai corValorLancamento/celValorLancamento/celValorEditavel do arquivo real e roda num
@@ -97,9 +97,39 @@ test('célula editável: valor positivo de verdade continua mostrando "+" verde 
   assert.match(html, />\+</);
 });
 
-test('Débito/Crédito (linha não editável) e o detalhamento de categoria do gráfico usam celValorLancamento, não a antiga celValor genérica', () => {
-  // Real edita; calculada/simulada fica só leitura.
-  assert.match(graficos, /\$\{celNome\(r\)\}\$\{celValorLancamento\(r\)\}/);
+test('o detalhamento de categoria do gráfico mostra o valor pela célula não editável: sem valor ou zero em vermelho, positivo em verde', async () => {
+  const tela = carregarTela({
+    hoje: '2026-10-20',
+    dados: {
+      fin: [],
+      fin_ciclo: [{ id: 1, inicio: '2026-09-20', fim: null }],
+      fin_meta: [],
+    },
+  });
+
+  await tela.bruto('carregarDados()');
+  tela.bruto(`Estado._detalheAtual = {
+    categoria: 'Casa',
+    periodoIdx: 0,
+    ord: { k: 'nome', d: 1 },
+    linhas: [
+      { id: 1, nome: 'Aluguel', data: '2026-10-05', valor: -50, v: -50 },
+      { id: 2, nome: 'Bico', data: '2026-10-06', valor: 30, v: 30 },
+      { id: 3, nome: 'Sem valor', data: '2026-10-07', valor: null, v: 0 },
+    ],
+  }`);
+  tela.bruto('renderizaDetalheCel()');
+
+  const linhas = tela.ctx.document
+    .getElementById('corpoDetalheCel')
+    .innerHTML.split('<tr>')
+    .slice(2); // sem o cabeçalho
+
+  assert.equal(linhas.length, 3);
+  assert.match(linhas[0], /Aluguel.*class="n vm"/); // ordenado por nome
+  assert.match(linhas[1], /Bico.*class="n vd"/);
+  assert.match(linhas[2], /Sem valor.*class="n vm"/);
+  assert.doesNotMatch(linhas.join(''), /sinalBt/); // só leitura: sem botão de sinal
 });
 
 // Extrai só a decisão de sinal (sem tocar DOM/Estado real) do handler de clique no Valor:

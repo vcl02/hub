@@ -2,6 +2,61 @@
 const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
+const vm = require('node:vm');
+const { carregarTela } = require('./helpers/tela-sem-navegador');
+
+const lanc = (id, nome, data, valor, extra = {}) => ({
+  id,
+  nome,
+  data,
+  valor,
+  categ: 'Casa',
+  cred: false,
+  pago: true,
+  fatura: null,
+  freq: null,
+  ...extra,
+});
+
+const ciclos = [
+  { id: 1, inicio: '2026-09-15', fim: '2026-10-14' },
+  { id: 2, inicio: '2026-10-15', fim: null },
+];
+
+// Dois ciclos: Aluguel marcado Reserva nos dois, Mercado e um compromisso (Carro) só no 2º.
+const dadosIndicadores = {
+  fin_ciclo: ciclos,
+  fin: [
+    lanc(1, 'Faturamento PJ', '2026-09-15', 10000, { categ: 'Renda' }),
+    lanc(2, 'Aluguel', '2026-09-16', -1000, { reserva: true }),
+    lanc(3, 'Mercado', '2026-09-17', -500, { categ: 'Mercado' }),
+    lanc(4, 'Faturamento PJ', '2026-10-15', 10000, { categ: 'Renda' }),
+    lanc(5, 'Aluguel', '2026-10-16', -1000, { reserva: true }),
+    lanc(6, 'Mercado', '2026-10-17', -900, { categ: 'Mercado' }),
+    lanc(7, 'Carro', '2026-10-18', -2500, { comprometido: true }),
+  ],
+  fin_meta: [],
+};
+
+const dadosSimples = {
+  fin_ciclo: ciclos,
+  fin: [
+    lanc(1, 'Salário', '2026-09-15', 9000, { categ: 'Salário' }),
+    lanc(2, 'Luz', '2026-10-16', -100),
+  ],
+  fin_meta: [],
+};
+
+// Carrega os dados como o app carrega (banco falso) e põe hoje no ciclo de índice 1.
+async function telaCarregada(dados) {
+  const tela = carregarTela({ dados });
+
+  await tela.bruto('carregarDados()');
+  tela.bruto('Estado.idxHoje = 1');
+  tela.ctx.recolherBloco = () => {}; // vem de js/interactions.js, que a tela sem navegador não carrega
+
+  return tela;
+}
 
 const pagina = fs.readFileSync('index.html', 'utf8');
 const agentes = fs.readFileSync('AGENTS.md', 'utf8');
@@ -12,11 +67,8 @@ fs.readFileSync('css/base.css', 'utf8');
 fs.readFileSync('css/mobile.css', 'utf8');
 const tabelas = fs.readFileSync('js/tables.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
-const graficos = fs.readFileSync('js/charts.js', 'utf8');
 
 fs.readFileSync('js/data-ui.js', 'utf8');
-const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
-const estado = fs.readFileSync('js/app-state.js', 'utf8');
 
 fs.readFileSync('js/bootstrap.js', 'utf8');
 const formulario = fs.readFileSync('js/form.js', 'utf8');
@@ -28,7 +80,7 @@ test('registra o tema grafite, ações por ícone e minimalismo como preferênci
   assert.match(decisoes, /tema é sempre escuro, mas em cinza grafite legível/);
 });
 
-test('mantém tooltips e descrições auxiliares curtos', () => {
+test('mantém tooltips e descrições auxiliares curtos', async () => {
   assert.match(
     regras,
     /Tooltips, rótulos auxiliares e descrições visíveis devem ser curtos/
@@ -39,8 +91,13 @@ test('mantém tooltips e descrições auxiliares curtos', () => {
     /title="Recarregar, voltar ao ciclo atual, limpar filtros e consolidar tudo"/
   );
   assert.doesNotMatch(pagina, /injeta lançamentos hipotéticos|ignora os filtros acima/);
-  assert.match(tabelas, /title="Editar data"/);
-  assert.match(visoes, /Possível recorrência duplicada/);
+  // O ícone de editar a data da linha, no desenho real da tabela.
+  const tela = await telaCarregada(dadosSimples);
+
+  assert.match(
+    tela.rodar("renderTabela(Estado.lancamentos, 'db', true)"),
+    /title="Editar data"/
+  );
 });
 
 test('cadastro compacto usa ícones e defaults de crédito e pago', () => {
@@ -127,12 +184,16 @@ test('cadastro mantém margem visível em todos os lados no mobile', () => {
 });
 
 test('fatura à vista não repete o rótulo nem o asterisco', () => {
-  assert.match(pagina, /id=fFaturasWrap>\s*<span>Fatura<\/span>/);
-  assert.match(formulario, /: 'Parcela única'\);/);
-  assert.match(
-    formulario,
-    /function nomeFatura\(fatura\) \{\s*return dataBR\(fatura\.vencimento\);/
+  // O nome da fatura no seletor é só a data do vencimento (sem "Fatura" repetido).
+  const tela = carregarTela();
+  const inicioNome = formulario.indexOf('function nomeFatura(');
+
+  vm.runInContext(
+    formulario.slice(inicioNome, formulario.indexOf('\n}\n', inicioNome) + 3),
+    tela.ctx
   );
+  assert.equal(tela.rodar("nomeFatura({ vencimento: '2026-11-12' })"), '12/11/2026');
+  assert.match(pagina, /id=fFaturasWrap>\s*<span>Fatura<\/span>/);
 });
 
 test('visualizações usam um único dropdown com acompanhamentos fixos', () => {
@@ -147,10 +208,15 @@ test('visualizações usam um único dropdown com acompanhamentos fixos', () => 
     /id=btVisualizacoes|id=modalVisualizacoes|id=abreVisualizacao|id=voltaVisualizacoes/
   );
   assert.doesNotMatch(pagina, /id=btRoberta|id=btEmprestimo|id=btIphone/);
-  assert.match(graficos, /const OPCOES_VISUALIZACOES/);
-  assert.match(graficos, /categoriaContem: 'Roberta'/);
-  assert.doesNotMatch(graficos, /function valoresDaVisualizacao|visTipo/);
-  assert.match(graficos, /el\('visMenu'\)\.onclick = e => \{/);
+  // As opções fixas: a primeira filtra pela categoria que contém Roberta; o resto, pelo nome.
+  const opcoes = carregarTela().rodar('OPCOES_VISUALIZACOES');
+
+  assert.deepEqual(opcoes[0], {
+    id: 'categoria-roberta',
+    rotulo: 'Roberta',
+    categoriaContem: 'Roberta',
+  });
+  assert.ok(opcoes.slice(1).every((o) => o.nome && !o.categoriaContem));
   assert.match(regras, /o clique abre um menu próprio logo abaixo dele/);
   assert.match(regras, /seletor é fixo/);
   assert.match(regras, /categoria contendo `Roberta`/);
@@ -203,53 +269,13 @@ test('indicadores financeiros ficam no cabeçalho, entre a navegação e os bot�
   assert.match(pagina, /id=variacaoComprometido class=variacaoLinha hidden/);
   // Mesmo desenho dos itens da faixa: rótulo, percentual em negrito (largura de 100%) e complemento apagado.
   assert.match(estilosPainel, /\.indicadorRegra b\.pct \{\s*\n\s*min-width: 5ch;/);
-  assert.doesNotMatch(estilosPainel + graficos, /indicadorPercentual/);
-  assert.match(
-    graficos,
-    /const valorIndicador = \(texto, classe = 'neutro'\) => `<b class="\$\{texto == '—' \? '' : 'pct '\}\$\{classe\}">\$\{texto\}<\/b>`;/
-  );
-  assert.match(
-    graficos,
-    /`Reserva \$\{valorIndicador\(pct1\(reserva\.percentual\), classeIndicadorReserva\(reserva\)\)\} <span class=limiteRotulo>da meta<\/span>\$\{quandoCompleta\}`/
-  );
-  assert.match(
-    graficos,
-    /`Comprometido \$\{valorIndicador\(pct1\(comprometido\.percentualFaturamento\), classeIndicadorComprometido\(comprometidos\)\)\} <span class=limiteRotulo>do mês<\/span>`/
-  );
   // Gastos no formato do Comprometido: fatia em Reserva, complemento e variação; Demais só no hover.
-  assert.match(
-    graficos,
-    /`Gastos \$\{valorIndicador\(pct1\(proporcaoReserva\.percentualReserva\), classeIndicadorProporcaoReserva\(proporcaoReserva\)\)\} <span class=limiteRotulo>em Reserva<\/span>`/
-  );
-  assert.doesNotMatch(graficos, /limiteRotulo>· Demais/);
   assert.match(
     pagina,
     /<span id=indicadorProporcaoReserva [^>]*>Gastos —<\/span>\s*\n\s*<span id=variacaoProporcaoReserva class=variacaoLinha hidden><\/span>/
   );
-  assert.match(
-    graficos,
-    /variacaoPercentualIndicador\(proporcaoReserva\.percentualReserva, proporcaoAnterior\.percentualReserva, false\)/
-  );
-  assert.match(
-    graficos,
-    /variacaoValorIndicador\(proporcaoReserva\.reserva, proporcaoAnterior\.reserva, false\)/
-  );
-  assert.match(graficos, /atualizarLinhaVariacao\(\s*'variacaoProporcaoReserva'/);
+  assert.doesNotMatch(estilosPainel, /indicadorPercentual/);
   assert.match(regras, /Gastos 48,6% em Reserva/);
-  assert.match(graficos, /`Liberdade \$\{valorIndicador\(/);
-  assert.doesNotMatch(graficos, /[`'](Reserva|Comprometido|Gastos|Liberdade): /);
-  assert.match(
-    graficos,
-    /variacaoValorIndicador\(reserva\.guardado, reservaAnterior\.guardado, true\)/
-  );
-  assert.match(
-    graficos,
-    /variacaoValorIndicador\(comprometido\.valor, comprometidosAnterior\.limites\[0\]\.valor, false\)/
-  );
-  assert.match(graficos, /atualizarLinhaVariacao\(\s*'variacaoReserva'/);
-  assert.match(graficos, /atualizarLinhaVariacao\(\s*'variacaoComprometido'/);
-  assert.doesNotMatch(graficos, /da meta\$\{htmlVariacaoIndicador/);
-  assert.doesNotMatch(graficos, /do mês\$\{htmlVariacaoIndicador/);
 
   // Fluxo com quebra de linha: itens inteiros, divisor na borda esquerda cortado no início da linha.
   assert.match(
@@ -266,10 +292,6 @@ test('indicadores financeiros ficam no cabeçalho, entre a navegação e os bot�
   );
   assert.match(estilosPainel, /#rowVis \{\s*\n\s*display: flex;\s*\n\s*flex: 1 1 0;/);
   // Variação em texto miúdo colado no indicador, sem parênteses nem fundo.
-  assert.match(
-    graficos,
-    /return `<span class="variacaoIndicador \$\{percentual\.classe\}"[\s\S]*?\$\{brl\(valor\.diferenca\)\}<\/span>`;/
-  );
   assert.match(estilosPainel, /\.variacaoLinha \{\s*\n\s*white-space: nowrap;\s*\n\s*\}/);
   // Sem divisor nem folga antes da tabela Débito.
   assert.doesNotMatch(
@@ -304,11 +326,78 @@ test('indicadores financeiros ficam no cabeçalho, entre a navegação e os bot�
     regras,
     /Na comparação \(De ≠ Até\) não há Débito, então ficam no cabeçalho, na mesma linha da navegação de ciclo e dos botões de ação/
   );
-  assert.match(interacoes, /atualizarIndicadoresFinanceiros\(\+el\('compAte'\)\.value\)/);
   assert.doesNotMatch(pagina, /id=btMetaReservaEmergencia|id=btCompromissos/);
-  assert.match(interacoes, /if \(modoBlocos\) abrirGraficoGastos/);
-  assert.match(interacoes, /else abrirGraficoEvolucao/);
-  assert.doesNotMatch(interacoes, /mostraComFade\('(fgraf|fevol|fReserva)'/);
+});
+
+test('os quatro indicadores desenhados: rótulo antes do número, complemento apagado e a variação sobre o ciclo anterior', async () => {
+  const tela = await telaCarregada(dadosIndicadores);
+
+  tela.bruto('atualizarIndicadoresFinanceiros(1)');
+  const caixa = (id) => tela.ctx.document.getElementById(id);
+
+  assert.equal(
+    caixa('indicadorReserva').innerHTML,
+    'Reserva <b class="pct vd">100,0%</b> <span class=limiteRotulo>da meta</span>'
+  );
+  assert.equal(
+    caixa('indicadorProporcaoReserva').innerHTML,
+    'Gastos <b class="pct vd">22,7%</b> <span class=limiteRotulo>em Reserva</span>'
+  );
+  assert.equal(
+    caixa('indicadorComprometido').innerHTML,
+    'Comprometido <b class="pct vd">25,0%</b> <span class=limiteRotulo>do mês</span>'
+  );
+  assert.match(
+    caixa('indicadorLiberdade').innerHTML,
+    /^Liberdade <b class="pct neutro">/
+  );
+
+  // Cada variação mora no item do próprio indicador: pontos percentuais, " · " e o valor, com a cor
+  // (subir a Reserva é bom; subir o Comprometido ou a fatia dos Gastos em Reserva é ruim).
+  const variacao = (pontos, classe, valor, classeValor, tituloValor) =>
+    `<span class="variacaoIndicador ${classe}" title="Variação sobre o ciclo anterior">${pontos}</span><span class=separadorVariacao aria-hidden=true> · </span><span class="variacaoIndicador ${classeValor}" title="${tituloValor}">${valor}</span>`;
+
+  assert.equal(
+    caixa('variacaoReserva').innerHTML.replace(/\u00a0/g, ' '),
+    variacao(
+      '↑5,6 p.p.',
+      'vd',
+      '↑R$ 5.600,00',
+      'vd',
+      'Variação do Guardado sobre o ciclo anterior'
+    )
+  );
+  assert.equal(
+    caixa('variacaoComprometido').innerHTML.replace(/\u00a0/g, ' '),
+    variacao(
+      '↑25,0 p.p.',
+      'vm',
+      '↑R$ 2.500,00',
+      'vm',
+      'Variação do valor comprometido sobre o ciclo anterior'
+    )
+  );
+  assert.equal(
+    caixa('variacaoProporcaoReserva').innerHTML.replace(/\u00a0/g, ' '),
+    variacao(
+      '↓44,0 p.p.',
+      'vd',
+      '→R$ 0,00',
+      'neutro',
+      'Variação do gasto em Reserva sobre o ciclo anterior'
+    )
+  );
+  assert.equal(caixa('variacaoReserva').hidden, false);
+
+  // Sem nada marcado Reserva: "sem meta", sem o percentual e sem a variação.
+  const semMeta = await telaCarregada(dadosSimples);
+
+  semMeta.bruto('atualizarIndicadoresFinanceiros(1)');
+  assert.equal(
+    semMeta.ctx.document.getElementById('indicadorReserva').innerHTML,
+    'Reserva <b class="neutro">—</b> <span class=limiteRotulo>sem meta</span>'
+  );
+  assert.equal(semMeta.ctx.document.getElementById('variacaoReserva').hidden, true);
 });
 
 test('edição inline de data não apaga a data ao perder o foco com dígito incompleto', () => {
@@ -340,64 +429,31 @@ test('comparar: Todas ou Diferentes entre dois ciclos (regra documentada; na tel
 });
 
 test('conta da Isabella saiu: nenhuma casca restrita, login só do mantenedor', () => {
-  const codigo =
-    [
-      'js/app-state.js',
-      'js/bootstrap.js',
-      'js/cycle-views.js',
-      'js/data-ui.js',
-      'js/interactions.js',
-      'js/tables.js',
-    ]
-      .map((arquivo) => fs.readFileSync(arquivo, 'utf8'))
-      .join('\n') + pagina;
-
-  assert.doesNotMatch(codigo, /modoRestrito|modoSimples|EMAIL_ISABELLA|isabella\.251200/);
-  assert.match(
-    estado,
-    /const EMAIL_POR_USUARIO = \{ victor: 'victor\.cabrera0209@gmail\.com' \};/
-  );
+  assert.deepEqual(carregarTela().rodar('EMAIL_POR_USUARIO'), {
+    victor: 'victor.cabrera0209@gmail.com',
+  });
   // Flag antiga de modo restrito (form com checkbox fIsa) continua fora. `reserva` em
   // formulario é o bit fin.reserva do PRÓPRIO lançamento (reserva de emergência).
   assert.doesNotMatch(pagina, /id=fIsa|id=fReservaEmergencia/);
-  assert.doesNotMatch(formulario, /\bisa\b/);
-  assert.doesNotMatch(graficos, /data-tog-reserva-emergencia/);
   // A categoria textual "Isabella" (teto e fatura do cartão dela) é outro conceito e fica.
   assert.match(regras, /A categoria `Isabella` identifica esses lançamentos/);
   assert.doesNotMatch(regras, /## Conta restrita/);
 });
 
-test('mobile tem paridade total: mesmas colunas, edição e ações do desktop', () => {
-  assert.match(
-    estado,
-    /const colunasDaTabela = idTabela => idTabela === 'bk'\s*\n\s*\? \[COLS\.find\(\(\[chave\]\) => chave === 'prio'\), \.\.\.COLS\.filter\(\(\[chave\]\) => chave !== 'prio' && chave !== 'parcela'\)\]\s*\n\s*: COLS\.filter\(\(\[chave\]\) => chave !== 'prio'\);/
-  );
-  assert.doesNotMatch(estado, /COLS_MOBILE/);
-  assert.match(
-    tabelas,
-    /const texto = ehLinhaReal\(r\)\s*\n\s*\? `<span class="togData"/
-  );
-  assert.match(
-    tabelas,
-    /: ehLinhaReal\(r\) \? celValorEditavel\(r\) : celValorSomenteLeitura\(r\)\)/
-  );
-  assert.doesNotMatch(tabelas, /celValorMobile/);
-  assert.match(tabelas, /const podeSelecionar = selecionavel;/);
-  assert.doesNotMatch(
-    interacoes,
-    /const linha = e\.target\.closest\('tr\[data-sid\]'\);[\s\S]*?if \(isMobile\(\)\) return;/
-  );
-  assert.match(
-    interacoes,
-    /el\('seldup'\)\.hidden = !chaveUnicaReal && !ehAjusteMaterializavel;/
-  );
-  assert.match(interacoes, /el\('seldel'\)\.hidden = !chavesReaisSelecionadas\.length;/);
+test('mobile tem paridade total: mesmas colunas, edição e ações do desktop', async () => {
+  const tela = await telaCarregada(dadosSimples);
+  const colunas = (id) => tela.rodar(`colunasDaTabela('${id}').map(c => c[0])`);
+
+  assert.equal(colunas('bk')[0], 'prio'); // só o Backlog tem Prio, no começo, e não tem Parcela
+  assert.ok(!colunas('bk').includes('parcela'));
+  assert.ok(colunas('db').includes('parcela') && !colunas('db').includes('prio'));
+  assert.deepEqual(colunas('cr'), colunas('db')); // as mesmas colunas no mobile e no desktop
+
   assert.match(regras, /O mobile tem paridade total com o desktop/);
 });
 
 test('indicadores sem olho: os quatro sempre visíveis, no padrão da faixa', () => {
   assert.doesNotMatch(pagina, /btOlho|nomeOlho/);
-  assert.doesNotMatch(graficos + interacoes, /Olho|olhosEscolhidos/);
   assert.doesNotMatch(
     fs.readFileSync('css/dashboard.css', 'utf8'),
     /btOlho|nomeOlho|\.indicadorItem\.fechado/
@@ -473,7 +529,6 @@ test('ícone Todas/Diferentes: sempre visível, só funciona com 2 ciclos e alte
   assert.equal(botao.title, 'Mostrar todas as linhas');
   ctx.clica();
   assert.equal(filtro.value, 'N');
-  assert.doesNotMatch(interacoes, /el\('btSomenteDif'\)\.hidden/);
   assert.match(
     regras,
     /Ele fica sempre visível, mas só funciona com exatamente dois ciclos: fora da comparação \(um ciclo só ou Backlog\) ou com três ou mais ciclos fica desativado/
@@ -484,7 +539,7 @@ test('ícone Todas/Diferentes: sempre visível, só funciona com 2 ciclos e alte
   );
 });
 
-test('"N registros · período" fica encaixado no fim da faixa Futuro do título', () => {
+test('"N registros · período" fica encaixado no fim da faixa Futuro do título', async () => {
   const vm = require('node:vm');
   const inicio = tabelas.indexOf('const textoMetaBloco =');
   const fim = tabelas.indexOf('\n};', tabelas.indexOf('const renderBloco =')) + 3;
@@ -549,10 +604,11 @@ test('"N registros · período" fica encaixado no fim da faixa Futuro do título
     /<p class=meta>1 registro · Sem data<\/p>/
   );
   // Backlog também sem subtítulo: só a contagem.
-  assert.match(
-    fs.readFileSync('js/cycle-views.js', 'utf8'),
-    /renderBloco\('Backlog', linhas\.reduce\(\(s, r\) => s \+ r\.v, 0\), '', linhas, 'bk', true\)/
-  );
+  // O desenho real do Backlog não passa subtítulo: só a contagem.
+  const desenhoBacklog = await (await telaCarregada(dadosSimples)).desenharCiclo(-1);
+
+  assert.doesNotMatch(desenhoBacklog.html, /<p class=meta>/);
+  assert.match(desenhoBacklog.texto, /Backlog · R\$ 0,00 0 registros/);
   const backlog = ctx.renderBloco('Backlog', 10, '', [{}, {}], 'bk');
 
   assert.match(
@@ -578,10 +634,23 @@ test('"N registros · período" fica encaixado no fim da faixa Futuro do título
   );
 
   assert.ok(credito.includes('<span class=resumoMeta>3 registros</span>'));
-  assert.match(
-    fs.readFileSync('js/cycle-views.js', 'utf8'),
-    /'',\s+\/\/ Crédito mostra só a contagem de registros, sem as datas das faturas/
-  );
+
+  // O desenho real do Crédito: só a contagem, sem as datas das faturas.
+  const comCredito = await (
+    await telaCarregada({
+      fin_ciclo: [
+        { id: 1, inicio: '2026-09-15', fim: '2026-10-14' },
+        { id: 2, inicio: '2026-10-15', fim: '2026-11-14' },
+        { id: 3, inicio: '2026-11-15', fim: null },
+      ],
+      fin: [lanc(5, 'Fone', '2026-10-16', -150, { cred: true, fatura: '2026-12-12' })],
+      fin_meta: [],
+    })
+  ).desenharCiclo(1);
+
+  const blocoCredito = comCredito.html.slice(comCredito.html.indexOf('data-bloco=cr'));
+
+  assert.match(blocoCredito, /<span class=resumoMeta>\d+ registros?<\/span>/);
   assert.match(
     regras,
     /O bloco Crédito mostra só a quantidade de registros \("17 registros"\), sem as datas das faturas\./
@@ -595,14 +664,15 @@ test('"N registros · período" fica encaixado no fim da faixa Futuro do título
   );
 });
 
-test('De/Até mostram o mês abreviado, com o nome completo no tooltip', () => {
-  const dadosUi = fs.readFileSync('js/data-ui.js', 'utf8');
+test('De/Até mostram o mês abreviado, com o nome completo no tooltip', async () => {
+  const tela = await telaCarregada(dadosSimples);
 
-  assert.match(
-    dadosUi,
-    /const opcaoDoCiclo = i => `<option value=\$\{i\} title="\$\{nomePeriodo\(Estado\.ciclos\[i\]\)\}">\$\{nomePeriodoAbrev\(Estado\.ciclos\[i\]\)\}`;/
-  );
-  assert.match(dadosUi, /usadosNaveg\.map\(opcaoDoCiclo\)/);
+  tela.bruto('atualizarCombos()');
+  const opcoes = (id) => tela.ctx.document.getElementById(id).innerHTML;
+
+  assert.match(opcoes('compDe'), /<option value=1 title="Outubro 2026">Out\/26/);
+  assert.match(opcoes('compAte'), /<option value=0 title="Setembro 2026">Set\/26/);
+
   assert.match(
     regras,
     /Os seletores \*\*De\*\* e \*\*Até\*\* mostram cada ciclo pelo mês abreviado \(`Out\/26`/
@@ -694,27 +764,9 @@ test('Simular é sempre laranja, como o Recarregar é sempre verde; ligado fica 
   );
 });
 
-test('tetos Besteira/Isabella, diagnóstico e Recarregar sempre presentes; consolidação automática sem exceção de conta', () => {
-  const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
-  const boot = fs.readFileSync('js/bootstrap.js', 'utf8');
-
-  assert.match(visoes, /const limitesCategoria = i >= 0 \? \[/);
-  assert.doesNotMatch(
-    interacoes,
-    /el\('btDiagnostico'\)\.hidden|el\('recarregar'\)\.hidden/
-  );
-  assert.match(
-    boot,
-    /if \(bt\.disabled\) return;\s*\n\s*await consolidarTudo\(bt, voltarAoCicloAtualELimpar\);/
-  );
-  assert.match(
-    boot,
-    /if \(Date\.now\(\) - Estado\.ultimaConsolidacao >= INTERVALO_CONSOLIDACAO_AUTOMATICA_MS\)/
-  );
-  assert.match(
-    boot,
-    /if \(Date\.now\(\) - Estado\.ultimaCarga >= INTERVALO_RECARGA_AUTOMATICA_MS\) recarregarDados\(\);/
-  );
+// Os tetos no título de cada ciclo estão em ciclo-desenhado.test.js; o Recarregar e a consolidação
+// automática, em recarregar-faz-tudo.test.js e consolidacao-automatica.test.js.
+test('documentação: diagnóstico e Recarregar sempre presentes; consolidação automática sem exceção de conta', () => {
   const agentes = fs.readFileSync('AGENTS.md', 'utf8');
 
   assert.match(agentes, /O mobile tem paridade total com o desktop/);

@@ -138,9 +138,7 @@ const CASOS = [
   ],
 ];
 
-test('cada peça usa a cor da base comum (ou a própria do Fin) que deve', async () => {
-  const { ctx, pg, erros } = await abrirFin();
-
+async function coresDeCadaPeca(pg) {
   const medidas = await pg.evaluate((casos) => {
     const caixa = document.createElement('div'),
       sonda = document.createElement('i');
@@ -177,13 +175,10 @@ test('cada peça usa a cor da base comum (ou a própria do Fin) que deve', async
   }, CASOS);
 
   for (const [nome, tem, quer] of medidas) assert.equal(tem, quer, nome);
-  assert.deepEqual(erros, []);
-  await ctx.close();
-});
+}
 
-test('o Fin carrega a base (tokens e componentes) antes do próprio CSS e não redefine os tokens dela: só escolhe a própria cor (--cor)', async () => {
-  const { ctx, pg } = await abrirFin();
-
+// O Fin carrega a base (tokens e componentes) antes do próprio CSS e não redefine os tokens dela: só escolhe a própria cor (--cor)
+async function baseAntesDoCss(pg) {
   const { ordem, daBase, doFin, cor } = await pg.evaluate(() => {
     const folhas = [...document.styleSheets].filter((f) =>
       f.href?.startsWith(location.origin)
@@ -218,8 +213,7 @@ test('o Fin carrega a base (tokens e componentes) antes do próprio CSS e não r
     ['--cor']
   );
   assert.equal(cor, '#a78bfa'); // a mesma da referência da base
-  await ctx.close();
-});
+}
 
 // O bloco de botões do cabeçalho, na ordem (REGRAS.md, "Os botões (cartões …) formam um bloco só")
 const BOTOES = [
@@ -234,9 +228,8 @@ const BOTOES = [
   'btDiagnostico',
 ];
 
-test('cabeçalho: ‹ › e cada botão são o botão de ícone da base (.bt-ic, 40 px), o bloco na ordem; Novo é o .ok da base', async () => {
-  const { ctx, pg, erros } = await abrirFin();
-
+// Cabeçalho: ‹ › e cada botão são o botão de ícone da base (.bt-ic, 40 px), o bloco na ordem; Novo é o .ok da base
+async function botoesDoCabecalho(pg) {
   await pg.setViewportSize({ width: 1280, height: 800 });
 
   const r = await pg.evaluate(() => ({
@@ -266,6 +259,14 @@ test('cabeçalho: ‹ › e cada botão são o botão de ícone da base (.bt-ic,
   for (const [id, base, w, h] of r.medidas)
     assert.deepEqual([id, base, w, h], [id, true, 40, 40]);
   assert.equal(r.novo, 'bt-ic ok');
+}
+
+test('a base comum: cada peça com a cor que deve, a base antes do CSS do Fin, e o cabeçalho no botão de ícone da base', async () => {
+  const { ctx, pg, erros } = await abrirFin();
+
+  await coresDeCadaPeca(pg);
+  await baseAntesDoCss(pg);
+  await botoesDoCabecalho(pg);
   assert.deepEqual(erros, []);
   await ctx.close();
 });
