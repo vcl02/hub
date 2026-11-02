@@ -203,22 +203,41 @@ test('voltar do Backlog pra um ciclo único também conta como troca de ciclo (p
   assert.deepEqual(metodos, ['replace', 'push']);
 });
 
-test('Voltar/Avançar do navegador: popstate relê a URL e redesenha sem rebuscar o Supabase', () => {
-  const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
+// O listener de popstate (js/bootstrap.js) é o único trecho do bootstrap que não roda sozinho no teste: aqui ele roda com
+// `window.addEventListener` capturando-o, e as funções que ele chama anotam a ordem.
+function popstate({ ciclos }) {
   const bootstrap = fs.readFileSync('js/bootstrap.js', 'utf8');
-  const inicioPopstate = bootstrap.indexOf("window.addEventListener('popstate'");
+  const inicio = bootstrap.indexOf("window.addEventListener('popstate'");
+  const eventos = [];
+  let ouvinte;
 
-  assert.ok(inicioPopstate >= 0, 'não achou o listener de popstate');
+  const contexto = {
+    window: {
+      addEventListener: (_, f) => {
+        ouvinte = f;
+      },
+    },
+    Estado: { ciclos },
+    aplicarCicloDaUrl: () => eventos.push('aplicarCicloDaUrl'),
+    desenhar: () => eventos.push('desenhar'),
+    carregarDados: () => eventos.push('carregarDados'),
+    load: () => eventos.push('load'),
+  };
 
-  const trechoPopstate = bootstrap.slice(
-    inicioPopstate,
-    bootstrap.indexOf('\n});', inicioPopstate) + 4
-  );
+  const fim = bootstrap.indexOf('\n});', inicio) + 4;
 
-  assert.match(trechoPopstate, /if \(!Estado\.ciclos\.length\) return;/);
-  assert.match(trechoPopstate, /aplicarCicloDaUrl\(\);\s*\n\s*desenhar\(\);/);
-  assert.doesNotMatch(trechoPopstate, /carregarDados|await load/); // nunca rebusca o Supabase
-  assert.match(interacoes, /function desenhar\(\) \{/); // desenhar() precisa existir antes do bootstrap.js carregar
+  vm.runInNewContext(bootstrap.slice(inicio, fim), contexto);
+  ouvinte();
+
+  return eventos;
+}
+
+test('Voltar/Avançar do navegador: popstate relê a URL e redesenha sem rebuscar o Supabase', () => {
+  assert.deepEqual(popstate({ ciclos: [{ ini: '2026-09-08' }] }), [
+    'aplicarCicloDaUrl',
+    'desenhar',
+  ]);
+  assert.deepEqual(popstate({ ciclos: [] }), []); // antes da 1ª carga ou deslogado: nada a redesenhar
 });
 
 test('regra documentada em REGRAS.md', () => {
@@ -257,9 +276,33 @@ test('tela de login tira ?ciclo da URL e aplica o ciclo pedido depois de entrar'
 
 test('sem Sair no fin: a tela de login sempre guarda o ciclo pedido', () => {
   const boot = fs.readFileSync('js/bootstrap.js', 'utf8');
+  const inicio = boot.indexOf('const mostraTela = (logado) => {');
+  const telas = { login: { style: {} }, app: { style: {} } };
+  const tirou = [];
 
-  assert.match(boot, /if \(!logado\) tirarCicloDaUrl\(\);/);
-  assert.doesNotMatch(boot, /el\('sair'\)|signOut/);
+  const fim = boot.indexOf('\n};', inicio) + 3;
+
+  const mostrar = vm.runInNewContext(`${boot.slice(inicio, fim)}\nmostraTela`, {
+    el: (id) => telas[id],
+    tirarCicloDaUrl: () => tirou.push(true),
+  });
+
+  mostrar(0);
+  assert.deepEqual(
+    [telas.login.style.display, telas.app.style.display],
+    ['flex', 'none']
+  );
+  assert.equal(tirou.length, 1); // sem sessão, o ?ciclo sai da URL (o contexto guarda o pedido)
+  mostrar(1);
+  assert.deepEqual(
+    [telas.login.style.display, telas.app.style.display],
+    ['none', 'block']
+  );
+  assert.equal(tirou.length, 1);
+  // Sem botão de sair: nenhum script nem a página do Fin sabe encerrar a sessão (só o hub). Ausência de texto, não regex.
+  ['index.html', ...fs.readdirSync('js').map((f) => `js/${f}`)].forEach((arquivo) =>
+    assert.ok(!fs.readFileSync(arquivo, 'utf8').includes('signOut'), arquivo)
+  );
   assert.match(regrasMd, /Na tela de login a URL nunca mostra `\?ciclo`/);
   assert.match(
     regrasMd,

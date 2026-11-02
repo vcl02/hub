@@ -7,6 +7,7 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { declaracoes } = require('./helpers/regras-css');
 
 const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
@@ -503,27 +504,116 @@ test('limpa marca de um redesenho anterior antes de recalcular', () => {
   assert.equal(r._dupCiclo, undefined);
 });
 
-test('clique no botão pede confirmação, faz o PATCH com a guarda de simulação e reclassifica o período', () => {
-  assert.match(interacoes, /const botao = e\.target\.closest\('\[data-corrige-dup\]'\);/);
-  assert.match(interacoes, /if \(!r \|\| !r\._dupCiclo\) return;/);
-  assert.match(
-    interacoes,
-    /if \(!confirm\(`"\$\{r\.nome \?\? ''\}" está duplicado neste ciclo\. Mover a data de \$\{dataBR\(r\.data\)\} para \$\{dataBR\(novaData\)\} \(1º dia do próximo ciclo\)\?`\)\) return;/
+// O clique no botão "↷" (js/interactions.js), com a tela e a gravação falsas.
+function cliqueNoBotao({ linha, simulando = false, confirma = true, falha = null }) {
+  const inicio = interacoes.indexOf(
+    "el('out').addEventListener('click', async (e) => {\n  const botao = e.target.closest('[data-corrige-dup]');"
   );
-  assert.match(
-    interacoes,
-    /if \(!Estado\.simulando && !r\._sim\) await atualizarLancamento\(r\.id, \{ data: novaData \}\);/
+
+  const fim = interacoes.indexOf('\n});\n', inicio) + 5;
+  const eventos = [];
+  let ouvinte;
+
+  const botao = { dataset: { corrigeDup: String(linha.id) }, disabled: false };
+
+  const contexto = {
+    el: () => ({
+      addEventListener: (_, f) => {
+        ouvinte = f;
+      },
+    }),
+    Estado: { lancamentos: [linha], simulando },
+    dataBR: (v) => v,
+    confirm: (mensagem) => {
+      eventos.push(['confirm', mensagem]);
+
+      return confirma;
+    },
+    atualizarLancamento: async (id, campos) => {
+      eventos.push(['patch', id, { ...campos }, botao.disabled]);
+
+      if (falha) throw Error(falha);
+    },
+    reclassificaPeriodo: (r) => eventos.push(['reclassifica', r.data]),
+    desenhar: () => eventos.push('desenhar'),
+    mostrarToast: (...args) => eventos.push(['toast', ...args]),
+  };
+
+  vm.runInNewContext(interacoes.slice(inicio, fim), contexto);
+
+  return {
+    botao,
+    eventos,
+    clicar: () =>
+      ouvinte({ target: { closest: () => botao }, stopImmediatePropagation() {} }),
+  };
+}
+
+const seguro = (extra = {}) => ({
+  id: 7,
+  nome: 'Seguro Residencial',
+  data: '2026-10-05',
+  _dupCiclo: '2026-11-09',
+  ...extra,
+});
+
+test('clique no botão pede confirmação, faz o PATCH com a guarda de simulação e reclassifica o período', async () => {
+  const c = cliqueNoBotao({ linha: seguro() });
+
+  await c.clicar();
+  assert.deepEqual(c.eventos, [
+    [
+      'confirm',
+      '"Seguro Residencial" está duplicado neste ciclo. Mover a data de 2026-10-05 para 2026-11-09 (1º dia do próximo ciclo)?',
+    ],
+    ['patch', 7, { data: '2026-11-09' }, true], // o botão já está travado enquanto o PATCH está no ar
+    ['reclassifica', '2026-11-09'],
+    'desenhar',
+  ]);
+
+  // Na simulação (ou linha simulada) nada vai ao banco, mas a data muda e a linha é reclassificada
+  const simulada = cliqueNoBotao({ linha: seguro(), simulando: true });
+
+  await simulada.clicar();
+  assert.deepEqual(
+    simulada.eventos.map((e) => (Array.isArray(e) ? e[0] : e)),
+    ['confirm', 'reclassifica', 'desenhar']
   );
-  assert.match(
-    interacoes,
-    /r\.data = novaData;\s*\n\s*reclassificaPeriodo\(r\);\s*\n\s*desenhar\(\);/
+});
+
+test('o botão não faz nada sem confirmação, sem linha ou sem marca de duplicada; falha do PATCH destrava o botão', async () => {
+  const recusou = cliqueNoBotao({ linha: seguro(), confirma: false });
+
+  await recusou.clicar();
+  assert.deepEqual(
+    recusou.eventos.map((e) => e[0]),
+    ['confirm']
   );
-  assert.match(interacoes, /mostrarToast\('Falhou ao atualizar', err\.message\);/);
+  assert.equal(recusou.botao.disabled, false);
+
+  const semMarca = cliqueNoBotao({ linha: seguro({ _dupCiclo: undefined }) });
+
+  await semMarca.clicar();
+  assert.deepEqual(semMarca.eventos, []);
+
+  const falhou = cliqueNoBotao({
+    linha: seguro({ data: '2026-10-05' }),
+    falha: 'sem rede',
+  });
+
+  await falhou.clicar();
+  assert.deepEqual(falhou.eventos.at(-1), ['toast', 'Falhou ao atualizar', 'sem rede']);
+  assert.equal(falhou.botao.disabled, false);
+  assert.equal(falhou.eventos.includes('desenhar'), false);
 });
 
 test('estilos: mesma cor âmbar do aviso "*" de Comparar, em botão circular em evidência', () => {
-  assert.match(estilos, /\.corrigeDupData \{[\s\S]*?border: 1px solid #F0A83A;/);
-  assert.match(estilos, /\.corrigeDupData \{[\s\S]*?border-radius: 50%;/);
+  const botao = declaracoes(estilos, '.corrigeDupData');
+  const aviso = declaracoes(estilos, '.avisoDup');
+
+  assert.ok(botao.includes('border: 1px solid #f0a83a'));
+  assert.ok(botao.includes('border-radius: 50%'));
+  assert.ok(aviso.includes('color: #f0a83a')); // a mesma cor do asterisco de Comparar
 });
 
 test('regra documentada em REGRAS.md', () => {
@@ -619,13 +709,8 @@ test('só a ocorrência do OUTRO mês é movida; as do mesmo mês da primeira fi
   assert.equal(d._dupCiclo, '2026-11-07');
 });
 
-test('consolidação automática (silenciosa) não move data; só o clique move', () => {
-  const fonte = fs.readFileSync('js/form.js', 'utf8');
-
-  assert.match(
-    fonte,
-    /const \{ corrigidos, log: logDatas \} = silencioso \? \{ corrigidos: 0, log: \[\] \}\s*\n\s*: await corrigeRecorrenciasDuplicadasNoIntervalo\(Estado\.idxHoje, ultimoCicloAntesDaCorrecao\);/
-  );
+// Que a consolidação automática (silenciosa) não corrige datas está rodando em consolidar-tudo.test.js; aqui, a regra escrita.
+test('REGRAS.md: a consolidação automática não move data; só o clique e o Consolidar tudo movem', () => {
   const regrasDoc = fs.readFileSync('docs/REGRAS.md', 'utf8');
 
   assert.match(

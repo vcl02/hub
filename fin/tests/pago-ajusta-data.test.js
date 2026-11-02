@@ -9,31 +9,87 @@ const vm = require('node:vm');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 
-test('guarda só MARCAR (nunca desmarcar) e só Débito (nunca Crédito)', () => {
-  assert.match(interacoes, /if \(novoPago && !r\.cred && r\.data\) \{/);
-});
-
-test('fora do ciclo pede confirmação; é a 2ª caixa nativa permitida, documentada em REGRAS.md', () => {
-  assert.match(
-    interacoes,
-    /if \(!confirm\(`"\$\{r\.nome \?\? ''\}" está datado \$\{dataBR\(dataAtual\)\}, fora do ciclo atual\. Marcar como pago mesmo assim\?`\)\) \{\s*\n\s*return;/
-  );
-  assert.match(regras, /As únicas caixas nativas \(`confirm\(\)`\) permitidas são:/);
+test('a confirmação ao marcar pago fora do ciclo é a 2ª caixa nativa permitida, documentada em REGRAS.md', () => {
+  assert.match(regras, /As únicas caixas nativas (`confirm()`) permitidas são:/);
   assert.match(
     regras,
     /a confirmação ao marcar como pago um Débito cuja data cai fora do ciclo atual/
   );
 });
 
-test('PATCH só inclui "data" quando ela realmente mudou, e reclassificaPeriodo roda junto', () => {
-  assert.match(
-    interacoes,
-    /const campos = \{ pago: novoPago \};\s*\n\s*if \(novaData !== r\.data\) campos\.data = novaData;/
-  );
-  assert.match(
-    interacoes,
-    /if \(novaData !== r\.data\) \{\s*r\.data = novaData;\s*reclassificaPeriodo\(r\);\s*\}/
-  );
+// O clique inteiro no selo Pago/Aberto (js/interactions.js), com a tela e a gravação falsas: o que vai no PATCH e
+// o que muda na linha depois dele. A decisão da data (acima) é conferida em `criaDecideAjustePago`.
+function clicaNoSelo({ hoje, periodoPorData, linha }) {
+  const inicio = interacoes.indexOf("el('out').addEventListener('click', async (e) => {");
+  const fim = interacoes.indexOf('\n});\n', inicio) + 5;
+  const patches = [];
+  const reclassificadas = [];
+  let ouvinte;
+
+  const selo = {
+    dataset: { togPago: String(linha.id) },
+    classList: { toggle() {} },
+    style: {},
+  };
+
+  const contexto = {
+    el: () => ({
+      addEventListener: (_, f) => {
+        ouvinte = f;
+      },
+    }),
+    Estado: { lancamentos: [linha], simulando: false },
+    togglesNoAr: new Set(),
+    ehDebitoAtrasado: () => false,
+    hojeISO: () => hoje,
+    dataISO: (v) => v,
+    dataBR: (v) => v,
+    periodoDoDebito: (data) => periodoPorData[data] ?? -1,
+    confirm: () => true,
+    atualizarLancamento: async (id, campos) => patches.push([id, { ...campos }]),
+    reclassificaPeriodo: (r) => reclassificadas.push(r.id),
+    desenhar() {},
+    mostrarToast() {},
+  };
+
+  vm.createContext(contexto);
+  vm.runInContext(interacoes.slice(inicio, fim), contexto);
+
+  return {
+    patches,
+    reclassificadas,
+    clicar: () =>
+      ouvinte({ target: { closest: () => selo }, stopImmediatePropagation() {} }),
+  };
+}
+
+test('PATCH só inclui "data" quando ela realmente mudou, e reclassificaPeriodo roda junto', async () => {
+  const mudou = { id: 5, pago: false, cred: false, data: '2026-10-20', nome: 'Água' };
+
+  const a = clicaNoSelo({
+    hoje: '2026-10-09',
+    periodoPorData: { '2026-10-09': 2, '2026-10-20': 2 },
+    linha: mudou,
+  });
+
+  await a.clicar();
+  assert.deepEqual(a.patches, [[5, { pago: true, data: '2026-10-09' }]]);
+  assert.equal(mudou.data, '2026-10-09');
+  assert.equal(mudou.pago, true);
+  assert.deepEqual(a.reclassificadas, [5]);
+
+  const igual = { id: 6, pago: false, cred: false, data: '2026-10-01', nome: 'Luz' };
+
+  const b = clicaNoSelo({
+    hoje: '2026-10-09',
+    periodoPorData: { '2026-10-09': 2, '2026-10-01': 2 },
+    linha: igual,
+  });
+
+  await b.clicar();
+  assert.deepEqual(b.patches, [[6, { pago: true }]]);
+  assert.equal(igual.data, '2026-10-01');
+  assert.deepEqual(b.reclassificadas, []);
 });
 
 // Extrai só a lógica de decisão (sem tocar DOM/Estado real) e roda num contexto isolado com
@@ -136,7 +192,10 @@ test('data em ciclo diferente do de hoje: pede confirmação; confirmando, mant�
 
   assert.deepEqual({ ...resultado }, { novoPago: true, novaData: '2026-11-05' });
   assert.equal(chamadasConfirm.length, 1);
-  assert.match(chamadasConfirm[0], /"Água" está datado 2026-11-05, fora do ciclo atual/);
+  assert.equal(
+    chamadasConfirm[0],
+    '"Água" está datado 2026-11-05, fora do ciclo atual. Marcar como pago mesmo assim?'
+  );
 });
 
 test('data em ciclo diferente e usuário cancela a confirmação: aborta sem marcar pago', () => {

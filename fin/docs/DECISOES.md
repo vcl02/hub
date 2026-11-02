@@ -197,11 +197,15 @@ A fundação paralela `hub/Vcl.FinHub` (.NET, ABP, Angular, PostgreSQL local) fo
 - O que era conferido na tela e não depende de toque, foco ou banco de verdade roda agora como função, em `telas-por-funcao.test.js` (18 testes, com `carregarTela`): o ciclo desenhado, os cartões, o diagnóstico, as metas e as dicas do cabeçalho. O `scripts/check.mjs` do Fin caiu de ~43 s para ~30 s.
 - A única mudança de código de produção foi extrair `textoDoCadastroSalvo` de `submeteNovoLancamento` (`js/form.js`), com o mesmo texto, para o teste rodar a função.
 - CSS: os testes leem o CSS como regras (`tests/helpers/regras-css.js`, `declaracoes`), não por regex.
+- O título do 1º seletor de fatura ("1ª fatura", "Fatura da parcela 1" ou "Parcela única") saiu de `form.js` para `tituloDaPrimeiraFatura(freq, parcelas)`, com o mesmo texto; o teste roda a função.
+- Duas mutações sobreviveram no `resumoDebitoIgual` (as condições `Math.abs(...saldo...)` e `Math.abs(...guardado...)`). Elas se cobrem: é redundância legítima, não lacuna.
 
 Lacunas conhecidas (cobertura que ficou mais fraca, sem teste de função ou de navegador):
 
-- A regra do rótulo do cadastro ("Parcela única", "1ª fatura" ou "Fatura da parcela 1") não tem teste de função; hoje está em `js/form.js`, dentro do desenho do seletor.
 - A máscara de dinheiro não é conferida ligada ao campo de limite do cartão.
-- `resumoDebitoIgual` (o Débito recolhido quando Hoje e Futuro são iguais, em `js/cycle-views.js`) não é alcançado pelos dados fixos dos testes.
 - Os handlers `badInput` da edição inline de data (`js/interactions.js`) e o `matchMedia` do foco no cadastro do celular (`js/form.js`) não têm teste de função.
 - `Estado.cartoesDoCiclo = null` (`js/interactions.js`) só é conferido por regex.
+
+Lacunas fechadas em 01/11/2026: o rótulo da parcela e o modal do diagnóstico (`telas-por-funcao.test.js`); o botão do Mercado Pago (`telas-por-funcao.test.js`); `resumoDebitoIgual`, que o `vCiclo` alcança quando o resultado do ciclo fecha em zero, sem Aporte sugerido (salário 1000, gasto −1000, tudo pago), em 4 casos do mesmo arquivo; e `regras-css.js` com contexto `''`, que confere só as regras da base, fora de `@media`.
+
+Conversão de regex em função, rodadas 2 a 4 (01/11/2026): `parcela-coluna` e `recarregar-faz-tudo` (lote 3); `frequencia-serie` e `resumo-alinhado` (lote 4); `recorrencia-duplicada`, `pra-sempre`, `revisao-achados`, `pago-ajusta-data`, `ciclo-query` e `cadastro-layout-fixo` (lote 5) passaram a rodar as funções reais (handlers, `submeteNovoLancamento`, `consolidarTudo`, `recarregarDados`, menu de Visualizações, clique do selo Pago, `popstate`...) e o CSS por `declaracoes`; todas as mutações pontuais falharam os testes. Os outros arquivos do lote (`gasto-previsto`, `tabelas-filtros`, `celulas-tabela`, `editar-lancamento`, `reserva-comprometido-toggle`, `valor-nulo-negativo`, `ciclo-inicio-fim`, `fin-ciclo`, `ciclo-desenhado`) só têm regex sobre texto legítimo (REGRAS.md, SQL de migrations, HTML devolvido por função) e foram deixados. Três ressalvas: `limite-besteira` mantém um `html.includes('title="Besteira: seus caprichos…')`, cópia de texto de interface no `index.html`, sem função que o renderize; `pra-sempre` lê a tag `<input id="fPraSempre">` do `index.html` para conferir que ela nasce sem `checked`; `ciclo-query` confere por `includes` que não há `signOut` em `index.html` e `js/*.js` (ausência, como "sem segredo no código"). Em `frequencia-serie`, o `fFreq` Mensal pega menos que o regex antigo.

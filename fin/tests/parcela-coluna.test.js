@@ -7,6 +7,7 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { declaracoes } = require('./helpers/regras-css');
 
 const ler = (arquivo) => fs.readFileSync(arquivo, 'utf8');
 const tabelas = ler('js/tables.js');
@@ -94,6 +95,74 @@ function carrega(linhas) {
       'globalThis.f = { parcela: parcelaDaLinha, detalhe: detalheDaParcela, cel: celParcela };',
     contexto
   );
+
+  // colunas, botões do filtro, filtro de texto, ordenação e o toque na célula: funções reais de app-state.js, tables.js e interactions.js
+  const estado = ler('js/app-state.js');
+  const inter = ler('js/interactions.js');
+
+  const toque = inter.lastIndexOf(
+    "el('out')",
+    inter.indexOf("closest('[data-parcela]')")
+  );
+
+  contexto.estadoOrdenacao = () => ({ k: 'parcela', d: contexto.sentido });
+  contexto.estadoFiltroTexto = () => contexto.filtroAtual;
+  contexto.sentido = 1;
+  vm.runInContext(
+    estado.slice(
+      estado.indexOf('const COLS = ['),
+      estado.indexOf('// Pra sempre só aparece')
+    ) +
+      tabelas.slice(
+        tabelas.indexOf('function ordenarLinhas('),
+        tabelas.indexOf('// Pergunta que decide a marca')
+      ) +
+      tabelas.slice(
+        tabelas.indexOf('const ESTADOS_FILTRO_CLIQUE'),
+        tabelas.indexOf('function botaoFiltroEstado(')
+      ) +
+      tabelas.slice(
+        tabelas.indexOf('function passaFiltroTexto('),
+        tabelas.indexOf('// clique no header')
+      ),
+    contexto
+  );
+  contexto.document.getElementById = () => ({
+    addEventListener: (_, fn) => (contexto.aoTocar = fn),
+  });
+  contexto.mostrarToast = (...args) => (contexto.toast = args);
+  vm.runInContext(inter.slice(toque, inter.indexOf('\n});\n', toque) + 5), contexto);
+  contexto.f.botoesParcela = JSON.parse(
+    vm.runInContext('JSON.stringify(ESTADOS_FILTRO_CLIQUE.parcela)', contexto)
+  );
+  contexto.f.colunas = vm.runInContext("colunasDaTabela('db').map(c => c[0])", contexto);
+  contexto.f.colunasBacklog = vm.runInContext(
+    "colunasDaTabela('bk').map(c => c[0])",
+    contexto
+  );
+  contexto.f.passa = (r, filtro) => {
+    contexto.filtroAtual = filtro;
+
+    return vm.runInContext('passaFiltroTexto', contexto)(r, 'db');
+  };
+
+  contexto.f.ordena = (linhas, sentido) => {
+    contexto.sentido = sentido;
+
+    return vm.runInContext('ordenarLinhas', contexto)(linhas, 'db');
+  };
+
+  contexto.f.tocar = (dataset) => {
+    let parou = false;
+
+    contexto.toast = null;
+    contexto.aoTocar({
+      target: { closest: () => (dataset ? { dataset } : null) },
+      stopImmediatePropagation: () => (parou = true),
+    });
+
+    return { toast: contexto.toast, parou };
+  };
 
   return contexto.f;
 }
@@ -231,23 +300,65 @@ test('linha calculada e sem ciclo ficam vazias (sem traço)', () => {
 });
 
 test('coluna depois de Frequência, fora do Backlog; ordena por quantas faltam; filtro pela faixa da cor; toque', () => {
-  assert.match(
-    tabelas,
-    /parcela: \[\['vm', '0–33%'[^\]]+'vm'\], \['am', '33–66%'[^\]]+'am'\], \['vd', '66–100%'[^\]]+'vd'\]\]/
+  const entrada = (c, extra = {}) => linha(100 + c, 'Spotify', c, extra);
+  const serie = [0, 1, 2, 3, 4, 5].map((c) => entrada(c)); // 6 parcelas: 1,2 vermelho; 3 amarelo; 4,5,6 verde
+  const calc = linha(200, 'Calculada', 0, { _fat: 1 });
+  const f = carrega([...serie, calc]);
+
+  assert.deepEqual(
+    f.botoesParcela.map((b) => [b[0], b[1], b[3]]),
+    [
+      ['vm', '0–33%', 'vm'],
+      ['am', '33–66%', 'am'],
+      ['vd', '66–100%', 'vd'],
+    ]
   );
-  assert.match(
-    tabelas,
-    /return !!p && !parcelaSemNumero\(r, p\) && \(r\.v \|\| 0\) <= 0 && corDaParcela\(p\) === termo;/
+
+  const passam = (termo) =>
+    serie.filter((r) => f.passa(r, { parcela: termo })).map((r) => r.id);
+
+  assert.deepEqual(passam('vm'), [100, 101]);
+  assert.deepEqual(passam('am'), [102]);
+  assert.deepEqual(passam('vd'), [103, 104, 105]);
+  assert.equal(f.passa(serie[0], { parcela: '' }), true);
+
+  const ganho = [0, 1].map((c) => entrada(c, { v: 100, valor: 100 }));
+
+  assert.equal(carrega(ganho).passa(ganho[0], { parcela: 'am' }), false); // entrada não tem cor
+
+  const fixo = [0, 1, 2].map((c) =>
+    linha(300 + c, 'Condomínio', c, { pra_sempre: true })
   );
-  assert.match(
-    tabelas,
-    /const valor = r => coluna == 'parcela' \? parcelaDaLinha\(r\)\?\.falta \?\? null : r\[coluna\];/
+
+  const ff = carrega(fixo);
+
+  assert.deepEqual(
+    ['vm', 'am', 'vd'].map((t) => ff.passa(fixo[0], { parcela: t })),
+    [false, false, false] // o "—" não entra em faixa nenhuma
   );
-  assert.match(ler('css/dashboard.css'), /\.col-parcela \{ width: 11\.5rem; \}/);
-  assert.match(
-    ler('js/interactions.js'),
-    /const celula = e\.target\.closest\('\[data-parcela\]'\);[\s\S]{0,80}e\.stopImmediatePropagation\(\);\s*\n\s*mostrarToast\('Parcela', celula\.dataset\.parcela\);/
+
+  const todas = [calc, serie[0], serie[5], serie[2]];
+
+  assert.deepEqual(
+    Array.from(f.ordena(todas, 1), (r) => r.id),
+    [105, 102, 100, 200]
   );
+  assert.deepEqual(
+    Array.from(f.ordena(todas, -1), (r) => r.id),
+    [100, 102, 105, 200] // linha calculada sempre por último
+  );
+
+  assert.equal(f.colunas.indexOf('parcela'), f.colunas.indexOf('freq') + 1);
+  assert.ok(!f.colunasBacklog.includes('parcela'));
+  assert.deepEqual(declaracoes(ler('css/dashboard.css'), '.col-parcela', ''), [
+    'width: 11.5rem',
+  ]);
+
+  assert.deepEqual(f.tocar({ parcela: 'Parcela 1 de 3: x' }), {
+    toast: ['Parcela', 'Parcela 1 de 3: x'],
+    parou: true,
+  });
+  assert.equal(f.tocar(null).parou, false);
 });
 
 test('regra documentada', () => {

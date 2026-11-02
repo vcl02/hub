@@ -7,9 +7,11 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { carregarTela } = require('./helpers/tela-sem-navegador');
+const { trazer } = require('./helpers/trazer-funcao');
+const { declaracoes, regras: regrasCss } = require('./helpers/regras-css');
 
 const compartilhado = fs.readFileSync('js/shared.js', 'utf8');
-const formulario = fs.readFileSync('js/form.js', 'utf8');
 const pagina = fs.readFileSync('index.html', 'utf8');
 const estilos = fs.readFileSync('css/forms.css', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
@@ -86,41 +88,190 @@ test('fatura de cada ocorrência = 1ª fatura avançada pelos meses de calendár
   );
 });
 
-test('Frequência vem antes de Vezes; a regra fica só num hover do rótulo, sem botão nem modal de ajuda', () => {
+const CICLOS = [{ id: 1, inicio: '2026-09-15', fim: null }];
+
+// O cadastro de verdade (form.js) sem navegador: o que a tela entrega (modal, sinal, faturas escolhidas) é simulado e o
+// banco só registra o que a função manda gravar.
+async function montarCadastro() {
+  const { ctx, bruto } = carregarTela({
+    hoje: '2026-10-20',
+    dados: { fin: [], fin_ciclo: CICLOS, fin_meta: [] },
+  });
+
+  await bruto('carregarDados()');
+  trazer(ctx, 'js/form.js', [
+    'submeteNovoLancamento',
+    'abreModalNovo',
+    'atualizaModoFrequencia',
+  ]);
+
+  const el = (id) => ctx.document.getElementById(id);
+  const vezes = el('fParcelas');
+
+  ctx.Option = function (texto, valor) {
+    return { textContent: texto, value: valor, remove() {} };
+  };
+
+  Object.assign(vezes, { value: '1', querySelector: () => null, add() {} });
+  el('formNovo').reset = () => {};
+
+  el('fData').focus = () => {};
+
+  el('fFaturasWrap').scrollIntoView = () => {};
+
+  bruto(`(() => {
+    globalThis.sinalPositivo = false;
+    globalThis.modalNovo = { dataset: {}, open: false, showModal() { this.open = true; }, close() { this.open = false; } };
+    globalThis.faturasEscolhidas = [];
+    globalThis.salvas = [];
+    globalThis.chamadasFaturas = [];
+    idsFaturasDoFormulario = () => faturasEscolhidas;
+    atualizarFaturasDoFormulario = (ids) => chamadasFaturas.push({ ids, vezes: el('fParcelas').value });
+    salvaLancamentoParceladoNoBanco = async (pedido) => { salvas.push(pedido); return ''; };
+    animaTrocaDeEstado = () => {};
+    popularCategoriasNoForm = () => {};
+    popularNomesNoForm = () => {};
+    atualizaSinalUI = () => {};
+    sugereModoValorParcelas = () => {};
+  })()`);
+
+  return { ctx, bruto, el };
+}
+
+function preencherCadastro(el, campos) {
+  const padrao = {
+    fNome: 'Escola',
+    fCateg: 'Mercado',
+    fData: '2026-10-15',
+    fValor: '',
+    fFreq: 'Mensal',
+  };
+
+  for (const [id, valor] of Object.entries({ ...padrao, ...campos }))
+    el(id).value = valor;
+
+  for (const id of [
+    'fCred',
+    'fPago',
+    'fReserva',
+    'fComprometido',
+    'fPraSempre',
+    'fDivide',
+  ])
+    el(id).checked = !!campos[id];
+}
+
+test('Frequência vem antes de Vezes e os dois ficam fora do grid dos demais campos, em linha fixa', () => {
+  const ordem = ['id="fFreqWrap"', 'id="parcelasLinha"', 'id="fParcelasWrap"'].map(
+    (marca) => pagina.indexOf(marca)
+  );
+
   assert.ok(pagina.indexOf('id="fFreq"') < pagina.indexOf('id="fParcelas"'));
-  assert.match(pagina, /<label class=fm id=fParcelasWrap><span>Vezes<\/span>/);
-  assert.match(
-    pagina,
-    /<label class=fm id=fFreqWrap for=fFreq><span title="Com Frequência: informe só a 1ª ocorrência; o cadastro gera uma a cada período até 31\/12\/2032[^"]*">Frequência<\/span>/
-  );
-  assert.match(
-    pagina,
-    /<label class=fm for=fCateg><span title="Besteira: [^"]*">Categorias <b class=req>\*<\/b><\/span>/
-  );
-  assert.doesNotMatch(pagina, /ajudaFrequencia|ajudaCategorias|btAjudaMini|modalAjuda/);
-  assert.doesNotMatch(formulario, /ajudaFrequencia|ajudaCategorias|modalAjuda/);
-  assert.doesNotMatch(estilos, /modalAjuda|btAjudaMini|\.ajudaCategorias/);
-});
-
-test('com Frequência, Vezes fica desativado e só existe o seletor da 1ª fatura; Vezes não muda mais a Frequência', () => {
-  assert.doesNotMatch(formulario, /el\('fFreq'\)\.value = 'Mensal'/);
-  // Duplicar/Editar herdam a Frequência: a abertura do modal reflete isso no Vezes e nas
-  // faturas, sem congelar a sugestão automática como se fosse escolha manual.
-  assert.match(
-    formulario,
-    /atualizaModoFrequencia\(\);\s*\n\s*atualizarFaturasDoFormulario\(idsFaturasDoFormulario\(false\)\);/
+  assert.ok(ordem[0] >= 0 && ordem[0] < ordem[1] && ordem[1] < ordem[2], String(ordem));
+  assert.ok(pagina.includes('for="fFreq"'));
+  assert.ok(pagina.includes('for="fCateg"'));
+  assert.deepEqual(declaracoes(estilos, '.parcelasLinha', ''), [
+    'display: flex',
+    'gap: 0.6rem',
+    'align-items: end',
+  ]);
+  // sem a antiga área "freq" do grid nem regra que mudasse a linha conforme o conteúdo
+  assert.ok(
+    regrasCss(estilos).every(
+      (r) =>
+        !r.seletores.some((s) => s.startsWith('.parcelasLinha:has(')) &&
+        !r.declaracoes.some(
+          (d) => d.startsWith('grid-template-areas') && d.includes('freq')
+        )
+    )
   );
 });
 
-test('ao salvar com Frequência: exige data, conta a série até o limite e expande a 1ª fatura', () => {
-  assert.match(
-    formulario,
-    /const valores = !valorTotal \? Array\(freq \? parcelas : 1\)\.fill\(null\)/
-  );
-  assert.match(
-    formulario,
-    /salvaLancamentoParceladoNoBanco\(\{[^}]*faturaIds: faturasDaSerie \}\);/
-  );
+test('a regra fica só num hover do rótulo: nenhum botão nem modal de ajuda no cadastro', () => {
+  for (const arquivo of [pagina, estilos])
+    for (const nome of [
+      'ajudaFrequencia',
+      'ajudaCategorias',
+      'btAjudaMini',
+      'modalAjuda',
+    ])
+      assert.ok(!arquivo.includes(nome), nome);
+});
+
+test('Vezes não muda mais a Frequência: sem Frequência escolhida, o campo fica vazio', async () => {
+  const { bruto, el } = await montarCadastro();
+
+  el('fParcelas').value = '12';
+  el('fFreq').value = '';
+  bruto('atualizaModoFrequencia')();
+  assert.equal(el('fFreq').value, '');
+  assert.equal(el('fParcelas').disabled, false);
+});
+
+test('Duplicar/Editar herdam a Frequência: Vezes já vem como série e as faturas são refeitas depois disso', async () => {
+  const { bruto, ctx, el } = await montarCadastro();
+
+  ctx.faturasEscolhidas = ['2026-11-12'];
+  bruto('abreModalNovo')({
+    id: 7,
+    nome: 'Escola',
+    categ: 'Mercado',
+    v: -100,
+    data: '2026-10-15',
+    cred: true,
+    freq: 'Mensal',
+  });
+  assert.equal(el('fFreq').value, 'Mensal');
+  assert.equal(el('fParcelas').disabled, true);
+  assert.equal(el('fParcelas').value, 'serie');
+  assert.deepEqual(JSON.parse(JSON.stringify(ctx.chamadasFaturas.at(-1))), {
+    ids: ['2026-11-12'],
+    vezes: 'serie',
+  });
+});
+
+test('ao salvar com Frequência: exige a data, conta a série até o limite e, sem valor, grava cada linha vazia', async () => {
+  const { bruto, ctx, el } = await montarCadastro();
+  const salvar = bruto('submeteNovoLancamento');
+
+  preencherCadastro(el, { fData: '' });
+  await salvar();
+  assert.equal(el('erroNovo').textContent, 'Escolha a data da 1ª ocorrência.');
+  assert.equal(ctx.salvas.length, 0);
+
+  preencherCadastro(el, {});
+  await salvar();
+  assert.equal(ctx.salvas.length, 1);
+  assert.equal(ctx.salvas[0].freq, 'Mensal');
+  assert.equal(ctx.salvas[0].parcelas, 75); // out/2026 a dez/2032
+  assert.equal(ctx.salvas[0].valores.length, 75);
+  assert.ok(ctx.salvas[0].valores.every((v) => v === null));
+});
+
+test('ao salvar com Frequência no Crédito: só a 1ª fatura é pedida e as seguintes avançam mês a mês', async () => {
+  const { bruto, ctx, el } = await montarCadastro();
+  const salvar = bruto('submeteNovoLancamento');
+
+  preencherCadastro(el, { fCred: true, fValor: '100,00' });
+  ctx.faturasEscolhidas = [];
+  await salvar();
+  assert.equal(el('erroNovo').textContent, 'Escolha a 1ª fatura.');
+  assert.equal(ctx.salvas.length, 0);
+
+  ctx.faturasEscolhidas = ['2026-11-12'];
+  await salvar();
+  assert.equal(ctx.salvas.length, 1);
+
+  const { faturaIds, valores } = ctx.salvas[0];
+
+  assert.equal(faturaIds.length, 75);
+  assert.deepEqual(Array.from(faturaIds.slice(0, 3)), [
+    '2026-11-12',
+    '2026-12-12',
+    '2027-01-12',
+  ]);
+  assert.equal(faturaIds.at(-1), '2033-01-12');
+  assert.deepEqual(Array.from(new Set(valores)), [-100]); // sem Dividir, repete o valor em cada ocorrência
 });
 
 test('regra documentada em REGRAS.md', () => {
@@ -151,27 +302,6 @@ test('rótulos Frequência e Categorias apontam pro próprio campo (for=), docum
   assert.match(
     regras,
     /Os rótulos Frequência e Categorias apontam explicitamente pro próprio campo \(`for=`\): tocar no texto do rótulo foca o campo\./
-  );
-});
-
-test('Frequência é um campo comum; Vezes e Dividir ficam numa linha fixa logo abaixo', () => {
-  // Fora do grid, a Frequência recebe o mesmo espaçamento dos demais campos (inclusive
-  // quando o mobile reparte a altura que sobra entre eles).
-  assert.match(
-    pagina,
-    /<\/select>\s*\n\s*<\/label>\s*\n\s*\n\s*<!-- Vezes e Dividir[\s\S]*?-->\s*\n\s*<div class=parcelasLinha id=parcelasLinha>\s*\n\s*<label class=fm id=fParcelasWrap><span>Vezes<\/span>/
-  );
-  assert.match(
-    estilos,
-    /\.parcelasLinha \{\s*\n\s*display: flex;\s*\n\s*gap: \.6rem;\s*\n\s*align-items: end;/
-  );
-  assert.doesNotMatch(
-    estilos,
-    /grid-template-areas:\s*\n\s*"freq freq"|\.parcelasLinha:has\(/
-  );
-  assert.match(
-    regras,
-    /Frequência, Vezes, Dividir e Fatura têm posição fixa no cadastro \(exceção pontual registrada em `docs\/DECISOES\.md`\)/
   );
 });
 
