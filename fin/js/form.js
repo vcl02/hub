@@ -149,8 +149,8 @@ function renderizarSugestoesDeNome(termo = el('fNome').value) {
     ...opcoes.map(({ nome, categ }) => {
       const opcao = document.createElement('button');
 
+      // Cada opção é o botão da lista suspensa da base (nome e, à direita, a categoria em cinza).
       opcao.type = 'button';
-      opcao.className = 'nomeExistente';
       opcao.setAttribute('role', 'option');
       const titulo = document.createElement('span');
       const categoria = document.createElement('small');
@@ -417,7 +417,7 @@ function atualizarFaturasDoFormulario(
   if (!cred && !ehAntecip) {
     // Sem data-fatura-parcela: o seletor desativado nunca entra em idsFaturasDoFormulario.
     principal.innerHTML =
-      '<select disabled title="Fatura só no Crédito" aria-label="Fatura (só no Crédito)"><option>—</option></select>';
+      '<select class=campo disabled title="Fatura só no Crédito" aria-label="Fatura (só no Crédito)"><option>—</option></select>';
     demais.innerHTML = '';
     marcaMais(0);
 
@@ -479,7 +479,7 @@ function atualizarFaturasDoFormulario(
     const selecionada = idsSelecionados[parcela] || sugestoes[parcela];
 
     return (
-      `<select data-fatura-parcela="${parcela}" data-fatura-sugerida="${!idsSelecionados[parcela] && sugestoes[parcela] ? '1' : '0'}" required` +
+      `<select class=campo data-fatura-parcela="${parcela}" data-fatura-sugerida="${!idsSelecionados[parcela] && sugestoes[parcela] ? '1' : '0'}" required` +
       (rotulo ? ` title="${rotulo}" aria-label="${rotulo}"` : '') +
       '>' +
       `<option value="" disabled${selecionada ? '' : ' selected'}>Selecione a fatura…</option>` +

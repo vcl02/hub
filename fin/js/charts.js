@@ -935,35 +935,48 @@ window.abrirGraficoGastos = (idxPeriodo) => {
   el('modalGrafico').showModal();
 };
 
+// As categorias são chips da base: ligado (aria-pressed) = na pizza; o 1º chip seleciona ou
+// desmarca todas.
 function montaExcluirCatDrop(categorias, categoriasCompartilhadas) {
   const todasIncluidas = categorias.every((c) => !excluidasDoGrafico.includes(c));
 
   el('excluirCatDrop').innerHTML =
-    `<button type=button id=excluirCatTudo class=multiSelAll onclick="alternarTodasCategoriasGrafico()">${todasIncluidas ? 'Desmarcar tudo' : 'Selecionar tudo'}</button>` +
+    `<button type=button id=excluirCatTudo class=chip onclick="alternarTodasCategoriasGrafico()">${todasIncluidas ? 'Desmarcar tudo' : 'Selecionar tudo'}</button>` +
     categorias
       .map(
         (c) =>
-          `<label><input type=checkbox value="${escapeHtml(c)}" ${excluidasDoGrafico.includes(c) ? '' : 'checked'} onchange="toggleCategoriaGrafico(${escapeHtml(JSON.stringify(c))},this.checked)">${escapeHtml(c)}${categoriasCompartilhadas.has(c) ? '<b class=catCompartilhada title="Classificação compartilhada">*</b>' : ''}</label>`
+          `<button type=button class=chip data-categoria="${escapeHtml(c)}" aria-pressed="${!excluidasDoGrafico.includes(c)}" onclick="toggleCategoriaGrafico(${escapeHtml(JSON.stringify(c))},this.getAttribute('aria-pressed')!='true')">${escapeHtml(c)}${categoriasCompartilhadas.has(c) ? '<b class=catCompartilhada title="Classificação compartilhada">*</b>' : ''}</button>`
       )
       .join('');
   atualizaBotaoExcluirCat();
 }
 
+// Resumo no botão que abre a lista, cada chip ligado conforme a exclusão e o 1º chip
+// oferecendo o contrário do que está.
 function atualizaBotaoExcluirCat() {
   const n = excluidasDoGrafico.length;
 
   el('excluirCatBtn').textContent =
     n == 0 ? 'Nenhuma excluída' : `${n} excluída${n > 1 ? 's' : ''}`;
-  const caixas = [...el('excluirCatDrop').querySelectorAll('input[type=checkbox]')];
+  const chips = [...el('excluirCatDrop').querySelectorAll('[data-categoria]')];
+
+  chips.forEach((chip) =>
+    chip.setAttribute(
+      'aria-pressed',
+      String(!excluidasDoGrafico.includes(chip.dataset.categoria))
+    )
+  );
   const botaoTudo = el('excluirCatTudo');
 
   if (botaoTudo)
-    botaoTudo.textContent = caixas.every((caixa) => caixa.checked)
+    botaoTudo.textContent = chips.every(
+      (chip) => !excluidasDoGrafico.includes(chip.dataset.categoria)
+    )
       ? 'Desmarcar tudo'
       : 'Selecionar tudo';
 }
 
-// checkbox MARCADO = categoria incluida na pizza; desmarcar exclui
+// chip LIGADO = categoria incluida na pizza; desligar exclui
 window.toggleCategoriaGrafico = (categoria, incluida) => {
   excluidasDoGrafico = incluida
     ? excluidasDoGrafico.filter((c) => c !== categoria)
@@ -975,32 +988,34 @@ window.toggleCategoriaGrafico = (categoria, incluida) => {
 };
 
 window.alternarTodasCategoriasGrafico = () => {
-  const caixas = [...el('excluirCatDrop').querySelectorAll('input[type=checkbox]')];
-  const categorias = caixas.map((caixa) => caixa.value);
+  const categorias = [...el('excluirCatDrop').querySelectorAll('[data-categoria]')].map(
+    (chip) => chip.dataset.categoria
+  );
 
   excluidasDoGrafico = proximaExclusaoDasCategorias(categorias, excluidasDoGrafico);
-  const incluidas = categorias.every((c) => !excluidasDoGrafico.includes(c));
-
-  caixas.forEach((caixa) => {
-    caixa.checked = incluidas;
-  });
   atualizaBotaoExcluirCat();
   desenhaGraficoPizza(+el('modalGrafico').dataset.periodoIdx);
 };
 
-el('excluirCatBtn').onclick = () => el('excluirCatDrop').classList.toggle('open');
+// O resumo abre e fecha os chips das categorias.
+function mostraCategoriasDoGrafico(aberto) {
+  el('excluirCatDrop').hidden = !aberto;
+  el('excluirCatBtn').setAttribute('aria-expanded', String(aberto));
+}
+
+el('excluirCatBtn').onclick = () =>
+  mostraCategoriasDoGrafico(el('excluirCatDrop').hidden);
 // Chart.js pode interromper o click do canvas; o pointerdown em captura do modal garante que
-// tocar qualquer área fora do seletor feche o dropdown antes de o gráfico tratar o gesto.
+// tocar qualquer área fora do seletor feche as categorias antes de o gráfico tratar o gesto.
 el('modalGrafico').addEventListener(
   'pointerdown',
   (e) => {
-    if (!e.target.closest('#excluirCatWrap'))
-      el('excluirCatDrop').classList.remove('open');
+    if (!e.target.closest('#excluirCatWrap')) mostraCategoriasDoGrafico(false);
   },
   true
 );
 document.addEventListener('click', (e) => {
-  if (!e.target.closest('#excluirCatWrap')) el('excluirCatDrop').classList.remove('open');
+  if (!e.target.closest('#excluirCatWrap')) mostraCategoriasDoGrafico(false);
 });
 
 const CORES_PIZZA = [

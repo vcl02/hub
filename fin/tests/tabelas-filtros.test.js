@@ -331,15 +331,35 @@ test('botões de filtro por clique: Todos → 1º → 2º → Todos, guardados n
   assert.deepEqual(sequencia('pago'), ['S', 'N', undefined]);
   assert.deepEqual(sequencia('reserva'), ['S', 'N', undefined]);
   assert.equal(contexto.desenhos, 9);
-  assert.match(contexto.botao('db', 'pago', undefined), />Todos<\/button>$/);
+  // os botões são o chip compacto da base: desligado sem cor, ligado escolhido na cor do estado (--cor local)
+  assert.match(
+    contexto.botao('db', 'pago', undefined),
+    /^<button type=button class="chip compacto" aria-pressed="false" [\s\S]*>Todos<\/button>$/
+  );
   assert.match(
     contexto.botao('db', 'pago', 'N'),
-    /class="filtroEstado ligado vm"[\s\S]*>Aberto<\/button>$/
+    /^<button type=button class="chip compacto ativo" style="--cor:var\(--erro\)" aria-pressed="true" [\s\S]*>Aberto<\/button>$/
   );
-  assert.match(contexto.botao('db', 'sinal', undefined), />±<\/button>$/);
   assert.match(
     contexto.botao('db', 'comprometido', 'S'),
-    /flagComprometido[\s\S]*title="Só comprometidos/
+    /class="chip compacto ativo" style="--cor:var\(--comprometido\)"[\s\S]*title="Só comprometidos/
+  );
+  assert.match(
+    contexto.botao('db', 'reserva', 'N'),
+    /^<button type=button class="chip compacto ativo" aria-pressed="true" [\s\S]*>Sem<\/button>$/
+  ); // sem cor própria: a do Fin
+  // o sinal é o botão de sinal compacto das linhas: ± cinza, + verde, − vermelho
+  assert.match(
+    contexto.botao('db', 'sinal', undefined),
+    /^<button type=button class="bt-ic sinal compacto neutro" aria-pressed="false" [\s\S]*>±<\/button>$/
+  );
+  assert.match(
+    contexto.botao('db', 'sinal', '+'),
+    /^<button type=button class="bt-ic sinal compacto pos" aria-pressed="true" [\s\S]*>\+<\/button>$/
+  );
+  assert.match(
+    contexto.botao('db', 'sinal', '-'),
+    /^<button type=button class="bt-ic sinal compacto" aria-pressed="true" [\s\S]*>−<\/button>$/
   );
 });
 
@@ -420,16 +440,21 @@ const topo = (css, seletor) => declaracoes(css, seletor, '');
 
 test('sinal do filtro de Valor fica na mesma coluna dos botões +/− das linhas', () => {
   const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
-  const sinal = topo(fs.readFileSync('css/forms.css', 'utf8'), '.sinalBt.compacto');
 
-  // Mesmas medidas da célula: botão 1.5rem + .35rem de folga, valor 6.5rem, folga direita .7rem.
-  assert.ok(sinal.includes('width: 1.5rem') && sinal.includes('margin-right: 0.35rem'));
+  const sinal = topo(
+    fs.readFileSync('../base/componentes.css', 'utf8'),
+    '.bt-ic.compacto'
+  );
+
+  // Os dois são o mesmo botão compacto da base (24 px) com a mesma folga de .35rem, valor 6.5rem, folga direita .7rem.
+  assert.ok(sinal.includes('width: 24px') && sinal.includes('height: 24px'));
   assert.ok(topo(estilos, '.valorLinha .togValor').includes('width: 6.5rem'));
   assert.ok(topo(estilos, '.valorLinha .valorFixo').includes('width: 6.5rem'));
-
-  const estado = topo(estilos, 'thead tr.filtros .filtroValor .filtroEstado');
-
-  assert.ok(estado.includes('width: 1.5rem') && estado.includes('margin-right: 0.35rem'));
+  assert.ok(topo(estilos, '.valorLinha > .bt-ic').includes('margin-right: 0.35rem'));
+  assert.deepEqual(
+    topo(estilos, 'thead tr.filtros .filtroValor > .bt-ic'),
+    topo(estilos, '.valorLinha > .bt-ic')
+  );
   assert.ok(
     topo(estilos, 'thead tr.filtros .filtroValor input').includes('width: 6.5rem')
   );

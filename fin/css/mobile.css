@@ -161,11 +161,6 @@
     padding: 1.1rem 1rem calc(1.1rem + env(safe-area-inset-bottom));
   }
 
-  /* .btPri tem flex: 1 (pra linhas de botões); aqui ele esticaria e engoliria a sobra. */
-  #salvaNovo {
-    flex: none;
-  }
-
   /* Vazia, a mensagem sai do fluxo: senão ganharia uma fatia da sobra e abriria um vão
          duplo entre Categorias e Salvar. */
   .erroNovo:empty {
@@ -189,11 +184,6 @@
   #modalGrafico > div[style*='height'],
   #modalComparativo > div[style*='height'] {
     height: 320px !important;
-  }
-
-  .multiSelBtn {
-    min-width: 0;
-    max-width: 100%;
   }
 
   /* O resumo financeiro preserva a leitura em duas faixas sem apertar os valores
@@ -246,7 +236,7 @@
   font-size: 0.82rem;
   line-height: 1.35;
   color: var(--fg);
-  background: var(--laranja-soft);
+  background: var(--aviso-soft);
   border: 1px solid #6a5330;
   border-radius: 9px;
 }
@@ -268,7 +258,7 @@ tbody tr.sal:hover td {
 }
 
 tbody tr.res td {
-  background: var(--laranja-soft);
+  background: var(--aviso-soft);
   font-weight: 600;
 }
 
@@ -300,7 +290,7 @@ tbody tr.prev:hover td {
 tbody tr.sim td {
   background: repeating-linear-gradient(
     135deg,
-    var(--laranja-soft) 0 8px,
+    var(--aviso-soft) 0 8px,
     transparent 8px 16px
   );
 }
@@ -314,7 +304,7 @@ tbody tr.sim:hover td {
 }
 
 .simIco {
-  color: #f0a83a;
+  color: var(--aviso);
 }
 
 /* Tag de antecipação/pagamento de fatura ao lado do nome. */

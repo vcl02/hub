@@ -54,6 +54,7 @@ test('código, estilos, migrations e testes começam explicando sua responsabili
 test('HTML explica as regiões que o JavaScript altera dinamicamente', () => {
   const html = fs.readFileSync('index.html', 'utf8');
 
+  // Regex de propósito: o alvo é o texto dos comentários de documentação do index.html (comentário não é elemento)
   assert.match(html, /<!-- Casca de autenticação:/);
   assert.match(html, /<!-- Painel único estático:/);
   assert.match(html, /<!-- Cadastro único para lançamento real e simulado;/);

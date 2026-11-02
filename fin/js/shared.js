@@ -107,7 +107,7 @@ const celValorEditavel = (r) => {
 
   return (
     `<td class="n ${corValorLancamento(r)}"><span class=valorLinha>` +
-    `<button type=button class="sinalBt compacto${positivoVisual ? ' pos' : ''}" data-tog-sinal="${escapeHtml(String(r.id))}" title="Inverter sinal" aria-label="Inverter sinal">${positivoVisual ? '+' : '−'}</button>` +
+    `<button type=button class="bt-ic sinal compacto${positivoVisual ? ' pos' : ''}" data-tog-sinal="${escapeHtml(String(r.id))}" title="Inverter sinal" aria-label="Inverter sinal">${positivoVisual ? '+' : '−'}</button>` +
     `<span class="togValor" data-tog-valor="${escapeHtml(String(r.id))}" title="Editar valor">${brlSemSinal(r.v)}</span></span>`
   );
 };
@@ -120,7 +120,7 @@ const celValorSomenteLeitura = (r, v = r.v, cor = corValorLancamento(r)) => {
 
   return (
     `<td class="n ${cor}"><span class=valorLinha>` +
-    `<button type=button class="sinalBt compacto${positivoVisual ? ' pos' : ''}" disabled title="Somente leitura" aria-label="Sinal (somente leitura)">${positivoVisual ? '+' : '−'}</button>` +
+    `<button type=button class="bt-ic sinal compacto${positivoVisual ? ' pos' : ''}" disabled title="Somente leitura" aria-label="Sinal (somente leitura)">${positivoVisual ? '+' : '−'}</button>` +
     `<span class=valorFixo>${brlSemSinal(v)}</span></span>`
   );
 };

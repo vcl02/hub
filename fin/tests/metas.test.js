@@ -476,13 +476,13 @@ test('plano em pílulas: situação, entrada, parcelas, Comprometido e falta, co
     ]
   );
   assert.deepEqual(partes({ ciclo: -1 }), [': Fora dos ciclos carregados |  | ']);
-  // HTML: pílulas com rótulo em itálico, valor em negrito e o mês apagado.
+  // HTML: selos da base (cabe em verde) com rótulo em itálico, valor em negrito e o mês apagado.
   assert.equal(
     nbsp(htmlDoPlanoDaMeta({ ...base, entrada: 1000, cabe: true })),
     '<span class="metaPlano vd" title="Guardado projetado disponível em Nov/26: R$ 0,00">' +
-      '<span class="mpParte mpSituacao vd"><b>Cabe</b></span> ' +
-      '<span class="mpParte"><i>Entrada</i> <b>R$ 1.000,00</b> <span class=mpDetalhe>Nov/26</span></span> ' +
-      '<span class="mpParte"><i>Débito</i> <b>21x R$ 190,48</b> <span class=mpDetalhe>Nov/26 a Jul/28</span></span></span>'
+      '<span class="selo ok"><b>Cabe</b></span> ' +
+      '<span class="selo"><i>Entrada</i> <b>R$ 1.000,00</b> <span class=mpDetalhe>Nov/26</span></span> ' +
+      '<span class="selo"><i>Débito</i> <b>21x R$ 190,48</b> <span class=mpDetalhe>Nov/26 a Jul/28</span></span></span>'
   );
   assert.match(
     regras,
@@ -614,6 +614,7 @@ test('migration 36: tabela com RLS do dono, histórico e DataGrip-safe', () => {
     .filter((l) => !l.trim().startsWith('--'))
     .join('\n');
 
+  // Regex de propósito: o alvo é o SQL da migration (sem comentários), texto, não JS
   assert.doesNotMatch(codigo, /\$\$/);
   assert.ok(
     migration
@@ -681,6 +682,7 @@ test('mês da entrada: campo embaixo, gravado como meses antes do mês da meta (
     .filter((l) => !l.trim().startsWith('--'))
     .join('\n');
 
+  // Regex de propósito: o alvo é o SQL da migration (sem comentários), texto, não JS
   assert.doesNotMatch(codigo, /\$\$/);
   assert.ok(
     migration37
@@ -739,6 +741,7 @@ test('migration 38: tira a âncora (colunas e valor nulo), abortando se houver a
     .filter((l) => !l.trim().startsWith('--'))
     .join('\n');
 
+  // Regex de propósito: o alvo é o SQL da migration (sem comentários), texto, não JS
   assert.doesNotMatch(codigo, /\$\$|\bdo\b\s/);
   assert.ok(
     m38
@@ -1286,7 +1289,7 @@ test('"Cabe começando em …" é um botão que muda o mês da meta (a entrada v
 
   assert.match(
     html.replace(/\u00a0/g, ' '),
-    /<button type=button data-acao=usarMes data-mes=2027-03-01 title="Mudar o mês da meta pra Mar\/27" class="mpParte mpOpcao am"><i>Cabe começando em<\/i> <b>Mar\/27<\/b><\/button>/
+    /<button type=button data-acao=usarMes data-mes=2027-03-01 title="Mudar o mês da meta pra Mar\/27" class="chip compacto aviso"><i>Cabe começando em<\/i> <b>Mar\/27<\/b><\/button>/
   );
   assert.match(
     regras,

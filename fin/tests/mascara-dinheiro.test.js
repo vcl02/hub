@@ -48,12 +48,12 @@ const campoFalso = (valor) => {
   return campo;
 };
 
-test('cadastro: "R$" fixo dentro da caixa do Valor, antes do campo', () => {
+test('cadastro: "R$" fixo dentro da caixa do Valor (o .campo da base), antes do campo', () => {
   const tags = etiquetas(pagina);
-  const caixa = tags.findIndex((t) => t.attrs.class === 'moneyWrap');
+  const caixa = tags.findIndex((t) => t.attrs.class === 'moneyWrap campo');
 
   assert.deepEqual(tags.slice(caixa, caixa + 3), [
-    { tag: 'div', attrs: { class: 'moneyWrap' } },
+    { tag: 'div', attrs: { class: 'moneyWrap campo' } },
     { tag: 'span', attrs: { class: 'dinheiroPrefixo', 'aria-hidden': 'true' } },
     {
       tag: 'input',
@@ -113,10 +113,12 @@ test('edição do Valor na tabela: caixa .dinheiro com "R$" e a máscara do cada
     declaracoes(formularios, '.dinheiro > input').includes('background: transparent')
   );
   assert.ok(declaracoes(formularios, '.dinheiro > input').includes('border: 0'));
-  assert.deepEqual(declaracoes(formularios, '.dinheiro:focus-within'), [
+  assert.deepEqual(declaracoes(formularios, '.inpValor:focus-within'), [
     'outline: 2px solid var(--fg)',
     'outline-offset: -1px',
   ]);
+  // nas metas a caixa é o campo da base, que acende a borda com o foco de dentro: sem contorno próprio por cima
+  assert.deepEqual(declaracoes(formularios, '.dinheiro:focus-within'), []);
 });
 
 test('metas: Valor total e Entrada com "R$" e máscara de caixa eletrônico; vazio fica vazio', () => {

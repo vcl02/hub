@@ -8,7 +8,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { carregar } from '../../tests/funcoes.mjs';
 import { rodarSw } from '../../tests/sw-falso.mjs';
-import { etiquetas, balanceamento, chavesDoCss } from '../../tests/leitores.mjs';
+import { rodarBootstrapApp } from '../../tests/bootstrap-falso.mjs';
+import {
+  etiquetas,
+  aninhamento,
+  balanceamento,
+  chavesDoCss,
+} from '../../tests/leitores.mjs';
 
 const RAIZ = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ler = (arquivo) => readFileSync(path.join(RAIZ, arquivo), 'utf8');
@@ -66,6 +72,12 @@ test('index.html: as tags de bloco fecham e o css tem chaves balanceadas', () =>
     assert.deepEqual([soltos, pendentes], [0, 0], `<${tag}> sem par`);
   }
 
+  assert.deepEqual(
+    aninhamento(html),
+    [],
+    'etiquetas fechadas fora da ordem em que abriram'
+  );
+
   const { abertas, fechadas, nuncaNegativo } = chavesDoCss(ler('css/agua.css'));
 
   assert.ok(abertas > 0 && nuncaNegativo);
@@ -105,6 +117,69 @@ test('ordem de carga: supabase do hub e módulo do Corpo antes dos módulos; o s
 
   for (const f of guardados)
     assert.ok(existsSync(path.join(RAIZ, f)), `sw.js guarda ${f}, que não existe`);
+});
+
+test('service worker: o install segura o evento (waitUntil) e guarda no cache agua-estatico cada arquivo da lista, e só eles', async () => {
+  const instalado = rodarSw(path.join(RAIZ, 'sw.js'));
+
+  await instalado.instalar(); // falha se o install não chamar waitUntil
+  assert.deepEqual(instalado.abertos, ['agua-estatico']);
+  assert.deepEqual(
+    [...instalado.guardados].sort(),
+    [...doApp('sw.js', ['ARQUIVOS_ESTATICOS']).ARQUIVOS_ESTATICOS].sort()
+  );
+});
+
+test('bootstrap: com sessão salva carrega o app (baixa a nuvem) em vez de ir ao login; sem sessão, dentro do hub vai ao login dele e fora usa o próprio', async () => {
+  const arquivo = path.join(RAIZ, 'js/bootstrap.js');
+
+  // A Água declara carregar e telaLogin no próprio bootstrap: o espião é o que elas chamam (baixar) e a tela de login (v-login)
+  const extras = (chamadas) => ({
+    DONO: 'dono',
+    $: (id) => ({
+      addEventListener: () => {},
+      set hidden(v) {
+        if (id === 'v-login' && v === false) chamadas.push(['telaLogin']);
+      },
+    }),
+    erroSync: '',
+    store: { get: () => null, set: () => {} },
+    K_LOCAL: () => 'local',
+    K_BASE: () => 'base',
+    preparar: (d) => d,
+    desenhar: () => {},
+    pintarNotificacoes: () => {},
+    pintarSync: () => {},
+    temPendente: () => false,
+    baixar: async () => {
+      chamadas.push(['baixar']);
+      throw new Error('sem nuvem no teste');
+    },
+  });
+
+  const comSessao = await rodarBootstrapApp(arquivo, {
+    pathname: '/hub/agua/',
+    sessao: { user: { id: 'dono' } },
+    extras,
+  });
+
+  assert.deepEqual(comSessao.chamadas, [['baixar']]);
+  assert.deepEqual(comSessao.destinos, []);
+  assert.deepEqual(comSessao.registros, [['sw.js', { updateViaCache: 'none' }]]);
+
+  const noHub = await rodarBootstrapApp(arquivo, {
+    pathname: '/hub/agua/',
+    search: '?dia=2026-10-18',
+    extras,
+  });
+
+  assert.deepEqual(noHub.destinos, ['../?volta=agua%2F%3Fdia%3D2026-10-18']);
+  assert.deepEqual(noHub.chamadas, []);
+
+  const fora = await rodarBootstrapApp(arquivo, { pathname: '/', extras });
+
+  assert.deepEqual(fora.destinos, []);
+  assert.deepEqual(fora.chamadas, [['telaLogin']]); // mostrou o login próprio, sem baixar nada
 });
 
 test('service worker: ao ativar apaga só os caches antigos da Água, nunca os dos outros apps; atende a página (também com ?dia, sem internet) e não atende outros domínios nem POST', async () => {

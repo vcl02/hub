@@ -151,6 +151,17 @@ const ESTADOS_FILTRO_CLIQUE = {
   ],
 };
 
+// Ligado, o filtro é o chip escolhido da base na cor do próprio estado: a cor entra como --cor
+// local (a base refaz o suave a partir dela); estado sem cor própria fica na cor do Fin.
+const COR_DO_FILTRO = {
+  vd: 'var(--ok)',
+  vm: 'var(--erro)',
+  am: 'var(--aviso)',
+  flagReserva: 'var(--reserva)',
+  flagComprometido: 'var(--comprometido)',
+  flagPraSempre: 'var(--pra-sempre)',
+};
+
 function botaoFiltroEstado(idTabela, chave, valorAtual) {
   const estado = ESTADOS_FILTRO_CLIQUE[chave].find(([valor]) => valor == valorAtual);
 
@@ -161,8 +172,15 @@ function botaoFiltroEstado(idTabela, chave, valorAtual) {
     '',
   ];
 
+  // O sinal do Valor é o mesmo botão de sinal compacto das linhas (± cinza, + verde, − vermelho),
+  // pra ficar na coluna deles; os demais são o chip compacto da base, ligado ou não.
+  const aparencia =
+    chave == 'sinal'
+      ? `class="bt-ic sinal compacto${!estado ? ' neutro' : valorAtual == '+' ? ' pos' : ''}"`
+      : `class="chip compacto${estado ? ' ativo' : ''}"${estado && cor ? ` style="--cor:${COR_DO_FILTRO[cor]}"` : ''}`;
+
   return (
-    `<button type=button class="filtroEstado${estado ? ' ligado' : ''}${cor ? ` ${cor}` : ''}" ` +
+    `<button type=button ${aparencia} aria-pressed="${!!estado}" ` +
     `data-filtro-estado="${idTabela}|${chave}" title="${titulo} (clique pra alternar)" aria-label="Filtro: ${titulo}" ` +
     `onclick="alternarFiltroEstado('${idTabela}','${chave}')">${texto}</button>`
   );
@@ -431,7 +449,7 @@ const celNome = (r) => {
       guardadoAte(r.periodoIdx) <= TOLERANCIA_FINANCEIRA;
 
   const badgeResgate = resgatouTudo
-    ? ' <span class=tagAviso title="O guardado acabou: o resgate foi limitado ao que havia guardado, e o que faltar fica negativo no saldo do ciclo">⚠ Resgatou tudo</span>'
+    ? ' <span class="selo aviso" title="O guardado acabou: o resgate foi limitado ao que havia guardado, e o que faltar fica negativo no saldo do ciclo">⚠ Resgatou tudo</span>'
     : '';
 
   // Só o nome é cortado com "…" quando não cabe; as marcas ficam sempre inteiras ao lado
@@ -443,7 +461,7 @@ const celNome = (r) => {
   // Atrasado: em aberto de um ciclo que já acabou, contando no ciclo de hoje até ser pago.
   const badgeAtrasado =
     r._atrasado || ehDebitoAtrasado(r)
-      ? ` <span class=tagAviso title="Venceu em ${escapeHtml(textoOuTraco(r.data && dataBR(r.data)))}, num ciclo que já acabou: conta no ciclo de hoje até ser pago">Atrasado</span>`
+      ? ` <span class="selo aviso" title="Venceu em ${escapeHtml(textoOuTraco(r.data && dataBR(r.data)))}, num ciclo que já acabou: conta no ciclo de hoje até ser pago">Atrasado</span>`
       : '';
 
   return `<span class=nomeLinha>${sim}${textoNome}${badgeFatura}${badgeResgate}${badgeAtrasado}</span>`;

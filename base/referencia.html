@@ -254,6 +254,80 @@
               ><button class="bt-ic perigo" aria-label="Apagar">×</button>
             </li>
           </ul>
+          <!-- O modal aqui fica no fluxo da página (static) só para ser visto; no módulo abre com showModal(). -->
+          <dialog class="modal" open style="position: static; margin: 0; width: auto">
+            <div class="view">
+              <div class="modal-topo">
+                <h2>Novo lançamento</h2>
+                <button class="bt-ic perigo" aria-label="Fechar">×</button>
+              </div>
+              <div class="linha">
+                <label class="bt-ic" title="Crédito"
+                  ><input type="checkbox" checked aria-label="Crédito" />▭</label
+                ><label class="bt-ic" title="Pago"
+                  ><input type="checkbox" aria-label="Pago" />✓</label
+                >
+              </div>
+              <div class="cartao">
+                <p class="grande">
+                  <b class="num">R$ 780</b><small>livre no cartão</small>
+                </p>
+              </div>
+              <input class="campo" placeholder="Nome" />
+              <select class="campo" aria-label="Frequência">
+                <option>Sem recorrência</option>
+                <option>Mensal</option>
+              </select>
+              <button class="btn primario">Salvar</button>
+            </div>
+          </dialog>
+          <!-- Peças acrescentadas para o Fin (só aditivas): lista suspensa, lista de texto, selos e chips com significado,
+           compactos, campo compacto e o botão de sinal. -->
+          <h3 class="sec">Valor e sugestões</h3>
+          <div class="linha" style="position: relative">
+            <input class="campo" value="Merc" aria-label="Nome" /><button
+              class="bt-ic sinal"
+              aria-label="Sinal"
+            >
+              −
+            </button>
+            <div class="lista suspensa" role="listbox" aria-label="Nomes existentes">
+              <button role="option"><span>Mercado</span><small>Alimentação</small></button
+              ><button role="option">
+                <span>Mercado Livre</span><small>Compras</small>
+              </button>
+            </div>
+          </div>
+          <div class="linha" style="margin-top: 84px">
+            <button class="bt-ic sinal compacto pos" aria-label="Sinal">+</button
+            ><button class="bt-ic sinal compacto" aria-label="Sinal">−</button
+            ><button class="bt-ic sinal compacto neutro" aria-label="Sinal">±</button>
+            <input class="campo compacto" placeholder="Meta" aria-label="Meta" />
+            <select class="campo compacto" aria-label="Forma">
+              <option>Cartão</option>
+            </select>
+          </div>
+          <h3 class="sec">Plano e filtros</h3>
+          <p class="linha" style="flex-wrap: wrap">
+            <span class="selo ok"><b>Cabe</b></span
+            ><span class="selo erro"><b>Não cabe</b></span
+            ><span class="selo aviso">Atrasado</span
+            ><button class="chip compacto aviso">Cabe em Mar/27</button
+            ><button class="chip compacto ok">Em 12x</button
+            ><button class="chip compacto erro">Sem limite</button
+            ><button class="chip compacto" aria-pressed="false">Todos</button
+            ><button class="chip compacto ativo" style="--cor: var(--ok)">Pago</button>
+          </p>
+          <span class="selo erro longo"
+            ><i>Comprometido</i> <b>R$ 9.400,00</b> contra uma falta de até R$ 3.000,00
+            nesta meta</span
+          >
+          <ul class="lista texto erro">
+            <li>Fatura de Out/26 sem lançamento de pagamento</li>
+          </ul>
+          <ul class="lista texto muted">
+            <li>Out/26: 3 aportes consolidados</li>
+          </ul>
         </div>
       </section>
     </div>

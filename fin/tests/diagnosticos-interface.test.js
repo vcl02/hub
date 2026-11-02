@@ -8,8 +8,11 @@ const test = require('node:test');
 const vm = require('node:vm');
 const { Linter } = require('eslint');
 const { declaracoes } = require('./helpers/regras-css');
+const { elementoPorId } = require('./helpers/html');
 
 const base = fs.readFileSync('css/base.css', 'utf8');
+const componentes = fs.readFileSync('../base/componentes.css', 'utf8');
+const html = fs.readFileSync('index.html', 'utf8');
 const estilos = fs.readFileSync('css/forms.css', 'utf8');
 const formulario = fs.readFileSync('js/form.js', 'utf8');
 
@@ -27,12 +30,18 @@ test('modal de diagnóstico: larguras e lista que quebra palavras longas (o comp
       modal
     );
 
+  // as listas são a lista de texto da base (que quebra palavras longas): inconsistências em vermelho, o resto em cinza
   assert.ok(
-    declaracoes(estilos, '.listaDiagnostico').includes('overflow-wrap: anywhere')
+    declaracoes(componentes, '.lista.texto li').includes('overflow-wrap: anywhere')
+  );
+  assert.deepEqual(
+    ['listaInconsistencias', 'listaAvisos', 'listaConsolidarTudo'].map(
+      (id) => elementoPorId(html, id, { obrigatorio: true }).attrs.class
+    ),
+    ['lista texto erro', 'lista texto muted', 'lista texto muted']
   );
   // o botão acende quando há inconsistência
   assert.ok(declaracoes(base, '#btDiagnostico.temInconsistencia::after').length > 0);
-  assert.ok(declaracoes(estilos, '#secaoAvisos .listaDiagnostico').length > 0);
 });
 
 // A análise do ESLint (no-alert) lê o código como árvore, sem texto solto: acha cada alert/confirm/prompt de verdade.

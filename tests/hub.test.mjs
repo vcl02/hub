@@ -826,6 +826,8 @@ test('base comum: tokens e componentes existem, a referência carrega os dois e 
     '.chip',
     '.selo',
     '.btn',
+    '.campo',
+    '.modal',
     '.toast',
   ])
     assert.ok(
@@ -856,46 +858,102 @@ test('base comum: tokens e componentes existem, a referência carrega os dois e 
   ); // o texto dos títulos da página de referência (um documento)
 });
 
-test('módulos na base comum só usam as cores da base (nada de --teal, --cyan, --green… que deixaram de existir)', () => {
-  const velhas = [
-    'teal',
-    'cyan',
-    'yellow',
-    'blue',
-    'green',
-    'red',
-    'purple',
-    'verde',
-    'on-teal',
-    'on-cyan',
-  ];
+// Os `var(--x)` de um texto, lidos por varredura de caracteres (sem regex): nome até o primeiro caractere que não é de token.
+const CARACTERES_DE_TOKEN = 'abcdefghijklmnopqrstuvwxyz0123456789-';
 
-  // CSS: nenhuma declaração usa var(--cor-antiga)
-  for (const app of ['agua', 'corpo', 'al', 'tr', 'fin'])
-    for (const n of readdirSync(path.join(RAIZ, app, 'css')))
-      for (const d of regras(ler(`${app}/css/${n}`)).flatMap((r) => r.declaracoes))
-        for (const velha of velhas)
-          assert.ok(!d.includes(`var(--${velha}`), `${app}/css/${n}: ${d}`);
+function usosDeVar(texto) {
+  const nomes = [];
+  let i = texto.indexOf('var(--');
 
-  for (const d of regras(ler('hub.css')).flatMap((r) => r.declaracoes))
-    for (const velha of velhas) assert.ok(!d.includes(`var(--${velha}`), `hub.css: ${d}`);
+  while (i >= 0) {
+    let j = i + 4;
 
-  // HTML e JS (cores escritas em estilos inline e em textos HTML dos scripts): só a ausência dos nomes antigos
-  const arquivos = ['index.html', 'hub.js'];
-
-  for (const app of ['agua', 'corpo', 'al', 'tr', 'fin']) {
-    arquivos.push(`${app}/index.html`);
-
-    for (const n of readdirSync(path.join(RAIZ, app, 'js')))
-      arquivos.push(`${app}/js/${n}`);
+    while (j < texto.length && CARACTERES_DE_TOKEN.includes(texto[j].toLowerCase())) j++;
+    nomes.push(texto.slice(i + 4, j));
+    i = texto.indexOf('var(--', j);
   }
 
-  for (const f of arquivos)
-    assert.doesNotMatch(
-      ler(f),
-      /var\(--(teal|cyan|yellow|blue|green|red|purple|verde|on-teal|on-cyan)[a-z-]*\)/,
-      f
-    );
+  return nomes;
+}
+
+// Propriedades personalizadas declaradas ("--x: valor") nas regras de um CSS
+const definidasEm = (css) =>
+  regras(css)
+    .flatMap((r) => r.declaracoes)
+    .filter((d) => d.startsWith('--'))
+    .map((d) => d.slice(0, d.indexOf(':')).trim());
+
+test('usosDeVar acha os var(--x) de um texto, com o fallback e sem confundir com outro nome', () => {
+  assert.deepEqual(
+    usosDeVar('color: var(--teal); background: var(--bg-1, #000) var(--on-teal)'),
+    ['--teal', '--bg-1', '--on-teal']
+  );
+  assert.deepEqual(usosDeVar('margin: 0; --x: 1'), []);
+});
+
+test('módulos na base comum só usam as cores da base: todo var(--x) do CSS, dos estilos inline e dos scripts está em base/tokens.css ou é do próprio módulo (nada de --teal, --cyan… que deixaram de existir)', () => {
+  const tokens = new Set(definidasEm(ler('base/tokens.css')));
+
+  assert.ok(tokens.size > 10, 'base/tokens.css sem tokens lidos');
+
+  const cssDe = (app) => [
+    ...readdirSync(path.join(RAIZ, app, 'css')).map((n) => `${app}/css/${n}`),
+  ];
+
+  const modulos = {
+    '': ['hub.css'],
+    ...Object.fromEntries(['agua', 'corpo', 'al', 'tr', 'fin'].map((a) => [a, cssDe(a)])),
+  };
+
+  // O que cada módulo define (a base inteira mais os próprios arquivos) e o que usa, declaração por declaração
+  const naoDefinidos = (css, aceitas) =>
+    regras(css)
+      .flatMap((r) => r.declaracoes)
+      .flatMap((d) =>
+        usosDeVar(d)
+          .filter((v) => !aceitas.has(v))
+          .map((v) => `${v} em "${d}"`)
+      );
+
+  const base = ['base/tokens.css', 'base/componentes.css'];
+
+  for (const [app, arquivos] of Object.entries(modulos)) {
+    const aceitas = new Set(tokens);
+
+    for (const f of [...base, ...arquivos])
+      for (const v of definidasEm(ler(f))) aceitas.add(v);
+
+    for (const f of [...base, ...arquivos])
+      assert.deepEqual(naoDefinidos(ler(f), aceitas), [], `${f} (${app || 'hub'})`);
+
+    // Estilos inline do index.html: as etiquetas lidas como elementos, atributo style
+    const pagina = ler(app ? `${app}/index.html` : 'index.html');
+
+    for (const e of etiquetas(pagina))
+      for (const v of usosDeVar(e.attrs.style || ''))
+        assert.ok(
+          aceitas.has(v),
+          `${app || 'hub'}/index.html: ${v} em style de <${e.tag}>`
+        );
+  }
+
+  // Scripts que montam HTML com style="… var(--x)": não há como rodar cada função de tela só para ler a saída (dependem de
+  // dados e DOM), então a conferência é sobre o texto do código (objeto que de fato contém o CSS escrito à mão), com a mesma
+  // varredura sem regex e o mesmo conjunto de tokens aceitos do módulo.
+  for (const app of ['', 'agua', 'corpo', 'al', 'tr', 'fin']) {
+    const aceitas = new Set(tokens);
+
+    for (const f of [...base, ...modulos[app]])
+      for (const v of definidasEm(ler(f))) aceitas.add(v);
+
+    const scripts = app
+      ? readdirSync(path.join(RAIZ, app, 'js')).map((n) => `${app}/js/${n}`)
+      : ['hub.js'];
+
+    for (const f of scripts)
+      for (const v of usosDeVar(ler(f)))
+        assert.ok(aceitas.has(v), `${f}: ${v} não está na base nem no módulo`);
+  }
 });
 
 test('cada app abre com os próprios arquivos: todo src e href relativo do index.html aponta para um arquivo que existe no disco (subpastas, ../)', () => {

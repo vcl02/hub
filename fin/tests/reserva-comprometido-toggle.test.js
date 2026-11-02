@@ -246,9 +246,16 @@ test('Comprometido marcado em laranja escuro e Reserva em amarelo claro, inclusi
   );
   // O clique troca a mesma classe da marca, nunca o verde de Pago.
   const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
+  const tons = declaracoes(fs.readFileSync('css/base.css', 'utf8'), ':root');
 
-  assert.ok(declaracoes(estilos, '.flagComprometido').includes('color: #d9741e'));
-  assert.ok(declaracoes(estilos, '.flagReserva').includes('color: #f6e58d'));
+  // a cor de cada marca é um tom do Fin (também o do filtro ligado), escrito uma vez só
+  assert.ok(
+    tons.includes('--comprometido: #d9741e') && tons.includes('--reserva: #f6e58d')
+  );
+  assert.ok(
+    declaracoes(estilos, '.flagComprometido').includes('color: var(--comprometido)')
+  );
+  assert.ok(declaracoes(estilos, '.flagReserva').includes('color: var(--reserva)'));
   assert.match(
     regras,
     /\*\*Comprometido em laranja escuro\*\* e \*\*Reserva em amarelo claro\*\*/

@@ -2,16 +2,15 @@
        GRÁFICOS
        ========================================================= */
 
+/* O .modal da base, mais largo e mais alto pro gráfico. */
 #modalGrafico {
   width: min(44rem, 94vw);
   max-height: 92vh;
-  padding: 1.5rem;
 }
 
 #modalComparativo {
   width: min(48rem, 94vw);
   max-height: 92vh;
-  padding: 1.5rem;
 }
 
 #modalGrafico canvas,
@@ -31,9 +30,6 @@
 
 #modalDetalheCel {
   width: min(28rem, 92vw);
-  max-height: 88vh;
-  padding: 1.3rem;
-  overflow-y: auto;
 }
 
 #modalDetalheCel .meta {

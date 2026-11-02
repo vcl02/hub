@@ -232,7 +232,7 @@ test('linha real: Nome, Valor (com o ±) e Prio editáveis; linha calculada: só
   const c = linha({ ...real, id: -3, _sid: 'x' });
 
   assert.doesNotMatch(c, /data-tog-(nome|valor|sinal)/);
-  assert.match(c, /class="sinalBt compacto" disabled title="Somente leitura"/);
+  assert.match(c, /class="bt-ic sinal compacto" disabled title="Somente leitura"/);
   assert.match(
     html('celPrio', { ...real, prio: 3 }),
     /^<span class="togPrio" data-tog-prio="5"[^>]*>3<\/span>$/

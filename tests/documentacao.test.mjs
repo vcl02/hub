@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { etiquetas } from './leitores.mjs';
 
 const RAIZ = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ler = (arquivo) => readFileSync(path.join(RAIZ, arquivo), 'utf8');
@@ -152,9 +153,14 @@ test('sem domínio próprio: nenhum CNAME e nenhum arquivo publicado com o domí
 test('Edge Functions com os tipos jsr em versão fixa, a mesma do supabase-js', () => {
   const versao = ler('supabase.js').match(/supabase-js\/(\d+\.\d+\.\d+)/)[1];
 
-  assert.match(
-    ler('fin/index.html'),
-    new RegExp(`@supabase/supabase-js@${versao.replaceAll('.', '\\.')}/`)
+  // O <script src> do Fin é lido como elemento: o src tem de ser o do supabase-js na versão exata
+  const srcsDoFin = etiquetas(ler('fin/index.html'))
+    .filter((e) => e.tag === 'script' && e.attrs.src)
+    .map((e) => e.attrs.src);
+
+  assert.ok(
+    srcsDoFin.some((src) => src.includes(`/@supabase/supabase-js@${versao}/`)),
+    `nenhum <script src> do supabase-js@${versao} em fin/index.html: ${srcsDoFin}`
   );
 
   for (const funcao of [

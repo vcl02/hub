@@ -4,6 +4,8 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { parse } = require('espree');
+const { etiquetas, textosDasEtiquetas } = require('./helpers/html');
 
 const fonte = fs.readFileSync('js/data-ui.js', 'utf8');
 const inicio = fonte.indexOf('function chaveCicloNaUrl(');
@@ -299,13 +301,150 @@ test('sem Sair no fin: a tela de login sempre guarda o ciclo pedido', () => {
     ['none', 'block']
   );
   assert.equal(tirou.length, 1);
-  // Sem botão de sair: nenhum script nem a página do Fin sabe encerrar a sessão (só o hub). Ausência de texto, não regex.
-  ['index.html', ...fs.readdirSync('js').map((f) => `js/${f}`)].forEach((arquivo) =>
-    assert.ok(!fs.readFileSync(arquivo, 'utf8').includes('signOut'), arquivo)
-  );
   assert.match(regrasMd, /Na tela de login a URL nunca mostra `\?ciclo`/);
   assert.match(
     regrasMd,
     /Não há botão de sair no fin: o login e o Sair ficam só na página inicial do hub/
+  );
+});
+
+// Sem botão de sair: nenhum script nem a página do Fin sabe encerrar a sessão (só o hub).
+// Os scripts são lidos pela árvore (espree), não por texto; a página, pelas etiquetas.
+function achaSignOut(codigo) {
+  const achados = [];
+
+  const visita = (no) => {
+    if (!no || typeof no.type !== 'string') return;
+
+    if (no.type === 'Identifier' && no.name === 'signOut') achados.push(no.type);
+
+    if (no.type === 'Literal' && no.value === 'signOut') achados.push(no.type);
+
+    if (no.type === 'TemplateElement' && no.value.cooked === 'signOut')
+      achados.push(no.type);
+
+    for (const filho of Object.values(no)) {
+      if (Array.isArray(filho)) filho.forEach(visita);
+      else if (filho && typeof filho === 'object') visita(filho);
+    }
+  };
+
+  visita(parse(codigo, { ecmaVersion: 'latest', sourceType: 'script' }));
+
+  return achados;
+}
+
+const PALAVRAS_DE_SAIR = ['sair', 'logout', 'signout'];
+
+function elementosDeSair(html) {
+  return etiquetas(html).filter(
+    (e) =>
+      ['button', 'a', 'input'].includes(e.tag) &&
+      Object.entries(e.attrs).some(
+        ([nome, valor]) =>
+          PALAVRAS_DE_SAIR.includes(nome.toLowerCase()) ||
+          String(valor)
+            .toLowerCase()
+            .split(' ')
+            .some(
+              (p) =>
+                PALAVRAS_DE_SAIR.includes(p) ||
+                p.endsWith('-sair') ||
+                p.startsWith('sair-')
+            )
+      )
+  );
+}
+
+// Texto visível: nenhum button, a, label ou summary diz "Sair", "Logout" ou "Sign out" (comparação por palavra).
+function textosDeSair(html) {
+  const achados = [];
+
+  for (const tag of ['button', 'a', 'label', 'summary']) {
+    for (const texto of textosDasEtiquetas(html, tag)) {
+      const palavras = texto.toLowerCase().split(' ');
+
+      const diz =
+        palavras.some((p) => ['sair', 'logout'].includes(p.split('.').join(''))) ||
+        palavras.some((p, i) => p === 'sign' && palavras[i + 1] === 'out');
+
+      if (diz) achados.push(`${tag}: ${texto}`);
+    }
+  }
+
+  return achados;
+}
+
+// Texto "Sair" solto (botão montado pelo JS) em Literal/TemplateElement: pela árvore, só a palavra, por varredura.
+function achaTextoSair(codigo) {
+  const achados = [];
+
+  const confere = (texto) => {
+    if (typeof texto !== 'string') return;
+
+    // Só o que fica fora das etiquetas (<b>Sair</b> vira 'sair')
+    const fora = texto
+      .toLowerCase()
+      .split('<')
+      .map((p, i) => (i === 0 ? p : p.slice(p.indexOf('>') + 1)))
+      .join(' ');
+
+    const palavras = fora.split(' ');
+
+    if (palavras.filter(Boolean).join(' ') === 'sair') achados.push(texto);
+  };
+
+  const visita = (no) => {
+    if (!no || typeof no.type !== 'string') return;
+
+    if (no.type === 'Literal') confere(no.value);
+
+    if (no.type === 'TemplateElement') confere(no.value.cooked);
+
+    for (const filho of Object.values(no)) {
+      if (Array.isArray(filho)) filho.forEach(visita);
+      else if (filho && typeof filho === 'object') visita(filho);
+    }
+  };
+
+  visita(parse(codigo, { ecmaVersion: 'latest', sourceType: 'script' }));
+
+  return achados;
+}
+
+test('controle positivo: o analisador acha signOut em código sintético e botão de sair em HTML', () => {
+  assert.equal(textosDeSair('<button><svg></svg> Sair</button>').length, 1);
+  assert.equal(textosDeSair('<a href="x">Sign out</a>').length, 1);
+  assert.equal(textosDeSair('<summary>Logout</summary>').length, 1);
+  assert.equal(textosDeSair('<button>Sairemos <!-- Sair --></button>').length, 0);
+  assert.equal(achaTextoSair("el.innerHTML = '<button>Sair</button>';").length, 1);
+  assert.equal(achaTextoSair('const x = `<b>ok</b>`;').length, 0);
+  assert.ok(achaSignOut('sb.auth.signOut();').length > 0);
+  assert.ok(achaSignOut('const { signOut } = sb.auth;').length > 0);
+  assert.ok(achaSignOut("sb.auth['signOut']();").length > 0);
+  assert.equal(achaSignOut('const x = 1; sb.auth.getSession();').length, 0);
+  assert.equal(elementosDeSair('<button id="sair">Sair</button>').length, 1);
+  assert.equal(elementosDeSair('<a href="x" class="btn sair">x</a>').length, 1);
+  assert.equal(elementosDeSair('<button id="entrar">Entrar</button>').length, 0);
+});
+
+test('o Fin não tem como encerrar a sessão: sem signOut nos scripts e sem botão de sair na página', () => {
+  const dirJs = process.env.FIN_JS_DIR || 'js';
+  const scripts = fs.readdirSync(dirJs).filter((f) => f.endsWith('.js'));
+
+  assert.ok(scripts.length > 5);
+  scripts.forEach((f) =>
+    assert.deepEqual(achaSignOut(fs.readFileSync(`${dirJs}/${f}`, 'utf8')), [], f)
+  );
+  assert.deepEqual(elementosDeSair(fs.readFileSync('index.html', 'utf8')), []);
+  assert.deepEqual(textosDeSair(fs.readFileSync('index.html', 'utf8')), []);
+});
+
+test('os textos que o JS monta não trazem "Sair" como texto de botão', () => {
+  const dirJs = process.env.FIN_JS_DIR || 'js';
+  const scripts = fs.readdirSync(dirJs).filter((f) => f.endsWith('.js'));
+
+  scripts.forEach((f) =>
+    assert.deepEqual(achaTextoSair(fs.readFileSync(`${dirJs}/${f}`, 'utf8')), [], f)
   );
 });

@@ -8,7 +8,7 @@ const vm = require('node:vm');
 const { carregarTela } = require('./helpers/tela-sem-navegador');
 const { trazer } = require('./helpers/trazer-funcao');
 const { elementoPorId } = require('./helpers/html');
-const { declaracoes, regras: regrasCss } = require('./helpers/regras-css');
+const { declaracoes } = require('./helpers/regras-css');
 
 const pagina = fs.readFileSync('index.html', 'utf8');
 const estado = fs.readFileSync('js/app-state.js', 'utf8');
@@ -292,18 +292,37 @@ test('tabela: filtro Sempre/Com fim, tooltip e toggle propagado com o rótulo Pr
   assert.deepEqual(toasts, ['Atualizado|Pra sempre marcado em 2 lançamentos "Spotify".']);
 });
 
-test('tabela: cor azul, largura da coluna e o filtro ligado que não pinta por cima da cor', () => {
-  assert.ok(declaracoes(estilos, '.flagPraSempre').includes('color: #6cb8f0'));
-  assert.ok(declaracoes(estilos, '.col-pra_sempre').includes('width: 7rem'));
+test('tabela: cor azul, largura da coluna e o filtro ligado na mesma cor da marca', () => {
   assert.ok(
-    regrasCss(estilos).some(
-      (r) =>
-        r.seletores.some(
-          (seletor) =>
-            seletor.startsWith('.filtroEstado.ligado:not(') &&
-            seletor.includes('.flagPraSempre')
-        ) && r.declaracoes.includes('color: var(--fg)')
+    declaracoes(fs.readFileSync('css/base.css', 'utf8'), ':root').includes(
+      '--pra-sempre: #6cb8f0'
     )
+  );
+  assert.ok(declaracoes(estilos, '.flagPraSempre').includes('color: var(--pra-sempre)'));
+  assert.ok(declaracoes(estilos, '.col-pra_sempre').includes('width: 7rem'));
+
+  // o filtro ligado é o chip escolhido da base com a cor da marca (--cor local), o desligado fica neutro
+  const tabelas = fs.readFileSync('js/tables.js', 'utf8');
+  const inicio = tabelas.indexOf('const ESTADOS_FILTRO_CLIQUE');
+
+  const fim =
+    tabelas.indexOf('\n}\n', tabelas.indexOf('function botaoFiltroEstado(')) + 3;
+
+  const ctx = vm.createContext({});
+
+  vm.runInContext(
+    `${tabelas.slice(inicio, fim)}\nglobalThis.botaoFiltroEstado = botaoFiltroEstado;`,
+    ctx
+  );
+  const { botaoFiltroEstado } = ctx;
+
+  assert.match(
+    botaoFiltroEstado('db', 'pra_sempre', 'S'),
+    /^<button type=button class="chip compacto ativo" style="--cor:var\(--pra-sempre\)" aria-pressed="true" /
+  );
+  assert.match(
+    botaoFiltroEstado('db', 'pra_sempre', undefined),
+    /^<button type=button class="chip compacto" aria-pressed="false" /
   );
 });
 

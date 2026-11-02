@@ -436,7 +436,7 @@ test('no Nome só o texto é cortado com "…"; as marcas ficam inteiras', async
 
   assert.match(
     html,
-    /^<span class=nomeLinha><span class=nomeTexto>Transf<\/span> <span class="tagFatura"[^>]*>[^<]*<\/span> <span class=tagAviso[^>]*>⚠ Resgatou tudo<\/span> <span class=tagAviso[^>]*>Atrasado<\/span><\/span>$/
+    /^<span class=nomeLinha><span class=nomeTexto>Transf<\/span> <span class="tagFatura"[^>]*>[^<]*<\/span> <span class="selo aviso"[^>]*>⚠ Resgatou tudo<\/span> <span class="selo aviso"[^>]*>Atrasado<\/span><\/span>$/
   );
 
   // só o texto do nome encolhe e ganha reticências; as marcas (filhas diretas) nunca encolhem

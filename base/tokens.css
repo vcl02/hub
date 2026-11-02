@@ -1,6 +1,7 @@
 /* Base do hub — tokens: as mesmas cores, textos, espaços, raios e tempos em todos os módulos (página inicial, Fin, Treino,
    Alimentação, Corpo e Água). Cada módulo só escolhe a cor de destaque (--cor) e o resto vem daqui.
-   Cores com significado, iguais em todos: verde = feito · vermelho = falhou/erro · azul = protegido · destaque = o módulo.
+   Cores com significado, iguais em todos: verde = feito · vermelho = falhou/erro · azul = protegido · laranja = atenção ·
+   destaque = o módulo.
    Hierarquia: números e títulos em condensada negrito · nomes em semi-negrito · rótulos em texto normal · horas e dicas em
    cinza. Tema escuro sempre, mesmo com o celular no modo claro. */
 :root {
@@ -20,6 +21,8 @@
   --erro-soft: #402624;
   --protegido: #6e9bff;
   --protegido-soft: #22304a;
+  --aviso: #f0a83a; /* atenção: perto do limite, ainda falta, simulação (laranja) */
+  --aviso-soft: #403326;
   /* Destaque do módulo: cada um troca só --cor (ex.: :root{--cor:#4CC9F0}); o suave e o texto sobre ele saem dela */
   --cor: #aab1b8;
   --cor-soft: color-mix(in srgb, var(--cor) 16%, var(--bg));

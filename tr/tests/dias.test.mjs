@@ -4,9 +4,41 @@
 // arquivos rodarem ao mesmo tempo (os gestos esperam a animação de verdade).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { prepararApp, app, abrirApp, arrastar } from './helpers/app.mjs';
+import { prepararApp, app, abrirApp, arrastar, inicioDoRelogio } from './helpers/app.mjs';
 
 prepararApp();
+
+test('o relógio de teste nunca nasce no dia anterior: entre 00:00 e 00:05 a margem encolhe para o início do mesmo dia', async () => {
+  const dia = (d) => new Date(d).getDate();
+
+  for (const h of [
+    '2026-10-22T00:02:00',
+    '2026-10-22T00:00:30',
+    '2026-10-22T00:04:59.999',
+  ]) {
+    const inicio = inicioDoRelogio(new Date(h));
+
+    assert.equal(dia(inicio), 22, h);
+    assert.ok(inicio <= new Date(h), h);
+  }
+
+  // longe da meia-noite, a margem cheia de 5 min
+  assert.equal(
+    new Date('2026-10-22T19:00:00') - inicioDoRelogio(new Date('2026-10-22T19:00:00')),
+    5 * 60 * 1000
+  );
+  assert.equal(
+    new Date('2026-10-22T00:05:00') - inicioDoRelogio(new Date('2026-10-22T00:05:00')),
+    5 * 60 * 1000
+  );
+
+  // e o app aberto às 00:02 mostra o dia pedido como hoje (sem ?dia = hoje, não o dia anterior)
+  const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-22T00:02:00') });
+
+  assert.equal(await pg.evaluate(() => hoje()), '2026-10-22');
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
 
 test('arrastar para nas pontas da lista', async () => {
   const { ctx, pg } = await abrirApp();

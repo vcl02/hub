@@ -278,7 +278,7 @@ test('cor do indicador: verde com folga, laranja a partir de 70%, vermelho acima
   assert.equal(contexto.cor(100), 'am');
   assert.equal(contexto.cor(100.1), 'vm');
   assert.ok(
-    estilos.length > 0 && declaracoes(estilos, '.am', '').includes('color: #f0a83a')
+    estilos.length > 0 && declaracoes(estilos, '.am', '').includes('color: var(--aviso)')
   );
   assert.match(regras, /verde até 70%, laranja de 70% a 100% e vermelho acima do teto/);
   assert.match(

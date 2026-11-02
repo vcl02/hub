@@ -134,7 +134,7 @@ test('modal de metas: Valor total e Entrada com "R$" fixo na caixa e a máscara 
 
   const caixa = (campo) =>
     new RegExp(
-      `<span class=dinheiro><span class=dinheiroPrefixo aria-hidden=true>R\\$</span><input data-campo=${campo} value="[\\d.,]+" inputmode=numeric data-dinheiro`
+      `<span class="dinheiro campo compacto"><span class=dinheiroPrefixo aria-hidden=true>R\\$</span><input data-campo=${campo} value="[\\d.,]+" inputmode=numeric data-dinheiro`
     );
 
   const parcelado = await modal('financiamento');

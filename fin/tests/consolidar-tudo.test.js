@@ -11,6 +11,7 @@ const vm = require('node:vm');
 const { extrairTrecho } = require('./helpers/carregar-funcoes');
 const { carregarTela } = require('./helpers/tela-sem-navegador');
 const { declaracoes } = require('./helpers/regras-css');
+const { elementoPorId } = require('./helpers/html');
 
 const formulario = fs.readFileSync('js/form.js', 'utf8');
 const inicializacao = fs.readFileSync('js/bootstrap.js', 'utf8');
@@ -447,17 +448,21 @@ test('tocar fora do modal do resultado o fecha; tocar dentro não', () => {
   assert.equal(modal.fechou, 1);
 });
 
-test('o fundo escurecido do modal do resultado é o mesmo do diagnóstico (CSS)', () => {
-  const css = fs.readFileSync('css/forms.css', 'utf8');
-
-  const escurecido = 'background: rgba(0, 0, 0, 0.68)';
+test('o fundo escurecido do modal do resultado é o mesmo do diagnóstico: os dois são o .modal da base (CSS)', () => {
+  const base = fs.readFileSync('../base/componentes.css', 'utf8');
 
   assert.ok(
-    declaracoes(css, 'dialog#modalConsolidarTudo::backdrop', '').includes(escurecido)
+    declaracoes(base, '.modal::backdrop', '').includes('background: rgba(0, 0, 0, 0.68)')
   );
-  assert.ok(
-    declaracoes(css, 'dialog#modalDiagnostico::backdrop', '').includes(escurecido)
-  );
+
+  for (const id of ['modalConsolidarTudo', 'modalDiagnostico']) {
+    const modal = elementoPorId(fs.readFileSync('index.html', 'utf8'), id, {
+      obrigatorio: true,
+    });
+
+    assert.equal(modal.tag, 'dialog', id);
+    assert.equal(modal.attrs.class, 'modal', id);
+  }
 });
 
 test('regra documentada em REGRAS.md', () => {

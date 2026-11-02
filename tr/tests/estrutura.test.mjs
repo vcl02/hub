@@ -8,8 +8,14 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { etiquetas, elementoPorId, balanceamento } from '../../tests/leitores.mjs';
+import {
+  etiquetas,
+  elementoPorId,
+  aninhamento,
+  balanceamento,
+} from '../../tests/leitores.mjs';
 import { carregarTr } from './helpers/js.mjs';
+import { rodarBootstrapApp } from '../../tests/bootstrap-falso.mjs';
 
 const RAIZ = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ler = (arquivo) => readFileSync(path.join(RAIZ, arquivo), 'utf8');
@@ -69,6 +75,12 @@ test('index.html: as tags de bloco abrem e fecham na mesma conta', () => {
 
     assert.deepEqual([soltos, pendentes], [0, 0], `<${tag}> sem par`);
   }
+
+  assert.deepEqual(
+    aninhamento(html),
+    [],
+    'etiquetas fechadas fora da ordem em que abriram'
+  );
 });
 
 test('cada stylesheet tem chaves balanceadas', () => {
@@ -215,6 +227,34 @@ test('service worker: ao ativar só apaga os caches "carga-" antigos (fin e a p�
   await sw.disparar('activate');
   assert.deepEqual(sw.apagados, ['carga-v21', 'carga-outro']);
   assert.equal(sw.estado.claims, 1);
+});
+
+test('bootstrap: sem sessão, dentro do hub vai ao login dele (sem telaLogin); fora do hub usa o login próprio; com sessão carrega o app', async () => {
+  const arquivo = path.join(RAIZ, 'js/bootstrap.js');
+
+  const noHub = await rodarBootstrapApp(arquivo, {
+    pathname: '/hub/tr/',
+    search: '?dia=2026-10-21',
+  });
+
+  assert.deepEqual(noHub.destinos, ['../?volta=tr%2F%3Fdia%3D2026-10-21']);
+  assert.deepEqual(noHub.chamadas, []);
+  assert.deepEqual(noHub.registros, [['sw.js', { updateViaCache: 'none' }]]);
+
+  const fora = await rodarBootstrapApp(arquivo, { pathname: '/' });
+
+  assert.deepEqual(fora.destinos, []);
+  assert.deepEqual(fora.chamadas, [['telaLogin']]);
+
+  const usuario = { id: 'u1' };
+
+  const logado = await rodarBootstrapApp(arquivo, {
+    pathname: '/hub/tr/',
+    sessao: { user: usuario },
+  });
+
+  assert.deepEqual(logado.chamadas, [['carregar', usuario]]);
+  assert.deepEqual(logado.destinos, []);
 });
 
 test('PWA: manifest válido, ícones existem e a página aponta para o manifest', () => {

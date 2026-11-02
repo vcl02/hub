@@ -40,6 +40,7 @@ test('o Nome é um campo de texto livre, obrigatório, com a lista de sugestões
 
   assert.equal(lista.tag, 'div');
   assert.equal(lista.attrs.role, 'listbox');
+  assert.equal(lista.attrs.class, 'lista suspensa'); // a lista suspensa da base, sem peça própria do Fin
 });
 
 // A lista de sugestões de verdade (renderizarSugestoesDeNome, de js/form.js) com a tela falsa: digitar filtra, tocar aplica.

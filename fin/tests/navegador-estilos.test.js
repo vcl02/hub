@@ -19,6 +19,7 @@ const CASOS = [
       'background-image': 'none',
       'border-top-style': 'dashed',
       opacity: '0.7',
+      'box-shadow': 'inset 0 2px 6px var(--shadow)',
     },
   ],
   [
@@ -40,26 +41,107 @@ const CASOS = [
     { 'border-left-color': '--line' },
   ],
   [
-    'nome do teto ligado fica verde, como os outros controles ativos',
-    '<span class="filtroTeto ativo" id=sondaTeto></span>',
+    'nome do teto ligado: o chip escolhido da base, verde como os outros controles ativos',
+    '<button class="chip compacto ativo" style="--cor:var(--ok)" id=sondaTeto></button>',
     '#sondaTeto',
-    { color: '--ok', 'background-color': '--ok-soft', 'border-top-color': '--ok' },
-  ],
-  [
-    'pílula da meta em laranja',
-    '<span class="mpParte am" id=sondaMeta></span>',
-    '#sondaMeta',
     {
-      color: '#F0A83A',
-      'background-color': '--laranja-soft',
-      'border-top-color': '#6A5330',
+      color: '--ok',
+      'background-color': 'color-mix(in srgb, var(--ok) 16%, var(--bg))',
+      'border-top-color': '--ok',
+      'font-size': '--t-xs',
     },
   ],
   [
-    'fechar do cadastro em vermelho suave',
+    'parte da meta em laranja: o selo de atenção da base',
+    '<span class="selo aviso" id=sondaMeta></span>',
+    '#sondaMeta',
+    { color: '--aviso', 'background-color': '--aviso-soft' },
+  ],
+  [
+    'opção da meta que sugere outro mês: o chip laranja da base',
+    '<button class="chip compacto aviso" id=sondaOpcao></button>',
+    '#sondaOpcao',
+    {
+      color: '--aviso',
+      'background-color': '--aviso-soft',
+      'border-top-color': '--aviso',
+    },
+  ],
+  [
+    'inconsistência do diagnóstico: item da lista de texto da base, em vermelho e no fundo dentro do modal',
+    '<div class=modal><ul class="lista texto erro"><li id=sondaItem></li></ul></div>',
+    '#sondaItem',
+    { color: '--erro', 'background-color': '--bg', 'overflow-wrap': 'anywhere' },
+  ],
+  [
+    'sugestões do Nome: a lista suspensa da base',
+    null,
+    '#nomesExistentes',
+    {
+      position: 'absolute',
+      'background-color': '--surface',
+      'border-top-color': '--line-strong',
+    },
+  ],
+  [
+    'sinal + da tabela: o botão de sinal compacto da base, verde',
+    '<button class="bt-ic sinal compacto pos" id=sondaSinal></button>',
+    '#sondaSinal',
+    { color: '--ok', width: '24px', height: '24px' },
+  ],
+  [
+    'campo da meta: o campo compacto da base',
+    '<input class="campo compacto" id=sondaMetaCampo>',
+    '#sondaMetaCampo',
+    { height: '36px', 'background-color': '--bg', 'font-size': '--t-sm' },
+  ],
+  [
+    'fechar do cadastro: o botão de ícone de perigo da base (ícone vermelho no fundo da superfície)',
     null,
     '#fechaNovo',
-    { 'background-color': '--erro-soft' },
+    {
+      color: '--erro',
+      'background-color': '--surface',
+      'border-top-color': '--line',
+    },
+  ],
+  [
+    'Salvar do cadastro: o botão primário da base, na cor do Fin',
+    null,
+    '#salvaNovo',
+    { color: '--on-cor', 'background-color': '--cor', 'min-height': '48px' },
+  ],
+  [
+    'campo do cadastro: o .campo da base',
+    null,
+    '#fNome',
+    {
+      'background-color': '--bg',
+      'border-top-color': '--line',
+      'border-top-left-radius': '--r',
+    },
+  ],
+  [
+    'Crédito marcado no cadastro: o botão de ícone ligado da base (cor do Fin)',
+    null,
+    'label:has(> #fCred)',
+    { color: '--cor', 'border-top-color': '--cor', 'background-color': '--cor-soft' },
+  ],
+  [
+    'Reserva desmarcado: o botão de ícone da base',
+    null,
+    'label:has(> #fReserva)',
+    { color: '--fg', 'background-color': '--surface', 'border-top-color': '--line' },
+  ],
+  [
+    'modal (o cadastro e os demais): o .modal da base',
+    null,
+    '#modalDiagnostico',
+    {
+      'background-color': '--surface',
+      'border-top-color': '--line',
+      'border-top-left-radius': '--r-lg',
+    },
   ],
   [
     'variação boa em verde',
@@ -101,9 +183,9 @@ const CASOS = [
     null,
     '#toggleSimulacao',
     {
-      color: '#F0A83A',
-      'background-color': '--laranja-soft',
-      'border-top-color': '#F0A83A',
+      color: '--aviso',
+      'background-color': '--aviso-soft',
+      'border-top-color': '--aviso',
     },
   ],
   [
@@ -119,10 +201,10 @@ const CASOS = [
     { color: '--erro' },
   ],
   [
-    'Selecionar tudo das categorias na cor do Fin',
-    '<button class=multiSelAll id=sondaTodas></button>',
-    '#sondaTodas',
-    { color: '--cor' },
+    'categoria do gráfico na pizza: o chip ligado da base, na cor do Fin',
+    '<button class=chip aria-pressed=true id=sondaCategoria></button>',
+    '#sondaCategoria',
+    { color: '--cor', 'background-color': '--cor-soft', 'border-top-color': '--cor' },
   ],
   [
     'aviso (o da base) quebra texto sem espaço (chave Pix) em vez de estourar a largura',
@@ -267,6 +349,35 @@ test('a base comum: cada peça com a cor que deve, a base antes do CSS do Fin, e
   await coresDeCadaPeca(pg);
   await baseAntesDoCss(pg);
   await botoesDoCabecalho(pg);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+// Cadastro aberto: a data (mais alta por natureza) com a altura do Hoje e dos outros campos; o ± na altura do Valor;
+// o seletor de Vezes desativado afundado (a sombra de dentro), já que o ativo tem o mesmo fundo
+test('cadastro: Data, Hoje, Nome, Valor e ± na mesma altura; Vezes desativado afundado', async () => {
+  const { ctx, pg, erros } = await abrirFin();
+
+  await pg.click('#abreNovo');
+
+  const r = await pg.evaluate(() => {
+    const altura = (s) =>
+      Math.round(document.querySelector(s).getBoundingClientRect().height);
+
+    const vezes = document.getElementById('fParcelas');
+
+    vezes.disabled = true;
+
+    return {
+      alturas: ['#fData', '#fDataHoje', '#fNome', '.moneyWrap', '#fSinal'].map(altura),
+      sinal: Math.round(document.getElementById('fSinal').getBoundingClientRect().width),
+      sombra: getComputedStyle(vezes).boxShadow,
+    };
+  });
+
+  assert.equal(new Set(r.alturas).size, 1, JSON.stringify(r.alturas));
+  assert.equal(r.sinal, 48);
+  assert.equal(r.sombra, 'rgba(0, 0, 0, 0.35) 0px 2px 6px 0px inset');
   assert.deepEqual(erros, []);
   await ctx.close();
 });

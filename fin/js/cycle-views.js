@@ -265,13 +265,14 @@ function vCiclo() {
             : '—';
 
         // O nome é um toggle: liga/desliga o filtro do teto nas tabelas (ver passaFiltroTeto
-        // em tables.js); o hover continua explicando o que entra no teto.
+        // em tables.js); o hover continua explicando o que entra no teto. É o chip compacto
+        // da base, que ligado fica escolhido em verde (--cor local), como os outros ativos.
         const descricao = DESCRICAO_LIMITE_CATEGORIA[limite.chave];
         const ativo = Estado.filtroTeto === limite.chave;
         const dica = `${descricao ? descricao + ' ' : ''}${ativo ? 'Clique para voltar a mostrar tudo.' : 'Clique para mostrar só o que conta neste teto.'}`;
 
         const rotulo =
-          `<button type=button class="rotuloComDica filtroTeto${ativo ? ' ativo' : ''}" data-filtro-teto="${limite.chave}" ` +
+          `<button type=button class="chip compacto${ativo ? ' ativo" style="--cor:var(--ok)' : ''}" data-filtro-teto="${limite.chave}" ` +
           `aria-pressed="${ativo}" title="${escapeHtml(dica)}" aria-label="Filtrar ${limite.rotulo}">${limite.rotulo}</button>`;
 
         // Em pedaços que nunca se partem: com a faixa estreita, o item quebra entre eles.
@@ -1309,7 +1310,7 @@ function htmlModalCartao(dados, cartao) {
       : 'Fatura';
 
   const linhaFechada = () =>
-    `<div class=cartaoLinha><span class=cartaoLinhaRotulo>Fechada</span>` +
+    `<div class="cartao cartaoLinha"><span class=cartaoLinhaRotulo>Fechada</span>` +
     `<span class=cartaoValor><small>Compras</small><b class="${corSoma(c.bruto)}">${brl(Math.abs(c.bruto))}</b></span>` +
     `<span class=cartaoValor><small>Pago/antecipado</small><b>${brl(c.futuro.antecipado)}</b></span>` +
     `<span class=cartaoValor><small>Restou</small><b class="${corSoma(c.futuro.fatura)}">${brl(Math.abs(c.futuro.fatura))}</b></span></div>`;
@@ -1319,12 +1320,12 @@ function htmlModalCartao(dados, cartao) {
     c.teto > 0 ? Math.max(0, Math.min(100, (x.usado / c.teto) * 100)) : 100;
 
   const linha = (rotulo, x) =>
-    `<div class=cartaoLinha>` +
+    `<div class="cartao cartaoLinha">` +
     `<span class=cartaoLinhaRotulo>${rotulo}</span>` +
     `<span class=cartaoValor><small>Fatura</small><b class="${corSoma(x.fatura)}">${brl(Math.abs(x.fatura))}</b></span>` +
     `<span class=cartaoValor><small>Usado</small><b>${brl(x.usado)}</b></span>` +
     `<span class=cartaoValor><small>Livre</small><b class="${corValor(x.livre)}">${brl(x.livre)}</b></span>` +
-    `<span class="cartaoUso${x.livre < -TOLERANCIA_FINANCEIRA ? ' acima' : ''}" title="${Math.round(uso(x))}% do teto"><span style="width:${uso(x).toFixed(1)}%"></span></span>` +
+    `<span class="barra cartaoUso${x.livre < -TOLERANCIA_FINANCEIRA ? ' acima' : ''}" title="${Math.round(uso(x))}% do teto"><span style="width:${uso(x).toFixed(1)}%"></span></span>` +
     (x.antecipado > TOLERANCIA_FINANCEIRA
       ? `<small class=cartaoAntecipado>Já antecipado ${brl(x.antecipado)}</small>`
       : '') +
@@ -1491,13 +1492,16 @@ const mesDoCiclo = (idx) => `${dataISO(Estado.ciclos[idx].ini).slice(0, 7)}-01`;
 const atributosUsarMes = (mes, rotulo) =>
   `type=button data-acao=usarMes data-mes=${mes} title="Mudar o mês da meta pra ${rotulo}"`;
 
-// Cada parte vira uma pílula: rótulo em itálico, valor em negrito e o mês apagado. A que
-// sugere outro mês (usarMes) é um botão que muda o mês da meta.
+// A cor de cada parte do plano no selo e no chip da base: verde (cabe), vermelho, laranja (atenção).
+const COR_DA_PARTE = { vd: 'ok', vm: 'erro', am: 'aviso' };
+
+// Cada parte vira um selo da base: rótulo em itálico, valor em negrito e o mês apagado. A que
+// sugere outro mês (usarMes) é um chip compacto da base, um botão que muda o mês da meta.
 function htmlDoPlanoDaMeta(p) {
   const { classe, dica, partes } = partesDoPlanoDaMeta(p);
 
   const parte = (x) =>
-    `<${x.usarMes ? `button ${atributosUsarMes(x.usarMes, x.valor)}` : 'span'} class="mpParte${x.usarMes ? ' mpOpcao' : ''}${x.situacao ? ' mpSituacao' : ''}${x.classe ? ` ${x.classe}` : ''}">` +
+    `<${x.usarMes ? `button ${atributosUsarMes(x.usarMes, x.valor)}` : 'span'} class="${x.usarMes ? 'chip compacto' : 'selo'}${x.classe ? ` ${COR_DA_PARTE[x.classe]}` : ''}">` +
     [
       x.rotulo && `<i>${escapeHtml(x.rotulo)}</i>`,
       x.valor && `<b>${escapeHtml(x.valor)}</b>`,
@@ -1599,10 +1603,10 @@ function htmlPraCaber(p) {
   const semCortar = [
     // Clicáveis: usam aquele número de vezes ou mudam o mês da meta.
     p.vezesQueCabe
-      ? `<button type=button class="mpParte mpOpcao" data-acao=usarVezes data-vezes=${p.vezesQueCabe} title="Usar ${p.vezesQueCabe}x"><i>Em</i> <b>${p.vezesQueCabe}x</b></button>`
+      ? `<button type=button class="chip compacto" data-acao=usarVezes data-vezes=${p.vezesQueCabe} title="Usar ${p.vezesQueCabe}x"><i>Em</i> <b>${p.vezesQueCabe}x</b></button>`
       : '',
     p.cabeEm != null
-      ? `<button ${atributosUsarMes(mesDoCiclo(p.cabeEm), nomePeriodoAbrev(Estado.ciclos[p.cabeEm]))} class="mpParte mpOpcao"><i>${{ avista: 'Em', cartao: 'Comprando em', financiamento: 'Começando em' }[p.forma]}</i> <b>${nomePeriodoAbrev(Estado.ciclos[p.cabeEm])}</b></button>`
+      ? `<button ${atributosUsarMes(mesDoCiclo(p.cabeEm), nomePeriodoAbrev(Estado.ciclos[p.cabeEm]))} class="chip compacto"><i>${{ avista: 'Em', cartao: 'Comprando em', financiamento: 'Começando em' }[p.forma]}</i> <b>${nomePeriodoAbrev(Estado.ciclos[p.cabeEm])}</b></button>`
       : '',
   ]
     .filter(Boolean)
@@ -1668,8 +1672,8 @@ function htmlPraCaber(p) {
     receitasDoModal
       .map(
         (r, i) =>
-          `<div class=pcReceita><div class=pcTopo><b>${r.titulo}</b> ` +
-          `<span class="mpParte ${r.cobre ? 'vd' : 'am'}">${r.cobre ? `<b>Cobre</b> <span class=mpDetalhe>+${brl(r.ganho)}</span>` : `<i>Ainda faltam</i> <b>${brl(r.resta)}</b>`}</span>` +
+          `<div class="cartao pcReceita"><div class=pcTopo><b>${r.titulo}</b> ` +
+          `<span class="selo ${r.cobre ? 'ok' : 'aviso'}">${r.cobre ? `<b>Cobre</b> <span class=mpDetalhe>+${brl(r.ganho)}</span>` : `<i>Ainda faltam</i> <b>${brl(r.resta)}</b>`}</span>` +
           `<button type=button class=bt-ic data-acao=simularReceita data-receita=${i} title="Simular (não salva)" aria-label="Simular ${r.titulo.toLowerCase()}">${ICONE_SIMULAR}</button></div>` +
           `<ul class=pcCortes>${itens(r)}</ul></div>`
       )
@@ -1702,7 +1706,7 @@ function htmlComprometidos(p) {
 
   return (
     topo +
-    `<div class="mpParte vm pcResumo"><i>Comprometido</i> <b>${brl(dados.total)}</b> <span class=mpDetalhe>contra uma falta de até ${brl(p.falta)} nesta meta</span></div>` +
+    `<div class="selo erro longo"><i>Comprometido</i> <b>${brl(dados.total)}</b> <span class=mpDetalhe>contra uma falta de até ${brl(p.falta)} nesta meta</span></div>` +
     `<div class=pmRolagem><table class=pmTabela><thead><tr><th>Nome</th><th>Categoria</th><th>Meses</th>` +
     `<th class=n>Por vez</th><th class=n>Total</th></tr></thead><tbody>${dados.grupos.map(linha).join('')}</tbody></table></div>`
   );
@@ -1727,7 +1731,7 @@ function htmlOpcoesDeVezes(p) {
   const opcao = (rotulo, x, dica) =>
     x.vezes === o.atual.vezes
       ? ''
-      : `<button type=button class="mpParte mpOpcao" data-acao=usarVezes data-vezes=${x.vezes} title="Usar ${x.vezes}x${dica}${sobra(x)}">` +
+      : `<button type=button class="chip compacto" data-acao=usarVezes data-vezes=${x.vezes} title="Usar ${x.vezes}x${dica}${sobra(x)}">` +
         `<i>${rotulo}</i> <b>${x.vezes}x ${brl(x.parcela)}</b> <span class=mpDetalhe>até ${ate(x.fim)}</span></button>`;
 
   // Por que é ideal: a Reserva completa até a última parcela, ou o ritmo da Liberdade mantido.
@@ -1737,7 +1741,7 @@ function htmlOpcoesDeVezes(p) {
       : ` (o mês típico sobra ${brl(x.alvo)}: mantém o aporte de hoje pra Liberdade)`;
 
   const nenhum = (rotulo, dica) =>
-    `<span class=mpParte title="${dica}"><i>${rotulo}</i> <span class=mpDetalhe>nenhum</span></span>`;
+    `<span class=selo title="${dica}"><i>${rotulo}</i> <span class=mpDetalhe>nenhum</span></span>`;
 
   const pilulas = [
     o.minimo
@@ -1786,7 +1790,7 @@ function htmlModalMetas(planos) {
   // Dinheiro: "R$" fixo na frente, na mesma caixa, e a máscara de caixa eletrônico do
   // cadastro (ver o input em interactions.js); vazio continua vazio.
   const dinheiro = (nome, valor) =>
-    `<span class=dinheiro><span class=dinheiroPrefixo aria-hidden=true>R$</span>` +
+    `<span class="dinheiro campo compacto"><span class=dinheiroPrefixo aria-hidden=true>R$</span>` +
     `${entrada(nome, emReais(valor), 'inputmode=numeric data-dinheiro placeholder="0,00"')}</span>`;
 
   // Todo campo com o rótulo em cima, na sua coluna da grade (mc*): alinha entre as metas.
@@ -1816,24 +1820,36 @@ function htmlModalMetas(planos) {
         : '';
 
     return (
-      `<div class=metaLinha data-meta=${m.id}>` +
+      `<div class="cartao metaLinha" data-meta=${m.id}>` +
       `<div class=metaGrade>` +
-      campo('mcNome', 'Nome', entrada('nome', m.nome, 'class=metaNome')) +
+      campo(
+        'mcNome',
+        'Nome',
+        entrada('nome', m.nome, 'class="campo compacto metaNome"')
+      ) +
       campo('mcValor', 'Valor total', dinheiro('valor', m.valor)) +
       (parcelado
         ? campo(
             'mcVezes',
             'Vezes',
-            `<span class=vezesCaixa>${entrada('parcelas', m.parcelas, `inputmode=numeric placeholder="${PARCELAS_PADRAO_METAS}"`)}` +
+            `<span class="vezesCaixa campo compacto">${entrada('parcelas', m.parcelas, `inputmode=numeric placeholder="${PARCELAS_PADRAO_METAS}"`)}` +
               `<span class=vezesFim>${fimDasVezes(m, m.parcelas)}</span></span>`
           )
         : '') +
       campo(
         'mcMes',
         rotuloDoMesDaMeta(m),
-        entrada('mes', m.mes ? m.mes.slice(0, 7) : '', 'type=month')
+        entrada(
+          'mes',
+          m.mes ? m.mes.slice(0, 7) : '',
+          'type=month class="campo compacto"'
+        )
       ) +
-      campo('mcForma', 'Forma', `<select data-campo=forma>${formas}</select>`) +
+      campo(
+        'mcForma',
+        'Forma',
+        `<select data-campo=forma class="campo compacto">${formas}</select>`
+      ) +
       `<span class=metaBotoes>${botao('mesAMes', ICONE_MES_A_MES, 'Mês a mês')}${botao('comprar', ICONE_COMPRAR, 'Comprar')}${botao('excluir', ICONE_EXCLUIR, 'Excluir')}</span>` +
       (parcelado
         ? campo(
@@ -1847,7 +1863,7 @@ function htmlModalMetas(planos) {
         ? campo(
             'mcMesEntrada',
             'Mês da entrada',
-            entrada('mes_entrada', mesEntrada, 'type=month')
+            entrada('mes_entrada', mesEntrada, 'type=month class="campo compacto"')
           )
         : '') +
       `</div>` +

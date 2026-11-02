@@ -194,7 +194,7 @@ test('o débito atrasado ganha a marca Atrasado no nome e a faixa Hoje avisa; o 
 
   assert.match(
     atrasado,
-    /Luz<\/span> <span class=tagAviso title="Venceu em 10\/10\/2026, num ciclo que já acabou[^"]*">Atrasado<\/span>/
+    /Luz<\/span> <span class="selo aviso" title="Venceu em 10\/10\/2026, num ciclo que já acabou[^"]*">Atrasado<\/span>/
   );
   assert.match(
     atrasado,
@@ -203,7 +203,7 @@ test('o débito atrasado ganha a marca Atrasado no nome e a faixa Hoje avisa; o 
 
   const pago = await desenharHoje(dadosDoCiclo(lancamento(3, 'Luz', '2026-10-10', -150)));
 
-  assert.doesNotMatch(pago, /tagAviso|resumoAtrasado/);
+  assert.doesNotMatch(pago, /selo aviso|resumoAtrasado/);
 });
 
 test('o aviso Atrasado não entra no alinhamento das faixas Hoje e Futuro (só uma delas o tem)', () => {

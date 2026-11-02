@@ -230,7 +230,7 @@ function atualizaFatura({ desativadaAntes, cred, modalAberto = true }) {
   const principal = {
     select: novoSelect(desativadaAntes),
     set innerHTML(html) {
-      this.select = novoSelect(html.startsWith('<select disabled'));
+      this.select = novoSelect(html.startsWith('<select class=campo disabled'));
     },
     querySelector(seletor) {
       return seletor === 'select:disabled' && !this.select.desativado
@@ -316,6 +316,6 @@ test('desativado tem visual próprio (mais escuro, tracejado, sem setinha) e a a
   ]);
   assert.match(
     regras,
-    /Campo desativado pelo modo fica mais escuro que o painel, com texto apagado, borda tracejada e sem a setinha/
+    /Campo desativado pelo modo fica mais escuro que o painel e afundado \(uma sombra por dentro, já que o ativo tem o mesmo fundo\), com texto apagado, borda tracejada e sem a setinha/
   );
 });

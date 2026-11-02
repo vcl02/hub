@@ -73,16 +73,18 @@ test('desenho do cartão com a fatura de Hoje e o vencimento; Hoje e Futuro com 
   assert.match(html, /<span class=cartaoLinhaRotulo>Futuro<\/span>/);
 });
 
-test('barra de uso: proporção do teto, cheia e vermelha acima do teto; antecipado só quando houver', () => {
+test('barra de uso (a .barra da base, cada faixa um .cartao da base): proporção do teto, cheia e vermelha acima do teto; antecipado só quando houver', () => {
   const html = carrega()(dados, 'mp');
+
+  assert.equal((html.match(/<div class="cartao cartaoLinha">/g) || []).length, 2); // Hoje e Futuro
 
   assert.match(
     html,
-    /<span class="cartaoUso" title="5% do teto"><span style="width:5\.0%">/
+    /<span class="barra cartaoUso" title="5% do teto"><span style="width:5\.0%">/
   );
   assert.match(
     html,
-    /<span class="cartaoUso acima" title="100% do teto"><span style="width:100\.0%">/
+    /<span class="barra cartaoUso acima" title="100% do teto"><span style="width:100\.0%">/
   );
   assert.equal((html.match(/Já antecipado/g) || []).length, 1);
   assert.match(html, /Já antecipado R\$ 30,00/);

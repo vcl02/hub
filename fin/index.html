@@ -436,48 +436,104 @@
       </div>
 
       <!-- Cadastro único para lançamento real e simulado; o JS decide se persiste no Supabase. -->
-      <dialog id="modalNovo">
+      <dialog id="modalNovo" class="modal">
         <form id="formNovo" method="dialog">
           <h2 id="tituloNovo" class="srOnly">Novo lançamento</h2>
 
           <div class="fmChecks">
-            <label class="fmChk fmChkIco" title="Crédito">
+            <label class="bt-ic" title="Crédito">
               <input type="checkbox" id="fCred" checked aria-label="Crédito" />
-              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
                 <rect x="3" y="5" width="18" height="14" rx="2" />
                 <path d="M3 10h18M7 15h3" />
               </svg>
             </label>
-            <label class="fmChk fmChkIco" title="Pago">
+            <label class="bt-ic" title="Pago">
               <input type="checkbox" id="fPago" checked aria-label="Pago" />
-              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
                 <circle cx="12" cy="12" r="8" />
                 <path d="m8.5 12 2.2 2.2 4.8-5" />
               </svg>
             </label>
-            <label class="fmChk fmChkIco" title="Reserva">
+            <label class="bt-ic" title="Reserva">
               <input type="checkbox" id="fReserva" aria-label="Reserva" />
-              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
                 <path d="M12 3 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-3Z" />
               </svg>
             </label>
-            <label class="fmChk fmChkIco" title="Comprometido">
+            <label class="bt-ic" title="Comprometido">
               <input type="checkbox" id="fComprometido" aria-label="Comprometido" />
-              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
                 <path d="M5 3v18" />
                 <path d="M5 4h11l-3 4 3 4H5" />
               </svg>
             </label>
             <!-- Pra sempre (fin.pra_sempre, migration 31): escondido pelo JS enquanto o banco não tem a coluna. -->
-            <label class="fmChk fmChkIco" title="Pra sempre" id="fPraSempreRotulo">
+            <label class="bt-ic" title="Pra sempre" id="fPraSempreRotulo">
               <input type="checkbox" id="fPraSempre" aria-label="Pra sempre" />
-              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
                 <path
                   d="M12 12c-2-2.7-3.6-4-5.5-4a4 4 0 0 0 0 8c1.9 0 3.5-1.3 5.5-4Zm0 0c2 2.7 3.6 4 5.5 4a4 4 0 0 0 0-8c-1.9 0-3.5 1.3-5.5 4Z"
                 />
               </svg>
             </label>
-            <button type="button" id="fechaNovo" title="Fechar" aria-label="Fechar">
+            <button
+              type="button"
+              id="fechaNovo"
+              class="bt-ic perigo"
+              title="Fechar"
+              aria-label="Fechar"
+            >
               <svg
                 viewBox="0 0 24 24"
                 width="17"
@@ -499,15 +555,16 @@
             <input
               type="text"
               id="fNome"
+              class="campo"
               required
               placeholder="Ex: Mercado, Aluguel…"
               autocomplete="off"
               aria-controls="nomesExistentes"
               aria-expanded="false"
             />
-            <!-- Combo dinâmico: o JavaScript filtra nomes distintos e sua categoria mais recente. -->
+            <!-- Combo dinâmico (a lista suspensa da base): o JavaScript filtra nomes distintos e sua categoria mais recente. -->
             <div
-              class="nomesExistentes"
+              class="lista suspensa"
               id="nomesExistentes"
               role="listbox"
               aria-label="Nomes existentes"
@@ -517,12 +574,12 @@
 
           <label class="fm"
             ><span>Data</span>
-            <div class="dataWrap">
-              <input type="date" id="fData" />
+            <div class="linha">
+              <input type="date" id="fData" class="campo" />
               <button
                 type="button"
                 id="fDataHoje"
-                class="btHojeMini"
+                class="btn"
                 title="Hoje"
                 aria-label="Definir data de hoje"
               >
@@ -534,7 +591,7 @@
           <label class="fm"
             ><span>Valor</span>
             <div class="moneyLinha">
-              <div class="moneyWrap">
+              <div class="moneyWrap campo">
                 <span class="dinheiroPrefixo" aria-hidden="true">R$</span>
                 <input
                   type="text"
@@ -547,7 +604,7 @@
               <button
                 type="button"
                 id="fSinal"
-                class="sinalBt"
+                class="bt-ic sinal"
                 title="Alternar entre saída e entrada"
                 aria-label="Alternar entre saída e entrada"
               >
@@ -561,7 +618,7 @@
               title="Com Frequência: informe só a 1ª ocorrência; o cadastro gera uma a cada período até 31/12/2032 (no Crédito, cada uma na fatura do mês). Sem Frequência: Vezes parcela."
               >Frequência</span
             >
-            <select id="fFreq">
+            <select id="fFreq" class="campo">
               <option value="">— Sem recorrência</option>
               <option value="Mensal">Mensal</option>
               <option value="Semanal">Semanal</option>
@@ -576,22 +633,28 @@
           <div class="parcelasLinha" id="parcelasLinha">
             <label class="fm" id="fParcelasWrap"
               ><span>Vezes</span>
-              <select id="fParcelas">
+              <select id="fParcelas" class="campo">
                 <option value="1">À vista</option>
               </select>
             </label>
-            <label
-              class="fmChk fmChkIco"
-              id="fDivideWrap"
-              title="Dividir a compra entre parcelas"
-            >
+            <label class="bt-ic" id="fDivideWrap" title="Dividir a compra entre parcelas">
               <input
                 type="checkbox"
                 id="fDivide"
                 checked
                 aria-label="Dividir a compra entre parcelas"
               />
-              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
                 <rect x="3" y="5" width="18" height="14" rx="2" />
                 <path d="M3 10h18M7 15h3M9 12l6 6m0-6-6 6" />
               </svg>
@@ -607,7 +670,7 @@
               <button
                 type="button"
                 id="fFaturasMais"
-                class="btHojeMini btMaisFaturas vazio"
+                class="btn btMaisFaturas vazio"
                 disabled
                 title="Escolher as faturas das outras parcelas"
                 aria-label="Escolher as faturas das outras parcelas"
@@ -627,6 +690,7 @@
             <input
               type="text"
               id="fCateg"
+              class="campo"
               list="fCategList"
               required
               autocomplete="off"
@@ -637,43 +701,75 @@
 
           <p class="erroNovo okNovo" id="erroNovo"></p>
 
-          <button type="button" id="salvaNovo" class="btPri">Salvar</button>
+          <button type="button" id="salvaNovo" class="btn primario">Salvar</button>
         </form>
       </dialog>
 
       <!-- Faturas das parcelas 2..N do cadastro (sem Frequência): o JavaScript cria os seletores.
          Fica depois de #modalNovo, mas a ordem das parcelas vem de data-fatura-parcela. -->
-      <dialog id="modalFaturasParcelas">
-        <div class="modalHead">
+      <dialog id="modalFaturasParcelas" class="modal">
+        <div class="modal-topo">
           <h2>Faturas das parcelas</h2>
-          <button type="button" id="fechaFaturasParcelas" aria-label="Fechar">×</button>
+          <button
+            type="button"
+            id="fechaFaturasParcelas"
+            class="bt-ic"
+            title="Fechar"
+            aria-label="Fechar"
+          >
+            ×
+          </button>
         </div>
         <div id="faturasPorParcela"></div>
       </dialog>
 
-      <dialog id="modalVisualizacao">
-        <div class="modalHead">
+      <dialog id="modalVisualizacao" class="modal">
+        <div class="modal-topo">
           <div class="modalTituloAcoes">
             <h2 id="tituloVisualizacao">Visualização</h2>
           </div>
-          <button type="button" id="fechaVisualizacao" aria-label="Fechar">×</button>
+          <button
+            type="button"
+            id="fechaVisualizacao"
+            class="bt-ic"
+            title="Fechar"
+            aria-label="Fechar"
+          >
+            ×
+          </button>
         </div>
         <div id="visualizacaoCorpo"></div>
       </dialog>
 
-      <dialog id="modalGrafico">
-        <div class="modalHead">
+      <dialog id="modalGrafico" class="modal">
+        <div class="modal-topo">
           <h2>Gastos do ciclo</h2>
-          <button type="button" id="fechaGrafico" aria-label="Fechar">×</button>
+          <button
+            type="button"
+            id="fechaGrafico"
+            class="bt-ic"
+            title="Fechar"
+            aria-label="Fechar"
+          >
+            ×
+          </button>
         </div>
         <p class="meta" id="graficoSubtitulo"></p>
         <div class="f" id="fExcluirCat">
           <span>Excluir categorias</span>
-          <div class="multiSel" id="excluirCatWrap">
-            <button type="button" id="excluirCatBtn" class="multiSelBtn">
+          <!-- Chips da base: o resumo abre e fecha as categorias, cada uma um chip ligado (na pizza) ou não
+             (montaExcluirCatDrop em charts.js). -->
+          <div id="excluirCatWrap">
+            <button
+              type="button"
+              id="excluirCatBtn"
+              class="chip"
+              aria-expanded="false"
+              aria-controls="excluirCatDrop"
+            >
               Nenhuma excluída
             </button>
-            <div class="multiSelDrop" id="excluirCatDrop"></div>
+            <div class="chips" id="excluirCatDrop" hidden></div>
           </div>
         </div>
         <div style="position: relative; height: 480px; margin-top: 1rem">
@@ -686,10 +782,18 @@
         <p class="empty" id="graficoVazio" hidden>Sem gastos neste ciclo.</p>
       </dialog>
 
-      <dialog id="modalComparativo">
-        <div class="modalHead">
+      <dialog id="modalComparativo" class="modal">
+        <div class="modal-topo">
           <h2>Ganho x Gasto x Aportado</h2>
-          <button type="button" id="fechaComparativo" aria-label="Fechar">×</button>
+          <button
+            type="button"
+            id="fechaComparativo"
+            class="bt-ic"
+            title="Fechar"
+            aria-label="Fechar"
+          >
+            ×
+          </button>
         </div>
         <div style="position: relative; height: 420px; margin-top: 0.6rem">
           <canvas id="canvasEvolucao" role="img" aria-label="Evolução mensal"></canvas>
@@ -700,7 +804,7 @@
          cycle-views.js preenche #corpoCartao a cada abertura e a cada redesenho com ele aberto. -->
       <!-- Sem botão de fechar: fecha com Esc ou tocando fora do cartão. O foco ao abrir vai pro
          próprio modal (tabindex -1, ver interactions.js), não pro campo Aprovado. -->
-      <dialog id="modalCartao" tabindex="-1">
+      <dialog id="modalCartao" class="modal" tabindex="-1">
         <h2 id="tituloCartao" class="srOnly">Cartão</h2>
         <div id="corpoCartao"></div>
       </dialog>
@@ -708,7 +812,7 @@
       <!-- Metas: lista editável na própria linha e o plano calculado de cada uma (htmlModalMetas
          em cycle-views.js, refeito a cada desenho com o modal aberto; handlers em
          interactions.js). Fecha com Esc ou tocando fora, como o modal do cartão. -->
-      <dialog id="modalMetas" tabindex="-1">
+      <dialog id="modalMetas" class="modal" tabindex="-1">
         <h2 class="srOnly">Metas</h2>
         <div id="corpoMetas"></div>
       </dialog>
@@ -716,37 +820,45 @@
       <!-- Mês a mês do plano de uma meta: preenchido por htmlDetalheDoPlano (cycle-views.js) pelo
          botão da meta e refeito a cada desenho com o modal aberto (interactions.js). Fecha
          com Esc ou tocando fora. -->
-      <dialog id="modalPlanoMeta" tabindex="-1">
+      <dialog id="modalPlanoMeta" class="modal" tabindex="-1">
         <div id="corpoPlanoMeta"></div>
       </dialog>
 
       <!-- Comprometidos até a falta de uma meta: preenchido por htmlComprometidos (cycle-views.js)
          pelo aviso do "Pra caber" no Mês a mês. Fecha com Esc ou tocando fora. -->
-      <dialog id="modalComprometidos" tabindex="-1">
+      <dialog id="modalComprometidos" class="modal" tabindex="-1">
         <div id="corpoComprometidos"></div>
       </dialog>
 
-      <dialog id="modalDetalheCel">
-        <div class="modalHead">
+      <dialog id="modalDetalheCel" class="modal">
+        <div class="modal-topo">
           <h2 id="tituloDetalheCel">Detalhamento</h2>
-          <button type="button" id="fechaDetalheCel" aria-label="Fechar">×</button>
+          <button
+            type="button"
+            id="fechaDetalheCel"
+            class="bt-ic"
+            title="Fechar"
+            aria-label="Fechar"
+          >
+            ×
+          </button>
         </div>
         <p class="meta" id="subDetalheCel"></p>
         <div class="rolagem" id="corpoDetalheCel"></div>
       </dialog>
       <!-- Diagnósticos de carga: inconsistências e avisos de revisão nunca corrigem dados automaticamente. -->
-      <dialog id="modalDiagnostico">
-        <div class="modalHead">
+      <dialog id="modalDiagnostico" class="modal">
+        <div class="modal-topo">
           <h2 id="tituloDiagnostico">Problema identificado</h2>
         </div>
         <p class="meta" id="textoDiagnostico"></p>
         <section class="secaoDiagnostico" id="secaoInconsistencias">
           <h3>Inconsistências</h3>
-          <ul class="listaDiagnostico" id="listaInconsistencias"></ul>
+          <ul class="lista texto erro" id="listaInconsistencias"></ul>
         </section>
         <section class="secaoDiagnostico" id="secaoAvisos">
           <h3>Avisos</h3>
-          <ul class="listaDiagnostico" id="listaAvisos"></ul>
+          <ul class="lista texto muted" id="listaAvisos"></ul>
         </section>
       </dialog>
 
@@ -754,12 +866,12 @@
          sozinho ao fim da varredura, pra listar ciclo a ciclo o que foi materializado,
          consolidado ou corrigido — a maioria dos ciclos varridos nem aparece na tela. Só
          leitura do que já foi gravado, não altera nada por si só. -->
-      <dialog id="modalConsolidarTudo">
-        <div class="modalHead">
+      <dialog id="modalConsolidarTudo" class="modal">
+        <div class="modal-topo">
           <h2>Consolidar tudo</h2>
         </div>
         <p class="meta" id="textoConsolidarTudo"></p>
-        <ul class="listaDiagnostico" id="listaConsolidarTudo"></ul>
+        <ul class="lista texto muted" id="listaConsolidarTudo"></ul>
       </dialog>
 
       <!-- Aviso da base comum (um só, embaixo no meio): mostrarToast em data-ui.js. -->

@@ -183,6 +183,22 @@ export async function fakeSupabase(
 
 // Fontes do Google são bloqueadas para o teste não depender de internet
 // agua: false (padrão) já marca a garrafinha do dia como pega, para a tela cheia não cobrir os toques dos testes
+// O relógio nasce MARGEM antes do pedido e é pausado no horário pedido depois que a tela abriu (pauseAt só anda para a
+// frente); a margem cobre o tempo real da carga e do login, mesmo com a máquina cheia.
+const MARGEM = 5 * 60 * 1000;
+
+// A margem nunca atravessa a meia-noite: entre 00:00 e 00:05 o relógio nasce no início do mesmo dia (margem = o que o horário
+// pedido permite), senão o app abriria no dia anterior. Com margem curta o pauseAt estoura (alto) se a carga passar dela.
+export function inicioDoRelogio(relogio) {
+  const pedido = new Date(relogio);
+
+  const desdeMeiaNoite =
+    ((pedido.getHours() * 60 + pedido.getMinutes()) * 60 + pedido.getSeconds()) * 1000 +
+    pedido.getMilliseconds();
+
+  return new Date(pedido.getTime() - Math.min(MARGEM, desdeMeiaNoite));
+}
+
 export async function abrirApp({
   busca = '',
   relogio,
@@ -204,7 +220,7 @@ export async function abrirApp({
 
   pg.on('pageerror', (e) => erros.push(e.message));
 
-  if (relogio) await pg.clock.install({ time: relogio });
+  if (relogio) await pg.clock.install({ time: inicioDoRelogio(relogio) });
   await pg.goto(app.url + busca); // busca: ?dia=… (aberto pela página inicial num dia anterior)
 
   if (antes) {
@@ -221,10 +237,28 @@ export async function abrirApp({
 
   if (!agua) await pg.evaluate(() => store.set(K_AGUA, hoje()));
 
+  // O relógio falso do Playwright segue correndo em tempo real depois do install: com a máquina carregada (vários Chromium
+  // em paralelo), os segundos que passam entre um toque e o fastForward seguinte somavam ao cronômetro (181000 em vez de
+  // 180000, "6:01" em vez de "6:00"). Pausado, só andam os fastForward/runFor do próprio teste.
+  if (relogio) {
+    await pg.clock.pauseAt(new Date(relogio));
+    pausados.add(pg);
+  }
+
   return { ctx, pg, erros, nuvem };
 }
 
-export const sincronizado = (pg) => pg.waitForFunction(() => !temPendente() && !enviando);
+// Com o relógio pausado, o envio (setTimeout de 800 ms na página, js/banco.js) só sai se o teste andar o relógio: faz isso aqui.
+// O 800 é o do app, copiado (não há constante exposta; produção intocada): se o app mudar o prazo para mais de 800, o
+// runFor não dispara o envio e o waitForFunction seguinte estoura por tempo (alto, não silencioso).
+const pausados = new WeakSet();
+
+export async function sincronizado(pg) {
+  if (pausados.has(pg) && (await pg.evaluate(() => temPendente())))
+    await pg.clock.runFor(800);
+  await pg.waitForFunction(() => !temPendente() && !enviando);
+}
+
 export async function arrastar(ctx, pg, x1, x2, y = 600) {
   const cdp = await ctx.newCDPSession(pg);
 

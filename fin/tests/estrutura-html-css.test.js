@@ -3,7 +3,7 @@ const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
-const { balanceamento } = require('./helpers/html');
+const { aninhamento, balanceamento } = require('./helpers/html');
 
 const pagina = fs.readFileSync('index.html', 'utf8');
 const estilos = fs.readdirSync('css').filter((arquivo) => arquivo.endsWith('.css'));
@@ -40,6 +40,11 @@ test('as divs do HTML fecham na ordem em que foram abertas', () => {
 
   assert.equal(soltos, 0, `Há ${soltos} </div> sem abertura.`);
   assert.equal(pendentes, 0, `Há ${pendentes} <div> sem fechamento.`);
+  assert.deepEqual(
+    aninhamento(pagina),
+    [],
+    'Etiquetas fechadas fora da ordem em que abriram.'
+  );
 });
 
 test('todos os stylesheets têm chaves CSS balanceadas', () => {

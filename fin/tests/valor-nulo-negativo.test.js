@@ -83,8 +83,8 @@ test('célula editável: sem valor (null) ou zero de verdade mostram "−" verme
     const html = celValorEditavel(r);
 
     assert.match(html, /class="n vm"/);
-    assert.match(html, /class="sinalBt compacto"/); // sem ' pos': fica vermelho/negativo
-    assert.doesNotMatch(html, /class="sinalBt compacto pos"/);
+    assert.match(html, /class="bt-ic sinal compacto"/); // sem ' pos': fica vermelho/negativo
+    assert.doesNotMatch(html, /class="bt-ic sinal compacto pos"/);
     assert.match(html, />−</);
   }
 });
@@ -93,7 +93,7 @@ test('célula editável: valor positivo de verdade continua mostrando "+" verde 
   const { celValorEditavel } = carregaCelulasDeValor();
   const html = celValorEditavel({ id: 7, valor: 50, v: 50 });
 
-  assert.match(html, /class="sinalBt compacto pos"/);
+  assert.match(html, /class="bt-ic sinal compacto pos"/);
   assert.match(html, />\+</);
 });
 
@@ -129,7 +129,7 @@ test('o detalhamento de categoria do gráfico mostra o valor pela célula não e
   assert.match(linhas[0], /Aluguel.*class="n vm"/); // ordenado por nome
   assert.match(linhas[1], /Bico.*class="n vd"/);
   assert.match(linhas[2], /Sem valor.*class="n vm"/);
-  assert.doesNotMatch(linhas.join(''), /sinalBt/); // só leitura: sem botão de sinal
+  assert.doesNotMatch(linhas.join(''), /bt-ic sinal/); // só leitura: sem botão de sinal
 });
 
 // Extrai só a decisão de sinal (sem tocar DOM/Estado real) do handler de clique no Valor:
@@ -179,7 +179,7 @@ test('linha calculada mostra o botão de sinal desabilitado e o valor sem ediç�
 
   assert.match(
     fatura,
-    /^<td class="n vm"><span class=valorLinha><button type=button class="sinalBt compacto" disabled title="Somente leitura" aria-label="Sinal \(somente leitura\)">−<\/button><span class=valorFixo>/
+    /^<td class="n vm"><span class=valorLinha><button type=button class="bt-ic sinal compacto" disabled title="Somente leitura" aria-label="Sinal \(somente leitura\)">−<\/button><span class=valorFixo>/
   );
   assert.doesNotMatch(fatura, /data-tog-/);
 
@@ -192,7 +192,7 @@ test('linha calculada mostra o botão de sinal desabilitado e o valor sem ediç�
 
   assert.match(
     sugerido,
-    /^<td class="n vd">.*class="sinalBt compacto pos" disabled[^>]*>\+<\/button>/
+    /^<td class="n vd">.*class="bt-ic sinal compacto pos" disabled[^>]*>\+<\/button>/
   );
   assert.doesNotMatch(sugerido, /data-tog-/);
 });

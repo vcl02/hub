@@ -144,8 +144,35 @@ test('cadastro compacto usa ícones e defaults de crédito e pago', () => {
   for (const frase of ['À vista (1x)', 'Separe mais de uma categoria por vírgula'])
     assert.ok(!mencionaNoHtml(pagina, frase), frase);
   const estilosForm = fs.readFileSync('css/forms.css', 'utf8');
+  const base = fs.readFileSync('../base/componentes.css', 'utf8');
 
-  assert.ok(temSeletor(estilosForm, '.fmChkIco'));
+  // cada ícone é o botão de ícone que liga e desliga da base (<label class="bt-ic"> com a caixa de marcar dentro)
+  for (const id of [
+    'fCred',
+    'fPago',
+    'fReserva',
+    'fComprometido',
+    'fPraSempre',
+    'fDivide',
+  ])
+    assert.deepEqual(noPorId(id).pai.classes, ['bt-ic'], id);
+  assert.deepEqual(declaracoes(base, '.bt-ic:has(> input:checked)'), [
+    'border-color: var(--cor)',
+    'background: var(--cor-soft)',
+    'color: var(--cor)',
+  ]);
+  assert.ok(!temSeletor(estilosForm, '.fmChkIco') && !temSeletor(estilosForm, '.fmChk'));
+
+  // campos e botões do cadastro são os da base: .campo (o Valor: a caixa com o "R$"), .btn e .btn.primario
+  for (const id of ['fNome', 'fData', 'fFreq', 'fParcelas', 'fCateg'])
+    assert.deepEqual(noPorId(id).classes, ['campo'], id);
+  assert.deepEqual(noPorId('fValor').pai.classes, ['moneyWrap', 'campo']);
+  assert.deepEqual(noPorId('salvaNovo').classes, ['btn', 'primario']);
+  assert.deepEqual(noPorId('fDataHoje').classes, ['btn']);
+  assert.deepEqual(noPorId('fFaturasMais').classes, ['btn', 'btMaisFaturas', 'vazio']);
+
+  for (const seletor of ['.btPri', '.btHojeMini', '.dataWrap', '.modalHead'])
+    assert.ok(!temSeletor(estilosForm, seletor), seletor);
   // os 4 ícones (Crédito/Pago/Reserva/Comprometido) + o fechar ficam numa linha só (flex),
   // não mais numa grade 2x2 (ver teste do cabeçalho pra essa regra em detalhe).
   assert.ok(declaracoes(estilosForm, '.fmChecks').includes('display: flex'));
@@ -173,8 +200,9 @@ test('título do cadastro é só pra leitor de tela (.srOnly); Crédito/Pago/Res
     checks.filhos.map((n) => n.attrs.title || n.attrs.id),
     ['Crédito', 'Pago', 'Reserva', 'Comprometido', 'Pra sempre', 'Fechar']
   );
-  assert.ok(checks.filhos[0].classes.includes('fmChk'));
+  assert.deepEqual(checks.filhos[0].classes, ['bt-ic']);
   assert.equal(checks.filhos.at(-1).tag, 'button');
+  assert.deepEqual(checks.filhos.at(-1).classes, ['bt-ic', 'perigo']); // o fechar vermelho da base
   // o título e os ícones não ficam dentro de um .modalTituloAcoes (o do modal de visualização)
   assert.ok(!cadastro.filhos.some((n) => n.classes.includes('modalTituloAcoes')));
   assert.ok(!noPorId('fCred').pai.pai.classes.includes('modalTituloAcoes'));
@@ -968,7 +996,7 @@ test('Simular é sempre laranja, como o Recarregar é sempre verde; ligado fica 
   for (const seletor of ['#toggleSimulacao:hover', '#toggleSimulacao.ativo'])
     assert.deepEqual(
       declaracoes(base, seletor).map((d) => d.toLowerCase()),
-      ['color: #10231a', 'background: #f0a83a'],
+      ['color: #10231a', 'background: var(--aviso)'],
       seletor
     );
   assert.match(

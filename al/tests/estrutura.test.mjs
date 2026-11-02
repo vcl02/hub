@@ -4,7 +4,12 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { etiquetas, balanceamento, chavesDoCss } from '../../tests/leitores.mjs';
+import {
+  etiquetas,
+  aninhamento,
+  balanceamento,
+  chavesDoCss,
+} from '../../tests/leitores.mjs';
 import { carregar } from '../../tests/funcoes.mjs';
 import { rodarServiceWorker, rodarBootstrap } from './helpers/rodar.mjs';
 
@@ -67,6 +72,12 @@ test('index.html: as tags de bloco abrem e fecham na mesma conta e o css tem cha
     assert.equal(soltos, 0, `</${tag}> sem abertura`);
     assert.equal(pendentes, 0, `<${tag}> sem fechamento`);
   }
+
+  assert.deepEqual(
+    aninhamento(html),
+    [],
+    'etiquetas fechadas fora da ordem em que abriram'
+  );
 
   const { abertas, fechadas, nuncaNegativo } = chavesDoCss(ler('css/al.css'));
 

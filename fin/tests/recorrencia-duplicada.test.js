@@ -611,9 +611,9 @@ test('estilos: mesma cor âmbar do aviso "*" de Comparar, em botão circular em 
   const botao = declaracoes(estilos, '.corrigeDupData');
   const aviso = declaracoes(estilos, '.avisoDup');
 
-  assert.ok(botao.includes('border: 1px solid #f0a83a'));
+  assert.ok(botao.includes('border: 1px solid var(--aviso)'));
   assert.ok(botao.includes('border-radius: 50%'));
-  assert.ok(aviso.includes('color: #f0a83a')); // a mesma cor do asterisco de Comparar
+  assert.ok(aviso.includes('color: var(--aviso)')); // a mesma cor do asterisco de Comparar (o laranja de atenção da base)
 });
 
 test('regra documentada em REGRAS.md', () => {

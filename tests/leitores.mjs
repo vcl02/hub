@@ -7,7 +7,14 @@ const exigir = createRequire(import.meta.url);
 const html = exigir('../fin/tests/helpers/html.js');
 const css = exigir('../fin/tests/helpers/regras-css.js');
 
-export const { etiquetas, elementoPorId, textoDaEtiqueta, balanceamento } = html;
+export const {
+  etiquetas,
+  elementoPorId,
+  textoDaEtiqueta,
+  textosDasEtiquetas,
+  balanceamento,
+  aninhamento,
+} = html;
 export const { declaracoes, regras } = css;
 
 // Chaves do CSS fora dos comentários: { abertas, fechadas, aberta } (aberta = a profundidade nunca ficou negativa). Sem regex:

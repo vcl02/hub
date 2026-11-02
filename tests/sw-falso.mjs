@@ -19,9 +19,16 @@ export function rodarSw(
 ) {
   const ouvintes = {},
     apagados = [],
-    pedidos = [];
+    pedidos = [],
+    guardados = [],
+    abertos = [];
 
-  const cache = { put: async () => {}, match: async () => undefined },
+  const cache = {
+      put: async (chave) => {
+        guardados.push(chave);
+      },
+      match: async () => undefined,
+    },
     local = origem + pasta + arquivo.split(/[\\/]/).slice(-1)[0];
 
   const contexto = {
@@ -36,7 +43,11 @@ export function rodarSw(
 
         return true;
       },
-      open: async () => cache,
+      open: async (nome) => {
+        abertos.push(nome);
+
+        return cache;
+      },
       match: async (chave) => cacheado[typeof chave === 'string' ? chave : chave.url],
     },
     fetch: async (pedido) => {
@@ -77,6 +88,9 @@ export function rodarSw(
   return {
     apagados,
     pedidos,
+    guardados, // o que o install pôs no cache (chaves) e o nome dos caches abertos
+    abertos,
+    instalar: () => disparar('install', {}),
     ativar: () => disparar('activate', {}),
     // O worker atende o pedido (respondWith) ou deixa passar para a rede? Devolve também o que respondeu.
     async atende(url, { metodo = 'GET', modo = 'no-cors' } = {}) {
