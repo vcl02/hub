@@ -1,6 +1,7 @@
 // Tela do dia no navegador: saldo (gasto com basal, treino e caminhada), IA e cache das comidas, prévia, lista, dias e cópia local.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { andarAte } from '../../tests/relogio.mjs';
 import {
   prepararApp,
   abrirApp,
@@ -47,6 +48,35 @@ const descrever = async (pg, frase) => {
   await pg.fill('#f-texto', frase);
   await pg.press('#f-texto', 'Enter');
 };
+
+// Recarrega com a nuvem SEGURADA: a tela abre com a cópia do aparelho e as leituras (GET) da nuvem esperam. Devolve
+// `chegada()`, que solta a nuvem e espera o app redesenhar o dia com ela (abrirDia, contado a partir daqui).
+async function recarregarComNuvemSegurada(pg) {
+  let soltar;
+  const porta = new Promise((ok) => (soltar = ok));
+
+  await pg.route(/supabase\.co\/rest\/v1\//, async (rota) => {
+    if (rota.request().method() === 'GET') await porta;
+    await rota.fallback(); // segue para a nuvem falsa do helper
+  });
+  await pg.reload();
+  await pg.waitForSelector('#v-dia:not([hidden])');
+  await pg.evaluate(() => {
+    window.redesenhosDoDia = 0;
+    const original = abrirDia;
+
+    window.abrirDia = function (...args) {
+      window.redesenhosDoDia++;
+
+      return original.apply(this, args);
+    };
+  });
+
+  return async () => {
+    soltar();
+    await pg.waitForFunction(() => window.redesenhosDoDia > 0);
+  };
+}
 
 test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei +" soma cada trecho de caminhada e vai para a nuvem', async () => {
   const { ctx, pg, nuvem, erros } = await abrirApp({ nuvem: comTreino(novaNuvem()) });
@@ -104,8 +134,11 @@ test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei +" soma cada 
       ],
     ]
   );
-  await pg.reload(); // volta da nuvem igual
-  await pg.waitForSelector('#v-dia:not([hidden])');
+  // volta da nuvem igual: a nuvem chega depois da cópia do aparelho e redesenha a lista; espera a chegada (o redesenho), não
+  // a rede quieta. O caso da chegada entre os dois toques tem teste próprio abaixo.
+  const chegada = await recarregarComNuvemSegurada(pg);
+
+  await chegada();
   assert.deepEqual(await trechos(pg), [
     '15:30 · 20 min ×',
     '16:30 · 40 min ×',
@@ -123,6 +156,30 @@ test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei +" soma cada 
   assert.equal(await texto(pg, '#s-valor'), '2.106');
   await sincronizado(pg);
   assert.deepEqual(nuvem.tabelas.al_dia, []); // sem trecho, o dia sai
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test('"×" do trecho: a nuvem que chega entre o 1º e o 2º toque desarma o botão (o 2º toque só arma de novo, nada é tirado)', async () => {
+  // Comportamento ATUAL, não decidido em REGRAS: o armado é só a classe `armado` no botão (confirmar() em js/util.js) e a
+  // chegada da nuvem redesenha a lista com botões novos. O usuário vê o "×" vermelho voltar ao normal e precisa tocar mais duas vezes.
+  const { ctx, pg, nuvem, erros } = await abrirApp({ nuvem: comTreino(novaNuvem()) });
+
+  await pg.click('#c-mais');
+  await sincronizado(pg);
+  const chegada = await recarregarComNuvemSegurada(pg);
+
+  await pg.click('[data-tirar-trecho="0"]'); // 1º toque: arma (nuvem ainda não chegou)
+  assert.equal(await pg.locator('[data-tirar-trecho="0"].armado').count(), 1);
+  await chegada(); // a nuvem chega no meio e redesenha
+  assert.equal(await pg.locator('[data-tirar-trecho="0"].armado').count(), 0); // desarmou
+  await pg.click('[data-tirar-trecho="0"]'); // o 2º toque só arma de novo
+  assert.deepEqual(await trechos(pg), ['15:30 · 20 min ×']);
+  assert.equal(await pg.locator('[data-tirar-trecho="0"].armado').count(), 1);
+  await pg.click('[data-tirar-trecho="0"]'); // o 3º confirma
+  assert.deepEqual(await trechos(pg), []);
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.al_dia, []);
   assert.deepEqual(erros, []);
   await ctx.close();
 });
@@ -157,7 +214,7 @@ test('metrô: o envio da caminhada chega ao banco mas a resposta se perde; o pr�
 
   nuvem.perderResposta = 1;
   await pg.click('#c-mais');
-  await pg.waitForFunction(() => erroSync && !enviando); // falhou sem resposta: fica pendente
+  await andarAte(pg, () => !!erroSync && !enviando); // relógio pausado: anda até a falha (falhou sem resposta: fica pendente)
   assert.equal(nuvem.tabelas.al_dia[0].caminhadas.length, 1); // mas o banco já gravou
   await pg.evaluate(() => enviar()); // a próxima tentativa
   await sincronizado(pg);
@@ -926,7 +983,7 @@ test('sem internet: abre com a cópia do aparelho e envia o que ficou pendente a
   assert.equal(await pg.locator('#lista li').count(), 1);
   await pg.click('#f-sugestoes [data-item]'); // mais um ovo, offline
   await pg.click('#p-adicionar');
-  await pg.waitForSelector('#sync:not([hidden])');
+  await andarAte(pg, () => !document.getElementById('sync').hidden); // relógio pausado: anda até o aviso aparecer
   assert.match(await texto(pg, '#sync'), /Sem internet/);
   nuvem.online = true;
   await pg.evaluate(() => enviar());
@@ -949,5 +1006,16 @@ test('outra conta entra no Supabase mas não passa do login', async () => {
   await pg.waitForFunction(() => document.getElementById('l-erro').textContent);
   assert.equal(await texto(pg, '#l-erro'), 'Esta conta não tem acesso.');
   assert.equal(await pg.isVisible('#v-dia'), false);
+  await ctx.close();
+});
+
+test('relógio do helper: o tempo da página não anda sozinho (sem o relógio pausado os testes dependem da carga da máquina)', async () => {
+  const { ctx, pg } = await abrirApp();
+  const antes = await pg.evaluate(() => Date.now());
+
+  await new Promise((ok) => setTimeout(ok, 1500)); // 1,5 s reais
+  assert.equal(await pg.evaluate(() => Date.now()), antes);
+  await pg.clock.runFor(800); // só anda quando o teste manda
+  assert.equal(await pg.evaluate(() => Date.now()), antes + 800);
   await ctx.close();
 });

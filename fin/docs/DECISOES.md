@@ -244,3 +244,7 @@ Auditoria dos lotes A e B (02/11/2026):
   - `base/referencia.html` não foi aberta no navegador;
   - os modais de Mês a mês, de comprometidos e o gráfico não foram abertos no navegador.
   - O que se conferiu foi pelo teste de estilo (`navegador-estilos`) e pela leitura do código, não pela tela.
+
+## Relógio falso pausado (02/11/2026)
+
+- O helper de navegador do Fin usa `../tests/relogio.mjs`, o mesmo relógio pausado de todos os apps e da raiz: nasce até 5 min antes e é pausado no horário pedido. A regra está em `../docs/DIRETRIZES.md`, seção 3.

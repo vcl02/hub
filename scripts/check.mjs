@@ -48,6 +48,7 @@ const raiz = [
   [process.execPath, ['--check', 'sw.js']],
   [process.execPath, ['--check', 'hub.js']],
   [process.execPath, ['--check', 'habitos.js']],
+  [process.execPath, ['--check', 'base/nucleo.js']],
 ];
 
 for (const [comando, args] of raiz) {
@@ -69,6 +70,7 @@ const tarefas = [
       'tests/documentacao.test.mjs',
       'tests/habitos.test.mjs',
       'tests/repetidas.test.mjs',
+      'tests/nucleo.test.mjs',
       'tests/regras-apps.test.mjs',
       'tests/navegacao.test.mjs',
     ],

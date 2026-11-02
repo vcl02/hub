@@ -263,7 +263,11 @@ async function abrirFin(
     if (r.url().startsWith(base) && r.status() >= 400)
       faltando.push(`${r.status()} ${r.url()}`);
   });
-  await pg.clock.install({ time: new Date(`${HOJE}T12:00:00-03:00`) });
+  // Relógio compartilhado (tests/relogio.mjs, ESM): nasce 5 min antes e é pausado ao fim da abertura
+  const relogio = await import('../../../tests/relogio.mjs');
+  const horario = new Date(`${HOJE}T12:00:00-03:00`);
+
+  await relogio.iniciarRelogio(pg, horario);
   await pg.goto(base);
   await pg.fill('#l-usuario', 'eu@teste.com');
   await pg.fill('#l-senha', 'senha123');
@@ -276,6 +280,8 @@ async function abrirFin(
   await pg.waitForFunction(
     () => document.getElementById('out').textContent.trim().length > 0
   );
+
+  await relogio.pausarRelogio(pg, horario);
 
   return { ctx, pg, erros, faltando, dados, escritas: fin.escritas, ocioso };
 }

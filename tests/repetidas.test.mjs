@@ -1,10 +1,14 @@
 // Funções repetidas entre os apps (sem navegador): cada cópia é tirada do próprio arquivo do app (tests/funcoes.mjs) e passa
 // pelos mesmos casos. Garante que as cópias se comportam igual até irem para a base comum (base/nucleo.js, passo 4 de
 // docs/DIRETRIZES.md, seção 8): mescla das listas do dia entre aparelhos, diferença para enviar, o dia no endereço e o toque
-// repetido.
+// repetido. O que já foi para o núcleo (fetchComTeto) é testado lá (tests/nucleo.test.mjs); aqui só se prova que cada app usa
+// a cópia única.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { carregar } from './funcoes.mjs';
+import { readFileSync } from 'node:fs';
+import { parse } from 'espree';
+import { carregar, carregarArquivos } from './funcoes.mjs';
+import { etiquetas } from './leitores.mjs';
 
 const json = (x) => JSON.parse(JSON.stringify(x));
 
@@ -130,80 +134,106 @@ for (const app of ['agua', 'al', 'corpo']) {
   });
 }
 
-// ---------- fetchComTeto(url, op): todo pedido ao Supabase tem limite de tempo (15 s; a função, 40 s) ----------
-// Pedido que perde o sinal no meio (metrô) vira falha de rede comum ("Failed to fetch"); o que o chamador cancelou segue como cancelado.
-for (const arquivo of [
-  'hub.js',
-  'agua/js/banco.js',
-  'al/js/banco.js',
-  'corpo/js/banco.js',
-  'tr/js/banco.js',
+// ---------- fetchComTeto: uma cópia só, em base/nucleo.js (a função é testada em tests/nucleo.test.mjs) ----------
+// Pedido ao Supabase que perde o sinal no meio (metrô) vira falha de rede em 15 s (a função, 40 s). Antes cada app tinha a
+// própria cópia, igual byte a byte; agora a página inicial e os quatro apps usam a do núcleo: nenhum declara a sua (lido pela
+// árvore do código, com espree), cada um passa a do núcleo ao cliente do Supabase e a página carrega o núcleo antes do arquivo.
+const DO_NUCLEO = ['TETO_REDE_MS', 'TETO_FUNCAO_MS', 'criarFetchComTeto', 'fetchComTeto'];
+
+// Todo nome declarado no arquivo, em qualquer profundidade (variável, função, classe, função com nome)
+function declarados(arquivo) {
+  const nomes = new Set();
+
+  const andar = (no) => {
+    if (Array.isArray(no)) return no.forEach(andar);
+
+    if (!no || typeof no.type !== 'string') return;
+
+    if (no.type === 'VariableDeclarator' && no.id.type === 'Identifier')
+      nomes.add(no.id.name);
+
+    if (
+      ['FunctionDeclaration', 'FunctionExpression', 'ClassDeclaration'].includes(
+        no.type
+      ) &&
+      no.id
+    )
+      nomes.add(no.id.name);
+
+    for (const [k, v] of Object.entries(no))
+      if (k !== 'parent' && v && typeof v === 'object') andar(v);
+  };
+
+  andar(
+    parse(readFileSync(arquivo, 'utf8'), { ecmaVersion: 'latest', sourceType: 'script' })
+  );
+
+  return nomes;
+}
+
+const scriptsDe = (pagina) =>
+  etiquetas(readFileSync(pagina, 'utf8'))
+    .filter((e) => e.tag === 'script' && e.attrs.src)
+    .map((e) => e.attrs.src);
+
+test('núcleo: base/nucleo.js declara o fetchComTeto e os limites (o leitor da árvore acha o que existe)', () => {
+  const nomes = declarados('base/nucleo.js');
+
+  for (const nome of DO_NUCLEO) assert.ok(nomes.has(nome), nome);
+});
+
+for (const [arquivo, pagina, supabaseJs, nucleo, src] of [
+  ['hub.js', 'index.html', 'supabase.js', 'base/nucleo.js', 'hub.js'],
+  [
+    'agua/js/banco.js',
+    'agua/index.html',
+    '../supabase.js',
+    '../base/nucleo.js',
+    'js/banco.js',
+  ],
+  [
+    'al/js/banco.js',
+    'al/index.html',
+    '../supabase.js',
+    '../base/nucleo.js',
+    'js/banco.js',
+  ],
+  [
+    'corpo/js/banco.js',
+    'corpo/index.html',
+    '../supabase.js',
+    '../base/nucleo.js',
+    'js/banco.js',
+  ],
+  ['tr/js/banco.js', 'tr/index.html', 'supabase.js', '../base/nucleo.js', 'js/banco.js'],
 ]) {
-  test(`${arquivo}: fetchComTeto desiste em 15 s (40 s na função), vira "Failed to fetch" e não segura o pedido`, async () => {
-    const prazos = [],
-      limpos = [];
+  test(`${arquivo}: usa o fetchComTeto do núcleo, sem cópia própria, e a página carrega o núcleo antes`, () => {
+    const nomes = declarados(arquivo);
 
-    // fetch que só termina se o sinal de cancelamento disparar
-    const pendurado = (url, op) =>
-      new Promise((_, rejeita) =>
-        op.signal.addEventListener('abort', () =>
-          rejeita(Object.assign(new Error('abortado'), { name: 'AbortError' }))
-        )
-      );
+    for (const nome of DO_NUCLEO)
+      assert.ok(!nomes.has(nome), `${arquivo} declara ${nome}`);
 
-    const com = (fetch) =>
-      carregar(arquivo, ['TETO_REDE_MS', 'fetchComTeto'], {
-        AbortController,
-        Response,
-        TypeError,
-        setTimeout: (f, ms) => {
-          prazos.push({ f, ms });
+    // o cliente do Supabase do arquivo recebe exatamente a função do núcleo
+    const { fetchComTeto } = carregarArquivos(['base/nucleo.js'], ['fetchComTeto']);
 
-          return prazos.length;
-        },
-        clearTimeout: (id) => limpos.push(id),
-        fetch,
-      }).fetchComTeto;
+    const { sb } = carregar(arquivo, ['sb'], {
+      supabase: { createClient: (url, chave, opcoes) => opcoes },
+      SUPABASE_URL: 'https://x.supabase.co',
+      SUPABASE_KEY: 'sb_publishable_x',
+      fetchComTeto,
+    });
 
-    // 1) resposta normal: devolve o corpo e limpa o prazo
-    const resposta = await com(async () => new Response('dados', { status: 200 }))(
-      'https://x.supabase.co/rest/v1/t'
+    assert.equal(sb.global.fetch, fetchComTeto);
+
+    // ordem de carga: supabase-js, o núcleo e só depois o arquivo
+    const scripts = scriptsDe(pagina);
+
+    assert.equal(
+      scripts.filter((s) => s === nucleo).length,
+      1,
+      `${pagina}: ${nucleo} uma vez`
     );
-
-    assert.equal(await resposta.text(), 'dados');
-    assert.equal(prazos[0].ms, 15000);
-    assert.deepEqual(limpos, [1]);
-
-    // 2) sem resposta nenhuma: ao estourar o prazo vira falha de rede
-    prazos.length = 0;
-    const espera = com(pendurado)('https://x.supabase.co/rest/v1/t');
-
-    prazos[0].f(); // passaram os 15 s
-    await assert.rejects(
-      espera,
-      (e) => e instanceof TypeError && /^Failed to fetch/.test(e.message)
-    );
-
-    // 3) a função (IA) tem mais tempo
-    prazos.length = 0;
-    const funcao = com(pendurado)('https://x.supabase.co/functions/v1/estimar');
-
-    assert.equal(prazos[0].ms, 40000);
-    prazos[0].f();
-    await assert.rejects(funcao, /Failed to fetch/);
-
-    // 4) sem corpo (204): não tenta ler
-    const vazio = await com(async () => new Response(null, { status: 204 }))(
-      'https://x/y'
-    );
-
-    assert.equal(vazio.status, 204);
-
-    // 5) cancelado por quem pediu: o erro original passa, não vira falha de rede
-    const dono = new AbortController(),
-      cancelado = com(pendurado)('https://x/y', { signal: dono.signal });
-
-    dono.abort();
-    await assert.rejects(cancelado, (e) => e.name === 'AbortError');
+    assert.ok(scripts.indexOf(supabaseJs) < scripts.indexOf(nucleo), pagina);
+    assert.ok(scripts.indexOf(nucleo) < scripts.indexOf(src), pagina);
   });
 }

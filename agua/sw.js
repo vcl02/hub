@@ -15,6 +15,7 @@ const ARQUIVOS_ESTATICOS = [
   './',
   './index.html',
   '../supabase.js',
+  '../base/nucleo.js',
   '../corpo/perfil.js',
   '../base/tokens.css',
   '../base/componentes.css',

@@ -1,7 +1,7 @@
 // Cache offline só da página inicial do hub. Rede primeiro; o cache só atende falta de conexão.
 // Os apps têm o próprio service worker (escopo mais específico) e não passam por aqui: nem
 // antes de eles se registrarem, pra este worker nunca servir arquivo a outro app. Os módulos compartilhados que a
-// página inicial carrega (corpo/perfil.js, agua/bebidas.js e al/gasto.js) ficam também neste cache, só para ela.
+// página inicial carrega (base/nucleo.js, corpo/perfil.js, agua/bebidas.js e al/gasto.js) ficam também neste cache, só para ela.
 const CACHE_ESTATICO = 'hub-estatico';
 
 const ARQUIVOS_ESTATICOS = [
@@ -16,6 +16,7 @@ const ARQUIVOS_ESTATICOS = [
   './agua/bebidas.js',
   './al/gasto.js',
   './supabase.js',
+  './base/nucleo.js',
   './manifest.webmanifest',
   './icons/hub.svg',
   './icons/agenda.svg',

@@ -10,6 +10,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fakeSupabase, novaNuvem } from '../tr/tests/helpers/app.mjs';
+import { iniciarRelogio, pausarRelogio } from './relogio.mjs';
 
 const RAIZ = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const { chromium } = createRequire(path.join(RAIZ, 'package.json'))('playwright');
@@ -207,10 +208,13 @@ test('hábitos com os dados dos apps: valor de hoje, ofensivas, dias perfeitos e
   const { ctx, pg, erros } = await abrir(base, { nuvem });
 
   // Antes da hora real: o token do Supabase falso vence 1 h depois do relógio de verdade
-  await pg.clock.install({ time: new Date('2026-10-26T12:00:00-03:00') });
+  const horario = new Date('2026-10-26T12:00:00-03:00');
+
+  await iniciarRelogio(pg, horario);
   await pg.reload();
   await entrar(pg, 'eu@teste.com', 'senha123');
   await pg.waitForSelector('#v-apps:not([hidden])');
+  await pausarRelogio(pg, horario); // o tempo real não entra na conta do app
 
   const linha = (id) =>
     pg.$eval(`[data-habito="${id}"]`, (el) => [
@@ -372,10 +376,13 @@ test('cada hábito entra no app no dia selecionado na tela inicial: num dia ante
   nuvem.tabelas.al_item = []; // o al abre só com as tabelas dele
   const { ctx, pg } = await abrir(base, { nuvem });
 
-  await pg.clock.install({ time: new Date('2026-10-26T12:00:00-03:00') });
+  const horario = new Date('2026-10-26T12:00:00-03:00');
+
+  await iniciarRelogio(pg, horario);
   await pg.reload();
   await entrar(pg, 'eu@teste.com', 'senha123');
   await pg.waitForSelector('#v-apps:not([hidden])');
+  await pausarRelogio(pg, horario);
 
   // O que cada app mostra ao abrir: o dia em que ele entrou
   const diaNoApp = {
@@ -404,6 +411,7 @@ test('cada hábito entra no app no dia selecionado na tela inicial: num dia ante
 
   const entrarNo = async (id, dia) => {
     await pg.click(`[data-habito="${id}"]`);
+    await pg.clock.runFor(200); // relógio pausado: o hub navega 180 ms depois do toque
     await pg.waitForURL(
       (url) =>
         url.pathname !== '/hub/' &&

@@ -101,8 +101,12 @@ test('index.html carrega todos os css/ e js/ na ordem certa e o que não pertenc
   assert.deepEqual([...jsDoHtml].sort(), listar('js', '.js').sort());
   assert.equal(jsDoHtml[0], 'js/config.js');
   assert.equal(jsDoHtml.at(-1), 'js/bootstrap.js');
-  // supabase.js e o módulo do app Corpo (../corpo/perfil.js) antes dos módulos do Treino
-  assert.deepEqual(scripts.slice(0, 2), ['supabase.js', '../corpo/perfil.js']);
+  // supabase.js, o núcleo comum (../base/nucleo.js) e o módulo do app Corpo (../corpo/perfil.js) antes dos módulos do Treino
+  assert.deepEqual(scripts.slice(0, 3), [
+    'supabase.js',
+    '../base/nucleo.js',
+    '../corpo/perfil.js',
+  ]);
 
   // pesagem é do app Corpo; sem backup manual, senha mestra, sair ou trocar senha; sem histórico de treinos em lista
   for (const id of [
@@ -209,6 +213,7 @@ test('service worker: instala guardando todo css/js/index/manifest/ícones que e
   for (const f of [...folhas, ...scripts, 'index.html', 'manifest.webmanifest'])
     assert.ok(guardados.has(norm(f)), `sw.js não guarda ${f}`);
   assert.ok(guardados.has('../corpo/perfil.js')); // módulo do app Corpo, para abrir offline
+  assert.ok(guardados.has('../base/nucleo.js')); // núcleo comum (fetchComTeto), para abrir offline
 
   for (const f of sw.guardados)
     assert.ok(existsSync(path.join(RAIZ, f)), `sw.js guarda ${f}, que não existe`);

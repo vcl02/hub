@@ -116,13 +116,15 @@ test('Data na própria célula: digitar o dia "19" grava 19 (não 1), uma vez s�
       [valor, eventos]
     );
 
+  // Relógio pausado: os 100 ms entre as duas digitações e a espera de 450 ms do app andam só aqui
   await digitar('2026-10-01', 'input', 'change');
-  await new Promise((ok) => setTimeout(ok, 100));
+  await pg.clock.runFor(100);
   await digitar('2026-10-19', 'input', 'change');
+  await pg.clock.runFor(600); // passou a espera de 450 ms: só um pedido
   await pg.waitForFunction(() =>
     document.querySelector('#out tr[data-sid="2"]')?.textContent.includes('19/10/2026')
   );
-  await new Promise((ok) => setTimeout(ok, 600)); // passou a espera de 450 ms: só um pedido
+  await new Promise((ok) => setTimeout(ok, 300)); // deixa a rede (real) responder antes de contar os pedidos
   assert.deepEqual(escritas, [['PATCH', 'fin']]);
   assert.equal(dados.fin.find((l) => l.id === '2').data, '2026-10-19');
   assert.deepEqual(erros, []);
@@ -192,5 +194,16 @@ test('comparar dois ciclos: as colunas dizem onde acabou e onde começou; o bot�
   await pg.selectOption('#compAte', ''); // um ciclo só: desativa
   await pg.waitForFunction(() => document.getElementById('btSomenteDif').disabled);
   assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test('relógio do helper: o tempo da página não anda sozinho (sem o relógio pausado os testes dependem da carga da máquina)', async () => {
+  const { ctx, pg } = await abrirFin();
+  const antes = await pg.evaluate(() => Date.now());
+
+  await new Promise((ok) => setTimeout(ok, 1500)); // 1,5 s reais
+  assert.equal(await pg.evaluate(() => Date.now()), antes);
+  await pg.clock.runFor(800); // só anda quando o teste manda
+  assert.equal(await pg.evaluate(() => Date.now()), antes + 800);
   await ctx.close();
 });

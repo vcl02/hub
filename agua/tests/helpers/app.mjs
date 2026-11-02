@@ -6,6 +6,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import {
+  iniciarRelogio,
+  pausarRelogio,
+  andarSePendente,
+} from '../../../tests/relogio.mjs';
 
 const RAIZ = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const HUB = path.join(RAIZ, '..');
@@ -212,17 +217,31 @@ export async function abrirApp({
     erros = [];
 
   pg.on('pageerror', (e) => erros.push(e.message));
-  await pg.clock.install({ time: relogio });
+
+  // Conta de outro usuário (teste de login): o app não chega à tela, então o relógio fica solto no horário pedido
+  if (conta) await pg.clock.install({ time: relogio });
+  else await iniciarRelogio(pg, relogio);
   await pg.goto(app.url + busca); // busca: ?dia=… (aberto pela página inicial num dia anterior)
   await pg.fill('#l-usuario', 'eu@teste.com');
   await pg.fill('#l-senha', 'senha123');
   await pg.press('#l-senha', 'Enter');
 
-  if (!conta) await pg.waitForSelector('#v-agua:not([hidden])');
+  if (!conta) {
+    await pg.waitForSelector('#v-agua:not([hidden])');
+    await pausarRelogio(pg, relogio);
+    // O desenho inicial saiu com o relógio ainda correndo (minutos antes): recarrega já pausado no horário pedido
+    await pg.reload();
+    await pg.waitForSelector('#v-agua:not([hidden])');
+  }
 
   return { ctx, pg, erros, nuvem };
 }
 
-export const sincronizado = (pg) => pg.waitForFunction(() => !temPendente() && !enviando);
+// Relógio pausado: o envio (800 ms) só sai se o teste andar o relógio (ver ../../../tests/relogio.mjs)
+export async function sincronizado(pg) {
+  await andarSePendente(pg, () => temPendente());
+  await pg.waitForFunction(() => !temPendente() && !enviando);
+}
+
 export const texto = async (pg, sel) =>
   (await pg.textContent(sel)).replace(/\s+/g, ' ').trim();

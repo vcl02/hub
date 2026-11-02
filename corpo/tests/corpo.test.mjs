@@ -1,6 +1,7 @@
 // Tela do Corpo no navegador: pesagem e barriga do dia, horário, outro dia, IMC, gráficos, histórico, nuvem e cópia para os outros apps.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { andarAte } from '../../tests/relogio.mjs';
 import {
   prepararApp,
   abrirApp,
@@ -520,7 +521,7 @@ test('metrô: o envio chega ao banco mas a resposta se perde; o próximo não so
   await sincronizado(pg);
   nuvem.perderResposta = 1;
   await pg.click('#ev-mais');
-  await pg.waitForFunction(() => erroSync && !enviando); // falhou sem resposta: fica pendente
+  await andarAte(pg, () => !!erroSync && !enviando); // relógio pausado: anda até a falha (falhou sem resposta: fica pendente)
   assert.deepEqual(nuvem.tabelas.corpo_dia[0].evacuacoes, ['08:00']); // mas o banco já gravou
   await pg.evaluate(() => enviar()); // a próxima tentativa
   await sincronizado(pg);
@@ -721,7 +722,7 @@ test('sem internet: abre com a cópia do aparelho e envia ao reconectar', async 
   await pg.reload();
   await pg.waitForSelector('#v-corpo:not([hidden])');
   await salvar(pg, { cintura: '101' });
-  await pg.waitForSelector('#sync:not([hidden])');
+  await andarAte(pg, () => !document.getElementById('sync').hidden); // relógio pausado: anda até o aviso aparecer
   assert.match(await texto(pg, '#sync'), /Sem internet/);
   nuvem.online = true;
   await pg.evaluate(() => enviar());
@@ -785,5 +786,16 @@ test('Esc: cancela a edição na linha; num campo só tira o foco; sem nada aber
   await pg.keyboard.press('Escape');
   assert.equal(await pg.evaluate(() => saidas), 1);
   assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test('relógio do helper: o tempo da página não anda sozinho (sem o relógio pausado os testes dependem da carga da máquina)', async () => {
+  const { ctx, pg } = await abrirApp();
+  const antes = await pg.evaluate(() => Date.now());
+
+  await new Promise((ok) => setTimeout(ok, 1500)); // 1,5 s reais
+  assert.equal(await pg.evaluate(() => Date.now()), antes);
+  await pg.clock.runFor(800); // só anda quando o teste manda
+  assert.equal(await pg.evaluate(() => Date.now()), antes + 800);
   await ctx.close();
 });

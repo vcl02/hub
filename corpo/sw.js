@@ -16,6 +16,7 @@ const ARQUIVOS_ESTATICOS = [
   './',
   './index.html',
   '../supabase.js',
+  '../base/nucleo.js',
   './manifest.webmanifest',
   './icons/corpo-192.png',
   './icons/corpo-512.png',

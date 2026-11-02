@@ -31,3 +31,4 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md`; o jeito de trabalha
 - Sem navegador agora: `tests/regras.test.mjs` (11 testes) roda o IMC e as faixas, o horário de sempre, a validação das medidas, o primeiro lançamento do peso, a bexiga, o texto do sono, a cópia das pesagens para os outros apps e o limiar do arrasto. `tests/helpers/rodar.mjs` roda o `sw.js` e o `bootstrap.js` em `node:vm`. O navegador de `tests/corpo.test.mjs` caiu de 24 para 19 testes.
 - Continua em Playwright: pesagem, barriga, evacuação, xixi e sono na tela e no banco; o histórico (só a medida de hoje se edita); dois aparelhos; o caso "metrô"; o dia anterior pelo `?dia`; os gestos; o gráfico com o mouse ou o dedo; o caso sem internet; o Esc.
 - Lacunas: nenhuma registrada nesta rodada.
+- Relógio falso pausado (02/11/2026): o helper de navegador usa `../tests/relogio.mjs`, o mesmo dos outros apps e da raiz; a regra está em `../docs/DIRETRIZES.md`, seção 3.

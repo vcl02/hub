@@ -230,6 +230,7 @@ test('service worker da raiz: guarda só os arquivos da página inicial (e os m�
 
   for (const f of [
     './habitos.js',
+    './base/nucleo.js',
     './corpo/perfil.js',
     './agua/bebidas.js',
     './al/gasto.js',
@@ -306,9 +307,10 @@ test('login do hub antes dos apps: mesma conta e mesmo supabase-js do tr', () =>
     ),
     'supabase.js igual ao do tr'
   );
-  // supabase-js, os módulos compartilhados (dados sobre mim e gasto do dia), os hábitos e só então hub.js
+  // supabase-js, o núcleo comum, os módulos compartilhados (dados sobre mim e gasto do dia), os hábitos e só então hub.js
   assert.deepEqual(scriptsDe(html), [
     'supabase.js',
+    'base/nucleo.js',
     'corpo/perfil.js',
     'agua/bebidas.js',
     'al/gasto.js',
@@ -790,6 +792,30 @@ test('histórico no banco: toda tabela dos apps (menos o Fin, que tem o dele) co
     sql,
     /create policy hub_historico_so_victor on public\.hub_historico for select to authenticated\n {2}using \(\(select auth\.uid\(\)\) = '32f70255-30a0-4e2b-ad76-31d7a1bf54f7'::uuid\);/
   );
+});
+
+test('núcleo comum (base/nucleo.js): com cabeçalho, carregado uma vez pela página inicial e pelos apps (o Fin ainda não) e guardado no service worker de cada um', () => {
+  assert.match(ler('base/nucleo.js'), /^'use strict';\n\/\/ /); // cabeçalho com a responsabilidade do arquivo
+
+  for (const [pagina, sw, src] of [
+    ['index.html', 'sw.js', 'base/nucleo.js'],
+    ['tr/index.html', 'tr/sw.js', '../base/nucleo.js'],
+    ['al/index.html', 'al/sw.js', '../base/nucleo.js'],
+    ['corpo/index.html', 'corpo/sw.js', '../base/nucleo.js'],
+    ['agua/index.html', 'agua/sw.js', '../base/nucleo.js'],
+  ]) {
+    assert.equal(scriptsDe(ler(pagina)).filter((s) => s === src).length, 1, pagina);
+
+    const guardados = doApp(sw, ['ARQUIVOS_ESTATICOS']).ARQUIVOS_ESTATICOS;
+
+    assert.ok(
+      guardados.includes(src.startsWith('../') ? src : './' + src),
+      `${sw} não guarda o núcleo`
+    );
+  }
+
+  // O Fin tem o próprio fetchComLimite (12 s) e migra numa fatia à parte
+  assert.ok(!scriptsDe(ler('fin/index.html')).some((s) => s.includes('nucleo')));
 });
 
 test('base comum: tokens e componentes existem, a referência carrega os dois e mostra cada módulo com a própria cor', () => {

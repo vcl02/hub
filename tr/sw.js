@@ -30,6 +30,7 @@ const ARQUIVOS_ESTATICOS = [
   './',
   './index.html',
   './supabase.js',
+  '../base/nucleo.js',
   '../corpo/perfil.js',
   './manifest.webmanifest',
   './icon-192.png',

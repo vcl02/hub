@@ -92,7 +92,12 @@ test('ordem de carga: supabase do hub e perfil antes dos módulos; o service wor
     'js/telas.js',
     'js/bootstrap.js',
   ]);
-  assert.deepEqual(scripts.slice(0, 3), ['../supabase.js', 'perfil.js', 'js/config.js']);
+  assert.deepEqual(scripts.slice(0, 4), [
+    '../supabase.js',
+    '../base/nucleo.js',
+    'perfil.js',
+    'js/config.js',
+  ]);
 
   // O que o service worker guarda no install (roda o sw.js): tudo o que a página carrega, e nada que não exista
   const { guardados, abertos } = await rodarServiceWorker(path.join(RAIZ, 'sw.js'));
@@ -103,6 +108,7 @@ test('ordem de carga: supabase do hub e perfil antes dos módulos; o service wor
     './css/corpo.css',
     './manifest.webmanifest',
     '../supabase.js',
+    '../base/nucleo.js',
     ...jsDoHtml.map((f) => './' + f),
   ])
     assert.ok(guardados.includes(f), `sw.js não guarda ${f}`);

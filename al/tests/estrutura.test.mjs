@@ -96,8 +96,9 @@ test('ordem de carga: supabase do hub e módulos do Corpo e da Água antes dos m
     'js/telas.js',
     'js/bootstrap.js',
   ]);
-  assert.deepEqual(scripts.slice(0, 5), [
+  assert.deepEqual(scripts.slice(0, 6), [
     '../supabase.js',
+    '../base/nucleo.js',
     '../corpo/perfil.js',
     '../agua/bebidas.js',
     'gasto.js',
@@ -112,6 +113,7 @@ test('ordem de carga: supabase do hub e módulos do Corpo e da Água antes dos m
     './css/al.css',
     './manifest.webmanifest',
     '../supabase.js',
+    '../base/nucleo.js',
     '../corpo/perfil.js',
     '../agua/bebidas.js',
     './gasto.js',

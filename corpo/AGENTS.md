@@ -9,8 +9,8 @@
 ## Arquitetura
 
 - `index.html` é o único documento; um stylesheet só (`css/corpo.css`).
-- Scripts clássicos nesta ordem, depois de `../supabase.js` (do hub) e `perfil.js`: `config`, `util`, `banco`, `telas`, `bootstrap`. A 1ª linha de cada um diz a responsabilidade.
-- Arquivo novo em `css/` ou `js/` entra no `index.html` e no `ARQUIVOS_ESTATICOS` do `sw.js` (`tests/estrutura.test.mjs` confere). Cache `corpo-estatico`; o service worker só apaga caches `corpo-`.
+- Scripts clássicos nesta ordem, depois de `../supabase.js` (do hub), `../base/nucleo.js` (o `fetchComTeto`) e `perfil.js`: `config`, `util`, `banco`, `telas`, `bootstrap`. A 1ª linha de cada um diz a responsabilidade.
+- Arquivo novo em `css/` ou `js/` entra no `index.html` e no `ARQUIVOS_ESTATICOS` do `sw.js` (`tests/estrutura.test.mjs` confere). Cache `corpo-estatico`; o service worker só apaga caches `corpo-` e guarda `../supabase.js` e `../base/nucleo.js`.
 - Todo arquivo `.js`, `.mjs`, `.css` e `.sql` começa com um comentário curto de responsabilidade.
 
 ## Dados e segurança
@@ -26,7 +26,7 @@
 Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para todos fica lá).
 
 - **Migrations:** `migrations/` 00 a 05, formato DataGrip, RLS só do Victor; a 00 não roda de novo (lê `tr_medida`, já apagada). Conferido em `tests/estrutura.test.mjs`, numeração em `../tests/documentacao.test.mjs`.
-- **Testes:** navegador em `tests/corpo.test.mjs` (19 testes, Playwright da raiz, Supabase falso em `tests/helpers/app.mjs`); sem navegador, `tests/regras.test.mjs` (IMC e faixas, horário de sempre, validação das medidas, bexiga, texto do sono, cópia das pesagens, limiar do arrasto) e `tests/helpers/rodar.mjs` (service worker e `bootstrap.js` em `node:vm`); estrutura em `tests/estrutura.test.mjs`. As funções de `perfil.js` (idade, basal, calorias, pesagens) são testadas em `../tests/hub.test.mjs`. Auditoria de 02/11/2026 em `docs/DECISOES.md`.
+- **Testes:** navegador em `tests/corpo.test.mjs` (19 testes, Playwright da raiz, Supabase falso em `tests/helpers/app.mjs`); sem navegador, `tests/regras.test.mjs` (IMC e faixas, horário de sempre, validação das medidas, bexiga, texto do sono, cópia das pesagens, limiar do arrasto) e `tests/helpers/rodar.mjs` (service worker e `bootstrap.js` em `node:vm`); estrutura em `tests/estrutura.test.mjs`. As funções de `perfil.js` (idade, basal, calorias, pesagens) são testadas em `../tests/hub.test.mjs`. O relógio falso vem de `../tests/relogio.mjs` (pausado; ver `../docs/DIRETRIZES.md`, seção 3). Auditoria de 02/11/2026 em `docs/DECISOES.md`.
 - **Pacotes:** sem `package.json`. `../supabase.js` da raiz e o Playwright da raiz.
 - **Backups:** cópia no aparelho (`corpo.db.<conta>`, base em `corpo.base.<conta>`) e `hub_historico` com `corpo_medida` e `corpo_dia`. O perfil está no código (git).
 - **Domínio:** `/hub/corpo/`. Externo: só o Supabase.

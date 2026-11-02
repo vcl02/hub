@@ -258,3 +258,14 @@ test('botões ‹ › das semanas até a do 1º treino, e ← → no computador 
   assert.deepEqual(erros, []);
   await ctx.close();
 });
+
+test('relógio do helper: o tempo da página não anda sozinho (sem o relógio pausado os testes dependem da carga da máquina)', async () => {
+  const { ctx, pg } = await abrirApp({ relogio: new Date('2026-10-19T09:00:00-03:00') });
+  const antes = await pg.evaluate(() => Date.now());
+
+  await new Promise((ok) => setTimeout(ok, 1500)); // 1,5 s reais
+  assert.equal(await pg.evaluate(() => Date.now()), antes);
+  await pg.clock.runFor(800); // só anda quando o teste manda
+  assert.equal(await pg.evaluate(() => Date.now()), antes + 800);
+  await ctx.close();
+});

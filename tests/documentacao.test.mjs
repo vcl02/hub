@@ -133,6 +133,7 @@ test('sem domínio próprio: nenhum CNAME e nenhum arquivo publicado com o domí
   const publicados = [
     'index.html',
     'hub.js',
+    'base/nucleo.js',
     'sw.js',
     'manifest.webmanifest',
     ...PROJETOS.slice(1).flatMap((p) => {

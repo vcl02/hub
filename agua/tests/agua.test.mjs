@@ -4,6 +4,7 @@
 // sem navegador em funcoes.test.mjs e em ../../tests/regras-apps.test.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { andarAte } from '../../tests/relogio.mjs';
 import {
   prepararApp,
   abrirApp,
@@ -234,7 +235,7 @@ test('últimos 7 dias, sem internet (abre com a cópia e envia ao reconectar) e 
   await pg.waitForSelector('#v-agua:not([hidden])');
   assert.equal(await texto(pg, '#t-ml'), '300'); // cópia do aparelho
   await beber(pg, 200);
-  await pg.waitForSelector('#sync:not([hidden])');
+  await andarAte(pg, () => !document.getElementById('sync').hidden); // relógio pausado: anda até o aviso aparecer
   nuvem.online = true;
   await pg.evaluate(() => enviar());
   await sincronizado(pg);
@@ -269,5 +270,16 @@ test('outra conta não passa do login; tema escuro mesmo com o celular no modo c
 
   for (const ml of [150, 200, 250, 300, 350, 500]) await beber(pg, ml); // a linha cheia de botões
   assert.ok(await pg.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  await ctx.close();
+});
+
+test('relógio do helper: o tempo da página não anda sozinho (sem o relógio pausado os testes dependem da carga da máquina)', async () => {
+  const { ctx, pg } = await abrirApp();
+  const antes = await pg.evaluate(() => Date.now());
+
+  await new Promise((ok) => setTimeout(ok, 1500)); // 1,5 s reais
+  assert.equal(await pg.evaluate(() => Date.now()), antes);
+  await pg.clock.runFor(800); // só anda quando o teste manda
+  assert.equal(await pg.evaluate(() => Date.now()), antes + 800);
   await ctx.close();
 });

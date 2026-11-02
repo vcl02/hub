@@ -185,7 +185,12 @@ export function iniciarHub({
     },
   };
 
-  vm.runInNewContext(readFileSync(arquivo, 'utf8'), contexto, { filename: arquivo });
+  // Como a página: o núcleo comum (base/nucleo.js, com o fetchComTeto) antes do hub.js, no mesmo escopo global
+  const nucleo = path.join(RAIZ, 'base', 'nucleo.js');
+
+  vm.createContext(contexto);
+  vm.runInContext(readFileSync(nucleo, 'utf8'), contexto, { filename: nucleo });
+  vm.runInContext(readFileSync(arquivo, 'utf8'), contexto, { filename: arquivo });
 
   // dispara os temporizadores pendentes (do mais antigo ao mais novo), uma vez cada
   const passarTempo = () => {
