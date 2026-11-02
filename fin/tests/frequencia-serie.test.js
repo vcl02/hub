@@ -193,14 +193,27 @@ test('Frequência vem antes de Vezes e os dois ficam fora do grid dos demais cam
 });
 
 test('a regra fica só num hover do rótulo: nenhum botão nem modal de ajuda no cadastro', () => {
-  for (const arquivo of [pagina, estilos])
-    for (const nome of [
-      'ajudaFrequencia',
-      'ajudaCategorias',
-      'btAjudaMini',
-      'modalAjuda',
-    ])
-      assert.ok(!arquivo.includes(nome), nome);
+  const nomes = ['ajudaFrequencia', 'ajudaCategorias', 'btAjudaMini', 'modalAjuda'];
+  const elementos = etiquetas(pagina);
+  const classesDe = (e) => (e.attrs.class || '').split(' ');
+
+  // Controle positivo: o leitor enxerga elementos com id e classe (senão a ausência abaixo não provaria nada).
+  assert.ok(elementos.some((e) => e.attrs.id === 'fFreq'));
+  assert.ok(elementos.some((e) => classesDe(e).includes('parcelasLinha')));
+
+  for (const nome of nomes) {
+    assert.ok(!elementos.some((e) => e.attrs.id === nome), `id ${nome} no index.html`);
+    assert.ok(
+      !elementos.some((e) => classesDe(e).includes(nome)),
+      `classe ${nome} no index.html`
+    );
+    assert.ok(
+      !regrasCss(estilos).some((r) =>
+        r.seletores.some((s) => s.includes('#' + nome) || s.includes('.' + nome))
+      ),
+      `seletor ${nome} no css/forms.css`
+    );
+  }
 });
 
 test('Vezes não muda mais a Frequência: sem Frequência escolhida, o campo fica vazio', async () => {
