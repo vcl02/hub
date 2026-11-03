@@ -22,12 +22,13 @@ $('a-instalar').addEventListener('click', async () => {
   $('a-instalar').hidden = true;
 });
 
-// Editar exercícios
+// Editar exercícios. O Remover (toque duplo) é armado pela chave do exercício: o id ou, no novo (ainda sem id), a chave local
+// que o + Novo gera uma vez (e.chave), a mesma em todo desenho dele; só fica na tela, não vai para o db nem para a nuvem.
 function editorExercicio(e) {
   return `<fieldset class="ed" data-id="${e.id || ''}">
     <div class="ed-head"><input class="ed-grupo" value="${esc(e.grupo)}" placeholder="Grupo (ex.: Peito)" aria-label="Grupo muscular">
       <button type="button" class="ed-mover" data-mv="-1" aria-label="Subir na lista">↑</button><button type="button" class="ed-mover" data-mv="1" aria-label="Descer na lista">↓</button>
-      <button type="button" class="del ed-remover">Remover</button></div>
+      <button type="button" class="del ed-remover" data-armavel="remover ${e.id || e.chave}">Remover</button></div>
     <div class="ed-p">
       <label>Séries<input class="ed-series" inputmode="numeric" value="${e.series ?? 3}"></label>
       <label>Reps (máx.)<input class="ed-reps" inputmode="numeric" value="${e.reps ?? 12}"></label>
@@ -59,7 +60,7 @@ telas.editar = () => {
 $('ed-novo').addEventListener('click', () => {
   $('ed-lista').insertAdjacentHTML(
     'beforeend',
-    editorExercicio({ grupo: '', regiao: 'Superior' })
+    editorExercicio({ grupo: '', regiao: 'Superior', chave: `novo ${novoId()}` })
   );
   $('ed-lista').lastElementChild.querySelector('.ed-grupo').focus();
 });

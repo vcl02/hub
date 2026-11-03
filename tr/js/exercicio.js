@@ -248,7 +248,7 @@ function pintarHistorico(e) {
     ? lista
         .map(
           (r) =>
-            `<li><i class="h-d">${dataCurta(r.data)}</i><span class="h-v">${semPeso(v) ? `${repsTxt(r)} <small>${medidaSemPeso(v)}</small>` : `${kgsTxt(r)} ${esc(unidadeTxt(v))} <small>× ${repsTxt(r)}</small>`}</span><button type="button" class="del" data-apagar="${r.data}">Apagar</button></li>`
+            `<li><i class="h-d">${dataCurta(r.data)}</i><span class="h-v">${semPeso(v) ? `${repsTxt(r)} <small>${medidaSemPeso(v)}</small>` : `${kgsTxt(r)} ${esc(unidadeTxt(v))} <small>× ${repsTxt(r)}</small>`}</span><button type="button" class="del" data-apagar="${r.data}" data-armavel="apagar ${v.id} ${r.data}">Apagar</button></li>`
         )
         .join('')
     : '<li class="empty">Nenhum registro ainda.</li>';

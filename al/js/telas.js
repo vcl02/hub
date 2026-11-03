@@ -122,17 +122,24 @@ function pintarSaldo() {
 
   $('andei').hidden = !g;
   $('c-kcal').textContent = cam ? `−${inteiro(cam.kcal)} kcal` : '';
-  $('c-lista').innerHTML = (cam?.trechos || [])
-    .map((t, i) => {
-      const quanto =
-        [t.minutos && `${valor(t.minutos)} min`, t.km && `${valor(t.km)} km`]
-          .filter(Boolean)
-          .join(' · ') || `${CAMINHADA_MIN_PADRAO} min`;
 
-      return `<li><button type="button" class="chip" data-tirar-trecho="${i}" aria-label="Tirar trecho"${passado() ? ' disabled' : ''}>${t.hora ? `${t.hora} · ` : ''}${quanto}${passado() ? '' : ' ×'}</button></li>`;
-    })
-    .join('');
+  const T = cam?.trechos || [],
+    chaves = chavesTrechos(diaVisto, T);
+
+  $('c-lista').innerHTML = T.map((t, i) => {
+    const quanto =
+      [t.minutos && `${valor(t.minutos)} min`, t.km && `${valor(t.km)} km`]
+        .filter(Boolean)
+        .join(' · ') || `${CAMINHADA_MIN_PADRAO} min`;
+
+    return `<li><button type="button" class="chip" data-tirar-trecho="${i}" data-armavel="${chaves[i]}" aria-label="Tirar trecho"${passado() ? ' disabled' : ''}>${t.hora ? `${t.hora} · ` : ''}${quanto}${passado() ? '' : ' ×'}</button></li>`;
+  }).join('');
 }
+
+// Chave de cada trecho para o toque duplo do ×: o dia, o horário, o tempo e a distância (e a vez, entre trechos iguais).
+// Não a posição: a nuvem que traz um trecho antes muda a posição, e o 2º toque tiraria o vizinho.
+const chavesTrechos = (dia, L) =>
+  chavesDosItens(L, (t) => ['trecho', dia, t.hora, t.minutos, t.km].join(' '));
 
 // Macros do dia contra a meta: gramas comidas / meta, quanto falta ou quanto passou, e a barra de cada um
 function pintarMacros() {
@@ -162,7 +169,7 @@ function pintarMarmitas() {
 
   $('marmitas').innerHTML = L.map(
     (m) =>
-      `<li><button type="button" class="marmita" data-marmita="${m.id}"><b>${esc(m.nome)}</b> <span>${m.itens.length === 1 ? '1 item' : m.itens.length + ' itens'} · restam ${m.restam}</span> <i>${inteiro(kcalMarmita(m))} kcal</i></button>${btIcone('x', 'Jogar fora', `data-jogar="${m.id}"`, 'perigo')}</li>`
+      `<li><button type="button" class="marmita" data-marmita="${m.id}"><b>${esc(m.nome)}</b> <span>${m.itens.length === 1 ? '1 item' : m.itens.length + ' itens'} · restam ${m.restam}</span> <i>${inteiro(kcalMarmita(m))} kcal</i></button>${btIcone('x', 'Jogar fora', `data-jogar="${m.id}" data-armavel="jogar ${m.id}"`, 'perigo')}</li>`
   ).join('');
 }
 
@@ -262,7 +269,7 @@ function pintarLista() {
       )
       .join(
         ''
-      )}</select>${btIcone('lixo', 'Apagar', `data-apagar="${r.id}"${passado() ? ' disabled' : ''}`, 'perigo')}</span>
+      )}</select>${btIcone('lixo', 'Apagar', `data-apagar="${r.id}" data-armavel="apagar ${r.id}"${passado() ? ' disabled' : ''}`, 'perigo')}</span>
   </li>`
   ).join('');
 }
@@ -464,8 +471,12 @@ $('c-lista').addEventListener('click', (ev) => {
     d = db.dias.find((x) => x.data === diaVisto);
 
   if (!b || !d || !confirmar(b)) return;
+  // o trecho da chave armada (o mesmo do 1º toque, mesmo se a lista mudou no meio); sumiu, nada sai
+  const i = chavesTrechos(diaVisto, d.caminhadas).indexOf(b.dataset.armavel);
+
+  if (i < 0) return;
   mudar(() => {
-    d.caminhadas.splice(+b.dataset.tirarTrecho, 1);
+    d.caminhadas.splice(i, 1);
 
     if (!d.caminhadas.length) db.dias = db.dias.filter((x) => x !== d);
   });

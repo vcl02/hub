@@ -60,19 +60,17 @@ for (const [comando, args] of raiz) {
   if (resultado.status !== 0) process.exit(resultado.status || 1);
 }
 
+// Todo `tests/*.test.mjs` roda: teste novo na raiz entra sozinho (a lista fixa deixou `relogio` e `estilos-gerados` de fora).
 const tarefas = [
   [
     'raiz',
     '.',
     [
       '--test',
-      'tests/hub.test.mjs',
-      'tests/documentacao.test.mjs',
-      'tests/habitos.test.mjs',
-      'tests/repetidas.test.mjs',
-      'tests/nucleo.test.mjs',
-      'tests/regras-apps.test.mjs',
-      'tests/navegacao.test.mjs',
+      '--test-timeout=180000',
+      ...readdirSync('tests')
+        .filter((n) => n.endsWith('.test.mjs'))
+        .map((n) => `tests/${n}`),
     ],
   ],
   ...['fin', 'tr', 'al', 'corpo', 'agua'].map((app) => [app, app, ['scripts/check.mjs']]),

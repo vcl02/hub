@@ -8,6 +8,7 @@
 - **Dia anterior** (tocado nos Últimos 7 dias ou aberto pela página inicial): a tela é daquele dia, só leitura: total, meta e o que foi bebido (sem tirar), sem lembretes, sem beber; em cima, o dia e **Hoje**, que volta para hoje. O dia fica no endereço (`?dia=AAAA-MM-DD`, como o `?ciclo` do Fin; em hoje, sem): recarregar mantém, e o Voltar do navegador volta ao dia de antes. Hoje, futuro ou texto inválido em `?dia`: hoje.
 - **Trocar o dia:** a barra ‹ dia › no topo (Hoje, Ontem ou "quarta, 21/10"), arrastar a tela de lado (para a direita, o dia anterior; para a esquerda, o seguinte) ou ← → no computador, como no al; ou tocar num dos Últimos 7 dias. Para trás até o 1º dia com água (ou o pedido pelo `?dia`), para frente até hoje.
 - **Esc:** num campo de texto, só tira o foco; sem nada aberto, sai do app para a página inicial do hub (`../`), como em todos os apps.
+- **Toque duplo para confirmar (tirar o que foi bebido):** o 1º toque deixa o botão vermelho por 3 s e o 2º confirma. O armado é do item, não do botão: a lista redesenhada no meio (a nuvem que chega, o relógio a cada minuto) mantém o vermelho no mesmo item até o fim dos 3 s, e o 2º toque tira esse item, nunca o vizinho que ficou no lugar dele; se o item sumiu da lista, nada sai. Igual em todos os apps.
 
 ## Hoje
 

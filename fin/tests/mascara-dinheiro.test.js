@@ -7,6 +7,7 @@ const vm = require('node:vm');
 const { etiquetas } = require('./helpers/html');
 const { declaracoes } = require('./helpers/regras-css');
 const { carregarTela } = require('./helpers/tela-sem-navegador');
+const { trazer } = require('./helpers/trazer-funcao');
 
 const ler = (arquivo) => fs.readFileSync(arquivo, 'utf8');
 const pagina = ler('index.html');
@@ -170,4 +171,62 @@ test('REGRAS.md documenta a máscara de R$', () => {
     /Todo campo de dinheiro tem \*\*máscara de R\$\*\*: o "R\$" fixo à esquerda, dentro da própria caixa/
   );
   assert.match(regras, /no Valor total e na Entrada das metas/);
+});
+
+// Os campos de limite (Aprovado, Garantia e Besteira/Isabella) rodam o `ligarCamposDeLimite` real sobre uma raiz falsa:
+// máscara a cada tecla, seleção ao focar, Enter tira o foco, Esc redesenha, e só o campo de limite é tratado.
+test('campos de limite: máscara de R$, seleção ao focar, Enter, Esc e confirmação ao mudar', () => {
+  const tela = carregarTela();
+  const ouvintes = {};
+  const gravados = [];
+  let desenhos = 0;
+
+  tela.ctx.desenhar = () => desenhos++;
+  tela.ctx.confirmarLimiteDoCiclo = (campo) => gravados.push(campo);
+  trazer(tela.ctx, 'js/interactions.js', ['ligarCamposDeLimite']);
+
+  tela.ctx.ligarCamposDeLimite({ addEventListener: (tipo, f) => (ouvintes[tipo] = f) });
+
+  const evento = (alvo, extra = {}) => ({
+    target: { closest: (sel) => (sel.includes('data-limite-cartao') ? alvo : null) },
+    preventDefault() {
+      alvo.prevenido = true;
+    },
+    ...extra,
+  });
+
+  const campo = campoFalso('150000');
+
+  campo.blurs = 0;
+  campo.selecionou = 0;
+  campo.blur = () => campo.blurs++;
+  campo.select = () => campo.selecionou++;
+
+  ouvintes.input(evento(campo));
+  assert.equal(campo.value, '1.500,00'); // em centavos, como o cadastro
+  assert.deepEqual(campo.posicoes, [[8, 8]]); // cursor no fim
+
+  ouvintes.focusin(evento(campo));
+  assert.equal(campo.selecionou, 1);
+
+  ouvintes.keydown(evento(campo, { key: 'Enter' }));
+  assert.equal(campo.blurs, 1);
+  assert.equal(campo.prevenido, true);
+
+  ouvintes.keydown(evento(campo, { key: 'Escape' }));
+  assert.equal(desenhos, 1); // desfaz: volta ao valor gravado
+
+  ouvintes.change(evento(campo));
+  assert.deepEqual(gravados, [campo]);
+
+  // fora de um campo de limite, nada acontece
+  const fora = { target: { closest: () => null } };
+
+  ouvintes.input(fora);
+  ouvintes.focusin(fora);
+  ouvintes.keydown({ ...fora, key: 'Enter' });
+  ouvintes.change(fora);
+  assert.equal(gravados.length, 1);
+  assert.equal(desenhos, 1);
+  assert.equal(campo.blurs, 1);
 });

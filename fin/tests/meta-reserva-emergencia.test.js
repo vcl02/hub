@@ -129,3 +129,17 @@ test('não inclui entradas, transferências nem outras categorias no cálculo', 
   assert.equal(d.meta, 1800);
   assert.equal(d.guardado, 0);
 });
+
+test('linha sem ciclo (Backlog: periodoIdx nulo ou ausente) não entra na meta', () => {
+  // A leitura é só pelos índices numéricos dos nove ciclos (`porCiclo.get(i)`), então uma chave nula nunca é lida: por isso
+  // a guarda `periodoIdx == null` foi tirada (era código morto, a mutação dela era equivalente).
+  const sem = [{ periodoIdx: 4, nome: 'Casa', v: -100, categ: '', reserva: true }];
+
+  const com = [
+    ...sem,
+    { periodoIdx: null, nome: 'Backlog', v: -900, categ: '', reserva: true },
+    { nome: 'Sem índice', v: -900, categ: '', reserva: true },
+  ];
+
+  assert.deepEqual(calcular(com, 4, 0), calcular(sem, 4, 0));
+});

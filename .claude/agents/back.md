@@ -18,3 +18,5 @@ Regras que não podem ser quebradas:
 - Dados sobre mim só em `corpo/perfil.js` e nas tabelas do Corpo. Nenhum outro app grava pesagens.
 
 Ao terminar, atualize testes, regras e, se houve escolha entre caminhos, o `docs/DECISOES.md` do app. Rode a validação (`node scripts/check.mjs` na raiz). Não faça commit: entregue um resumo (arquivo:linha) do que mudou, do que foi validado e do que o mantenedor precisa aplicar no Supabase.
+
+Erro ou inconsistência que você achar se CORRIGE na mesma tarefa, com teste e mutação; não vira "ressalva", "pendência" nem "lacuna conhecida" (regra do mantenedor, 03/11/2026, `AGENTS.md` da raiz, seção "Fluxo de agentes"). Só é pergunta o que é escolha de produto sem resposta nas regras escritas, e aí você implementa a opção recomendada e diz qual foi. Se não conseguir corrigir, entregue a prova de que é impossível e o que o impede.

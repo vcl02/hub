@@ -196,6 +196,24 @@ test('tela inicial e editor: topo só com ícones; reordenar; voltar é só a se
   await pg.click('[data-ir="editar"]'); // a engrenagem vai direto para editar os exercícios
   await pg.waitForSelector('#v-editar:not([hidden])');
   await pg.click('#ed-lista fieldset >> nth=1 >> .ed-mover[data-mv="-1"]');
+  // + Novo duas vezes: cada exercício novo com a sua chave de Remover; o 2º toque tira só o armado
+  const n = await pg.locator('#ed-lista fieldset').count();
+
+  await pg.click('#ed-novo');
+  await pg.click('#ed-novo');
+
+  const chaves = await pg.$$eval('#ed-lista .ed-remover', (B) =>
+    B.slice(-2).map((b) => b.dataset.armavel)
+  );
+
+  assert.ok(chaves.every((k) => k.startsWith('remover novo ')));
+  assert.notEqual(chaves[0], chaves[1]);
+  await pg.click('#ed-lista fieldset >> nth=-2 >> .ed-remover'); // arma o penúltimo
+  await pg.click('#ed-lista fieldset >> nth=-1 >> .ed-remover'); // o outro novo só arma o dele
+  assert.equal(await pg.locator('#ed-lista fieldset').count(), n + 2);
+  await pg.click('#ed-lista fieldset >> nth=-2 >> .ed-remover'); // 2º toque no penúltimo: sai ele
+  await pg.click('#ed-lista fieldset >> nth=-1 >> .ed-remover'); // e no último
+  assert.equal(await pg.locator('#ed-lista fieldset').count(), n);
   await pg.click('#ed-form button[type=submit]');
   await pg.waitForSelector('#v-inicio:not([hidden])');
   assert.match(await pg.textContent('.slot >> nth=0'), /Cadeira flexora/);
@@ -208,6 +226,30 @@ test('tela inicial e editor: topo só com ícones; reordenar; voltar é só a se
   await pg.click(b);
   await pg.waitForSelector('#v-inicio:not([hidden])');
   await ctx.close();
+});
+
+// Remover exercício (toque duplo): a chave do armado é a mesma em todo desenho do mesmo exercício, também do novo (sem id ainda),
+// para o redesenho entre os toques manter o vermelho no mesmo exercício (docs/REGRAS.md, confirmações)
+test('editor: o Remover tem chave estável (id, ou a chave local do exercício novo), a mesma a cada desenho', () => {
+  const f = carregarTr();
+
+  const { editorExercicio } = carregar(arquivo('js/ajustes.js'), ['editorExercicio'], {
+    ...f,
+    TIPOS: carregar(arquivo('js/config.js'), ['TIPOS']).TIPOS,
+    $: () => ({ addEventListener() {} }),
+    addEventListener() {},
+  });
+
+  const chave = (e) => /data-armavel="([^"]*)"/.exec(editorExercicio(e))?.[1]; // o atributo do HTML que o editor desenha
+
+  const salvo = { id: 'ex1', grupo: 'Peito', regiao: 'Superior' },
+    novo = { grupo: '', regiao: 'Superior', chave: 'novo k1' },
+    outro = { grupo: '', regiao: 'Superior', chave: 'novo k2' };
+
+  assert.equal(chave(salvo), 'remover ex1');
+  assert.equal(chave(novo), 'remover novo k1');
+  assert.equal(chave(novo), chave(novo)); // desenhado de novo: a mesma chave (o armado continua)
+  assert.notEqual(chave(novo), chave(outro)); // dois novos: chaves diferentes (armar um não confirma o outro)
 });
 
 test('Esc fecha tela cheia, cancela edição, volta e, na tela inicial, sai do app', async () => {

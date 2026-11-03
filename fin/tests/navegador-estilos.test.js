@@ -382,7 +382,7 @@ test('cadastro: Data, Hoje, Nome, Valor e ± na mesma altura; Vezes desativado a
   await ctx.close();
 });
 
-test('celular: ‹ De Até › numa linha só e os botões numa grade de 6 colunas com a altura da base, sem estourar', async () => {
+test('celular: ‹ De Até › numa linha só e os botões numa grade de 6 colunas com 44 px (a base tem 40; o dedo pede 44), sem estourar', async () => {
   const { ctx, pg } = await abrirFin('', undefined, 0, { celular: true });
 
   const caixa = (id) =>
@@ -411,7 +411,7 @@ test('celular: ‹ De Até › numa linha só e os botões numa grade de 6 colun
   assert.deepEqual([...new Set(bts.map((c) => Math.round(c.y)))].length, 2); // duas linhas
   assert.equal(bts.filter((c) => Math.round(c.y) === Math.round(bts[0].y)).length, 6);
   assert.ok(
-    bts.every((c) => Math.round(c.h) === 40 && c.fim <= largura),
+    bts.every((c) => Math.round(c.h) === 44 && c.fim <= largura),
     JSON.stringify(bts)
   );
   await ctx.close();

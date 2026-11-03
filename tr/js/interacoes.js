@@ -68,8 +68,10 @@ document.addEventListener('click', (ev) => {
   else if (d.excluirTreino) {
     if (!confirmar(b)) return;
 
-    const t = db.treinos.find((x) => x.inicio === +d.excluirTreino),
-      dia = iso(new Date(t.inicio));
+    const t = db.treinos.find((x) => x.inicio === +d.excluirTreino);
+
+    if (!t) return; // o treino armado sumiu entre os toques (a nuvem): nada a excluir
+    const dia = iso(new Date(t.inicio));
 
     const desfazer = alterar(() => {
       db.treinos = db.treinos.filter((x) => x !== t);
@@ -119,6 +121,9 @@ document.addEventListener('click', (ev) => {
 
     const e = exAtual(),
       vid = e.variacoes[e.ativo].id;
+
+    // o registro armado sumiu entre os toques (a nuvem): nada a apagar, sem aviso nem Desfazer (que voltaria a cópia velha)
+    if (!db.registros.some((r) => r.variacao === vid && r.data === d.apagar)) return;
 
     const desfazer = alterar(() => {
       db.registros = db.registros.filter(

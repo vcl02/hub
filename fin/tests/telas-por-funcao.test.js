@@ -576,8 +576,11 @@ test('sem a tabela de metas (antes da migration 36) a carga segue, sem metas, e 
 
 // ---------- Débito recolhido quando Hoje e Futuro dizem o mesmo (resumoDebitoIgual, dentro de vCiclo) ----------
 
-async function recolhidosNoCicloAtual(lancamentos) {
-  const t = carregarTela({ dados: { ...exemplo(), fin: lancamentos } });
+async function recolhidosNoCicloAtual(lancamentos, cicloAntes = []) {
+  const dados = { ...exemplo(), fin: lancamentos };
+
+  dados.fin_ciclo = [...cicloAntes, ...dados.fin_ciclo];
+  const t = carregarTela({ dados });
   const recolhidos = [];
 
   await t.bruto('carregarDados()');
@@ -625,4 +628,39 @@ test('débito: Hoje e Futuro iguais (tudo pago, sobra zero, sem Aporte sugerido)
   ]);
 
   assert.ok(!sobra.recolhidos.includes('db'), JSON.stringify(sobra));
+});
+
+// As duas condições do `resumoDebitoIgual` (saldo e guardado) não se cobrem: cada uma tem um caso só dela.
+test('débito: saldo e guardado são condições independentes para recolher o Débito', async () => {
+  const base = [
+    l(1, 'Salário', 1000, { data: '2026-10-16', categ: 'Salário' }),
+    l(2, 'Mercado', -1000, { data: '2026-10-16', categ: 'Mercado' }),
+  ];
+
+  assert.ok((await recolhidosNoCicloAtual(base)).recolhidos.includes('db')); // controle: sozinho recolhe
+
+  // Só o guardado difere: um aporte pago antes de SALDO_DESDE (2026-08-07), num ciclo que fechou antes dele (sem
+  // saldo nem Aporte sugerido), fica fora do saldo de hoje e do total do ciclo, mas entra no guardado acumulado.
+  const antigos = [
+    { id: 8, inicio: '2026-06-15', fim: '2026-07-14' },
+    { id: 9, inicio: '2026-07-15', fim: '2026-09-14' },
+  ];
+
+  const soGuardado = await recolhidosNoCicloAtual(
+    [...base, l(3, 'Aporte antigo', -500, { data: '2026-06-20', categ: 'Investimento' })],
+    antigos
+  );
+
+  assert.ok(!soGuardado.recolhidos.includes('db'), JSON.stringify(soGuardado));
+  // controle: sem o aporte antigo, os mesmos ciclos recolhem
+  assert.ok((await recolhidosNoCicloAtual(base, antigos)).recolhidos.includes('db'));
+
+  // Só o saldo difere: um gasto já pago numa data antes do 1º ciclo (2026-09-15) não pertence a ciclo nenhum, mas entra
+  // no saldo de hoje; não é aporte (o guardado fica igual) e está pago (sem pendência).
+  const soSaldo = await recolhidosNoCicloAtual([
+    ...base,
+    l(4, 'Antes dos ciclos', -300, { data: '2026-08-20', categ: 'Mercado' }),
+  ]);
+
+  assert.ok(!soSaldo.recolhidos.includes('db'), JSON.stringify(soSaldo));
 });

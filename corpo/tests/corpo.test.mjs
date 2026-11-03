@@ -387,6 +387,73 @@ test('xixi: +1 com o horário de agora, tira com toque duplo; bexiga com xixis p
   await vazio.ctx.close();
 });
 
+// Recarrega com a busca da nuvem segurada (a tela abre com a cópia do aparelho) e devolve a função que solta a nuvem e espera o
+// redesenho que ela traz: a chegada da nuvem entre o 1º e o 2º toque do ×, como no al (al/tests/dia.test.mjs)
+async function recarregarComNuvemSegurada(pg) {
+  let soltar;
+  const porta = new Promise((ok) => (soltar = ok));
+
+  await pg.route(/supabase\.co\/rest\/v1\//, async (rota) => {
+    if (rota.request().method() === 'GET') await porta;
+    await rota.fallback(); // segue para a nuvem falsa do helper
+  });
+  await pg.reload();
+  await pg.waitForSelector('#v-corpo:not([hidden])');
+  await pg.evaluate(() => {
+    window.redesenhos = 0;
+    const original = desenhar;
+
+    window.desenhar = function (...args) {
+      window.redesenhos++;
+
+      return original.apply(this, args);
+    };
+  });
+
+  return async () => {
+    soltar();
+    await pg.waitForFunction(() => window.redesenhos > 0);
+  };
+}
+
+test('× do xixi: a nuvem traz um horário antes do armado e o 2º toque tira o armado, não o vizinho; o que sumiu não tira nada', async () => {
+  const { ctx, pg, nuvem, erros } = await abrirApp(); // 22/10, 08:00
+
+  const horas = () => pg.$$eval('#x-horas button', (B) => B.map((b) => b.textContent));
+
+  const armados = () =>
+    pg.$$eval('#x-horas button', (B) => B.map((b) => b.classList.contains('armado')));
+
+  await pg.click('#x-mais');
+  await sincronizado(pg);
+  nuvem.tabelas.corpo_dia[0].xixis = ['07:00', '08:00']; // outro aparelho lançou um xixi mais cedo
+  const chegada = await recarregarComNuvemSegurada(pg);
+
+  await pg.click('[data-tirar-xixi="0"]'); // arma o 08:00 (o único na tela)
+  await chegada();
+  assert.deepEqual(await horas(), ['07:00 ×', '08:00 ×']);
+  assert.deepEqual(await armados(), [false, true]); // o armado andou com o 08:00, não ficou na posição 0
+  await pg.click('[data-tirar-xixi="1"]'); // 2º toque no 08:00: tira
+  assert.deepEqual(await horas(), ['07:00 ×']);
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.corpo_dia[0].xixis, ['07:00']);
+
+  // Os dados mudam antes do 2º toque e a lista ainda não foi redesenhada (o botão é o do 1º toque): o 2º toque tira o
+  // horário da chave armada onde ele estiver agora; se ele sumiu, não tira nada
+  const xixis = () => pg.evaluate(() => diaDoForm().xixis);
+
+  await pg.click('[data-tirar-xixi="0"]'); // arma o 07:00
+  await pg.evaluate(() => diaDoForm().xixis.unshift('06:00'));
+  await pg.click('[data-tirar-xixi="0"]'); // o botão velho do 07:00, que agora é o 2º dos dados
+  assert.deepEqual(await xixis(), ['06:00']); // saiu o 07:00, não o 06:00 da posição 0
+  await pg.click('[data-tirar-xixi="0"]'); // arma o 06:00
+  await pg.evaluate(() => diaDoForm().xixis.splice(0, 1, '05:00'));
+  await pg.click('[data-tirar-xixi="0"]'); // o 06:00 sumiu
+  assert.deepEqual(await xixis(), ['05:00']); // o vizinho que ficou no lugar não sai
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
 test('dois aparelhos no mesmo dia: evacuações, xixis e sono mesclam com a nuvem (nada do outro aparelho some)', async () => {
   const { ctx, pg, nuvem, erros } = await abrirApp(); // 22/10, 08:00
 

@@ -244,7 +244,7 @@ function dadosMetaReservaEmergencia(linhas, idxPeriodo, guardado) {
   const porCiclo = new Map();
 
   linhas.forEach((r) => {
-    if (!(r.v < 0) || r._transferencia || !r.reserva || r.periodoIdx == null) return;
+    if (!(r.v < 0) || r._transferencia || !r.reserva) return;
     const gastos = porCiclo.get(r.periodoIdx) || new Map();
     const nome = String(r.nome || '').trim();
 

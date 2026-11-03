@@ -75,14 +75,21 @@ function desenhar() {
     .querySelectorAll('[data-bebida]')
     .forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.bebida === bebida)));
   // A lista do dia, a mesma peça de todo módulo (base): hora · bebida (e o volume e as kcal, se não é água) · ml de água · ×
+  const chaves = chavesAguas(dia, x.aguas);
+
   $('b-lista').innerHTML = x.aguas
     .map(
       (a, i) =>
-        `<li class="${a.bebida ? 'outra' : ''}"><span class="hora">${a.hora}</span> <span class="oque"><b>${a.bebida ? BEBIDAS[a.bebida].nome : 'Água'}</b>${a.bebida ? ` <small>${inteiro(a.volume)} ml · ${inteiro(nutrientesBebida(a).kcal)} kcal</small>` : ''}</span> <span class="valor">${inteiro(a.ml)} ml</span> ${DIA ? '<span></span>' : `<button type="button" class="bt-ic perigo" data-tirar-agua="${i}" title="Tirar (toque duplo)" aria-label="Tirar ${textoAgua(a)}">×</button>`}</li>`
+        `<li class="${a.bebida ? 'outra' : ''}"><span class="hora">${a.hora}</span> <span class="oque"><b>${a.bebida ? BEBIDAS[a.bebida].nome : 'Água'}</b>${a.bebida ? ` <small>${inteiro(a.volume)} ml · ${inteiro(nutrientesBebida(a).kcal)} kcal</small>` : ''}</span> <span class="valor">${inteiro(a.ml)} ml</span> ${DIA ? '<span></span>' : `<button type="button" class="bt-ic perigo" data-tirar-agua="${i}" data-armavel="${chaves[i]}" title="Tirar (toque duplo)" aria-label="Tirar ${textoAgua(a)}">×</button>`}</li>`
     )
     .join('');
   pintarSemana();
 }
+
+// Chave de cada copo para o toque duplo do ×: o dia, o horário, o ml e a bebida (e a vez, entre copos iguais). Não a posição:
+// a nuvem que traz um copo antes muda a posição, e o 2º toque tiraria o vizinho.
+const chavesAguas = (dia, L) =>
+  chavesDosItens(L, (a) => ['agua', dia, a.hora, a.ml, a.bebida, a.volume].join(' '));
 
 function pintarSemana() {
   const dias = Array.from({ length: 7 }, (_, i) => somaDias(hoje(), -i));
@@ -166,9 +173,13 @@ $('b-botoes').addEventListener('click', (ev) => {
 $('b-lista').addEventListener('click', (ev) => {
   const b = ev.target.closest('[data-tirar-agua]');
 
-  if (b && !DIA && confirmar(b))
+  if (!b || DIA || !confirmar(b)) return;
+  // o copo da chave armada (o mesmo do 1º toque, mesmo se a lista mudou no meio); sumiu, nada sai
+  const i = chavesAguas(hoje(), doDia(hoje()).aguas).indexOf(b.dataset.armavel);
+
+  if (i >= 0)
     mudarHoje((x) => {
-      x.aguas.splice(+b.dataset.tirarAgua, 1);
+      x.aguas.splice(i, 1);
     });
 });
 // Tocar num dia dos Últimos 7 dias abre ele (anterior: só leitura); Hoje e o Voltar do navegador voltam

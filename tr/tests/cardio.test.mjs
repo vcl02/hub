@@ -157,6 +157,16 @@ test('encerrar o cardio antes: toque duplo grava o tempo feito; menos de 1 min n
   await pg.clock.fastForward('00:30');
   await pg.click('#cd-encerrar'); // 1º toque só arma
   assert.equal(await pg.isVisible('#cd-rodando'), true);
+  // o cronômetro anda (a tela do cardio se repinta) e o Encerrar continua vermelho até o fim dos 3 s, depois desarma sozinho
+  // (o redesenho de uma lista com o item armado é testado no Apagar do histórico, em treino.test.mjs)
+  const armado = () => pg.$eval('#cd-encerrar', (b) => b.classList.contains('armado'));
+
+  await pg.clock.fastForward('00:01');
+  assert.equal(await armado(), true);
+  await pg.clock.fastForward('00:02'); // 3 s: desarma sozinho
+  assert.equal(await armado(), false);
+  await pg.click('#cd-encerrar'); // o toque depois dos 3 s só arma de novo
+  assert.equal(await pg.isVisible('#cd-rodando'), true);
   await pg.click('#cd-encerrar');
   assert.equal(
     await pg.textContent('#toast-msg'),

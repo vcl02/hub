@@ -757,6 +757,15 @@ dialog#modalComprometidos {
   color: var(--muted);
 }
 
+/* Selo e chip lado a lado têm a mesma altura (24 px): sem isto, a fonte do negrito e a borda do chip davam 21, 23 e 24 */
+.metaPlano > .selo {
+  line-height: 20px;
+}
+
+.metaPlano > .chip {
+  line-height: 18px;
+}
+
 :is(.selo, .chip) :is(i, .mpDetalhe) {
   color: inherit;
   opacity: 0.8;

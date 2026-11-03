@@ -201,7 +201,7 @@ async function abrirFin(
   busca = '',
   dados = dadosDeExemplo(),
   atraso = 0,
-  { celular = false } = {}
+  { celular = false, chartFalso = false } = {}
 ) {
   const ctx = await navegador.newContext({
     serviceWorkers: 'block',
@@ -211,6 +211,20 @@ async function abrirFin(
     ...(celular && { isMobile: true, hasTouch: true }),
   });
 
+  // O Chart.js vem de uma CDN (bloqueada aqui): com `chartFalso`, uma classe mínima deixa os modais de gráfico abrirem
+  if (chartFalso)
+    await ctx.addInitScript(() => {
+      window.Chart = class {
+        constructor(_canvas, config) {
+          this.config = config;
+          this.data = config.data;
+        }
+
+        destroy() {}
+
+        update() {}
+      };
+    });
   await ctx.route(
     (u) => !u.href.startsWith(base),
     (r) => r.abort()

@@ -7,7 +7,14 @@ import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { carregar, carregarArquivos } from './funcoes.mjs';
-import { etiquetas, elementoPorId, declaracoes, regras } from './leitores.mjs';
+import {
+  etiquetas,
+  elementoPorId,
+  declaracoes,
+  regras,
+  usosDeVar,
+  definidasEm,
+} from './leitores.mjs';
 import { iniciarHub } from './hub-falso.mjs';
 import { rodarSw } from './sw-falso.mjs';
 
@@ -884,31 +891,6 @@ test('base comum: tokens e componentes existem, a referência carrega os dois e 
   ); // o texto dos títulos da página de referência (um documento)
 });
 
-// Os `var(--x)` de um texto, lidos por varredura de caracteres (sem regex): nome até o primeiro caractere que não é de token.
-const CARACTERES_DE_TOKEN = 'abcdefghijklmnopqrstuvwxyz0123456789-';
-
-function usosDeVar(texto) {
-  const nomes = [];
-  let i = texto.indexOf('var(--');
-
-  while (i >= 0) {
-    let j = i + 4;
-
-    while (j < texto.length && CARACTERES_DE_TOKEN.includes(texto[j].toLowerCase())) j++;
-    nomes.push(texto.slice(i + 4, j));
-    i = texto.indexOf('var(--', j);
-  }
-
-  return nomes;
-}
-
-// Propriedades personalizadas declaradas ("--x: valor") nas regras de um CSS
-const definidasEm = (css) =>
-  regras(css)
-    .flatMap((r) => r.declaracoes)
-    .filter((d) => d.startsWith('--'))
-    .map((d) => d.slice(0, d.indexOf(':')).trim());
-
 test('usosDeVar acha os var(--x) de um texto, com o fallback e sem confundir com outro nome', () => {
   assert.deepEqual(
     usosDeVar('color: var(--teal); background: var(--bg-1, #000) var(--on-teal)'),
@@ -962,24 +944,8 @@ test('módulos na base comum só usam as cores da base: todo var(--x) do CSS, do
           `${app || 'hub'}/index.html: ${v} em style de <${e.tag}>`
         );
   }
-
-  // Scripts que montam HTML com style="… var(--x)": não há como rodar cada função de tela só para ler a saída (dependem de
-  // dados e DOM), então a conferência é sobre o texto do código (objeto que de fato contém o CSS escrito à mão), com a mesma
-  // varredura sem regex e o mesmo conjunto de tokens aceitos do módulo.
-  for (const app of ['', 'agua', 'corpo', 'al', 'tr', 'fin']) {
-    const aceitas = new Set(tokens);
-
-    for (const f of [...base, ...modulos[app]])
-      for (const v of definidasEm(ler(f))) aceitas.add(v);
-
-    const scripts = app
-      ? readdirSync(path.join(RAIZ, app, 'js')).map((n) => `${app}/js/${n}`)
-      : ['hub.js'];
-
-    for (const f of scripts)
-      for (const v of usosDeVar(ler(f)))
-        assert.ok(aceitas.has(v), `${f}: ${v} não está na base nem no módulo`);
-  }
+  // Os scripts que montam HTML com var(--x) escrito à mão são conferidos pela saída das funções, em
+  // tests/estilos-gerados.test.mjs.
 });
 
 test('cada app abre com os próprios arquivos: todo src e href relativo do index.html aponta para um arquivo que existe no disco (subpastas, ../)', () => {

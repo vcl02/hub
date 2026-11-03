@@ -64,7 +64,7 @@ const comandos = [
     process.execPath,
     ['--check', arquivo],
   ]),
-  [process.execPath, ['--test', ...testes]],
+  [process.execPath, ['--test', '--test-timeout=180000', ...testes]],
   ['git', ['diff', '--check', '--', '.']],
   ['git', ['diff', '--cached', '--check', '--', '.']],
 ];

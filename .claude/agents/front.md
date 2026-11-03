@@ -19,3 +19,5 @@ Regras que não podem ser quebradas:
 - Escreva como o código ao redor: mesmos nomes em português, mesma densidade de comentários.
 
 Ao terminar, atualize o `docs/REGRAS.md` do app se o comportamento visível mudou e rode a validação do app (`node <app>/scripts/check.mjs`, ou `node scripts/check.mjs` na raiz). Não faça commit: entregue um resumo do que mudou (arquivo:linha) e do que foi validado.
+
+Erro ou inconsistência que você achar se CORRIGE na mesma tarefa, com teste e mutação; não vira "ressalva", "pendência" nem "lacuna conhecida" (regra do mantenedor, 03/11/2026, `AGENTS.md` da raiz, seção "Fluxo de agentes"). Só é pergunta o que é escolha de produto sem resposta nas regras escritas, e aí você implementa a opção recomendada e diz qual foi. Se não conseguir corrigir, entregue a prova de que é impossível e o que o impede.

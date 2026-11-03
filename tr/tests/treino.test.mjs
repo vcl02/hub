@@ -3,7 +3,13 @@
 // treino do dia (começa, fecha por inatividade, trava) em sessao.test.mjs; pontos, calorias e conquistas em pontos.test.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { prepararApp, abrirApp, linhas, novaNuvem } from './helpers/app.mjs';
+import {
+  prepararApp,
+  abrirApp,
+  linhas,
+  novaNuvem,
+  sincronizado,
+} from './helpers/app.mjs';
 
 prepararApp();
 
@@ -372,5 +378,118 @@ test('lembrete da garrafinha ao abrir o 1º exercício do dia', async () => {
   await pg.reload();
   await pg.waitForSelector('#v-exercicio:not([hidden])');
   assert.equal(await pg.isVisible('#agua'), false); // não volta no mesmo dia
+  await ctx.close();
+});
+
+// Recarrega com a busca da nuvem segurada (a tela abre com a cópia do aparelho) e devolve a função que solta a nuvem e espera o
+// redesenho que ela traz (mostrar a tela de novo): a chegada da nuvem entre o 1º e o 2º toque, como no al (al/tests/dia.test.mjs)
+async function recarregarComNuvemSegurada(pg, tela) {
+  let soltar;
+  const porta = new Promise((ok) => (soltar = ok));
+
+  await pg.route(/supabase\.co\/rest\/v1\//, async (rota) => {
+    if (rota.request().method() === 'GET') await porta;
+    await rota.fallback(); // segue para a nuvem falsa do helper
+  });
+  await pg.reload();
+  await pg.waitForSelector(`${tela}:not([hidden])`);
+  await pg.evaluate(() => {
+    window.redesenhos = 0;
+    const original = mostrar;
+
+    window.mostrar = function (...args) {
+      window.redesenhos++;
+
+      return original.apply(this, args);
+    };
+  });
+
+  return async () => {
+    soltar();
+    await pg.waitForFunction(() => window.redesenhos > 0);
+  };
+}
+
+test('Apagar do histórico: a nuvem traz um registro antes do armado e o 2º toque apaga o armado, não o vizinho; o que sumiu não apaga nada', async () => {
+  const { ctx, pg, nuvem, erros } = await abrirApp({
+    relogio: new Date('2026-10-21T19:00:00'),
+  });
+
+  const datas = () =>
+    pg.$$eval('#e-historico [data-apagar]', (B) => B.map((b) => b.dataset.apagar));
+
+  const armados = () =>
+    pg.$$eval('#e-historico [data-apagar]', (B) =>
+      B.map((b) => b.classList.contains('armado'))
+    );
+
+  await pg.tap('.slot >> nth=0');
+  await pg.evaluate(() => {
+    const vid = exAtual().variacoes[exAtual().ativo].id;
+
+    for (const data of ['2026-10-10', '2026-10-15'])
+      db.registros.push({ variacao: vid, data, series: [{ kg: 40, reps: 8 }] });
+    gravar();
+    telas.exercicio();
+  });
+  await sincronizado(pg);
+  nuvem.tabelas.tr_registro.push({
+    ...nuvem.tabelas.tr_registro.find((r) => r.data === '2026-10-10'),
+    data: '2026-10-12',
+  }); // outro aparelho lançou um registro entre os dois
+  const chegada = await recarregarComNuvemSegurada(pg, '#v-exercicio');
+
+  assert.deepEqual(await datas(), ['2026-10-15', '2026-10-10']);
+  await pg.click('#e-historico [data-apagar] >> nth=1'); // arma o 10/10
+  await chegada();
+  assert.deepEqual(await datas(), ['2026-10-15', '2026-10-12', '2026-10-10']);
+  assert.deepEqual(await armados(), [false, false, true]); // o armado andou com o 10/10, não ficou na posição 1
+  await pg.click('#e-historico [data-apagar] >> nth=2'); // 2º toque no 10/10: apaga
+  assert.deepEqual(await datas(), ['2026-10-15', '2026-10-12']);
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.tr_registro.map((r) => r.data).sort(), [
+    '2026-10-12',
+    '2026-10-15',
+  ]);
+
+  // O registro armado some dos dados antes do 2º toque (a lista ainda com o botão dele): não apaga nada, sem aviso nem Desfazer
+  await pg.evaluate(() => {
+    window.avisos = [];
+    const original = toast;
+
+    window.toast = (...a) => (avisos.push(a[0]), original(...a));
+  });
+  await pg.click('#e-historico [data-apagar] >> nth=0'); // arma o 15/10
+  await pg.evaluate(() => {
+    db.registros = db.registros.filter((r) => r.data !== '2026-10-15');
+  });
+  await pg.click('#e-historico [data-apagar] >> nth=0');
+  assert.deepEqual(await pg.evaluate(() => db.registros.map((r) => r.data)), [
+    '2026-10-12',
+  ]);
+  assert.deepEqual(await pg.evaluate(() => avisos), []);
+
+  // Excluir treino (na edição da linha): o treino armado some antes do 2º toque; não exclui nada nem quebra
+  await pg.evaluate(() => {
+    db.treinos.push({
+      inicio: new Date('2026-10-20T18:00:00').getTime(),
+      fim: new Date('2026-10-20T19:00:00').getTime(),
+      fechado: true,
+    });
+    gravar();
+  });
+  await pg.click('#v-exercicio .back');
+  await pg.click('#i-semana [data-dia="2026-10-20"]');
+  await pg.click('[data-editar-treino]');
+  await pg.click('[data-excluir-treino]'); // arma
+  await pg.evaluate(() => {
+    db.treinos = [];
+  });
+  await pg.click('[data-excluir-treino]');
+  assert.deepEqual(await pg.evaluate(() => db.registros.map((r) => r.data)), [
+    '2026-10-12',
+  ]); // nada saiu
+  assert.deepEqual(await pg.evaluate(() => avisos), []);
+  assert.deepEqual(erros, []);
   await ctx.close();
 });

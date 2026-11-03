@@ -134,6 +134,232 @@ for (const app of ['agua', 'al', 'corpo']) {
   });
 }
 
+// ---------- confirmar(botão): toque duplo, armado pela chave do item (data-armavel), fora do botão ----------
+// O 1º toque arma por 3 s, o 2º confirma. A lista redesenhada no meio (botões novos) continua armada no mesmo item; o
+// MutationObserver de cada util.js chama pintarArmados a cada redesenho (aqui com um observador falso que guarda o callback;
+// no navegador: al/tests/dia.test.mjs, agua/tests/agua.test.mjs, corpo/tests/corpo.test.mjs e tr/tests/treino.test.mjs). Botão sem chave (dataset vazio) nunca arma nem confirma.
+const botao = (chave) => {
+  const classes = new Set();
+
+  return {
+    dataset: chave === undefined ? {} : { armavel: chave },
+    classList: {
+      toggle: (c, sim) => (sim ? classes.add(c) : classes.delete(c)),
+      contains: (c) => classes.has(c),
+    },
+  };
+};
+
+// O `new MutationObserver(...).observe(...)` de nível de arquivo do util.js, como está no código (não é declaração: o
+// carregar o roda depois das funções, no mesmo contexto)
+function observadorDe(arquivo) {
+  const src = readFileSync(arquivo, 'utf8');
+
+  const st = parse(src, {
+    ecmaVersion: 'latest',
+    sourceType: 'script',
+    range: true,
+  }).body.filter(
+    (n) =>
+      n.type === 'ExpressionStatement' &&
+      n.expression.callee?.object?.callee?.name === 'MutationObserver'
+  );
+
+  assert.equal(st.length, 1, `${arquivo}: um MutationObserver de nível de arquivo`);
+
+  return src.slice(...st[0].range);
+}
+
+function toqueDuplo(app) {
+  let agora = 1000,
+    botoes = [],
+    pinturas = 0, // quantas vezes o pintarArmados percorreu a tela (document.querySelectorAll)
+    aoMudar = null; // o callback que o util.js deu ao MutationObserver
+
+  const timers = [],
+    errosConsole = [];
+
+  const U = carregar(
+    `${app}/js/util.js`,
+    [
+      'ARMADO_MS',
+      'armados',
+      'estaArmado',
+      'armar',
+      'desarmar',
+      'pintarArmados',
+      'confirmar',
+    ],
+    {
+      Date: { now: () => agora },
+      setTimeout: (f, ms) => timers.push({ f, em: agora + ms }),
+      console: { error: (...a) => errosConsole.push(a) },
+      document: {
+        documentElement: {},
+        querySelectorAll: () => {
+          pinturas++;
+
+          return botoes;
+        },
+      },
+      MutationObserver: class {
+        constructor(f) {
+          aoMudar = f;
+        }
+
+        observe(alvo, o) {
+          assert.deepEqual(json(o), { childList: true, subtree: true }); // a tela inteira, qualquer desenho
+        }
+      },
+    },
+    observadorDe(`${app}/js/util.js`)
+  );
+
+  return {
+    ...U,
+    errosConsole,
+    pinturas: () => pinturas,
+    // o DOM mudou: o callback do observador do util.js, como o navegador chama
+    mudou: () => aoMudar([]),
+    // a lista desenhada de novo: botões novos (sem a classe) e o observador do util.js, que vê a mudança
+    desenhar: (chaves) => {
+      botoes = chaves.map(botao);
+      aoMudar([]);
+
+      return botoes;
+    },
+    // o relógio anda e os timers vencidos rodam
+    andar: (ms) => {
+      agora += ms;
+
+      for (const t of timers.splice(0)) {
+        if (t.em <= agora) t.f();
+        else timers.push(t);
+      }
+    },
+  };
+}
+
+for (const app of ['agua', 'al', 'corpo', 'tr']) {
+  test(`${app}: confirmar arma por 3 s e o 2º toque no mesmo item confirma`, () => {
+    const u = toqueDuplo(app);
+    let [a, b] = u.desenhar(['a', 'b']);
+
+    assert.equal(u.ARMADO_MS, 3000);
+    assert.equal(u.confirmar(a), false); // 1º toque: só arma
+    assert.equal(a.classList.contains('armado'), true);
+    assert.equal(b.classList.contains('armado'), false); // o vizinho não
+    assert.equal(u.confirmar(b), false); // outro item arma o dele, sem confirmar o 1º
+    u.andar(2999);
+    assert.equal(u.confirmar(a), true); // 2º toque dentro dos 3 s: confirma
+    assert.equal(a.classList.contains('armado'), false); // e desarma (um item igual que fique no lugar não sai junto)
+    assert.equal(u.estaArmado('a'), false);
+    u.andar(1);
+    assert.equal(b.classList.contains('armado'), false); // os 3 s do b acabaram: o vermelho sai sozinho
+    assert.equal(u.confirmar(b), false); // e o toque seguinte só arma de novo
+    [a] = u.desenhar(['a', 'b']);
+    assert.equal(u.confirmar(a), false);
+    u.andar(3000);
+    assert.equal(u.confirmar(a), false); // 3 s depois do 1º: vencido, arma de novo
+  });
+
+  test(`${app}: o armado sobrevive ao redesenho da lista (botão novo do mesmo item) e some com o item`, () => {
+    const u = toqueDuplo(app);
+    const [a] = u.desenhar(['a', 'b']);
+
+    u.confirmar(a);
+    u.andar(1000);
+    const [n, a2, b] = u.desenhar(['x', 'a', 'b']); // a nuvem chegou: lista nova, outro item antes
+
+    assert.equal(n.classList.contains('armado'), false); // quem ficou na posição do armado não herda
+    assert.equal(b.classList.contains('armado'), false);
+    assert.equal(a2.classList.contains('armado'), true); // o botão novo do mesmo item volta vermelho
+    assert.equal(u.confirmar(a2), true); // e o 2º toque confirma (uma vez)
+    assert.equal(u.confirmar(a2), false);
+
+    const [c] = u.desenhar(['c']);
+
+    u.confirmar(c);
+    const [d] = u.desenhar(['d']); // a nuvem trouxe outra lista, sem o item armado: nada armado na tela
+
+    assert.equal(d.classList.contains('armado'), false);
+    assert.equal(u.confirmar(d), false); // o toque no item novo só arma o dele
+    u.andar(3000);
+    assert.equal(Object.keys(u.armados).length, 0); // vencidos saem da lista
+  });
+
+  test(`${app}: botão sem data-armavel nunca arma nem confirma (nem o 2º toque, nem tocando outro sem chave)`, () => {
+    const u = toqueDuplo(app);
+    const [a, b] = u.desenhar([undefined, undefined]);
+
+    assert.equal(u.confirmar(a), false);
+    assert.equal(a.classList.contains('armado'), false); // nem fica vermelho
+    assert.equal(u.confirmar(b), false); // outro sem chave: não confirma o 1º (antes, os dois dividiam a chave "undefined")
+    assert.equal(u.confirmar(a), false); // nem o 2º toque no mesmo
+    assert.deepEqual(Object.keys(u.armados), []);
+    assert.equal(u.errosConsole.length, 3); // cada toque avisa no console, sem quebrar
+  });
+
+  test(`${app}: o observador da tela repinta só quando há item armado`, () => {
+    const u = toqueDuplo(app);
+    const [a] = u.desenhar(['a', 'b']);
+    const antes = u.pinturas();
+
+    u.mudou(); // nada armado: o redesenho não percorre a tela
+    assert.equal(u.pinturas(), antes);
+    u.confirmar(a);
+    const armado = u.pinturas();
+
+    u.mudou(); // com armado: repinta
+    assert.equal(u.pinturas(), armado + 1);
+    u.andar(3000); // venceu: sai da lista e o observador volta a não repintar
+    const vencido = u.pinturas();
+
+    u.mudou();
+    assert.equal(u.pinturas(), vencido);
+  });
+}
+
+// Chave de item sem id (trecho, copo, horário): o conteúdo e a vez entre iguais, não a posição. A ordem muda (a nuvem traz um
+// item antes): a chave armada continua no mesmo item.
+const CHAVES = {
+  al: {
+    f: carregar('al/js/telas.js', ['chavesTrechos'], {
+      chavesDosItens: carregar('al/js/util.js', ['chavesDosItens']).chavesDosItens,
+    }).chavesTrechos,
+    x: (h) => ({ hora: h, minutos: 20 }),
+  },
+  agua: {
+    f: carregar('agua/js/telas.js', ['chavesAguas'], {
+      chavesDosItens: carregar('agua/js/util.js', ['chavesDosItens']).chavesDosItens,
+    }).chavesAguas,
+    x: (h) => ({ hora: h, ml: 300 }),
+  },
+  corpo: {
+    f: (dia, L) =>
+      carregar('corpo/js/telas.js', ['chavesHoras'], {
+        chavesDosItens: carregar('corpo/js/util.js', ['chavesDosItens']).chavesDosItens,
+      }).chavesHoras('xixi', dia, L),
+    x: (h) => h,
+  },
+};
+
+for (const [app, { f, x }] of Object.entries(CHAVES)) {
+  test(`${app}: a chave do item da lista não é a posição (outro item antes não muda o armado de lugar)`, () => {
+    const dia = '2026-11-03',
+      antes = [x('12:10'), x('15:30')],
+      depois = [x('08:00'), x('12:10'), x('15:30')];
+
+    const armada = f(dia, antes)[0]; // armou o 12:10
+
+    assert.equal(f(dia, depois).indexOf(armada), 1); // depois da nuvem, ainda o 12:10 (não o 08:00, que ficou na posição 0)
+    assert.notEqual(f('2026-11-02', antes)[0], armada); // outro dia, outra chave
+    const iguais = f(dia, [x('09:00'), x('09:00')]);
+
+    assert.notEqual(iguais[0], iguais[1]); // dois iguais no mesmo minuto: chaves diferentes (o 2º toque tira um só)
+  });
+}
+
 // ---------- fetchComTeto: uma cópia só, em base/nucleo.js (a função é testada em tests/nucleo.test.mjs) ----------
 // Pedido ao Supabase que perde o sinal no meio (metrô) vira falha de rede em 15 s (a função, 40 s). Antes cada app tinha a
 // própria cópia, igual byte a byte; agora a página inicial e os quatro apps usam a do núcleo: nenhum declara a sua (lido pela

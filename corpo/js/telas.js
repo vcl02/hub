@@ -172,19 +172,25 @@ function pintarEvacuacao() {
 
   if (x?.sono != null) $('d-sono-res').innerHTML = sonoTxt(x.sono);
   $('ev-total').textContent = ev.length;
+
+  const dia = $('c-data').value,
+    kev = chavesHoras('ev', dia, ev);
+
   $('ev-horas').innerHTML = ev
     .map(
       (h, i) =>
-        `<li><button type="button" class="chip" data-tirar-ev="${i}" title="Tirar (toque duplo)" aria-label="Tirar evacuação ${h || 'sem horário'}">${h || 'sem horário'} ×</button></li>`
+        `<li><button type="button" class="chip" data-tirar-ev="${i}" data-armavel="${kev[i]}" title="Tirar (toque duplo)" aria-label="Tirar evacuação ${h || 'sem horário'}">${h || 'sem horário'} ×</button></li>`
     )
     .join('');
-  const xx = x?.xixis || [];
+
+  const xx = x?.xixis || [],
+    kxx = chavesHoras('xixi', dia, xx);
 
   $('x-total').textContent = xx.length;
   $('x-horas').innerHTML = xx
     .map(
       (h, i) =>
-        `<li><button type="button" class="chip" data-tirar-xixi="${i}" title="Tirar (toque duplo)" aria-label="Tirar xixi das ${h}">${h} ×</button></li>`
+        `<li><button type="button" class="chip" data-tirar-xixi="${i}" data-armavel="${kxx[i]}" title="Tirar (toque duplo)" aria-label="Tirar xixi das ${h}">${h} ×</button></li>`
     )
     .join('');
 
@@ -201,6 +207,11 @@ function pintarEvacuacao() {
     $('ev-ultima').textContent =
       `${n} dias sem evacuar (última em ${dataCurta(ultima.data)})`;
 }
+
+// Chave de cada horário para o toque duplo do ×: a lista (ev ou xixi), o dia e o horário (e a vez, entre horários iguais). Não
+// a posição: a nuvem que traz um horário antes muda a posição, e o 2º toque tiraria o vizinho.
+const chavesHoras = (lista, dia, L) =>
+  chavesDosItens(L, (h) => [lista, dia, h].join(' '));
 
 // Sono: horas ("9 h 30") e a etiqueta BOM (8 h ou mais), OK (7 a 8) ou RUIM (menos de 7, vermelho)
 const sonoTxt = (h) => {
@@ -315,7 +326,7 @@ function pintarHistorico() {
     ? L.map((m) =>
         m.data === editando
           ? `<li class="editando"><span class="ed-inline"><input type="date" id="em-data" value="${m.data}" min="${hoje()}" max="${hoje()}" aria-label="Data"><input type="time" id="em-hora" value="${m.hora}" aria-label="Horário"><input id="em-peso" inputmode="decimal" value="${m.peso ? virgula(m.peso) : ''}" placeholder="kg" title="Peso (kg)" aria-label="Peso em kg"><input id="em-cint" inputmode="decimal" value="${m.cintura ? virgula(m.cintura) : ''}" placeholder="cm" title="Barriga (cm, linha do umbigo)" aria-label="Barriga em cm"></span><span class="ed-acoes">${btIcone('x', 'Cancelar', 'data-cancelar')}${btIcone('ok', 'Salvar', `data-salvar="${m.data}"`, 'ok')}</span></li>`
-          : `<li class="medida"><i class="h-d hora">${dataCurta(m.data)}${m.hora ? ' <br>' + m.hora : ''}</i> <span class="h-v oque">${[m.peso && fmt(m.peso) + '\u00a0kg', m.cintura && fmt(m.cintura) + '\u00a0cm'].filter(Boolean).join(' · ')}${m.peso ? `<small class="h-sub"> · IMC ${fmt(imc(m.peso))}</small>` : ''}</span> <span class="ed-acoes">${btIcone('lapis', 'Editar', `data-editar="${m.data}"`)}${btIcone('lixo', 'Apagar', `data-apagar="${m.data}"`, 'perigo')}</span></li>`
+          : `<li class="medida"><i class="h-d hora">${dataCurta(m.data)}${m.hora ? ' <br>' + m.hora : ''}</i> <span class="h-v oque">${[m.peso && fmt(m.peso) + '\u00a0kg', m.cintura && fmt(m.cintura) + '\u00a0cm'].filter(Boolean).join(' · ')}${m.peso ? `<small class="h-sub"> · IMC ${fmt(imc(m.peso))}</small>` : ''}</span> <span class="ed-acoes">${btIcone('lapis', 'Editar', `data-editar="${m.data}"`)}${btIcone('lixo', 'Apagar', `data-apagar="${m.data}" data-armavel="apagar ${m.data}"`, 'perigo')}</span></li>`
       ).join('')
     : '<li class="vazio">Nenhuma medida ainda.</li>';
 }
@@ -364,13 +375,22 @@ $('ev-mais').addEventListener('click', () => {
   });
   toast(`Evacuação${h ? ' às ' + h : ''}`);
 });
+
+// Tira o horário da chave armada (o mesmo do 1º toque, mesmo se a lista mudou no meio); sumiu, nada sai
+function tirarArmado(lista, campo, chave) {
+  const L = diaDoForm()?.[campo] || [],
+    i = chavesHoras(lista, $('c-data').value, L).indexOf(chave);
+
+  if (i >= 0)
+    mudarDia((x) => {
+      x[campo].splice(i, 1);
+    });
+}
+
 $('ev-horas').addEventListener('click', (ev) => {
   const b = ev.target.closest('[data-tirar-ev]');
 
-  if (b && confirmar(b))
-    mudarDia((x) => {
-      x.evacuacoes.splice(+b.dataset.tirarEv, 1);
-    });
+  if (b && confirmar(b)) tirarArmado('ev', 'evacuacoes', b.dataset.armavel);
 });
 // +1: xixi com o horário de agora; tocar num horário (duas vezes) tira
 $('x-mais').addEventListener('click', () => {
@@ -385,10 +405,7 @@ $('x-mais').addEventListener('click', () => {
 $('x-horas').addEventListener('click', (ev) => {
   const b = ev.target.closest('[data-tirar-xixi]');
 
-  if (b && confirmar(b))
-    mudarDia((x) => {
-      x.xixis.splice(+b.dataset.tirarXixi, 1);
-    });
+  if (b && confirmar(b)) tirarArmado('xixi', 'xixis', b.dataset.armavel);
 });
 
 // Sono: a hora em que dormi e a em que acordei (a noite que terminou no dia escolhido); as horas saem dos dois. Vazio tira.

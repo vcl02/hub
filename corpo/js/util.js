@@ -1,5 +1,5 @@
 'use strict';
-// Utilidades: datas, números, armazenamento local, avisos, confirmação com toque duplo e gráfico de linha.
+// Utilidades: datas, números, armazenamento local, avisos, confirmação com toque duplo (armado pela chave do item) e gráfico de linha.
 const $ = (id) => document.getElementById(id);
 
 const store = {
@@ -144,14 +144,75 @@ const ICONES = {
 const btIcone = (icone, titulo, attrs, classe = '') =>
   `<button type="button" class="bt-ic ${classe}" ${attrs} title="${titulo}" aria-label="${titulo}"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONES[icone]}</svg></button>`;
 
+// ===== Toque duplo para confirmar (tirar, apagar, jogar fora) =====
+// O 1º toque arma o item (o botão fica vermelho por 3 s) e o 2º confirma. O armado fica guardado pela chave do item
+// (data-armavel no botão), não no botão: a lista redesenhada no meio (a nuvem que chega) devolve o vermelho ao botão novo do
+// mesmo item, e o 2º toque tira esse item, nunca o vizinho que ficou no lugar. Mesma regra em todos os apps.
+const ARMADO_MS = 3000;
+let armados = {}; // chave do item → até quando (ms)
+
+const estaArmado = (chave) => armados[chave] > Date.now();
+
+function armar(chave) {
+  armados[chave] = Date.now() + ARMADO_MS;
+  setTimeout(pintarArmados, ARMADO_MS); // o prazo acabou: o vermelho sai
+}
+
+function desarmar(chave) {
+  delete armados[chave];
+}
+
+// Cada botão com data-armavel fica vermelho só enquanto o item dele está armado; o prazo vencido sai da lista
+function pintarArmados() {
+  document
+    .querySelectorAll('[data-armavel]')
+    .forEach((b) => b.classList.toggle('armado', estaArmado(b.dataset.armavel)));
+
+  for (const k of Object.keys(armados)) if (!estaArmado(k)) delete armados[k];
+}
+
+// true no 2º toque no mesmo item dentro do prazo; o 1º só arma. Botão sem data-armavel nunca arma nem confirma: sem a
+// chave, todos dividiriam uma só ("undefined") e o 2º toque num botão confirmaria o 1º de outro (erro no console, sem quebrar).
 function confirmar(btn) {
-  // toque duplo: o 1º só deixa o botão vermelho (3 s), o 2º confirma
-  if (btn.classList.contains('armado')) return true;
-  btn.classList.add('armado');
-  setTimeout(() => btn.classList.remove('armado'), 3000);
+  const k = btn.dataset.armavel;
+
+  if (!k) {
+    console.error('confirmar: botão sem data-armavel', btn);
+
+    return false;
+  }
+
+  if (estaArmado(k)) {
+    desarmar(k);
+    pintarArmados();
+
+    return true;
+  }
+
+  armar(k);
+  pintarArmados();
 
   return false;
 }
+
+// Chave de item sem id (horário de evacuação ou xixi): o conteúdo e, entre iguais, a vez dele (#1, #2…); nunca a posição na lista,
+// que muda quando a nuvem traz um item antes
+function chavesDosItens(L, texto) {
+  const vez = {};
+
+  return L.map((x) => {
+    const t = texto(x);
+
+    vez[t] = (vez[t] || 0) + 1;
+
+    return `${t}#${vez[t]}`;
+  });
+}
+
+// Lista redesenhada (innerHTML novo, de qualquer desenho): os botões novos dos itens armados voltam vermelhos
+new MutationObserver(() => {
+  if (Object.keys(armados).length) pintarArmados();
+}).observe(document.documentElement, { childList: true, subtree: true });
 
 // Toque repetido sem querer (o dedo que bate duas vezes, o clique duplo): a mesma ação de novo em menos de 0,5 s é ignorada
 const REPETIDO_MS = 500;

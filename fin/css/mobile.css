@@ -556,3 +556,27 @@ tbody tr.sim:hover td {
     animation: none;
   }
 }
+
+/* Alvo de toque (dedo): os botões de ação da base (.bt-ic, 40 px) ganham 44 px e os campos compactos das metas (36 px) a
+   mesma altura; as peças compactas das linhas (o chip tinha 22 a 23, o + das seções 22) ficam com 24 px, o mínimo, para a
+   linha não crescer. Tudo só com o dedo (pointer: coarse), no Fin: com o mouse, as linhas (filtros do thead, chips do teto)
+   ficam na altura da base. Nada disso muda a base nem os outros módulos. */
+@media (pointer: coarse) {
+  .bt-ic:not(.compacto) {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .campo.compacto {
+    height: 44px;
+  }
+
+  .chip.compacto {
+    min-height: 24px;
+  }
+
+  .blk h3 .tog {
+    min-width: 24px;
+    min-height: 24px;
+  }
+}

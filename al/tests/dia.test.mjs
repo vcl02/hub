@@ -135,7 +135,7 @@ test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei +" soma cada 
     ]
   );
   // volta da nuvem igual: a nuvem chega depois da cópia do aparelho e redesenha a lista; espera a chegada (o redesenho), não
-  // a rede quieta. O caso da chegada entre os dois toques tem teste próprio abaixo.
+  // a rede quieta. O caso da chegada entre os dois toques tem testes próprios abaixo.
   const chegada = await recarregarComNuvemSegurada(pg);
 
   await chegada();
@@ -160,9 +160,12 @@ test('gasto do dia: basal × 1,2 + o treino acima da basal; "Andei +" soma cada 
   await ctx.close();
 });
 
-test('"×" do trecho: a nuvem que chega entre o 1º e o 2º toque desarma o botão (o 2º toque só arma de novo, nada é tirado)', async () => {
-  // Comportamento ATUAL, não decidido em REGRAS: o armado é só a classe `armado` no botão (confirmar() em js/util.js) e a
-  // chegada da nuvem redesenha a lista com botões novos. O usuário vê o "×" vermelho voltar ao normal e precisa tocar mais duas vezes.
+const armados = (pg) =>
+  pg.$$eval('#c-lista button', (B) => B.map((b) => b.classList.contains('armado')));
+
+test('"×" do trecho: a nuvem que chega entre o 1º e o 2º toque redesenha a lista e o armado continua (o 2º toque tira, uma vez)', async () => {
+  // O armado fica pela chave do trecho (confirmar() em js/util.js), não no botão: a lista redesenhada pela nuvem volta com o
+  // botão novo do mesmo trecho vermelho, até o fim dos 3 s.
   const { ctx, pg, nuvem, erros } = await abrirApp({ nuvem: comTreino(novaNuvem()) });
 
   await pg.click('#c-mais');
@@ -170,16 +173,37 @@ test('"×" do trecho: a nuvem que chega entre o 1º e o 2º toque desarma o bot�
   const chegada = await recarregarComNuvemSegurada(pg);
 
   await pg.click('[data-tirar-trecho="0"]'); // 1º toque: arma (nuvem ainda não chegou)
-  assert.equal(await pg.locator('[data-tirar-trecho="0"].armado').count(), 1);
+  assert.deepEqual(await armados(pg), [true]);
   await chegada(); // a nuvem chega no meio e redesenha
-  assert.equal(await pg.locator('[data-tirar-trecho="0"].armado').count(), 0); // desarmou
-  await pg.click('[data-tirar-trecho="0"]'); // o 2º toque só arma de novo
-  assert.deepEqual(await trechos(pg), ['15:30 · 20 min ×']);
-  assert.equal(await pg.locator('[data-tirar-trecho="0"].armado').count(), 1);
-  await pg.click('[data-tirar-trecho="0"]'); // o 3º confirma
+  assert.deepEqual(await armados(pg), [true]); // o botão novo continua armado
+  await pg.click('[data-tirar-trecho="0"]'); // o 2º toque tira
   assert.deepEqual(await trechos(pg), []);
   await sincronizado(pg);
   assert.deepEqual(nuvem.tabelas.al_dia, []);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test('"×" do trecho: a nuvem traz um trecho antes do armado (a ordem muda) e o 2º toque tira o armado, nunca o vizinho', async () => {
+  const { ctx, pg, nuvem, erros } = await abrirApp({ nuvem: comTreino(novaNuvem()) }); // 18/09, 15:30
+
+  await pg.click('#c-mais');
+  await sincronizado(pg);
+  nuvem.tabelas.al_dia[0].caminhadas = [
+    { hora: '14:00', km: 1 },
+    ...nuvem.tabelas.al_dia[0].caminhadas,
+  ]; // outro aparelho lançou um trecho mais cedo
+  const chegada = await recarregarComNuvemSegurada(pg);
+
+  await pg.click('[data-tirar-trecho="0"]'); // arma o 15:30 (o único na tela)
+  await chegada();
+  assert.deepEqual(await trechos(pg), ['14:00 · 1 km ×', '15:30 · 20 min ×']);
+  assert.deepEqual(await armados(pg), [false, true]); // o armado andou com o 15:30, não ficou na posição 0
+  await pg.click('[data-tirar-trecho="1"]'); // 2º toque no 15:30: tira
+  assert.deepEqual(await trechos(pg), ['14:00 · 1 km ×']);
+  assert.deepEqual(await armados(pg), [false]);
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.al_dia[0].caminhadas, [{ hora: '14:00', km: 1 }]);
   assert.deepEqual(erros, []);
   await ctx.close();
 });
@@ -532,6 +556,8 @@ test('marmita: × com toque duplo joga fora; sem a tabela (migration 03 pendente
 
   await a.pg.click('[data-jogar="m1"]');
   assert.equal(await a.pg.locator('#marmitas li').count(), 1); // 1º toque só arma
+  // armado de verdade (vermelho no botão que está na tela, mesmo se a nuvem redesenhou a lista) antes do 2º toque
+  await a.pg.waitForSelector('[data-jogar="m1"].armado');
   await a.pg.click('[data-jogar="m1"]');
   await sincronizado(a.pg);
   assert.deepEqual(nuvem.tabelas.al_marmita, []);

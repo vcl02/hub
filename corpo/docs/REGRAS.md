@@ -8,6 +8,7 @@
 - **Dia anterior é só leitura** (escolhido na data do formulário ou aberto pela página inicial): o formulário e o cartão do dia (sono, evacuações e xixis) mostram o que foi lançado nele, com campos e botões desativados (a data não, para voltar). Em cima, o dia e **Hoje**, que volta para hoje. No histórico, só a medida de hoje se edita (horário, peso e barriga; o dia não muda) ou apaga. O dia fica no endereço (`?dia=AAAA-MM-DD`, como o `?ciclo` do Fin; em hoje, sem): recarregar mantém, e o Voltar do navegador volta ao dia de antes. Hoje, futuro ou texto inválido em `?dia`: hoje.
 - **Trocar o dia:** a barra ‹ dia › no topo (Hoje, Ontem ou "quarta, 21/10"), arrastar a tela de lado (para a direita, o dia anterior; para a esquerda, o seguinte; fora dos gráficos, que usam o dedo para a dica) ou ← → no computador, como no al; ou a data do formulário. Para trás até o 1º dia com registro (ou o pedido pelo `?dia`), para frente até hoje.
 - **Esc:** cancela a edição na linha do histórico; num campo de texto, só tira o foco; sem nada aberto, sai do app para a página inicial do hub (`../`), como em todos os apps.
+- **Toque duplo para confirmar (tirar evacuação ou xixi, apagar medida):** o 1º toque deixa o botão vermelho por 3 s e o 2º confirma. O armado é do item, não do botão: a lista redesenhada no meio (a nuvem que chega) mantém o vermelho no mesmo item até o fim dos 3 s, e o 2º toque tira esse item, nunca o vizinho que ficou no lugar dele; se o item sumiu da lista, nada sai. Igual em todos os apps.
 
 ## Perfil (só em código, `perfil.js`)
 

@@ -114,6 +114,74 @@ test('beber: o ml digitado entra com o horário de agora e vira botão; suco con
   await ctx.close();
 });
 
+// Recarrega com a busca da nuvem segurada (a tela abre com a cópia do aparelho) e devolve a função que solta a nuvem e espera o
+// redesenho que ela traz: a chegada da nuvem entre o 1º e o 2º toque do ×, como no al (al/tests/dia.test.mjs)
+async function recarregarComNuvemSegurada(pg) {
+  let soltar;
+  const porta = new Promise((ok) => (soltar = ok));
+
+  await pg.route(/supabase\.co\/rest\/v1\//, async (rota) => {
+    if (rota.request().method() === 'GET') await porta;
+    await rota.fallback(); // segue para a nuvem falsa do helper
+  });
+  await pg.reload();
+  await pg.waitForSelector('#v-agua:not([hidden])');
+  await pg.evaluate(() => {
+    window.redesenhos = 0;
+    const original = desenhar;
+
+    window.desenhar = function (...args) {
+      window.redesenhos++;
+
+      return original.apply(this, args);
+    };
+  });
+
+  return async () => {
+    soltar();
+    await pg.waitForFunction(() => window.redesenhos > 0);
+  };
+}
+
+const armados = (pg) =>
+  pg.$$eval('#b-lista button', (B) => B.map((b) => b.classList.contains('armado')));
+
+test('×: a nuvem traz um copo antes do armado e o 2º toque tira o armado, não o vizinho; o que sumiu não tira nada', async () => {
+  const { ctx, pg, nuvem, erros } = await abrirApp(); // segunda 19/10, 09:00
+
+  await beber(pg, 300);
+  await sincronizado(pg);
+  nuvem.tabelas.agua_dia[0].aguas = [
+    { hora: '08:00', ml: 200 },
+    ...nuvem.tabelas.agua_dia[0].aguas,
+  ]; // outro aparelho lançou um copo mais cedo
+  const chegada = await recarregarComNuvemSegurada(pg);
+
+  await pg.click('[data-tirar-agua="0"]'); // arma o das 09:00 (o único na tela)
+  await chegada();
+  assert.deepEqual(await linhas(pg), ['08:00 Água 200 ml ×', '09:00 Água 300 ml ×']);
+  assert.deepEqual(await armados(pg), [false, true]); // o armado andou com o 09:00, não ficou na posição 0
+  await pg.click('[data-tirar-agua="1"]'); // 2º toque no 09:00: tira
+  assert.deepEqual(await linhas(pg), ['08:00 Água 200 ml ×']);
+  await sincronizado(pg);
+  assert.deepEqual(nuvem.tabelas.agua_dia[0].aguas, [{ hora: '08:00', ml: 200 }]);
+
+  // Os dados mudam antes do 2º toque e a lista ainda não foi redesenhada (o botão é o do 1º toque): o 2º toque tira o copo
+  // da chave armada onde ele estiver agora; se ele sumiu, não tira nada
+  const aguas = () => pg.evaluate(() => doDia(hoje()).aguas);
+
+  await pg.click('[data-tirar-agua="0"]'); // arma o 08:00
+  await pg.evaluate(() => doDia(hoje()).aguas.unshift({ hora: '07:00', ml: 100 }));
+  await pg.click('[data-tirar-agua="0"]'); // o botão velho do 08:00, que agora é o 2º dos dados
+  assert.deepEqual(await aguas(), [{ hora: '07:00', ml: 100 }]); // saiu o 08:00, não o 07:00 da posição 0
+  await pg.click('[data-tirar-agua="0"]'); // arma o 07:00
+  await pg.evaluate(() => doDia(hoje()).aguas.splice(0, 1, { hora: '06:00', ml: 50 }));
+  await pg.click('[data-tirar-agua="0"]'); // o 07:00 sumiu
+  assert.deepEqual(await aguas(), [{ hora: '06:00', ml: 50 }]); // o vizinho que ficou no lugar não sai
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
 test('lembretes desenhados: o atrasado da vez vira "Hora de beber água" e some ao beber; depois das 17h não chama mais', async () => {
   const { ctx, pg } = await abrirApp({ relogio: new Date('2026-10-19T11:20:00-03:00') }); // segunda (casa)
 

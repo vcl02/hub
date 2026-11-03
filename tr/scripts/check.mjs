@@ -15,7 +15,7 @@ const comandos = [
       .map((nome) => `js/${nome}`),
   ].map((arquivo) => [process.execPath, ['--check', arquivo]]),
   [process.execPath, ['scripts/check-style.mjs']],
-  [process.execPath, ['--test', ...testes]],
+  [process.execPath, ['--test', '--test-timeout=180000', ...testes]],
   ['git', ['diff', '--check']],
   ['git', ['diff', '--cached', '--check']],
 ];

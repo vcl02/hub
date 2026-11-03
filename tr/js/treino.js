@@ -86,7 +86,7 @@ function abrirEdicaoTreino(inicio) {
   const li = document.querySelector(`[data-editar-treino="${inicio}"]`).closest('li');
 
   li.className = 'editando';
-  li.innerHTML = `<i class="h-d">${dataCurta(iso(new Date(t.inicio)))}</i><span class="ed-inline"><input type="time" id="et-ini" value="${hhmm(t.inicio)}" aria-label="Início">–<input type="time" id="et-fim" value="${hhmm(t.fim)}" aria-label="Fim"></span><span class="ed-acoes">${btIcone('lixo', 'Excluir treino', `data-excluir-treino="${inicio}"`, 'perigo')}${btIcone('x', 'Cancelar', 'data-cancelar')}${btIcone('ok', 'Salvar', `data-salvar-treino="${inicio}"`, 'ok')}</span>`;
+  li.innerHTML = `<i class="h-d">${dataCurta(iso(new Date(t.inicio)))}</i><span class="ed-inline"><input type="time" id="et-ini" value="${hhmm(t.inicio)}" aria-label="Início">–<input type="time" id="et-fim" value="${hhmm(t.fim)}" aria-label="Fim"></span><span class="ed-acoes">${btIcone('lixo', 'Excluir treino', `data-excluir-treino="${inicio}" data-armavel="excluir-treino ${inicio}"`, 'perigo')}${btIcone('x', 'Cancelar', 'data-cancelar')}${btIcone('ok', 'Salvar', `data-salvar-treino="${inicio}"`, 'ok')}</span>`;
 }
 
 function finalizarTreino() {

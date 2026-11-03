@@ -14,3 +14,5 @@ Você mantém a documentação do hub. Leia antes a seção 1 de `docs/DIRETRIZE
 - Não edite código.
 
 Rode `node --test tests/documentacao.test.mjs` na raiz (ele confere a documentação e as migrations de todos os projetos). Não faça commit: entregue a lista do que mudou em cada documento e o resultado do teste.
+
+Erro ou inconsistência que você achar se CORRIGE na mesma tarefa, com teste e mutação; não vira "ressalva", "pendência" nem "lacuna conhecida" (regra do mantenedor, 03/11/2026, `AGENTS.md` da raiz, seção "Fluxo de agentes"). Só é pergunta o que é escolha de produto sem resposta nas regras escritas, e aí você implementa a opção recomendada e diz qual foi. Se não conseguir corrigir, entregue a prova de que é impossível e o que o impede.

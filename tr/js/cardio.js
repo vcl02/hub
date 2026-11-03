@@ -280,7 +280,7 @@ function pintarCardioResumo(dia, t) {
 
   $('f-cardio').hidden = !c && !pode;
   $('f-cardio').innerHTML = c
-    ? `<ul class="hist"><li><span class="h-v">Cardio</span><span class="h-d">${cardioTxt(c, dia)}</span><span class="ed-acoes">${SO_LEITURA && dia !== hoje() ? '' : btIcone('lixo', 'Apagar cardio', `data-apagar-cardio="${t.inicio}"`, 'perigo')}</span></li></ul>`
+    ? `<ul class="hist"><li><span class="h-v">Cardio</span><span class="h-d">${cardioTxt(c, dia)}</span><span class="ed-acoes">${SO_LEITURA && dia !== hoje() ? '' : btIcone('lixo', 'Apagar cardio', `data-apagar-cardio="${t.inicio}" data-armavel="apagar-cardio ${t.inicio}"`, 'perigo')}</span></li></ul>`
     : pode
       ? `<button type="button" class="btn${DIAS_EXTRA.includes(deIso(dia).getDay()) ? ' primario' : ''} big wide" data-ir="cardio">${C ? 'Voltar ao cardio' : 'Cardio na esteira'}</button>`
       : '';

@@ -46,3 +46,29 @@ export function chavesDoCss(css) {
 
   return { abertas, fechadas, nuncaNegativo };
 }
+
+// Os `var(--x)` de um texto, lidos por varredura de caracteres (sem regex): nome até o primeiro caractere que não é de token.
+const CARACTERES_DE_TOKEN = 'abcdefghijklmnopqrstuvwxyz0123456789-';
+
+export function usosDeVar(texto) {
+  const nomes = [];
+  let i = texto.indexOf('var(--');
+
+  while (i >= 0) {
+    let j = i + 4;
+
+    while (j < texto.length && CARACTERES_DE_TOKEN.includes(texto[j].toLowerCase())) j++;
+    nomes.push(texto.slice(i + 4, j));
+    i = texto.indexOf('var(--', j);
+  }
+
+  return nomes;
+}
+
+// Propriedades personalizadas declaradas ("--x: valor") nas regras de um CSS
+export const definidasEm = (texto) =>
+  css
+    .regras(texto)
+    .flatMap((r) => r.declaracoes)
+    .filter((d) => d.startsWith('--'))
+    .map((d) => d.slice(0, d.indexOf(':')).trim());
