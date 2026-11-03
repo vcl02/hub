@@ -164,7 +164,7 @@ const armados = (pg) =>
   pg.$$eval('#c-lista button', (B) => B.map((b) => b.classList.contains('armado')));
 
 test('"×" do trecho: a nuvem que chega entre o 1º e o 2º toque redesenha a lista e o armado continua (o 2º toque tira, uma vez)', async () => {
-  // O armado fica pela chave do trecho (confirmar() em js/util.js), não no botão: a lista redesenhada pela nuvem volta com o
+  // O armado fica pela chave do trecho (confirmar() do núcleo, ../base/nucleo.js), não no botão: a lista redesenhada pela nuvem volta com o
   // botão novo do mesmo trecho vermelho, até o fim dos 3 s.
   const { ctx, pg, nuvem, erros } = await abrirApp({ nuvem: comTreino(novaNuvem()) });
 

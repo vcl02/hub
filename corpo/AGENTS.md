@@ -9,7 +9,7 @@
 ## Arquitetura
 
 - `index.html` é o único documento; um stylesheet só (`css/corpo.css`).
-- Scripts clássicos nesta ordem, depois de `../supabase.js` (do hub), `../base/nucleo.js` (o `fetchComTeto`) e `perfil.js`: `config`, `util`, `banco`, `telas`, `bootstrap`. A 1ª linha de cada um diz a responsabilidade.
+- Scripts clássicos nesta ordem, depois de `../supabase.js` (do hub), `../base/nucleo.js` (o `fetchComTeto`, o `confirmar` do toque duplo e o `repetido` do toque sem querer) e `perfil.js`: `config`, `util`, `banco`, `telas`, `bootstrap`. A 1ª linha de cada um diz a responsabilidade.
 - Arquivo novo em `css/` ou `js/` entra no `index.html` e no `ARQUIVOS_ESTATICOS` do `sw.js` (`tests/estrutura.test.mjs` confere). Cache `corpo-estatico`; o service worker só apaga caches `corpo-` e guarda `../supabase.js` e `../base/nucleo.js`.
 - Todo arquivo `.js`, `.mjs`, `.css` e `.sql` começa com um comentário curto de responsabilidade.
 

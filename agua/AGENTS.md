@@ -8,7 +8,7 @@
 ## Arquitetura
 
 - `index.html` é o único documento; um stylesheet só (`css/agua.css`).
-- Scripts clássicos nesta ordem, depois de `../supabase.js` (do hub), `../base/nucleo.js` (o `fetchComTeto`) e `../corpo/perfil.js` (módulo do Corpo: `ROTINA` com os dias presenciais): `config`, `util`, `banco`, `conta`, `notificacoes`, `telas`, `bootstrap`. A 1ª linha de cada um diz a responsabilidade.
+- Scripts clássicos nesta ordem, depois de `../supabase.js` (do hub), `../base/nucleo.js` (o `fetchComTeto`, o `confirmar` do toque duplo e o `repetido` do toque sem querer) e `../corpo/perfil.js` (módulo do Corpo: `ROTINA` com os dias presenciais): `config`, `util`, `banco`, `conta`, `notificacoes`, `telas`, `bootstrap`. A 1ª linha de cada um diz a responsabilidade.
 - Arquivo novo em `css/` ou `js/` entra no `index.html` e no `ARQUIVOS_ESTATICOS` do `sw.js` (`tests/estrutura.test.mjs` confere). Cache `agua-estatico`; o service worker só apaga caches `agua-` e guarda `../supabase.js`, `../base/nucleo.js` e `../corpo/perfil.js`.
 - Todo arquivo `.js`, `.mjs`, `.css` e `.sql` começa com um comentário curto de responsabilidade.
 

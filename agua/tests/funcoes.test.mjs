@@ -210,10 +210,7 @@ function util({ agora = '2026-10-19T12:00:00', location, history, document } = {
       URLSearchParams,
       location,
       history,
-      document: { documentElement: null, ...document },
-      MutationObserver: class {
-        observe() {} // o toque duplo vigia a página redesenhada (testado em tests/repetidas.test.mjs)
-      },
+      document,
       addEventListener: (tipo, f) => {
         ouvintes[tipo] = f;
       },

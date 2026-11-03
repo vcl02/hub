@@ -1,11 +1,12 @@
 // Funções repetidas entre os apps (sem navegador): cada cópia é tirada do próprio arquivo do app (tests/funcoes.mjs) e passa
 // pelos mesmos casos. Garante que as cópias se comportam igual até irem para a base comum (base/nucleo.js, passo 4 de
-// docs/DIRETRIZES.md, seção 8): mescla das listas do dia entre aparelhos, diferença para enviar, o dia no endereço e o toque
-// repetido. O que já foi para o núcleo (fetchComTeto) é testado lá (tests/nucleo.test.mjs); aqui só se prova que cada app usa
-// a cópia única.
+// docs/DIRETRIZES.md, seção 8): mescla das listas do dia entre aparelhos, diferença para enviar e o dia no endereço. O que já
+// foi para o núcleo (fetchComTeto, repetido, confirmar e o armado) é testado lá (tests/nucleo.test.mjs); aqui só se prova que
+// cada app usa a cópia única.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { parse } from 'espree';
 import { carregar, carregarArquivos } from './funcoes.mjs';
 import { etiquetas } from './leitores.mjs';
@@ -113,232 +114,34 @@ for (const app of ['agua', 'al', 'corpo', 'tr']) {
   });
 }
 
-// ---------- repetido(acao): a mesma ação em menos de 0,5 s é ignorada (toque repetido sem querer) ----------
-for (const app of ['agua', 'al', 'corpo']) {
-  test(`${app}: repetido ignora a mesma ação em menos de 0,5 s`, () => {
-    let agora = 1000;
-
-    const { repetido } = carregar(
-      `${app}/js/util.js`,
-      ['REPETIDO_MS', 'ultimaAcao', 'repetido'],
-      { Date: { now: () => agora } }
-    );
-
-    assert.equal(repetido('+150'), false);
-    agora += 300;
-    assert.equal(repetido('+150'), true); // 0,3 s depois: repetido
-    agora += 10;
-    assert.equal(repetido('+300'), false); // outra ação: vale
-    agora += 600;
-    assert.equal(repetido('+300'), false); // 0,6 s depois: vale de novo
-  });
-}
-
-// ---------- confirmar(botão): toque duplo, armado pela chave do item (data-armavel), fora do botão ----------
-// O 1º toque arma por 3 s, o 2º confirma. A lista redesenhada no meio (botões novos) continua armada no mesmo item; o
-// MutationObserver de cada util.js chama pintarArmados a cada redesenho (aqui com um observador falso que guarda o callback;
-// no navegador: al/tests/dia.test.mjs, agua/tests/agua.test.mjs, corpo/tests/corpo.test.mjs e tr/tests/treino.test.mjs). Botão sem chave (dataset vazio) nunca arma nem confirma.
-const botao = (chave) => {
-  const classes = new Set();
-
-  return {
-    dataset: chave === undefined ? {} : { armavel: chave },
-    classList: {
-      toggle: (c, sim) => (sim ? classes.add(c) : classes.delete(c)),
-      contains: (c) => classes.has(c),
+// O núcleo inteiro, como a página o carrega, com uma página vazia (o observador do toque duplo roda ao carregar)
+const doNucleo = (nomes) =>
+  carregarArquivos(['base/nucleo.js'], nomes, {
+    document: { documentElement: {}, querySelectorAll: () => [] },
+    MutationObserver: class {
+      observe() {}
     },
-  };
-};
-
-// O `new MutationObserver(...).observe(...)` de nível de arquivo do util.js, como está no código (não é declaração: o
-// carregar o roda depois das funções, no mesmo contexto)
-function observadorDe(arquivo) {
-  const src = readFileSync(arquivo, 'utf8');
-
-  const st = parse(src, {
-    ecmaVersion: 'latest',
-    sourceType: 'script',
-    range: true,
-  }).body.filter(
-    (n) =>
-      n.type === 'ExpressionStatement' &&
-      n.expression.callee?.object?.callee?.name === 'MutationObserver'
-  );
-
-  assert.equal(st.length, 1, `${arquivo}: um MutationObserver de nível de arquivo`);
-
-  return src.slice(...st[0].range);
-}
-
-function toqueDuplo(app) {
-  let agora = 1000,
-    botoes = [],
-    pinturas = 0, // quantas vezes o pintarArmados percorreu a tela (document.querySelectorAll)
-    aoMudar = null; // o callback que o util.js deu ao MutationObserver
-
-  const timers = [],
-    errosConsole = [];
-
-  const U = carregar(
-    `${app}/js/util.js`,
-    [
-      'ARMADO_MS',
-      'armados',
-      'estaArmado',
-      'armar',
-      'desarmar',
-      'pintarArmados',
-      'confirmar',
-    ],
-    {
-      Date: { now: () => agora },
-      setTimeout: (f, ms) => timers.push({ f, em: agora + ms }),
-      console: { error: (...a) => errosConsole.push(a) },
-      document: {
-        documentElement: {},
-        querySelectorAll: () => {
-          pinturas++;
-
-          return botoes;
-        },
-      },
-      MutationObserver: class {
-        constructor(f) {
-          aoMudar = f;
-        }
-
-        observe(alvo, o) {
-          assert.deepEqual(json(o), { childList: true, subtree: true }); // a tela inteira, qualquer desenho
-        }
-      },
-    },
-    observadorDe(`${app}/js/util.js`)
-  );
-
-  return {
-    ...U,
-    errosConsole,
-    pinturas: () => pinturas,
-    // o DOM mudou: o callback do observador do util.js, como o navegador chama
-    mudou: () => aoMudar([]),
-    // a lista desenhada de novo: botões novos (sem a classe) e o observador do util.js, que vê a mudança
-    desenhar: (chaves) => {
-      botoes = chaves.map(botao);
-      aoMudar([]);
-
-      return botoes;
-    },
-    // o relógio anda e os timers vencidos rodam
-    andar: (ms) => {
-      agora += ms;
-
-      for (const t of timers.splice(0)) {
-        if (t.em <= agora) t.f();
-        else timers.push(t);
-      }
-    },
-  };
-}
-
-for (const app of ['agua', 'al', 'corpo', 'tr']) {
-  test(`${app}: confirmar arma por 3 s e o 2º toque no mesmo item confirma`, () => {
-    const u = toqueDuplo(app);
-    let [a, b] = u.desenhar(['a', 'b']);
-
-    assert.equal(u.ARMADO_MS, 3000);
-    assert.equal(u.confirmar(a), false); // 1º toque: só arma
-    assert.equal(a.classList.contains('armado'), true);
-    assert.equal(b.classList.contains('armado'), false); // o vizinho não
-    assert.equal(u.confirmar(b), false); // outro item arma o dele, sem confirmar o 1º
-    u.andar(2999);
-    assert.equal(u.confirmar(a), true); // 2º toque dentro dos 3 s: confirma
-    assert.equal(a.classList.contains('armado'), false); // e desarma (um item igual que fique no lugar não sai junto)
-    assert.equal(u.estaArmado('a'), false);
-    u.andar(1);
-    assert.equal(b.classList.contains('armado'), false); // os 3 s do b acabaram: o vermelho sai sozinho
-    assert.equal(u.confirmar(b), false); // e o toque seguinte só arma de novo
-    [a] = u.desenhar(['a', 'b']);
-    assert.equal(u.confirmar(a), false);
-    u.andar(3000);
-    assert.equal(u.confirmar(a), false); // 3 s depois do 1º: vencido, arma de novo
   });
-
-  test(`${app}: o armado sobrevive ao redesenho da lista (botão novo do mesmo item) e some com o item`, () => {
-    const u = toqueDuplo(app);
-    const [a] = u.desenhar(['a', 'b']);
-
-    u.confirmar(a);
-    u.andar(1000);
-    const [n, a2, b] = u.desenhar(['x', 'a', 'b']); // a nuvem chegou: lista nova, outro item antes
-
-    assert.equal(n.classList.contains('armado'), false); // quem ficou na posição do armado não herda
-    assert.equal(b.classList.contains('armado'), false);
-    assert.equal(a2.classList.contains('armado'), true); // o botão novo do mesmo item volta vermelho
-    assert.equal(u.confirmar(a2), true); // e o 2º toque confirma (uma vez)
-    assert.equal(u.confirmar(a2), false);
-
-    const [c] = u.desenhar(['c']);
-
-    u.confirmar(c);
-    const [d] = u.desenhar(['d']); // a nuvem trouxe outra lista, sem o item armado: nada armado na tela
-
-    assert.equal(d.classList.contains('armado'), false);
-    assert.equal(u.confirmar(d), false); // o toque no item novo só arma o dele
-    u.andar(3000);
-    assert.equal(Object.keys(u.armados).length, 0); // vencidos saem da lista
-  });
-
-  test(`${app}: botão sem data-armavel nunca arma nem confirma (nem o 2º toque, nem tocando outro sem chave)`, () => {
-    const u = toqueDuplo(app);
-    const [a, b] = u.desenhar([undefined, undefined]);
-
-    assert.equal(u.confirmar(a), false);
-    assert.equal(a.classList.contains('armado'), false); // nem fica vermelho
-    assert.equal(u.confirmar(b), false); // outro sem chave: não confirma o 1º (antes, os dois dividiam a chave "undefined")
-    assert.equal(u.confirmar(a), false); // nem o 2º toque no mesmo
-    assert.deepEqual(Object.keys(u.armados), []);
-    assert.equal(u.errosConsole.length, 3); // cada toque avisa no console, sem quebrar
-  });
-
-  test(`${app}: o observador da tela repinta só quando há item armado`, () => {
-    const u = toqueDuplo(app);
-    const [a] = u.desenhar(['a', 'b']);
-    const antes = u.pinturas();
-
-    u.mudou(); // nada armado: o redesenho não percorre a tela
-    assert.equal(u.pinturas(), antes);
-    u.confirmar(a);
-    const armado = u.pinturas();
-
-    u.mudou(); // com armado: repinta
-    assert.equal(u.pinturas(), armado + 1);
-    u.andar(3000); // venceu: sai da lista e o observador volta a não repintar
-    const vencido = u.pinturas();
-
-    u.mudou();
-    assert.equal(u.pinturas(), vencido);
-  });
-}
 
 // Chave de item sem id (trecho, copo, horário): o conteúdo e a vez entre iguais, não a posição. A ordem muda (a nuvem traz um
 // item antes): a chave armada continua no mesmo item.
 const CHAVES = {
   al: {
     f: carregar('al/js/telas.js', ['chavesTrechos'], {
-      chavesDosItens: carregar('al/js/util.js', ['chavesDosItens']).chavesDosItens,
+      chavesDosItens: doNucleo(['chavesDosItens']).chavesDosItens,
     }).chavesTrechos,
     x: (h) => ({ hora: h, minutos: 20 }),
   },
   agua: {
     f: carregar('agua/js/telas.js', ['chavesAguas'], {
-      chavesDosItens: carregar('agua/js/util.js', ['chavesDosItens']).chavesDosItens,
+      chavesDosItens: doNucleo(['chavesDosItens']).chavesDosItens,
     }).chavesAguas,
     x: (h) => ({ hora: h, ml: 300 }),
   },
   corpo: {
     f: (dia, L) =>
       carregar('corpo/js/telas.js', ['chavesHoras'], {
-        chavesDosItens: carregar('corpo/js/util.js', ['chavesDosItens']).chavesDosItens,
+        chavesDosItens: doNucleo(['chavesDosItens']).chavesDosItens,
       }).chavesHoras('xixi', dia, L),
     x: (h) => h,
   },
@@ -366,36 +169,157 @@ for (const [app, { f, x }] of Object.entries(CHAVES)) {
 // árvore do código, com espree), cada um passa a do núcleo ao cliente do Supabase e a página carrega o núcleo antes do arquivo.
 const DO_NUCLEO = ['TETO_REDE_MS', 'TETO_FUNCAO_MS', 'criarFetchComTeto', 'fetchComTeto'];
 
-// Todo nome declarado no arquivo, em qualquer profundidade (variável, função, classe, função com nome)
-function declarados(arquivo) {
-  const nomes = new Set();
+// Nomes declarados num código-fonte, em dois sentidos que não se misturam:
+//  - topo: o que o arquivo declara no NÍVEL DE SCRIPT (function, class, const/let no topo, var mesmo dentro de bloco do topo,
+//    inclusive por desestruturação). Num script clássico isso é global: repetir um nome do núcleo dá SyntaxError (let/const/
+//    class) ou sobrescreve o do núcleo (function/var). SEMPRE reprova.
+//  - locais: o que se declara DENTRO de uma função (parâmetro, variável, desestruturação, função aninhada). Só esconde o nome
+//    naquela função e não afeta os outros scripts. DECISÃO: sombra local é ACEITA (parâmetro ou variável chamada `repetido`
+//    num handler não colide com nada; reprovar seria falso positivo). O que importa de verdade, que cada chamada vá ao núcleo,
+//    o USOS (abaixo) já trava pela contagem de chamadas por arquivo.
+const nomesDe = (p) => {
+  if (!p) return [];
 
-  const andar = (no) => {
-    if (Array.isArray(no)) return no.forEach(andar);
+  if (p.type === 'Identifier') return [p.name];
+
+  if (p.type === 'ObjectPattern')
+    return p.properties.flatMap((x) => nomesDe(x.type === 'Property' ? x.value : x));
+
+  if (p.type === 'ArrayPattern') return p.elements.flatMap(nomesDe);
+
+  if (p.type === 'AssignmentPattern') return nomesDe(p.left);
+
+  if (p.type === 'RestElement') return nomesDe(p.argument);
+
+  return [];
+};
+
+const EH_FUNCAO = [
+  'FunctionDeclaration',
+  'FunctionExpression',
+  'ArrowFunctionExpression',
+];
+
+function declaracoes(fonte, { locais: querLocais = true } = {}) {
+  const topo = new Set(),
+    locais = new Set(),
+    programa = parse(fonte, { ecmaVersion: 'latest', sourceType: 'script' });
+
+  // nível de script: não entra em função nem classe
+  const noTopo = (no, direto) => {
+    if (Array.isArray(no)) return no.forEach((n) => noTopo(n, direto));
 
     if (!no || typeof no.type !== 'string') return;
 
-    if (no.type === 'VariableDeclarator' && no.id.type === 'Identifier')
-      nomes.add(no.id.name);
+    if (no.type === 'FunctionDeclaration') return no.id && topo.add(no.id.name);
 
-    if (
-      ['FunctionDeclaration', 'FunctionExpression', 'ClassDeclaration'].includes(
-        no.type
-      ) &&
-      no.id
-    )
-      nomes.add(no.id.name);
+    if (no.type === 'ClassDeclaration') return direto && topo.add(no.id.name);
+
+    if (EH_FUNCAO.includes(no.type) || no.type === 'ClassExpression') return;
+
+    if (no.type === 'VariableDeclaration' && (direto || no.kind === 'var'))
+      for (const d of no.declarations) nomesDe(d.id).forEach((n) => topo.add(n));
 
     for (const [k, v] of Object.entries(no))
-      if (k !== 'parent' && v && typeof v === 'object') andar(v);
+      if (k !== 'parent' && v && typeof v === 'object') noTopo(v, false);
   };
 
-  andar(
-    parse(readFileSync(arquivo, 'utf8'), { ecmaVersion: 'latest', sourceType: 'script' })
-  );
+  // dentro de funções: parâmetros, variáveis e funções aninhadas
+  const dentro = (no, emFuncao) => {
+    if (Array.isArray(no)) return no.forEach((n) => dentro(n, emFuncao));
 
-  return nomes;
+    if (!no || typeof no.type !== 'string') return;
+
+    if (EH_FUNCAO.includes(no.type)) {
+      if (emFuncao && no.id) locais.add(no.id.name);
+
+      no.params.flatMap(nomesDe).forEach((n) => locais.add(n));
+      emFuncao = true;
+    }
+
+    if (emFuncao && no.type === 'VariableDeclarator')
+      nomesDe(no.id).forEach((n) => locais.add(n));
+
+    if (emFuncao && no.type === 'CatchClause')
+      nomesDe(no.param).forEach((n) => locais.add(n));
+
+    for (const [k, v] of Object.entries(no))
+      if (k !== 'parent' && v && typeof v === 'object') dentro(v, emFuncao);
+  };
+
+  for (const instrucao of programa.body) noTopo(instrucao, true);
+
+  if (querLocais) dentro(programa, false);
+
+  return { topo, locais };
 }
+
+// o que o arquivo declara no nível de script (a colisão que importa)
+const declarados = (arquivo) =>
+  declaracoes(readFileSync(arquivo, 'utf8'), { locais: false }).topo;
+
+test('declaracoes: separa colisão de nível de script de sombra local (fixtures sintéticos)', () => {
+  const ordem = (s) => [...s].sort();
+
+  // nível de script: sempre colisão, de qualquer jeito de declarar
+  const t = declaracoes(`
+    function repetido() {}
+    class ARMADO_MS {}
+    const { confirmar } = x;
+    let [armar, ...resto] = y;
+    var { a: { desarmar }, b = 1 } = z;
+    if (x) { var armados = 1; let dentroDoBloco = 2; }
+    for (var i = 0; i < 1; i++) {}
+    const f = () => { const local = 1; };
+  `);
+
+  assert.deepEqual(
+    ordem(t.topo),
+    [
+      'ARMADO_MS',
+      'armados',
+      'armar',
+      'confirmar',
+      'desarmar',
+      'b',
+      'f',
+      'i',
+      'repetido',
+      'resto',
+    ].sort()
+  );
+  assert.equal(t.topo.has('dentroDoBloco'), false); // let de bloco não é global
+  assert.equal(t.topo.has('local'), false);
+
+  // sombra local: parâmetro, variável, desestruturação e função aninhada, nada no topo
+  const l = declaracoes(`
+    function f(repetido, { confirmar }, [armar], desarmar = 1, ...armados) {
+      const estaArmado = 1;
+      const { pintarArmados } = x;
+      function g(chavesDosItens) {}
+      try {} catch (ultimaAcao) {}
+    }
+    const h = (REPETIDO_MS) => {};
+  `);
+
+  assert.deepEqual(ordem(l.topo), ['f', 'h']);
+  assert.deepEqual(
+    ordem(l.locais),
+    [
+      'repetido',
+      'confirmar',
+      'armar',
+      'desarmar',
+      'armados',
+      'estaArmado',
+      'pintarArmados',
+      'g',
+      'chavesDosItens',
+      'ultimaAcao',
+      'REPETIDO_MS',
+    ].sort()
+  );
+});
 
 const scriptsDe = (pagina) =>
   etiquetas(readFileSync(pagina, 'utf8'))
@@ -440,7 +364,7 @@ for (const [arquivo, pagina, supabaseJs, nucleo, src] of [
       assert.ok(!nomes.has(nome), `${arquivo} declara ${nome}`);
 
     // o cliente do Supabase do arquivo recebe exatamente a função do núcleo
-    const { fetchComTeto } = carregarArquivos(['base/nucleo.js'], ['fetchComTeto']);
+    const { fetchComTeto } = doNucleo(['fetchComTeto']);
 
     const { sb } = carregar(arquivo, ['sb'], {
       supabase: { createClient: (url, chave, opcoes) => opcoes },
@@ -461,5 +385,149 @@ for (const [arquivo, pagina, supabaseJs, nucleo, src] of [
     );
     assert.ok(scripts.indexOf(supabaseJs) < scripts.indexOf(nucleo), pagina);
     assert.ok(scripts.indexOf(nucleo) < scripts.indexOf(src), pagina);
+  });
+}
+
+// ---------- toque repetido e toque duplo: uma cópia só, em base/nucleo.js (testados em tests/nucleo.test.mjs) ----------
+// repetido (a mesma ação de novo em menos de 0,5 s é ignorada) e o toque duplo para confirmar (confirmar, o armado pela chave
+// do item, o MutationObserver que repinta o armado e chavesDosItens) eram iguais byte a byte em js/util.js da Água, do al, do
+// Corpo e do Treino (o Treino sem repetido e sem chavesDosItens, que não usa). Agora nenhum app declara o seu (lido pela árvore
+// do código, com espree, em todo script da página), quem chama usa o do núcleo e a página carrega o núcleo antes de quem chama.
+const DO_TOQUE = [
+  'ARMADO_MS',
+  'armados',
+  'estaArmado',
+  'armar',
+  'desarmar',
+  'pintarArmados',
+  'confirmar',
+  'chavesDosItens',
+  'REPETIDO_MS',
+  'ultimaAcao',
+  'repetido',
+];
+
+// Chamadas a uma função pelo nome (f(...)), em qualquer profundidade
+function chamadas(arquivo, nome) {
+  let n = 0;
+
+  const andar = (no) => {
+    if (Array.isArray(no)) return no.forEach(andar);
+
+    if (!no || typeof no.type !== 'string') return;
+
+    if (
+      no.type === 'CallExpression' &&
+      no.callee.type === 'Identifier' &&
+      no.callee.name === nome
+    )
+      n++;
+
+    for (const [k, v] of Object.entries(no))
+      if (k !== 'parent' && v && typeof v === 'object') andar(v);
+  };
+
+  andar(
+    parse(readFileSync(arquivo, 'utf8'), { ecmaVersion: 'latest', sourceType: 'script' })
+  );
+
+  return n;
+}
+
+test('núcleo: base/nucleo.js declara o toque repetido e o toque duplo (o leitor da árvore acha o que existe)', () => {
+  const nomes = declarados('base/nucleo.js');
+
+  for (const nome of DO_TOQUE) assert.ok(nomes.has(nome), nome);
+
+  // e o observador de nível de arquivo que repinta o armado está no núcleo, uma vez
+  const observadores = parse(readFileSync('base/nucleo.js', 'utf8'), {
+    ecmaVersion: 'latest',
+    sourceType: 'script',
+  }).body.filter(
+    (n) =>
+      n.type === 'ExpressionStatement' &&
+      n.expression.callee?.object?.callee?.name === 'MutationObserver'
+  );
+
+  assert.equal(observadores.length, 1);
+});
+
+// Quantas vezes cada app chama cada função, por arquivo (cada botão que acrescenta à lista chama o repetido; cada × ou
+// lixeira, o confirmar): um handler que deixa de chamar, ou um arquivo novo que passa a chamar, derruba o teste até a lista
+// ser atualizada aqui. Quem chama vem depois do núcleo na página e não declara (nem recebe como parâmetro) o próprio.
+const USOS = {
+  agua: {
+    'js/telas.js': { repetido: 1, confirmar: 1, chavesDosItens: 1 },
+  },
+  al: {
+    'js/telas.js': { repetido: 1, confirmar: 3, chavesDosItens: 1 },
+  },
+  corpo: {
+    'js/telas.js': { repetido: 2, confirmar: 3, chavesDosItens: 1 },
+  },
+  tr: {
+    'js/ajustes.js': { confirmar: 1 },
+    'js/cardio.js': { confirmar: 2 },
+    'js/interacoes.js': { confirmar: 2 },
+  },
+};
+
+for (const [app, usos] of Object.entries(USOS)) {
+  test(`${app}: toque repetido e toque duplo vêm do núcleo (nenhum script da página declara o seu, e quem chama vem depois do núcleo)`, () => {
+    const scripts = scriptsDe(`${app}/index.html`),
+      nucleo = scripts.indexOf('../base/nucleo.js');
+
+    assert.ok(nucleo >= 0, `${app}/index.html carrega o núcleo`);
+
+    for (const src of scripts) {
+      if (src === '../base/nucleo.js' || src.endsWith('supabase.js')) continue;
+
+      const arquivo = path.posix.normalize(`${app}/${src}`),
+        nomes = declarados(arquivo);
+
+      for (const nome of DO_TOQUE)
+        assert.ok(!nomes.has(nome), `${arquivo} declara ${nome}`);
+
+      // os arquivos do próprio app: cada chamada conferida (e quem chama vem depois do núcleo)
+      if (src.startsWith('..')) continue;
+
+      for (const nome of ['repetido', 'confirmar', 'chavesDosItens']) {
+        const n = chamadas(arquivo, nome);
+
+        assert.equal(
+          n,
+          usos[src]?.[nome] ?? 0,
+          `${arquivo} chama ${nome} ${n} vez(es): atualize USOS`
+        );
+
+        if (n)
+          assert.ok(
+            scripts.indexOf(src) > nucleo,
+            `${app}/index.html: núcleo antes de ${src}`
+          );
+      }
+    }
+
+    for (const src of Object.keys(usos))
+      assert.ok(scripts.includes(src), `${app}/index.html carrega ${src}`);
+  });
+}
+
+// Os scripts compartilhados e a página inicial também carregam depois (ou junto) do núcleo e do supabase.js: nenhum declara,
+// no nível de script, um nome do núcleo (fatia 1 e fatia 2). O supabase.js é um UMD de uma linha só: o topo dele é uma
+// expressão única (a função que embrulha tudo), então a busca no nível de script não entra nela e é instantânea.
+for (const arquivo of [
+  'hub.js',
+  'habitos.js',
+  'corpo/perfil.js',
+  'agua/bebidas.js',
+  'al/gasto.js',
+  'supabase.js',
+]) {
+  test(`${arquivo}: não declara nenhum nome do núcleo no nível de script`, () => {
+    const nomes = declarados(arquivo);
+
+    for (const nome of [...DO_NUCLEO, ...DO_TOQUE])
+      assert.ok(!nomes.has(nome), `${arquivo} declara ${nome}`);
   });
 }

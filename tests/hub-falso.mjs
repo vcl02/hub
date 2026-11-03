@@ -170,6 +170,11 @@ export function iniciarHub({
       },
       visibilityState: 'visible',
       activeElement: null,
+      documentElement: {},
+    },
+    // o núcleo vigia a página para o toque duplo (a página inicial não arma nada; testado em tests/nucleo.test.mjs)
+    MutationObserver: class {
+      observe() {}
     },
     addEventListener: (tipo, f) => {
       (janela[tipo] ||= []).push(f);
@@ -185,7 +190,7 @@ export function iniciarHub({
     },
   };
 
-  // Como a página: o núcleo comum (base/nucleo.js, com o fetchComTeto) antes do hub.js, no mesmo escopo global
+  // Como a página: o núcleo comum (base/nucleo.js, com o fetchComTeto e o toque duplo) antes do hub.js, no mesmo escopo global
   const nucleo = path.join(RAIZ, 'base', 'nucleo.js');
 
   vm.createContext(contexto);
