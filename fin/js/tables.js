@@ -579,7 +579,6 @@ const corDaParcela = (p) =>
 
 const CATEGORIAS_SEM_PARCELA = [
   CATEGORIA_BESTEIRA,
-  'Isabella',
   'Transporte',
   'Alimentação',
   CATEGORIA_INVESTIMENTO,

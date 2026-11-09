@@ -242,8 +242,15 @@ test('sequência inteira, sem janela de 3; ciclo sem ele recomeça; sozinho é 1
 
   assert.match(carrega(cafes).cel(cafes[1]), /class=togParcela [^>]*>—</); // Besteira: traço
 
+  // Isabella sai da lista: a parcela dela ganha o número, como qualquer categoria.
+  const isabella = [0, 1, 2].map((c) =>
+    linha(60 + c, 'Iphone', c, { categ: 'Isabella' })
+  );
+
+  assert.match(carrega(isabella).cel(isabella[1]), /class="togParcela[^"]*"[^>]*>2 de 3/);
+  assert.doesNotMatch(carrega(isabella).cel(isabella[1]), />—</);
+
   for (const categ of [
-    'Lazer, Isabella',
     'Transporte',
     'Alimentacao',
     'Investimento',
@@ -373,7 +380,7 @@ test('regra documentada', () => {
   assert.match(regras, /- \*\*Fora da numeração:\*\* mostram só "—"/);
   assert.match(
     regras,
-    /As categorias \*\*Besteira\*\*, \*\*Isabella\*\*, \*\*Transporte\*\*, \*\*Alimentação\*\*, \*\*Investimento\*\* e \*\*Teste\*\*/
+    /As categorias \*\*Besteira\*\*, \*\*Transporte\*\*, \*\*Alimentação\*\*, \*\*Investimento\*\* e \*\*Teste\*\*/
   );
   assert.match(regras, /\*\*Antecipação\/pagamento de fatura\*\*/);
   assert.match(regras, /ignorando o número de parcela no fim do nome/);

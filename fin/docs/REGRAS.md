@@ -98,7 +98,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - **Fora da numeração:** mostram só "—", sem cor, e ficam fora das faixas do filtro, porque numerar não diz nada nelas.
   Lançamento sozinho (`1 de 1`).
   O que é **pra sempre** (sem fim, não há "de N": o total seria só até onde o app gerou a série, 2032).
-  As categorias **Besteira**, **Isabella**, **Transporte**, **Alimentação**, **Investimento** e **Teste**: item inteiro da lista de categorias, sem acento/caixa (`Lazer, Isabella` conta, `Lazer` sozinho não), inclusive as previstas, como a Besteira prevista (`CATEGORIAS_SEM_PARCELA` em `js/tables.js`).
+  As categorias **Besteira**, **Transporte**, **Alimentação**, **Investimento** e **Teste**: item inteiro da lista de categorias, sem acento/caixa, inclusive as previstas, como a Besteira prevista (`CATEGORIAS_SEM_PARCELA` em `js/tables.js`). A **Isabella** não está nessa lista: a coluna numera as parcelas e assinaturas dela normalmente (ex.: Iphone, mensal, `n de 31`).
   **Antecipação/pagamento de fatura**: Antecipação Fatura na categoria ou no nome, a mesma regra de `ehTransferenciaFatura`.
   Linha calculada não entra nem como "—": fica com a célula vazia (ver abaixo).
 - Linha calculada (Fatura, Saldo do mês anterior, Aporte sugerido/Resgate necessário) fica com a célula vazia: não é um compromisso do banco. O Backlog não tem a coluna (não tem ciclo).

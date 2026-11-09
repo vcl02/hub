@@ -165,7 +165,6 @@ test('Parcela: a cor diz o andamento (até 1/3 vermelho, até 2/3 amarelo, depoi
 
   for (const r of [
     { categ: 'Besteira' },
-    { categ: 'Isabella' },
     { categ: 'Transporte' },
     { categ: 'Alimentação' },
     { categ: 'Investimento' },
