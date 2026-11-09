@@ -4,6 +4,10 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ## Convenções gerais
 
+### Visual: a base comum
+
+- O Fin está 100% na base comum do hub (`../base/tokens.css` e `../base/componentes.css`): cabeçalho, campos, botões, modais, listas, chips, selos e avisos são as peças da base, sem peça própria onde ela tem uma. Ficam no Fin só as peças que nenhum outro módulo usa (tabelas do ciclo, gráficos, Mês a mês, cartão desenhado, calculadora) e as cores das marcas Reserva, Comprometido e Pra sempre; a lista e o porquê estão em `docs/DECISOES.md`, seção "Fin na base visual (02/11/2026)".
+
 ### Valores, linhas reais e edição na tabela
 
 - `fin.valor` é assinado: entradas são positivas e despesas são negativas.
@@ -158,6 +162,12 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Duplicações preservam os valores do lançamento de origem.
   O título "Novo/Duplicar/Editar lançamento"/"Simular compra" (`#tituloNovo`) continua existindo e mudando conforme o modo (ver `abreModalNovo` em `js/form.js`), mas é só pra leitor de tela (`.srOnly`): a ação que abriu o modal já deixa claro o contexto, então o texto não aparece mais na tela, e por ser `position: absolute` não ocupa linha nem espaço nenhum no layout.
   Os quatro ícones Crédito/Pago/Reserva/Comprometido (`.fmChecks`) e o botão de fechar dividem a mesma linha, numa única fileira — o fechar fica à direita, separado dos outros quatro, e mantém a cor vermelha de ação destrutiva/saída, não um 5º ícone igual aos demais.
+  As peças do cadastro e de todos os modais são as da base comum do hub (`../base/componentes.css`): cada modal é o `.modal` (com título e fechar no `.modal-topo`), os campos são o `.campo` (o Valor é a caixa `.campo` com o "R$" dentro; o seletor com a setinha da base), Salvar é o `.btn.primario` (na cor do Fin), Hoje e "+N" são o `.btn`, os ícones liga/desliga são o `.bt-ic` (marcado fica na cor do Fin, como o chip escolhido) e o fechar é o `.bt-ic.perigo`.
+  O ± do Valor é o botão de sinal da base (`.bt-ic.sinal`: − vermelho, + verde, ± cinza sem valor), na altura do campo, e as sugestões sob o Nome são a lista suspensa da base (`.lista.suspensa`); a Data tem a mesma altura do Hoje e dos outros campos.
+  O Fin só dá a largura de cada modal e a disposição dos campos.
+  Nas metas, os campos são o campo compacto da base (`.campo.compacto`, a mesma altura em todos, também o de mês), as partes do plano são o selo da base (`.selo`: verde, vermelho ou laranja de atenção) e as que mudam as vezes ou o mês são o chip compacto (`.chip.compacto`, com a cor da situação).
+  Nas tabelas, o ± de cada linha e o do filtro de Valor são o botão de sinal compacto da base, os filtros por clique são o chip compacto (desligado neutro, ligado escolhido na cor do próprio estado: Pago verde, Aberto vermelho, Reserva amarela, Comprometido laranja, Pra sempre azul) e os avisos ao lado do nome (**⚠ Resgatou tudo**, **Atrasado**) são o selo laranja da base.
+  O diagnóstico e o Consolidar tudo listam uma frase por item na lista de texto da base (`.lista.texto`, inconsistências em vermelho, o resto em cinza).
   A mensagem de erro/confirmação (`#erroNovo`) fica sem texto na maior parte do tempo; vazia, ela não reserva o espaço de uma linha de texto — o campo Categorias fica colado perto do botão Salvar, mesma distância de qualquer outro par de campos — e volta ao tamanho normal sozinha assim que ganha uma mensagem.
   No mobile, o modal ocupa a tela inteira e o formulário reparte a altura que sobra igualmente entre os campos, com Salvar encostado no fim do modal (só a margem interna) em vez de um vão vazio embaixo; a mensagem vazia sai do fluxo pra não ganhar uma fatia dessa sobra.
   Se o conteúdo não couber (tela baixa), o formulário só rola, sem espaço extra.
@@ -166,7 +176,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   No Crédito, a fatura de cada ocorrência é a 1ª fatura avançada pelo mesmo número de meses de calendário entre a 1ª data e a data da ocorrência (`faturaDaOcorrencia`, sempre a partir da 1ª, mantendo o dia de vencimento com o mesmo ajuste de fim de mês das datas) — funciona mesmo pra faturas que ainda não existem no banco.
   Dividir continua valendo e com o mesmo padrão de sempre (abre marcado no Crédito, desmarcado no Débito, sempre alternável): marcado, o valor digitado é dividido entre todas as ocorrências da série; desmarcado, se repete em cada uma.
   Frequência, Vezes, Dividir e Fatura têm posição fixa no cadastro (exceção pontual registrada em `docs/DECISOES.md`): Frequência ocupa a linha inteira, Vezes e Dividir ficam logo abaixo, e trocar Crédito ou Frequência só ativa/desativa campos, sem mudar a forma do formulário.
-  Campo desativado pelo modo fica mais escuro que o painel, com texto apagado, borda tracejada e sem a setinha; a passagem entre ativo e desativado tem uma animação curta (só quando o estado muda de fato com o cadastro aberto, e nenhuma com movimento reduzido no sistema).
+  Campo desativado pelo modo fica mais escuro que o painel e afundado (uma sombra por dentro, já que o ativo tem o mesmo fundo), com texto apagado, borda tracejada e sem a setinha; a passagem entre ativo e desativado tem uma animação curta (só quando o estado muda de fato com o cadastro aberto, e nenhuma com movimento reduzido no sistema).
   Em Editar, Vezes e Dividir somem e a Frequência fica sozinha na linha.
   Depois de salvar, a Frequência volta a "sem recorrência" (e Vezes volta a ser editável, com o valor que tinha antes da Frequência), pra o próximo cadastro não gerar outra série sem a pessoa pedir.
   Sem valor, a série sai inteira com valor vazio em cada linha, pra preencher depois.
@@ -515,14 +525,14 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   O teto de cada ciclo é individual: o indicador aparece no título do Débito de cada ciclo — inclusive dos passados, na linha Passado, com o total daquele ciclo (pago + aberto), como o Saldo e o Guardado dessa linha —, com o teto editável ao lado ("de R$ […]", mesmo esquema do Aprovado do cartão).
   O valor é gravado na linha daquele ciclo em `fin_ciclo` (`limite_besteira`/`limite_isabella`) — vai pro banco, e não só pro navegador, porque muda o saldo e precisa ser igual em qualquer aparelho; campo vazio volta ao padrão do código.
   Também dá pra editar direto no DataGrip (tabela `fin_ciclo`).
-  Passar o mouse no nome **Besteira** ou **Isabella** do indicador mostra o que entra naquele teto (`DESCRICAO_LIMITE_CATEGORIA` em `js/domain.js`); o nome tem sublinhado pontilhado discreto pra indicar a dica.
+  Passar o mouse no nome **Besteira** ou **Isabella** do indicador mostra o que entra naquele teto (`DESCRICAO_LIMITE_CATEGORIA` em `js/domain.js`); o nome é um chip compacto da base, pra indicar que é clicável.
   **Clicar no nome** é um toggle de filtro: as tabelas Débito e Crédito do ciclo exibido passam a mostrar só o que conta naquele teto — pela mesma regra do indicador (`contaNoTeto`: gasto negativo, sem antecipação/pagamento de fatura, Besteira como item inteiro, Isabella por `ehGastoIsabella`) e sem as linhas previstas, que o indicador também ignora; somando o que sobra dá o Usado de Futuro.
-  O nome ligado fica em verde, como os outros controles ativos; clicar de novo mostra tudo e clicar no outro troca de teto.
+  O nome ligado fica em verde (o chip escolhido da base, na cor verde), como os outros controles ativos; clicar de novo mostra tudo e clicar no outro troca de teto.
   O filtro soma-se às buscas por coluna, vale em qualquer ciclo navegado (Hoje, Futuro e Passado mostram o mesmo toggle), reabre os blocos Débito/Crédito se estiverem recolhidos, só lê (funciona também na simulação) e sai com o clique no Recarregar; Backlog e Comparar não mudam.
   Passar o mouse no rótulo Categorias do cadastro resume esse guia num hover (`title`), sem botão nem modal de ajuda.
 - A pizza de gastos usa o ciclo inteiro conforme seu escopo próprio descrito em **Escopo e exclusões das visões**.
   As demais categorias separadas por vírgula ficam selecionáveis individualmente; `*` vermelho indica classificação compartilhada e aparece primeiro no seletor.
-  O dropdown alterna entre Selecionar tudo e Desmarcar tudo.
+  O seletor é um chip da base com o resumo ("Nenhuma excluída", "2 excluídas"), que abre logo embaixo as categorias em chips (ligado = na pizza) e fecha ao tocar fora; o primeiro chip alterna entre Selecionar tudo e Desmarcar tudo.
   Selecionar uma ou mais delas recorta o lançamento, mas nunca duplica seu valor na pizza.
   A pizza e sua legenda exibem somente fatias de ao menos 2% do total atualmente selecionado; categorias menores continuam no seletor e aparecem quando isoladas.
   `Contabilidade` (`CATEGORIA_EXCLUIDA_GRAFICO_PADRAO` em `js/domain.js`) já abre desmarcada por padrão — é custo intrínseco ao próprio faturamento PJ, não um gasto discricionário, então a pizza mostra direto o líquido; continua reincluível ali mesmo, no seletor.
@@ -578,7 +588,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Os dois ficam lado a lado, sem texto ou traço entre eles (`Out/26` `Nov/26`).
 - A linha de baixo do cabeçalho (navegação De/Até, indicadores, simulação, cadastro, recarregar, diagnóstico) é a mesma em qualquer largura; quando não cabe numa linha só, quebra para a seguinte.
   Os botões (cartões Nubank e Mercado Pago, Todas/Diferentes, Gráfico, Visualizações, simulação, cadastro, recarregar, diagnóstico, nessa ordem; cada um é o botão de ícone da base comum, com 40 px, e o Novo lançamento é o preenchido na cor do Fin) formam um bloco só, à direita — a navegação de ciclo fica só com setas e De/Até: quando não cabem, descem **juntos** pra linha seguinte, nunca separados, e lá ficam alinhados **à esquerda**.
-  No celular, o bloco vira uma grade de 6 colunas com a largura da tela (duas linhas de botões maiores, mais fáceis de tocar), na mesma ordem; o menu de Visualizações abre alinhado pela direita do ícone, dentro da tela.
+  No celular, o bloco vira uma grade de 6 colunas com a largura da tela (duas linhas de botões maiores, mais fáceis de tocar), na mesma ordem; com o dedo (`pointer: coarse`) todo botão de ação (o de ícone não compacto) tem no mínimo 44 × 44 px, os campos compactos das metas 44 px de altura, os chips compactos no mínimo 24 px de altura e o + das seções no mínimo 24 × 24 px (o ± compacto já tem 24 × 24 pela base); com o mouse nada disso vale, e a linha de filtros das tabelas, os chips do teto e o + das seções ficam na altura da base; o menu de Visualizações abre alinhado pela direita do ícone, dentro da tela.
   A navegação de ciclo (setas, De/Até) ganha sua própria linha e encolhe/quebra internamente em vez de estourar a tela.
   **Arrastar para o lado** (celular) troca de ciclo como as setas: para a esquerda o próximo (›), para a direita o anterior (‹), com o mesmo limiar do Treino (80 px, ou 40 px num gesto rápido), e o ciclo novo entra pelo lado do gesto (sem animação com movimento reduzido). Numa tabela que rola de lado, só troca quando ela já está na ponta daquele lado — senão o gesto rola a tabela. Começar num campo, na barra de seleção, num menu ou num aviso, ou com um modal aberto, não troca; no fim da lista (seta desativada) também não. Comparando um intervalo, anda o intervalo inteiro, como a seta.
   O botão verde **Recarregar** do cabeçalho (mesmo ícone de setas) faz, num só clique e nesta ordem: recarrega os dados do banco, volta De/Até ao ciclo atual, limpa os filtros — buscas por coluna, filtro de teto (Besteira/Isabella), Linhas, ordenação, blocos recolhidos, seleção e categorias excluídas do gráfico —, devolvendo a tela ao estado em que ela abre, e roda o **Consolidar tudo** (ver **Aportes e resgates**).
@@ -695,6 +705,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - `migrations/43-vinculos-pagamento.sql` cria `public.fin_vinculo` (trecho de quem recebe ou paga no Pix/boleto → conta prevista em `fin`, por nome sem parcela e categoria; uma pessoa pode ter várias contas), usada pela Edge Function `captura-nubank` pra marcar como paga a conta certa (ver "Contas previstas pelo celular").
   RLS só do dono pelo app e histórico em `fin_historico`; não altera nenhuma linha de `fin` e rodar de novo não muda nada.
   Coberta por `node --test tests/captura-nubank.test.js tests/tasker-atalho.test.js`.
+
 ## Testes
 
 - Os estilos são carregados em camadas por `css/base.css`, `css/dashboard.css`, `css/forms.css`, `css/charts.css`, `css/utilities.css` e `css/mobile.css`; o responsivo permanece por último para preservar a cascata.

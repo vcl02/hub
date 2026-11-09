@@ -25,3 +25,10 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md`; o jeito de trabalha
 ## Dia anterior só leitura (30/10/2026)
 
 - Com o dia no endereço (`?dia=`) em todos os apps, o mantenedor escolheu que dia anterior seja só leitura também no Corpo, como no al. Antes dava para lançar ou corrigir peso, sono, evacuações e xixis de dias passados pelo formulário e pelo lápis do histórico; agora só hoje aceita lançar, e no histórico só a medida de hoje se edita ou apaga. Corrigir um dia passado fica para o DataGrip.
+
+## Auditoria dos testes (02/11/2026)
+
+- Sem navegador agora: `tests/regras.test.mjs` (11 testes) roda o IMC e as faixas, o horário de sempre, a validação das medidas, o primeiro lançamento do peso, a bexiga, o texto do sono, a cópia das pesagens para os outros apps e o limiar do arrasto. `tests/helpers/rodar.mjs` roda o `sw.js` e o `bootstrap.js` em `node:vm`. O navegador de `tests/corpo.test.mjs` caiu de 24 para 19 testes.
+- Continua em Playwright: pesagem, barriga, evacuação, xixi e sono na tela e no banco; o histórico (só a medida de hoje se edita); dois aparelhos; o caso "metrô"; o dia anterior pelo `?dia`; os gestos; o gráfico com o mouse ou o dedo; o caso sem internet; o Esc.
+- Lacunas: nenhuma registrada nesta rodada.
+- Relógio falso pausado (02/11/2026): o helper de navegador usa `../tests/relogio.mjs`, o mesmo dos outros apps e da raiz; a regra está em `../docs/DIRETRIZES.md`, seção 3.

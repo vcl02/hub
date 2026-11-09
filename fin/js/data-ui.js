@@ -2,89 +2,129 @@
 
 // Interface: carregamento, filtros, tabelas, visões, gráficos e formulários.
 
-function atualizarCombos(lancamentosCrus) {
-    const selecaoAnterior = el('ciclo').value;
-    const hoje = new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
-    const idxAtual = Estado.ciclos.findIndex(per => hoje >= per.ini && hoje <= dataISO(per.fat));
-    const usados = [...new Set(Estado.lancamentos.map(r => r.periodoIdx).filter(p => p != null))];
+function atualizarCombos() {
+  const selecaoAnterior = el('ciclo').value;
 
-    if (idxAtual >= 0 && !usados.includes(idxAtual)) usados.push(idxAtual);
-    usados.sort((a, b) => a - b);
-    const opcoesCiclo = '<option value=-1>Backlog' +
-        usados.map(i => `<option value=${i}>${nomePeriodo(Estado.ciclos[i])}`).join('');
-    el('ciclo').innerHTML = opcoesCiclo;
+  const hoje = new Date(Date.now() - new Date().getTimezoneOffset() * 6e4)
+    .toISOString()
+    .slice(0, 10);
 
-    // preserva a selecao anterior se ainda for valida; senao cai no periodo atual (ou no mais recente usado)
-    const valorAnterior = selecaoAnterior === '' ? null : +selecaoAnterior;
-    const valorEscolhido = valorAnterior !== null && (valorAnterior < 0 || usados.includes(valorAnterior))
-        ? valorAnterior
-        : (idxAtual >= 0 ? idxAtual : usados.at(-1) ?? -1);
-    el('ciclo').value = valorEscolhido;
+  const idxAtual = Estado.ciclos.findIndex(
+    (per) => hoje >= per.ini && hoje <= dataISO(per.fat)
+  );
 
-    Estado.idxHoje = idxAtual;      // ancora do pre-preenchimento inicial de De/Ate (ciclo atual + proximo)
+  const usados = [
+    ...new Set(Estado.lancamentos.map((r) => r.periodoIdx).filter((p) => p != null)),
+  ];
 
-    // Comparar sempre agrupa por Categoria agora (sem filtro "Agrupar por" na toolbar) —
-    // ver vComp(), que fixa coluna='categ' direto.
+  if (idxAtual >= 0 && !usados.includes(idxAtual)) usados.push(idxAtual);
+  usados.sort((a, b) => a - b);
 
-    // Categoria do formulario e' populada por popularCategoriasNoForm() (ordenada por uso
-    // recente), chamada toda vez que o modal abre — nao precisa duplicar aqui.
+  const opcoesCiclo =
+    '<option value=-1>Backlog' +
+    usados.map((i) => `<option value=${i}>${nomePeriodo(Estado.ciclos[i])}`).join('');
 
-    // Os combos conservam todos os ciclos usados. "Todos" (value vazio) é a opção padrão.
-    // Backlog só existe no De, pois não faz sentido compará-lo com outro período.
-    const usadosNaveg = usados;
-    // De/Até mostram o mês abreviado ("Out/26"): mais curto, cabe melhor na navegação; o nome
-    // completo fica no title de cada opção.
-    const opcaoDoCiclo = i => `<option value=${i} title="${nomePeriodo(Estado.ciclos[i])}">${nomePeriodoAbrev(Estado.ciclos[i])}`;
-    const opcoesPeriodo = '<option value="">Todos</option>' +
-        usadosNaveg.map(opcaoDoCiclo).join('');
-    const opcoesPeriodoDe = '<option value="">Todos</option><option value=-1>Backlog' +
-        usadosNaveg.map(opcaoDoCiclo).join('');
-    const deAnterior = el('compDe').value, ateAnterior = el('compAte').value;
+  el('ciclo').innerHTML = opcoesCiclo;
 
-    el('compDe').innerHTML = opcoesPeriodoDe;
-    el('compAte').innerHTML = opcoesPeriodo;
-    el('compDe').value = deAnterior == '-1' || usadosNaveg.includes(+deAnterior) ? deAnterior : '';
-    el('compAte').value = usadosNaveg.includes(+ateAnterior) ? ateAnterior : '';
+  // preserva a selecao anterior se ainda for valida; senao cai no periodo atual (ou no mais recente usado)
+  const valorAnterior = selecaoAnterior === '' ? null : +selecaoAnterior;
 
-    // A URL só restaura uma consulta de ciclo único; comparações não viram estado compartilhável.
-    aplicarCicloDaUrl();
+  const valorEscolhido =
+    valorAnterior !== null && (valorAnterior < 0 || usados.includes(valorAnterior))
+      ? valorAnterior
+      : idxAtual >= 0
+        ? idxAtual
+        : (usados.at(-1) ?? -1);
+
+  el('ciclo').value = valorEscolhido;
+
+  Estado.idxHoje = idxAtual; // ancora do pre-preenchimento inicial de De/Ate (ciclo atual + proximo)
+
+  // Comparar sempre agrupa por Categoria agora (sem filtro "Agrupar por" na toolbar) —
+  // ver vComp(), que fixa coluna='categ' direto.
+
+  // Categoria do formulario e' populada por popularCategoriasNoForm() (ordenada por uso
+  // recente), chamada toda vez que o modal abre — nao precisa duplicar aqui.
+
+  // Os combos conservam todos os ciclos usados. "Todos" (value vazio) é a opção padrão.
+  // Backlog só existe no De, pois não faz sentido compará-lo com outro período.
+  const usadosNaveg = usados;
+
+  // De/Até mostram o mês abreviado ("Out/26"): mais curto, cabe melhor na navegação; o nome
+  // completo fica no title de cada opção.
+  const opcaoDoCiclo = (i) =>
+    `<option value=${i} title="${nomePeriodo(Estado.ciclos[i])}">${nomePeriodoAbrev(Estado.ciclos[i])}`;
+
+  const opcoesPeriodo =
+    '<option value="">Todos</option>' + usadosNaveg.map(opcaoDoCiclo).join('');
+
+  const opcoesPeriodoDe =
+    '<option value="">Todos</option><option value=-1>Backlog' +
+    usadosNaveg.map(opcaoDoCiclo).join('');
+
+  const deAnterior = el('compDe').value,
+    ateAnterior = el('compAte').value;
+
+  el('compDe').innerHTML = opcoesPeriodoDe;
+  el('compAte').innerHTML = opcoesPeriodo;
+  el('compDe').value =
+    deAnterior == '-1' || usadosNaveg.includes(+deAnterior) ? deAnterior : '';
+  el('compAte').value = usadosNaveg.includes(+ateAnterior) ? ateAnterior : '';
+
+  // A URL só restaura uma consulta de ciclo único; comparações não viram estado compartilhável.
+  aplicarCicloDaUrl();
 }
 
 // Identificador estável para compartilhar o ciclo, sem expor o índice interno que pode mudar
 // quando novos Faturamentos PJ são incluídos. O nome do ciclo já é definido pelo mês do início.
 // Backlog não tem mês de início (não é um ciclo de verdade) — usa a palavra fixa "backlog".
 function chaveCicloNaUrl(idx) {
-    if (+idx === -1) return 'backlog';
-    const ciclo = Estado.ciclos[+idx];
-    return ciclo?.ini ? dataISO(ciclo.ini).slice(0, 7) : '';
+  if (+idx === -1) return 'backlog';
+  const ciclo = Estado.ciclos[+idx];
+
+  return ciclo?.ini ? dataISO(ciclo.ini).slice(0, 7) : '';
 }
 
 function aplicarCicloDaUrl() {
-    // Ciclo de um link aberto antes do login (tirado da URL na tela de login): vale uma vez.
-    const chave = new URLSearchParams(window.location.search).get('ciclo') ?? cicloPedidoAntesDoLogin;
-    cicloPedidoAntesDoLogin = null;
-    // Backlog só existe no combo De (nunca no Até — "não faz sentido comparar com outro
-    // período", ver atualizarCombos). Só aplica se a opção
-    // existir de verdade no combo, senão a tela mantém o ciclo padrão seguro.
-    if (chave === 'backlog') {
-        if ([...el('compDe').options].some(opcao => opcao.value === '-1')) el('compDe').value = -1;
-        return;
-    }
-    // ?dia=AAAA-MM-DD (a página inicial, com a Besteira de um dia anterior), sem ?ciclo: o ciclo daquele dia, com o Fin normal
-    // (editável como sempre). Vale uma vez: a URL passa a ter o ?ciclo dele (sincronizarCicloNaUrl tira o ?dia).
-    const dia = new URLSearchParams(window.location.search).get('dia');
-    if (!chave && /^\d{4}-\d{2}-\d{2}$/.test(dia || '')) {
-        const doDia = periodoDoDebito(dia);
-        if (doDia >= 0 && [...el('compDe').options].some(opcao => +opcao.value === doDia)) { el('compDe').value = doDia; el('compAte').value = doDia; }
-        return;
-    }
-    if (!/^\d{4}-\d{2}$/.test(chave || '')) return;
+  // Ciclo de um link aberto antes do login (tirado da URL na tela de login): vale uma vez.
+  const chave =
+    new URLSearchParams(window.location.search).get('ciclo') ?? cicloPedidoAntesDoLogin;
 
-    const idx = Estado.ciclos.findIndex((_, i) => chaveCicloNaUrl(i) === chave);
-    // Um ciclo sem opção navegável não é imposto à tela; ela mantém o ciclo padrão seguro.
-    if (idx < 0 || ![...el('compDe').options].some(opcao => +opcao.value === idx)) return;
-    el('compDe').value = idx;
-    el('compAte').value = idx;
+  cicloPedidoAntesDoLogin = null;
+
+  // Backlog só existe no combo De (nunca no Até — "não faz sentido comparar com outro
+  // período", ver atualizarCombos). Só aplica se a opção
+  // existir de verdade no combo, senão a tela mantém o ciclo padrão seguro.
+  if (chave === 'backlog') {
+    if ([...el('compDe').options].some((opcao) => opcao.value === '-1'))
+      el('compDe').value = -1;
+
+    return;
+  }
+
+  // ?dia=AAAA-MM-DD (a página inicial, com a Besteira de um dia anterior), sem ?ciclo: o ciclo daquele dia, com o Fin normal
+  // (editável como sempre). Vale uma vez: a URL passa a ter o ?ciclo dele (sincronizarCicloNaUrl tira o ?dia).
+  const dia = new URLSearchParams(window.location.search).get('dia');
+
+  if (!chave && /^\d{4}-\d{2}-\d{2}$/.test(dia || '')) {
+    const doDia = periodoDoDebito(dia);
+
+    if (doDia >= 0 && [...el('compDe').options].some((opcao) => +opcao.value === doDia)) {
+      el('compDe').value = doDia;
+      el('compAte').value = doDia;
+    }
+
+    return;
+  }
+
+  if (!/^\d{4}-\d{2}$/.test(chave || '')) return;
+
+  const idx = Estado.ciclos.findIndex((_, i) => chaveCicloNaUrl(i) === chave);
+
+  // Um ciclo sem opção navegável não é imposto à tela; ela mantém o ciclo padrão seguro.
+  if (idx < 0 || ![...el('compDe').options].some((opcao) => +opcao.value === idx)) return;
+  el('compDe').value = idx;
+  el('compAte').value = idx;
 }
 
 // Mantém o link copiável pra De=Até em ciclos reais E pro Backlog (De=-1, Até ignorado/
@@ -94,35 +134,55 @@ function aplicarCicloDaUrl() {
 // continuam substituindo a entrada atual (replaceState), sem encher o histórico. undefined
 // na primeira chamada evita empurrar uma entrada pra o próprio estado de carga inicial.
 let _ultimaChaveCicloUrl;
-function sincronizarCicloNaUrl() {
-    const de = el('compDe').value, ate = el('compAte').value;
-    const chave = de === '-1' ? 'backlog' : (de && de == ate && +de >= 0 ? chaveCicloNaUrl(de) : '');
-    const trocouDeCiclo = _ultimaChaveCicloUrl !== undefined && chave !== _ultimaChaveCicloUrl;
-    _ultimaChaveCicloUrl = chave;
 
-    const url = new URL(window.location.href);
-    url.searchParams.delete('dia');   // ?dia só escolhe o ciclo ao abrir
-    if (chave) url.searchParams.set('ciclo', chave);
-    else url.searchParams.delete('ciclo');
-    const destino = url.pathname + url.search + url.hash;
-    if (destino !== window.location.pathname + window.location.search + window.location.hash) {
-        if (trocouDeCiclo) window.history.pushState(window.history.state, '', destino);
-        else window.history.replaceState(window.history.state, '', destino);
-    }
+function sincronizarCicloNaUrl() {
+  const de = el('compDe').value,
+    ate = el('compAte').value;
+
+  const chave =
+    de === '-1' ? 'backlog' : de && de == ate && +de >= 0 ? chaveCicloNaUrl(de) : '';
+
+  const trocouDeCiclo =
+    _ultimaChaveCicloUrl !== undefined && chave !== _ultimaChaveCicloUrl;
+
+  _ultimaChaveCicloUrl = chave;
+
+  const url = new URL(window.location.href);
+
+  url.searchParams.delete('dia'); // ?dia só escolhe o ciclo ao abrir
+
+  if (chave) url.searchParams.set('ciclo', chave);
+  else url.searchParams.delete('ciclo');
+  const destino = url.pathname + url.search + url.hash;
+
+  if (
+    destino !==
+    window.location.pathname + window.location.search + window.location.hash
+  ) {
+    if (trocouDeCiclo) window.history.pushState(window.history.state, '', destino);
+    else window.history.replaceState(window.history.state, '', destino);
+  }
 }
 
 // Tela de login sem "?ciclo" na URL (pedido do mantenedor): ali não há ciclo nenhum na tela.
 // O ciclo de um link compartilhado fica guardado e é aplicado depois de entrar
 // (aplicarCicloDaUrl). Não há Sair no fin: a sessão se encerra no hub.
 let cicloPedidoAntesDoLogin = null;
+
 function tirarCicloDaUrl() {
-    const url = new URL(window.location.href);
-    const chave = url.searchParams.get('ciclo');
-    _ultimaChaveCicloUrl = undefined;   // a 1ª sincronização depois de entrar substitui, não empilha
-    cicloPedidoAntesDoLogin = chave;
-    if (chave === null) return;
-    url.searchParams.delete('ciclo');
-    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+  const url = new URL(window.location.href);
+  const chave = url.searchParams.get('ciclo');
+
+  _ultimaChaveCicloUrl = undefined; // a 1ª sincronização depois de entrar substitui, não empilha
+  cicloPedidoAntesDoLogin = chave;
+
+  if (chave === null) return;
+  url.searchParams.delete('ciclo');
+  window.history.replaceState(
+    window.history.state,
+    '',
+    url.pathname + url.search + url.hash
+  );
 }
 
 // Fluxo completo de carga: busca dados, atualiza os combos, mostra o contador e desenha a tela.
@@ -130,23 +190,29 @@ function tirarCicloDaUrl() {
 // Problemas precisam ficar visíveis para quem usa a tela, mas sem modificar dados nem
 // despejar métricas no console. O mesmo modal separa inconsistências de avisos de revisão.
 function preencherListaDiagnostico(id, itens) {
-    el(id).replaceChildren(...itens.map(item => {
-        const linha = document.createElement('li');
-        linha.textContent = item;
-        return linha;
-    }));
+  el(id).replaceChildren(
+    ...itens.map((item) => {
+      const linha = document.createElement('li');
+
+      linha.textContent = item;
+
+      return linha;
+    })
+  );
 }
 
 function mostrarDiagnostico(titulo, texto, diagnostico) {
-    el('tituloDiagnostico').textContent = titulo;
-    el('textoDiagnostico').textContent = texto;
-    const inconsistencias = diagnostico.inconsistencias || [];
-    const avisos = diagnostico.avisos || [];
-    preencherListaDiagnostico('listaInconsistencias', inconsistencias);
-    preencherListaDiagnostico('listaAvisos', avisos);
-    el('secaoInconsistencias').hidden = !inconsistencias.length;
-    el('secaoAvisos').hidden = !avisos.length;
-    if (!el('modalDiagnostico').open) el('modalDiagnostico').showModal();
+  el('tituloDiagnostico').textContent = titulo;
+  el('textoDiagnostico').textContent = texto;
+  const inconsistencias = diagnostico.inconsistencias || [];
+  const avisos = diagnostico.avisos || [];
+
+  preencherListaDiagnostico('listaInconsistencias', inconsistencias);
+  preencherListaDiagnostico('listaAvisos', avisos);
+  el('secaoInconsistencias').hidden = !inconsistencias.length;
+  el('secaoAvisos').hidden = !avisos.length;
+
+  if (!el('modalDiagnostico').open) el('modalDiagnostico').showModal();
 }
 
 // Resultado detalhado de "Consolidar tudo" (ver consolidarTudo em form.js): diferente do
@@ -155,9 +221,10 @@ function mostrarDiagnostico(titulo, texto, diagnostico) {
 // atrás de um botão. Mesmo esquema de lista do diagnóstico, só que com o que a varredura
 // de fato gravou, ciclo a ciclo (a maioria nem aparece na tela aberta).
 function mostrarResultadoConsolidarTudo(resumo, log) {
-    el('textoConsolidarTudo').textContent = resumo;
-    preencherListaDiagnostico('listaConsolidarTudo', log);
-    if (!el('modalConsolidarTudo').open) el('modalConsolidarTudo').showModal();
+  el('textoConsolidarTudo').textContent = resumo;
+  preencherListaDiagnostico('listaConsolidarTudo', log);
+
+  if (!el('modalConsolidarTudo').open) el('modalConsolidarTudo').showModal();
 }
 
 let diagnosticoDeDadosAtual = { inconsistencias: [], avisos: [] };
@@ -165,26 +232,41 @@ let diagnosticoDeDadosAtual = { inconsistencias: [], avisos: [] };
 // A última carga decide o estado do ícone. O modal só abre por escolha do usuário para
 // não interromper a consulta, mas o vermelho deixa claro que há algo a revisar.
 function atualizarBotaoDiagnostico(diagnostico) {
-    diagnosticoDeDadosAtual = diagnostico;
-    const inconsistencias = diagnostico.inconsistencias || [];
-    const temInconsistencia = inconsistencias.length > 0;
-    const botao = el('btDiagnostico');
-    botao.classList.toggle('temInconsistencia', temInconsistencia);
-    const descricao = temInconsistencia
-        ? `${inconsistencias.length} inconsistência${inconsistencias.length === 1 ? '' : 's'} na última carga`
-        : 'Sem inconsistências na última carga';
-    botao.setAttribute('aria-label', descricao);
-    botao.title = descricao;
+  diagnosticoDeDadosAtual = diagnostico;
+  const inconsistencias = diagnostico.inconsistencias || [];
+  const temInconsistencia = inconsistencias.length > 0;
+  const botao = el('btDiagnostico');
+
+  botao.classList.toggle('temInconsistencia', temInconsistencia);
+
+  const descricao = temInconsistencia
+    ? `${inconsistencias.length} inconsistência${inconsistencias.length === 1 ? '' : 's'} na última carga`
+    : 'Sem inconsistências na última carga';
+
+  botao.setAttribute('aria-label', descricao);
+  botao.title = descricao;
 }
 
 function abrirDiagnosticoDeDados() {
-    const { inconsistencias, avisos } = diagnosticoDeDadosAtual;
-    if (!inconsistencias.length && !avisos.length) {
-        mostrarDiagnostico('Dados verificados', 'Nenhuma inconsistência ou aviso na última carga.', diagnosticoDeDadosAtual);
-        return;
-    }
-    const titulo = inconsistencias.length ? 'Dados para revisar' : 'Avisos de dados';
-    mostrarDiagnostico(titulo, 'Nada foi alterado. Revise no banco se fizer sentido.', diagnosticoDeDadosAtual);
+  const { inconsistencias, avisos } = diagnosticoDeDadosAtual;
+
+  if (!inconsistencias.length && !avisos.length) {
+    mostrarDiagnostico(
+      'Dados verificados',
+      'Nenhuma inconsistência ou aviso na última carga.',
+      diagnosticoDeDadosAtual
+    );
+
+    return;
+  }
+
+  const titulo = inconsistencias.length ? 'Dados para revisar' : 'Avisos de dados';
+
+  mostrarDiagnostico(
+    titulo,
+    'Nada foi alterado. Revise no banco se fizer sentido.',
+    diagnosticoDeDadosAtual
+  );
 }
 
 const LIMIAR_CARGA_LENTA_MS = 1000;
@@ -193,41 +275,55 @@ let contextoAudioToast;
 // Um tom curto dá presença ao toast sem exigir arquivo externo. Navegadores podem bloquear
 // áudio antes da primeira interação; nesse caso o aviso visual continua sendo suficiente.
 async function tocarSomToast() {
-    try {
-        const ContextoAudio = window.AudioContext || window.webkitAudioContext;
-        if (!ContextoAudio) return;
-        contextoAudioToast ??= new ContextoAudio();
-        if (contextoAudioToast.state === 'suspended') await contextoAudioToast.resume();
-        const oscilador = contextoAudioToast.createOscillator();
-        const ganho = contextoAudioToast.createGain();
-        oscilador.type = 'sine';
-        oscilador.frequency.value = 660;
-        ganho.gain.setValueAtTime(.0001, contextoAudioToast.currentTime);
-        ganho.gain.exponentialRampToValueAtTime(.012, contextoAudioToast.currentTime + .01);
-        ganho.gain.exponentialRampToValueAtTime(.0001, contextoAudioToast.currentTime + .09);
-        oscilador.connect(ganho).connect(contextoAudioToast.destination);
-        oscilador.start();
-        oscilador.stop(contextoAudioToast.currentTime + .1);
-    } catch {
-        // Falha de permissão/autoplay não deve impedir nem registrar ruído para um toast.
-    }
+  try {
+    const ContextoAudio = window.AudioContext || window.webkitAudioContext;
+
+    if (!ContextoAudio) return;
+    contextoAudioToast ??= new ContextoAudio();
+
+    if (contextoAudioToast.state === 'suspended') await contextoAudioToast.resume();
+    const oscilador = contextoAudioToast.createOscillator();
+    const ganho = contextoAudioToast.createGain();
+
+    oscilador.type = 'sine';
+    oscilador.frequency.value = 660;
+    ganho.gain.setValueAtTime(0.0001, contextoAudioToast.currentTime);
+    ganho.gain.exponentialRampToValueAtTime(0.012, contextoAudioToast.currentTime + 0.01);
+    ganho.gain.exponentialRampToValueAtTime(
+      0.0001,
+      contextoAudioToast.currentTime + 0.09
+    );
+    oscilador.connect(ganho).connect(contextoAudioToast.destination);
+    oscilador.start();
+    oscilador.stop(contextoAudioToast.currentTime + 0.1);
+  } catch {
+    // Falha de permissão/autoplay não deve impedir nem registrar ruído para um toast.
+  }
 }
 
 // Toast é reservado a estado operacional passageiro; não mistura uma falha de rede com
 // inconsistências persistentes dos registros, que precisam ser lidas no modal.
 // É o aviso da base comum (.toast, um só, embaixo no meio, como nos outros módulos): o título em negrito e o texto na
 // mesma linha; um aviso novo troca o anterior. Falha, valor inválido e não salvo ficam em vermelho (.toast.erro).
-const avisoDeErro = titulo => /^(Falhou|Não foi possível)|inválid|não salv/i.test(titulo);
+const avisoDeErro = (titulo) =>
+  /^(Falhou|Não foi possível)|inválid|não salv/i.test(titulo);
+
 let tempoDoAviso;
+
 function mostrarToast(titulo, texto) {
-    void tocarSomToast();
-    const aviso = el('toast'), negrito = document.createElement('strong');
-    negrito.textContent = titulo;
-    aviso.replaceChildren(negrito, texto ? ` ${texto}` : '');
-    aviso.classList.toggle('erro', avisoDeErro(titulo));
-    aviso.hidden = false;
-    clearTimeout(tempoDoAviso);
-    tempoDoAviso = setTimeout(() => { aviso.hidden = true; }, 7000);   // mais que nos outros: as mensagens do Fin são longas
+  void tocarSomToast();
+
+  const aviso = el('toast'),
+    negrito = document.createElement('strong');
+
+  negrito.textContent = titulo;
+  aviso.replaceChildren(negrito, texto ? ` ${texto}` : '');
+  aviso.classList.toggle('erro', avisoDeErro(titulo));
+  aviso.hidden = false;
+  clearTimeout(tempoDoAviso);
+  tempoDoAviso = setTimeout(() => {
+    aviso.hidden = true;
+  }, 7000); // mais que nos outros: as mensagens do Fin são longas
 }
 
 // Recarga em silêncio (automática, após gravar, consolidação de 15 min) que termina com
@@ -236,18 +332,33 @@ function mostrarToast(titulo, texto) {
 // própria edição redesenhar ao confirmar (desenhar zera Estado.redesenhoPendente), não há
 // mais nada a fazer.
 const edicaoNaTabelaEmCurso = () => {
-    const ativo = document.activeElement;
-    return !!ativo?.matches?.('input, select, textarea') && el('out').contains(ativo);
+  const ativo = document.activeElement;
+
+  return !!ativo?.matches?.('input, select, textarea') && el('out').contains(ativo);
 };
+
 function desenharQuandoLivre() {
-    if (!edicaoNaTabelaEmCurso()) { desenhar(); return; }
-    Estado.redesenhoPendente = true;
-    const tentar = () => {
-        if (!Estado.redesenhoPendente) return;
-        if (edicaoNaTabelaEmCurso()) { setTimeout(tentar, 300); return; }
-        desenhar();
-    };
-    setTimeout(tentar, 300);
+  if (!edicaoNaTabelaEmCurso()) {
+    desenhar();
+
+    return;
+  }
+
+  Estado.redesenhoPendente = true;
+
+  const tentar = () => {
+    if (!Estado.redesenhoPendente) return;
+
+    if (edicaoNaTabelaEmCurso()) {
+      setTimeout(tentar, 300);
+
+      return;
+    }
+
+    desenhar();
+  };
+
+  setTimeout(tentar, 300);
 }
 
 // Devolve true quando a carga deu certo — quem depende de dados frescos (Consolidar tudo)
@@ -255,42 +366,66 @@ function desenharQuandoLivre() {
 // (cada toast toca um som) e, se falhar, mantém a tela como estava em vez de trocá-la pela
 // mensagem de erro — a próxima verificação tenta de novo sozinha.
 async function load({ silencioso = false } = {}) {
-    if (API.includes('SEUPROJETO')) { el('out').innerHTML = '<p class=empty>Cole API e KEY no topo do script.</p>'; return false; }
-    const inicioCarga = performance.now();
-    // Quantas gravações já existiam quando esta carga começou: ela traz todas essas.
-    const gravacoesAteAqui = Estado.gravacoes;
-    Estado.cargasEmAndamento++;
-    try {
-        const { lancamentosCrus, diagnosticoDeDados } = await carregarDados();
-        const aposDados = performance.now();
-        atualizarCombos(lancamentosCrus);
-        const aposCombos = performance.now();
+  if (API.includes('SEUPROJETO')) {
+    el('out').innerHTML = '<p class=empty>Cole API e KEY no topo do script.</p>';
 
-        if (silencioso) desenharQuandoLivre(); else desenhar();
-        const aposRender = performance.now();
-        const cargaMs = Math.round(aposRender - inicioCarga);
-        console.info(`[diag] carga ${cargaMs}ms | combos ${Math.round(aposCombos - aposDados)}ms | render ${Math.round(aposRender - aposCombos)}ms | ${Estado.ciclos.length} ciclos | ${Estado.lancamentos.length} lançamentos`);
-        if (cargaMs >= LIMIAR_CARGA_LENTA_MS && !silencioso) mostrarToast('Carga lenta', `A tela levou ${(cargaMs / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} s.`);
-        atualizarBotaoDiagnostico(diagnosticoDeDados);
-        Estado.ultimaCarga = Date.now();   // base da recarga automática (bootstrap.js)
-        // Base da recarga após gravação: carga que COMEÇOU depois de gravar já traz o gravado.
-        Estado.gravacoesNaUltimaCarga = Math.max(Estado.gravacoesNaUltimaCarga, gravacoesAteAqui);
-        return true;
-    } catch (e) {
-        if (silencioso) {
-            console.warn('[recarga automática] falhou:', e.message);
-            return false;
-        }
-        el('st').textContent = '';
-        // e.message pode trazer texto crudo da resposta do Supabase (ver buscar() em
-        // supabase-api.js); escapar evita que um corpo de erro com '<'/'&' seja interpretado
-        // como HTML em vez de aparecer como texto.
-        el('out').innerHTML = '<p class=empty>Falhou: ' + escapeHtml(e.message) + '</p>';
-        mostrarToast('Não foi possível carregar', e.message);
-        return false;
-    } finally {
-        Estado.cargasEmAndamento--;
+    return false;
+  }
+
+  const inicioCarga = performance.now();
+  // Quantas gravações já existiam quando esta carga começou: ela traz todas essas.
+  const gravacoesAteAqui = Estado.gravacoes;
+
+  Estado.cargasEmAndamento++;
+
+  try {
+    const { diagnosticoDeDados } = await carregarDados();
+    const aposDados = performance.now();
+
+    atualizarCombos();
+    const aposCombos = performance.now();
+
+    if (silencioso) desenharQuandoLivre();
+    else desenhar();
+    const aposRender = performance.now();
+    const cargaMs = Math.round(aposRender - inicioCarga);
+
+    console.info(
+      `[diag] carga ${cargaMs}ms | combos ${Math.round(aposCombos - aposDados)}ms | render ${Math.round(aposRender - aposCombos)}ms | ${Estado.ciclos.length} ciclos | ${Estado.lancamentos.length} lançamentos`
+    );
+
+    if (cargaMs >= LIMIAR_CARGA_LENTA_MS && !silencioso)
+      mostrarToast(
+        'Carga lenta',
+        `A tela levou ${(cargaMs / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} s.`
+      );
+    atualizarBotaoDiagnostico(diagnosticoDeDados);
+    Estado.ultimaCarga = Date.now(); // base da recarga automática (bootstrap.js)
+    // Base da recarga após gravação: carga que COMEÇOU depois de gravar já traz o gravado.
+    Estado.gravacoesNaUltimaCarga = Math.max(
+      Estado.gravacoesNaUltimaCarga,
+      gravacoesAteAqui
+    );
+
+    return true;
+  } catch (e) {
+    if (silencioso) {
+      console.warn('[recarga automática] falhou:', e.message);
+
+      return false;
     }
+
+    el('st').textContent = '';
+    // e.message pode trazer texto crudo da resposta do Supabase (ver buscar() em
+    // supabase-api.js); escapar evita que um corpo de erro com '<'/'&' seja interpretado
+    // como HTML em vez de aparecer como texto.
+    el('out').innerHTML = '<p class=empty>Falhou: ' + escapeHtml(e.message) + '</p>';
+    mostrarToast('Não foi possível carregar', e.message);
+
+    return false;
+  } finally {
+    Estado.cargasEmAndamento--;
+  }
 }
 
 // ===================================================================

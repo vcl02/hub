@@ -1,110 +1,501 @@
 /* Alimentação — o que é só dela, sobre a base comum (../base/tokens.css e ../base/componentes.css): a cor (amarelo), o saldo
    (verde = déficit, vermelho = superávit), o alerta do treino, a caminhada, os macros, as sugestões, a prévia, as marmitas, as
    kcal da lista do dia e os 7 dias. */
-:root{--cor:#FFD43B; --prot:#6E9BFF; --carb:#FFD43B; --gord:#F0915F}
-.bom{color:var(--ok)} .ruim{color:var(--erro)}
+:root {
+  --cor: #ffd43b;
+  --prot: #6e9bff;
+  --carb: #ffd43b;
+  --gord: #f0915f;
+}
+.bom {
+  color: var(--ok);
+}
+.ruim {
+  color: var(--erro);
+}
 
 /* ---------- Saldo ---------- */
-.saldo{display:flex;flex-direction:column;gap:6px}
-.saldo .num{font-size:var(--t-3xl)}
-.saldo.deficit{border-color:var(--ok);background:linear-gradient(160deg,var(--ok-soft),var(--surface) 70%)}
-.saldo.deficit .num{color:var(--ok)}
-.saldo.superavit{border-color:var(--erro);background:linear-gradient(160deg,var(--erro-soft),var(--surface) 70%)}
-.saldo.superavit .num{color:var(--erro)}
-.saldo-ainda{margin:-2px 0 0;font-weight:600}
-.saldo-ainda.bom{color:var(--ok)}
-.saldo-ainda.ruim{color:var(--erro)}
-.saldo-conta{display:flex;flex-direction:column;gap:2px}
-.saldo-conta span{display:flex;justify-content:space-between;align-items:baseline;gap:var(--e-2);max-width:18em}
-.saldo-conta small{margin-right:auto;color:var(--muted);font-size:var(--t-xs)}
-.saldo-conta b{font-variant-numeric:tabular-nums}
-.previsto{font-size:var(--t-sm);color:var(--cor);font-weight:500}
+.saldo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.saldo .num {
+  font-size: var(--t-3xl);
+}
+.saldo.deficit {
+  border-color: var(--ok);
+  background: linear-gradient(160deg, var(--ok-soft), var(--surface) 70%);
+}
+.saldo.deficit .num {
+  color: var(--ok);
+}
+.saldo.superavit {
+  border-color: var(--erro);
+  background: linear-gradient(160deg, var(--erro-soft), var(--surface) 70%);
+}
+.saldo.superavit .num {
+  color: var(--erro);
+}
+.saldo-ainda {
+  margin: -2px 0 0;
+  font-weight: 600;
+}
+.saldo-ainda.bom {
+  color: var(--ok);
+}
+.saldo-ainda.ruim {
+  color: var(--erro);
+}
+.saldo-conta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.saldo-conta span {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--e-2);
+  max-width: 18em;
+}
+.saldo-conta small {
+  margin-right: auto;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.saldo-conta b {
+  font-variant-numeric: tabular-nums;
+}
+.previsto {
+  font-size: var(--t-sm);
+  color: var(--cor);
+  font-weight: 500;
+}
 /* Treino obrigatório (dia opcional, passou da meta): vermelho, ícone pulsando e botão para o Treino */
-.alerta-treino{display:flex;flex-direction:column;gap:var(--e-2);margin-top:4px;padding:var(--e-3);border:2px solid var(--erro);border-radius:var(--r);background:var(--erro-soft)}
-.alerta-titulo{display:flex;align-items:center;gap:var(--e-2);color:var(--erro);font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:var(--t-sm)}
-.alerta-titulo svg{animation:pulsar 1.2s ease-in-out infinite}
-@keyframes pulsar{50%{transform:scale(1.25);opacity:.6}}
-.alerta-txt{display:flex;flex-direction:column;gap:2px;font-size:var(--t-sm)}
-.alerta-txt b{color:var(--erro)}
-.alerta-bt{display:block;text-align:center;padding:var(--e-3);border-radius:var(--r);background:var(--erro);color:var(--bg);font-weight:700;text-decoration:none}
+.alerta-treino {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+  margin-top: 4px;
+  padding: var(--e-3);
+  border: 2px solid var(--erro);
+  border-radius: var(--r);
+  background: var(--erro-soft);
+}
+.alerta-titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  color: var(--erro);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: var(--t-sm);
+}
+.alerta-titulo svg {
+  animation: pulsar 1.2s ease-in-out infinite;
+}
+@keyframes pulsar {
+  50% {
+    transform: scale(1.25);
+    opacity: 0.6;
+  }
+}
+.alerta-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--t-sm);
+}
+.alerta-txt b {
+  color: var(--erro);
+}
+.alerta-bt {
+  display: block;
+  text-align: center;
+  padding: var(--e-3);
+  border-radius: var(--r);
+  background: var(--erro);
+  color: var(--bg);
+  font-weight: 700;
+  text-decoration: none;
+}
 
 /* ---------- Andei: min, km e + (os trechos em chips) ---------- */
-.andei{display:flex;flex-direction:column;gap:var(--e-2);margin-top:4px}
-.andei-campos{display:flex;flex-wrap:wrap;align-items:center;gap:var(--e-2)}
-.andei-campos>span{font-size:var(--t-sm);color:var(--muted)}
-.andei-campos label{display:flex;align-items:baseline;gap:4px}
-.andei-campos .campo{width:4.2em;padding:6px 8px;text-align:right}
-.andei-campos small{color:var(--muted);font-size:var(--t-xs)}
-.andei-campos b{color:var(--cor);font-weight:600;font-size:var(--t-sm)}
-#c-mais{min-width:44px;font-weight:700}
-.chips:empty{display:none}
+.andei {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+  margin-top: 4px;
+}
+.andei-campos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-2);
+}
+.andei-campos > span {
+  font-size: var(--t-sm);
+  color: var(--muted);
+}
+.andei-campos label {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.andei-campos .campo {
+  width: 4.2em;
+  padding: 6px 8px;
+  text-align: right;
+}
+.andei-campos small {
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.andei-campos b {
+  color: var(--cor);
+  font-weight: 600;
+  font-size: var(--t-sm);
+}
+#c-mais {
+  min-width: 44px;
+  font-weight: 700;
+}
+.chips:empty {
+  display: none;
+}
 /* Dia passado (só leitura): campos e botões desativados */
-#f-texto:disabled,.andei input:disabled,#c-mais:disabled,.lista select:disabled{opacity:.45}
-.trechos .chip:disabled{cursor:default;color:var(--muted)}
+#f-texto:disabled,
+.andei input:disabled,
+#c-mais:disabled,
+.lista select:disabled {
+  opacity: 0.45;
+}
+.trechos .chip:disabled {
+  cursor: default;
+  color: var(--muted);
+}
 
 /* ---------- Macros (contra a meta do dia) ---------- */
-.macros{display:flex;flex-direction:column;gap:10px}
-.m-linha p{display:flex;align-items:baseline;gap:var(--e-2)}
-.m-linha p>span{font-size:var(--t-sm);color:var(--muted);min-width:6.2em}   /* só o nome: a barra também é um span */
-.m-linha b{font-family:var(--display);font-size:1.35rem;line-height:1;font-weight:700}
-.m-linha b small{font-family:var(--body);font-size:var(--t-xs);color:var(--muted);font-weight:400}
-.m-linha i{margin-left:auto;font-size:var(--t-xs);font-style:normal;color:var(--muted)}
-.m-linha i.ruim{color:var(--erro)}
-.m-prot b{color:var(--prot)} .m-carb b{color:var(--carb)} .m-gord b{color:var(--gord)}
-.m-barra{height:6px;margin-top:6px;border-radius:var(--r-pill);background:var(--line);overflow:hidden}
-.m-barra span{display:block;height:100%}
-.m-prot .m-barra span{background:var(--prot)} .m-carb .m-barra span{background:var(--carb)} .m-gord .m-barra span{background:var(--gord)}
+.macros {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.m-linha p {
+  display: flex;
+  align-items: baseline;
+  gap: var(--e-2);
+}
+.m-linha p > span {
+  font-size: var(--t-sm);
+  color: var(--muted);
+  min-width: 6.2em;
+} /* só o nome: a barra também é um span */
+.m-linha b {
+  font-family: var(--display);
+  font-size: 1.35rem;
+  line-height: 1;
+  font-weight: 700;
+}
+.m-linha b small {
+  font-family: var(--body);
+  font-size: var(--t-xs);
+  color: var(--muted);
+  font-weight: 400;
+}
+.m-linha i {
+  margin-left: auto;
+  font-size: var(--t-xs);
+  font-style: normal;
+  color: var(--muted);
+}
+.m-linha i.ruim {
+  color: var(--erro);
+}
+.m-prot b {
+  color: var(--prot);
+}
+.m-carb b {
+  color: var(--carb);
+}
+.m-gord b {
+  color: var(--gord);
+}
+.m-barra {
+  height: 6px;
+  margin-top: 6px;
+  border-radius: var(--r-pill);
+  background: var(--line);
+  overflow: hidden;
+}
+.m-barra span {
+  display: block;
+  height: 100%;
+}
+.m-prot .m-barra span {
+  background: var(--prot);
+}
+.m-carb .m-barra span {
+  background: var(--carb);
+}
+.m-gord .m-barra span {
+  background: var(--gord);
+}
 
 /* ---------- O que comi: sugestões (chips com nome, porção e kcal) e o "Estimando…" ---------- */
-.sug{display:flex;gap:6px;align-items:baseline;max-width:100%;background:var(--surface)}
-.sug b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sug span{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sug i{color:var(--cor);font-style:normal;white-space:nowrap}
-.carregando{display:flex;align-items:center;gap:var(--e-2);color:var(--muted);font-size:var(--t-sm)}
-.spin{width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--cor);border-radius:50%;animation:girar .8s linear infinite}
-@keyframes girar{to{transform:rotate(360deg)}}
+.sug {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  max-width: 100%;
+  background: var(--surface);
+}
+.sug b {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sug span {
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sug i {
+  color: var(--cor);
+  font-style: normal;
+  white-space: nowrap;
+}
+.carregando {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+.spin {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--line);
+  border-top-color: var(--cor);
+  border-radius: 50%;
+  animation: girar 0.8s linear infinite;
+}
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 /* ---------- Prévia ---------- */
-.previa{display:flex;flex-direction:column;gap:var(--e-3);border-color:var(--cor)}
-.previa .linha .btn{flex:1 1 0}
-.previa ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--e-3)}
-.previa li{display:flex;flex-direction:column;gap:6px;padding-bottom:var(--e-3);border-bottom:1px solid var(--line)}
-.previa input{width:100%;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--bg)}
-.p-nome{display:grid;grid-template-columns:1fr auto;gap:6px}
-.p-porcao{grid-column:1/-1;display:flex;align-items:center;gap:6px}   /* "2 × 1 unidade (~50 g)": quantas porções e a porção */
-.p-porcao [data-campo="qtd"]{width:3.5em;flex:none;text-align:right}
-.p-porcao [data-campo="porcao"]{flex:1;min-width:0}
-.p-porcao small{color:var(--muted)}
-.p-num{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.p-num label{display:flex;flex-direction:column;gap:2px;font-size:var(--t-xs);color:var(--muted)}
+.previa {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+  border-color: var(--cor);
+}
+.previa .linha .btn {
+  flex: 1 1 0;
+}
+.previa ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+}
+.previa li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: var(--e-3);
+  border-bottom: 1px solid var(--line);
+}
+.previa input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--bg);
+}
+.p-nome {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+}
+.p-porcao {
+  grid-column: 1/-1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+} /* "2 × 1 unidade (~50 g)": quantas porções e a porção */
+.p-porcao [data-campo='qtd'] {
+  width: 3.5em;
+  flex: none;
+  text-align: right;
+}
+.p-porcao [data-campo='porcao'] {
+  flex: 1;
+  min-width: 0;
+}
+.p-porcao small {
+  color: var(--muted);
+}
+.p-num {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.p-num label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--t-xs);
+  color: var(--muted);
+}
 
 /* ---------- Marmitas ---------- */
-.marmitas{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
-.marmitas:empty{display:none}
-.marmitas li{display:flex;align-items:center;gap:6px}
-.marmita{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;text-align:left;border:1px dashed var(--cor);border-radius:var(--r);background:var(--cor-soft);padding:10px 12px;color:var(--fg)}
-.marmita span{color:var(--muted);font-size:var(--t-xs)}
-.marmita i{margin-left:auto;font-style:normal;color:var(--cor);font-weight:600}
-.p-guardar{display:grid;grid-template-columns:1fr auto;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
-.p-guardar[hidden]{display:none}
-.p-guardar label{display:flex;align-items:center;gap:4px}
-.p-guardar label input{width:3.5em;text-align:right}
-.p-guardar label small{color:var(--muted)}
-.p-guardar .btn{grid-column:1/-1}
+.marmitas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.marmitas:empty {
+  display: none;
+}
+.marmitas li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.marmita {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  text-align: left;
+  border: 1px dashed var(--cor);
+  border-radius: var(--r);
+  background: var(--cor-soft);
+  padding: 10px 12px;
+  color: var(--fg);
+}
+.marmita span {
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+.marmita i {
+  margin-left: auto;
+  font-style: normal;
+  color: var(--cor);
+  font-weight: 600;
+}
+.p-guardar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.p-guardar[hidden] {
+  display: none;
+}
+.p-guardar label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.p-guardar label input {
+  width: 3.5em;
+  text-align: right;
+}
+.p-guardar label small {
+  color: var(--muted);
+}
+.p-guardar .btn {
+  grid-column: 1/-1;
+}
 
 /* ---------- Lista do dia (a da base): macros embaixo do nome, kcal grandes e porções ---------- */
-.lista .oque .l-mac{font-size:var(--t-xs)}
-.l-kcal{font-family:var(--display);font-weight:700;font-size:1.3rem;text-align:right;line-height:1}
-.l-kcal small{display:block;font-family:var(--body);font-weight:400;font-size:.7rem;color:var(--muted)}
-.l-acoes{display:flex;gap:4px;align-items:center}
-.l-acoes select{height:36px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--bg);padding:0 4px}
+.lista .oque .l-mac {
+  font-size: var(--t-xs);
+}
+.l-kcal {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.3rem;
+  text-align: right;
+  line-height: 1;
+}
+.l-kcal small {
+  display: block;
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.l-acoes {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.l-acoes select {
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  padding: 0 4px;
+}
 
 /* ---------- Últimos 7 dias ---------- */
-.sem-lista{list-style:none;margin:0;padding:0}
-.sem-lista button{display:grid;grid-template-columns:1fr auto 5em;gap:var(--e-2);width:100%;padding:var(--e-2) 0;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;font-size:var(--t-sm)}
-.sem-lista li:last-child button{border-bottom:0}
-.sem-lista li.visto span:first-child{color:var(--cor);font-weight:600}
-.sem-lista span:first-child{text-transform:capitalize}
-.sem-lista b{text-align:right}
-.sem-media{margin-top:var(--e-2);font-size:var(--t-sm)}
-@media (prefers-reduced-motion:reduce){.spin,.alerta-titulo svg{animation:none}}
+.sem-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.sem-lista button {
+  display: grid;
+  grid-template-columns: 1fr auto 5em;
+  gap: var(--e-2);
+  width: 100%;
+  padding: var(--e-2) 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  text-align: left;
+  font-size: var(--t-sm);
+}
+.sem-lista li:last-child button {
+  border-bottom: 0;
+}
+.sem-lista li.visto span:first-child {
+  color: var(--cor);
+  font-weight: 600;
+}
+.sem-lista span:first-child {
+  text-transform: capitalize;
+}
+.sem-lista b {
+  text-align: right;
+}
+.sem-media {
+  margin-top: var(--e-2);
+  font-size: var(--t-sm);
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin,
+  .alerta-titulo svg {
+    animation: none;
+  }
+}

@@ -8,9 +8,9 @@
 ## Arquitetura
 
 - `index.html` é o único documento; telas são `<section class="view">`. Um stylesheet só: `css/al.css`.
-- Scripts clássicos nesta ordem, depois de `../supabase.js` (do hub), `../corpo/perfil.js` (módulo do app Corpo) e `gasto.js`: `config`, `util`, `banco`, `conta`, `ia`, `telas`, `bootstrap`. Escopo global compartilhado; a 1ª linha de cada um diz a responsabilidade.
+- Scripts clássicos nesta ordem, depois de `../supabase.js` (do hub), `../base/nucleo.js` (do hub: o `fetchComTeto`, o `confirmar` do toque duplo e o `repetido` do toque sem querer), `../corpo/perfil.js` (módulo do app Corpo) e `gasto.js`: `config`, `util`, `banco`, `conta`, `ia`, `telas`, `bootstrap`. Escopo global compartilhado; a 1ª linha de cada um diz a responsabilidade.
 - **Módulo compartilhado:** `gasto.js` (funções puras) tem o gasto e a meta do dia (`gastoNoDia`, `metaKcal`, fator de atividade, caminhada e `DEFICIT_META`). A página inicial do hub usa o mesmo arquivo para o hábito do déficit: mudou a conta, ela muda nos dois. Não declare ali nomes que o hub ou os apps já usam (`$`, `iso`, `sb`…).
-- Arquivo novo em `css/` ou `js/` entra no `index.html` e no `ARQUIVOS_ESTATICOS` do `sw.js` (o teste `tests/estrutura.test.mjs` confere). O service worker é rede primeiro, cache `al-estatico`, e só apaga caches `al-`.
+- Arquivo novo em `css/` ou `js/` entra no `index.html` e no `ARQUIVOS_ESTATICOS` do `sw.js` (o teste `tests/estrutura.test.mjs` confere). O service worker é rede primeiro, cache `al-estatico`, e só apaga caches `al-`; guarda também os módulos de fora que carrega (`../supabase.js`, `../base/nucleo.js`, `../corpo/perfil.js`, `../agua/bebidas.js`).
 - Perfil, taxa basal, calorias do treino e pesagens vêm de `../corpo/perfil.js` (`PERFIL`, `idadeEm`, `tmb`, `kcalTreino`, `kcalEsteira`, `medidasGuardadas`, `lerMedidas`, `pesoNoDia`): nunca repita esses valores aqui.
 - Treinos (`tr_treino`), pesagens (`corpo_medida`, do app Corpo) e as bebidas com calorias da Água (`agua_dia`, kcal por `../agua/bebidas.js`) são **só lidos** e guardados no aparelho (`al.tr.<id>`, `corpo.medidas.<id>` e `al.bebidas.<id>`). O al nunca grava em `tr_*` nem em `corpo_medida`.
 - Todo arquivo `.js`, `.mjs`, `.ts`, `.css` e `.sql` começa com um comentário curto de responsabilidade.
@@ -34,17 +34,18 @@
 Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para todos fica lá).
 
 - **Migrations:** `migrations/` 00 a 03 (`03` marmitas; o histórico delas é a `01` da raiz), formato DataGrip, RLS só do Victor em todas as `al_*`; conferido em `tests/estrutura.test.mjs`, numeração em `../tests/documentacao.test.mjs`.
-- **Testes:** navegador em `tests/dia.test.mjs` (Playwright do `tr/`, Supabase e IA falsos em `tests/helpers/app.mjs`); a Edge Function em `tests/funcao.test.mjs` (SDK e rede simulados); estrutura em `tests/estrutura.test.mjs`. As contas de `gasto.js` também são conferidas pelos hábitos da raiz.
-- **Pacotes:** sem `package.json`. `../supabase.js` da raiz; a função usa `npm:@anthropic-ai/sdk@0.133.0` (versão exata, conferida em `tests/funcao.test.mjs`) e os tipos `jsr:@supabase/functions-js@2.118.0`; Playwright do `tr/`.
+- **Testes:** navegador em `tests/dia.test.mjs` (20 testes, Playwright da raiz, Supabase e IA falsos em `tests/helpers/app.mjs`); sem navegador, `tests/regras.test.mjs` (contas, avisos do saldo, comidas salvas, marmitas e respostas da IA, com as funções tiradas dos arquivos publicados) e `tests/helpers/rodar.mjs` (service worker e `bootstrap.js` em `node:vm`); a Edge Function em `tests/funcao.test.mjs` (SDK e rede simulados); estrutura em `tests/estrutura.test.mjs`. As contas de `gasto.js` também são conferidas pelos hábitos da raiz. O relógio falso vem de `../tests/relogio.mjs` (pausado; ver `../docs/DIRETRIZES.md`, seção 3). Auditoria de 02/11/2026 em `docs/DECISOES.md`.
+- **Pacotes:** sem `package.json`. `../supabase.js` da raiz; a função usa `npm:@anthropic-ai/sdk@0.133.0` (versão exata, conferida em `tests/funcao.test.mjs`) e os tipos `jsr:@supabase/functions-js@2.118.0`; Playwright da raiz.
 - **Backups:** cópia no aparelho (`al.db.<conta>`, base em `al.base.<conta>`) e `hub_historico` com `al_dia`, `al_item`, `al_registro` e `al_marmita`. `al_uso` (contador de consultas à IA) fica fora: não é dado a recuperar.
 - **Domínio:** `/hub/al/`. Externos: o Supabase (inclusive `functions/v1/al-estimar`); a função chama a API da Anthropic.
 
 ## Como concluir uma mudança
 
 1. Atualize `docs/REGRAS.md`.
-2. Ajuste os testes em `tests/`: `dia` (navegador, Playwright do `tr/node_modules`, Supabase e IA falsos em `tests/helpers/app.mjs`), `funcao` (a Edge Function rodando com SDK e rede simulados) e `estrutura`.
+2. Ajuste os testes em `tests/`: `dia` (navegador, Playwright da raiz, Supabase e IA falsos em `tests/helpers/app.mjs`), `funcao` (a Edge Function rodando com SDK e rede simulados) e `estrutura`.
 3. Rode `node scripts/check.mjs` dentro de `al/` e, antes do push, na raiz do hub. Informe precisamente o que foi validado; não alegue validação no celular, no Supabase real ou com a IA real se ela não ocorreu.
 4. Commit e push conforme `../AGENTS.md`.
+
 - **Sem prints de tela:** não tire nem abra capturas de tela (screenshot) para conferir visual, a pedido do mantenedor (gastam muito do limite de uso). Confira pelos testes e por medidas no navegador (posição, tamanho, texto, classes) e diga o que não foi visto.
 - **Testes: função primeiro, tela pouco, regex quase nunca:** 1) a função do código rodando (sem navegador); 2) Playwright só em poucos casos estratégicos; nunca regex no código, só onde o objeto é texto (SQL, docs, configuração, segredos). Detalhes e exceções em `../docs/DIRETRIZES.md`, seção 3.
 

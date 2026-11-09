@@ -9,7 +9,7 @@ Fonte de verdade do comportamento do app. Toda mudança de regra atualiza este a
 - `aria-label` em botões só de ícone continua (não aparece na tela).
 - Tela inicial: o cabeçalho da base comum, como em todo módulo: ícone do hub, "Treino" no título (sem data) e a engrenagem; logo abaixo, a barra ‹ semana › e a semana (hoje com o anel azul).
 - Edição de treino na própria linha, com botões só de ícone: lixeira (excluir, toque duplo), X (cancelar) e ✓ (salvar).
-- Confirmações (apagar, excluir) são por toque duplo: o 1º toque deixa o botão vermelho por 3 s, o 2º confirma. Sem alertas nem avisos escritos pedindo confirmação.
+- Confirmações (apagar, excluir, encerrar o cardio, remover exercício) são por toque duplo: o 1º toque deixa o botão vermelho por 3 s, o 2º confirma. O armado é do item, não do botão: a tela redesenhada no meio (a nuvem que chega) mantém o vermelho no mesmo item até o fim dos 3 s, e o 2º toque confirma esse item, nunca outro que ficou no lugar; se o item sumiu (o registro ou o treino apagado em outro aparelho), nada é apagado nem aparece aviso. O exercício novo do editor (ainda não salvo) também guarda o armado entre os toques. Sem alertas nem avisos escritos pedindo confirmação. Igual em todos os apps.
 - Voltar: só a seta "<" no botão de ícone do canto superior esquerdo (sem texto), com o nome da tela ao lado (Conquistas, Exercícios, Cardio · esteira).
 - Esc: fecha a tela cheia aberta (garrafinha = X, parabéns = Ver resumo), senão cancela a edição na linha, senão volta uma tela. Na tela inicial sai do app (volta para a página inicial do hub, `../`), como em todos os apps; num campo de texto, só tira o foco. No login não faz nada.
 - Só tema escuro, o mesmo do hub e do fin (cinza grafite `#1B1E21`), mesmo com o celular no modo claro.
@@ -30,12 +30,12 @@ Fonte de verdade do comportamento do app. Toda mudança de regra atualiza este a
 
 Supabase do projeto `fin`, tabelas com prefixo `tr_`, todas com `user_id`:
 
-| Tabela | Chave | Campos |
-|---|---|---|
-| `tr_exercicio` | `id` | ordem, grupo, regiao, series, reps, descanso, modo, ativo |
-| `tr_variacao` | `id` | exercicio_id, ordem (0 principal, 1 substituto, 2 halter), nome, unidade (`kg`, `lb`, `nível`, `corpo`, `s`; migration 07), passo, lados, equip, nota |
-| `tr_registro` | `variacao_id, data` | series `[{ kg, reps, falha? }]` (`falha: true` só na série que falhou) |
-| `tr_treino` | `inicio` | fim, fechado, cardio `{ inicio, ms, vel, incl }` (esteira depois do treino; null = sem cardio, migration 05) |
+| Tabela         | Chave               | Campos                                                                                                                                                |
+| -------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tr_exercicio` | `id`                | ordem, grupo, regiao, series, reps, descanso, modo, ativo                                                                                             |
+| `tr_variacao`  | `id`                | exercicio_id, ordem (0 principal, 1 substituto, 2 halter), nome, unidade (`kg`, `lb`, `nível`, `corpo`, `s`; migration 07), passo, lados, equip, nota |
+| `tr_registro`  | `variacao_id, data` | series `[{ kg, reps, falha? }]` (`falha: true` só na série que falhou)                                                                                |
+| `tr_treino`    | `inicio`            | fim, fechado, cardio `{ inicio, ms, vel, incl }` (esteira depois do treino; null = sem cardio, migration 05)                                          |
 
 `tr_medida` (as pesagens que o Treino gravava) foi copiada para `corpo_medida` e depois apagada: as pesagens agora são do app Corpo (`../corpo/`). O Treino só lê `corpo_medida` (peso das calorias), nunca grava.
 

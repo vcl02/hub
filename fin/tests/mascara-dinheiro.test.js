@@ -1,40 +1,232 @@
 // Máscara de R$ nos campos de dinheiro: "R$" fixo dentro da caixa (cadastro, edição do Valor
 // na tabela, metas) e a mesma máscara de caixa eletrônico do cadastro (formataMascaraDinheiro).
-const assert = require('node:assert/strict');
+const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
+const vm = require('node:vm');
+const { etiquetas } = require('./helpers/html');
+const { declaracoes } = require('./helpers/regras-css');
+const { carregarTela } = require('./helpers/tela-sem-navegador');
+const { trazer } = require('./helpers/trazer-funcao');
 
-const ler = arquivo => fs.readFileSync(arquivo, 'utf8');
+const ler = (arquivo) => fs.readFileSync(arquivo, 'utf8');
 const pagina = ler('index.html');
 const interacoes = ler('js/interactions.js');
-const visoes = ler('js/cycle-views.js');
+
+assert.ok(ler('js/cycle-views.js'), 'js/cycle-views.js existe');
 const formularios = ler('css/forms.css');
 const regras = ler('docs/REGRAS.md');
 
-test('cadastro: "R$" fixo dentro da caixa do Valor, antes do campo', () => {
-    assert.match(pagina, /<div class=moneyWrap>\s*<span class=dinheiroPrefixo aria-hidden=true>R\$<\/span>\s*<input type=text inputmode=numeric id=fValor/);
-    assert.match(formularios, /\.moneyWrap \.dinheiroPrefixo \{\s*align-self: center;/);
+// Pega o ouvinte que um trecho de js/interactions.js registra em `el(id).addEventListener(tipo, …)`, rodando o trecho
+// de verdade dentro da tela sem navegador (as funções da máscara vêm do js/form.js real).
+function ouvinteDe(tela, inicioDoTrecho, id, tipo) {
+  const inicio = interacoes.indexOf(inicioDoTrecho);
+  const fim = interacoes.indexOf('\n});\n', inicio) + 5;
+  const alvo = tela.ctx.document.getElementById(id);
+  let ouvinte;
+
+  alvo.addEventListener = (t, fn) => {
+    if (t === tipo) ouvinte = fn;
+  };
+
+  vm.runInContext(interacoes.slice(inicio, fim), tela.ctx);
+
+  return ouvinte;
+}
+
+const campoFalso = (valor) => {
+  const campo = {
+    value: valor,
+    selectionEnd: valor.length, // cursor no fim
+    posicoes: [],
+    ouvintes: {},
+    addEventListener: (tipo, fn) => (campo.ouvintes[tipo] = fn),
+    setSelectionRange: (a, b) => campo.posicoes.push([a, b]),
+    focus() {},
+    select() {},
+  };
+
+  return campo;
+};
+
+test('cadastro: "R$" fixo dentro da caixa do Valor (o .campo da base), antes do campo', () => {
+  const tags = etiquetas(pagina);
+  const caixa = tags.findIndex((t) => t.attrs.class === 'moneyWrap campo');
+
+  assert.deepEqual(tags.slice(caixa, caixa + 3), [
+    { tag: 'div', attrs: { class: 'moneyWrap campo' } },
+    { tag: 'span', attrs: { class: 'dinheiroPrefixo', 'aria-hidden': 'true' } },
+    {
+      tag: 'input',
+      attrs: {
+        type: 'text',
+        inputmode: 'numeric',
+        id: 'fValor',
+        placeholder: '0,00',
+        autocomplete: 'off',
+      },
+    },
+  ]);
+  assert.ok(
+    declaracoes(formularios, '.moneyWrap .dinheiroPrefixo').includes('align-self: center')
+  );
 });
 
-test('edição do Valor na tabela: caixa .dinheiro com "R$" e a máscara do cadastro', () => {
-    assert.match(interacoes, /<span class="inpValor dinheiro"><span class=dinheiroPrefixo aria-hidden=true>R\$<\/span>/);
-    assert.match(interacoes, /<input type=text inputmode=numeric aria-label="Valor" value="\$\{bruto \? formataMascaraDinheiro\(String\(Math\.round\(bruto \* 100\)\)\) : ''\}" placeholder="0,00"><\/span>`;/);
-    // A caixa é o span; o input fica transparente dentro, e o foco aparece na caixa.
-    assert.match(formularios, /\.dinheiro > input \{[^}]*background: transparent;[^}]*border: 0;/);
-    assert.match(formularios, /\.dinheiro:focus-within \{ outline: 2px solid var\(--fg\); outline-offset: -1px; \}/);
+test('edição do Valor na tabela: caixa .dinheiro com "R$" e a máscara do cadastro', async () => {
+  const tela = carregarTela();
+
+  const ouvinte = ouvinteDe(
+    tela,
+    "el('out').addEventListener('click', (e) => {\n  const span = e.target.closest('[data-tog-valor]');",
+    'out',
+    'click'
+  );
+
+  tela.bruto('Estado').lancamentos = [{ id: '5', v: -1234.5, valor: -1234.5 }];
+
+  const campo = campoFalso('');
+
+  const span = {
+    classList: { contains: () => false, add() {} },
+    dataset: { togValor: '5' },
+    innerHTML: '',
+    querySelector: () => campo,
+  };
+
+  ouvinte({ target: { closest: () => span }, stopImmediatePropagation() {} });
+
+  // O valor entra mascarado (centavos) dentro da caixa .dinheiro, com o "R$" fixo na frente
+  assert.equal(
+    span.innerHTML,
+    '<span class="inpValor dinheiro"><span class=dinheiroPrefixo aria-hidden=true>R$</span>' +
+      '<input type=text inputmode=numeric aria-label="Valor" value="1.234,50" placeholder="0,00"></span>'
+  );
+
+  // Digitando, o campo mantém a máscara de caixa eletrônico e o cursor no fim
+  campo.value = '123456';
+  campo.selectionEnd = campo.value.length;
+  campo.ouvintes.input();
+  assert.equal(campo.value, '1.234,56');
+  assert.deepEqual(campo.posicoes, [[8, 8]]);
+
+  // A caixa é o span; o input fica transparente dentro, e o foco aparece na caixa.
+  assert.ok(
+    declaracoes(formularios, '.dinheiro > input').includes('background: transparent')
+  );
+  assert.ok(declaracoes(formularios, '.dinheiro > input').includes('border: 0'));
+  assert.deepEqual(declaracoes(formularios, '.inpValor:focus-within'), [
+    'outline: 2px solid var(--fg)',
+    'outline-offset: -1px',
+  ]);
+  // nas metas a caixa é o campo da base, que acende a borda com o foco de dentro: sem contorno próprio por cima
+  assert.deepEqual(declaracoes(formularios, '.dinheiro:focus-within'), []);
 });
 
 test('metas: Valor total e Entrada com "R$" e máscara de caixa eletrônico; vazio fica vazio', () => {
-    assert.match(interacoes, /el\('corpoMetas'\)\.addEventListener\('input', e => \{[\s\S]*?const input = e\.target\.closest\('\[data-dinheiro\]'\);/);
-    assert.match(interacoes, /input\.value = input\.value\.replace\(\/\\D\/g, ''\) \? formataMascaraDinheiro\(input\.value\) : '';/);
-    // O valor mascarado ("1.500,00") volta a número pela mesma leitura dos limites.
-    const trecho = interacoes.slice(interacoes.indexOf('function numeroDoLimiteDigitado('), interacoes.indexOf('\n}\n', interacoes.indexOf('function numeroDoLimiteDigitado(')) + 3);
-    const numeroDoLimiteDigitado = new Function(`${trecho}; return numeroDoLimiteDigitado;`)();
-    assert.equal(numeroDoLimiteDigitado('1.500,00'), 1500);
-    assert.equal(numeroDoLimiteDigitado('0,50'), 0.5);
+  const tela = carregarTela();
+
+  const ouvinte = ouvinteDe(
+    tela,
+    "el('corpoMetas').addEventListener('input', (e) => {",
+    'corpoMetas',
+    'input'
+  );
+
+  const digita = (digitado) => {
+    const campo = campoFalso(digitado);
+
+    // só o campo de dinheiro responde a closest('[data-dinheiro]'); o de Vezes não é este
+    ouvinte({ target: { closest: (sel) => (sel === '[data-dinheiro]' ? campo : null) } });
+
+    return campo;
+  };
+
+  assert.equal(digita('150000').value, '1.500,00');
+  assert.deepEqual(digita('150000').posicoes, [[8, 8]]);
+  assert.equal(digita('0,5').value, '0,05');
+  assert.equal(digita('abc').value, ''); // apagar tudo deixa vazio (sem entrada), nunca "0,00"
+  assert.equal(digita('').value, '');
+
+  // Fora de um campo de dinheiro, nada acontece
+  assert.equal(ouvinte({ target: { closest: () => null } }), undefined);
+
+  // O valor mascarado ("1.500,00") volta a número pela mesma leitura dos limites.
+  const trecho = interacoes.slice(
+    interacoes.indexOf('function numeroDoLimiteDigitado('),
+    interacoes.indexOf('\n}\n', interacoes.indexOf('function numeroDoLimiteDigitado(')) +
+      3
+  );
+
+  const numeroDoLimiteDigitado = new Function(
+    `${trecho}; return numeroDoLimiteDigitado;`
+  )();
+
+  assert.equal(numeroDoLimiteDigitado('1.500,00'), 1500);
+  assert.equal(numeroDoLimiteDigitado('0,50'), 0.5);
 });
 
 test('REGRAS.md documenta a máscara de R$', () => {
-    assert.match(regras, /Todo campo de dinheiro tem \*\*máscara de R\$\*\*: o "R\$" fixo à esquerda, dentro da própria caixa/);
-    assert.match(regras, /no Valor total e na Entrada das metas/);
+  assert.match(
+    regras,
+    /Todo campo de dinheiro tem \*\*máscara de R\$\*\*: o "R\$" fixo à esquerda, dentro da própria caixa/
+  );
+  assert.match(regras, /no Valor total e na Entrada das metas/);
+});
+
+// Os campos de limite (Aprovado, Garantia e Besteira/Isabella) rodam o `ligarCamposDeLimite` real sobre uma raiz falsa:
+// máscara a cada tecla, seleção ao focar, Enter tira o foco, Esc redesenha, e só o campo de limite é tratado.
+test('campos de limite: máscara de R$, seleção ao focar, Enter, Esc e confirmação ao mudar', () => {
+  const tela = carregarTela();
+  const ouvintes = {};
+  const gravados = [];
+  let desenhos = 0;
+
+  tela.ctx.desenhar = () => desenhos++;
+  tela.ctx.confirmarLimiteDoCiclo = (campo) => gravados.push(campo);
+  trazer(tela.ctx, 'js/interactions.js', ['ligarCamposDeLimite']);
+
+  tela.ctx.ligarCamposDeLimite({ addEventListener: (tipo, f) => (ouvintes[tipo] = f) });
+
+  const evento = (alvo, extra = {}) => ({
+    target: { closest: (sel) => (sel.includes('data-limite-cartao') ? alvo : null) },
+    preventDefault() {
+      alvo.prevenido = true;
+    },
+    ...extra,
+  });
+
+  const campo = campoFalso('150000');
+
+  campo.blurs = 0;
+  campo.selecionou = 0;
+  campo.blur = () => campo.blurs++;
+  campo.select = () => campo.selecionou++;
+
+  ouvintes.input(evento(campo));
+  assert.equal(campo.value, '1.500,00'); // em centavos, como o cadastro
+  assert.deepEqual(campo.posicoes, [[8, 8]]); // cursor no fim
+
+  ouvintes.focusin(evento(campo));
+  assert.equal(campo.selecionou, 1);
+
+  ouvintes.keydown(evento(campo, { key: 'Enter' }));
+  assert.equal(campo.blurs, 1);
+  assert.equal(campo.prevenido, true);
+
+  ouvintes.keydown(evento(campo, { key: 'Escape' }));
+  assert.equal(desenhos, 1); // desfaz: volta ao valor gravado
+
+  ouvintes.change(evento(campo));
+  assert.deepEqual(gravados, [campo]);
+
+  // fora de um campo de limite, nada acontece
+  const fora = { target: { closest: () => null } };
+
+  ouvintes.input(fora);
+  ouvintes.focusin(fora);
+  ouvintes.keydown({ ...fora, key: 'Enter' });
+  ouvintes.change(fora);
+  assert.equal(gravados.length, 1);
+  assert.equal(desenhos, 1);
+  assert.equal(campo.blurs, 1);
 });

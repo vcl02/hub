@@ -1,5 +1,5 @@
 #!/bin/bash
-# Sessões do Claude Code na nuvem: instala o Playwright do tr pra `node scripts/check.mjs` (raiz,
+# Sessões do Claude Code na nuvem: instala o Playwright da raiz pra `node scripts/check.mjs` (raiz,
 # fin e tr) rodar sempre. Local, não faz nada: cada um instala do jeito do README.
 set -euo pipefail
 
@@ -7,7 +7,7 @@ if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
 fi
 
-cd "$CLAUDE_PROJECT_DIR/tr"
+cd "$CLAUDE_PROJECT_DIR"
 # npm install (não ci): reaproveita o node_modules guardado no cache do container.
 npm install --no-audit --no-fund
 

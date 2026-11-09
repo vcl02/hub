@@ -1,12 +1,13 @@
 // Contrato visual-financeiro: a tabela Crédito é prévia; o saldo continua no ciclo próprio.
-const assert = require('node:assert/strict');
+// O desenho do ciclo (vCiclo) roda de verdade, sem navegador, e o teste confere o HTML que sai.
+const assert = require('./helpers/assert-tolerante');
 const fs = require('node:fs');
 const test = require('node:test');
 const vm = require('node:vm');
+const { carregarTela } = require('./helpers/tela-sem-navegador');
+const { declaracoes } = require('./helpers/regras-css');
 
 const script = fs.readFileSync('js/finance.js', 'utf8');
-const dominio = fs.readFileSync('js/domain.js', 'utf8');
-const visoes = fs.readFileSync('js/cycle-views.js', 'utf8');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const estilos = fs.readFileSync('css/dashboard.css', 'utf8');
 const estilosMobile = fs.readFileSync('css/mobile.css', 'utf8');
@@ -15,181 +16,339 @@ const decisoes = fs.readFileSync('docs/DECISOES.md', 'utf8');
 const inicio = script.indexOf('function creditosExibidosNoCiclo(');
 const fim = script.length;
 
-if (inicio < 0 || fim < 0) throw Error('Não encontrou a regra de layout do Crédito no módulo financeiro.');
+if (inicio < 0 || fim < 0)
+  throw Error('Não encontrou a regra de layout do Crédito no módulo financeiro.');
 
 const contexto = {};
+
 vm.createContext(contexto);
 vm.runInContext(script.slice(inicio, fim), contexto);
-const exibir = (linhas, ciclo) => Array.from(contexto.creditosExibidosNoCiclo(linhas, ciclo));
+
+const exibir = (linhas, ciclo) =>
+  Array.from(contexto.creditosExibidosNoCiclo(linhas, ciclo));
+
+// Hoje = 20/10/2026, que cai no ciclo de índice 1 (15/10 a 14/11); o 2 é o futuro e o 0, o passado.
+// Tetos de Besteira e Isabella zerados: sem linha "prevista" no Crédito, Hoje e Futuro podem ficar iguais.
+const lanc = (id, nome, data, valor, extra = {}) => ({
+  id,
+  nome,
+  data,
+  valor,
+  categ: 'Casa',
+  cred: false,
+  pago: true,
+  fatura: null,
+  freq: null,
+  ...extra,
+});
+
+const zero = { limite_besteira: 0, limite_isabella: 0 };
+
+const dadosDe = (...lancamentos) => ({
+  fin_ciclo: [
+    { id: 1, inicio: '2026-09-15', fim: '2026-10-14', ...zero },
+    { id: 2, inicio: '2026-10-15', fim: '2026-11-14', ...zero },
+    { id: 3, inicio: '2026-11-15', fim: null, ...zero },
+  ],
+  fin: [lanc(1, 'Salário', '2026-10-15', 9000, { categ: 'Salário' }), ...lancamentos],
+  fin_meta: [],
+});
+
+// O HTML do ciclo i, o texto sem tags e os blocos que o desenho mandou recolher.
+async function desenhar(dados, i, idxHoje = 1) {
+  const tela = carregarTela({ dados });
+
+  await tela.bruto('carregarDados()');
+  tela.bruto(`Estado.idxHoje = ${idxHoje}`);
+  const recolhidos = [];
+
+  tela.ctx.recolherBloco = (id) => recolhidos.push(id);
+  tela.ctx.document.getElementById('ciclo').value = String(i);
+  const html = tela.bruto('vCiclo()');
+
+  return {
+    tela,
+    html,
+    recolhidos,
+    texto: html
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim(),
+  };
+}
+
+const compra = (valor, extra = {}) =>
+  lanc(5, 'Fone', '2026-10-16', valor, { cred: true, fatura: '2026-12-12', ...extra });
+
+const aporte = lanc(8, 'Aporte', '2026-10-16', -500, { categ: 'Investimento' });
 
 test('mostra no ciclo atual somente os créditos que pertencem ao ciclo seguinte', () => {
-    const linhas = [
-        { id: 1, cred: true, periodoIdx: 4 },
-        { id: 2, cred: true, periodoIdx: 5 },
-        { id: 3, cred: false, periodoIdx: 5 },
-    ];
-    assert.deepEqual(exibir(linhas, 4).map(r => r.id), [2]);
+  const linhas = [
+    { id: 1, cred: true, periodoIdx: 4 },
+    { id: 2, cred: true, periodoIdx: 5 },
+    { id: 3, cred: false, periodoIdx: 5 },
+  ];
+
+  assert.deepEqual(
+    exibir(linhas, 4).map((r) => r.id),
+    [2]
+  );
 });
 
 test('não desloca créditos quando não existe uma competência seguinte', () => {
-    assert.deepEqual(exibir([{ id: 1, cred: true, periodoIdx: 4 }], 4), []);
+  assert.deepEqual(exibir([{ id: 1, cred: true, periodoIdx: 4 }], 4), []);
 });
 
 test('o título do Crédito mostra o saldo após antecipações da mesma fatura', () => {
-    assert.equal(
-        contexto.totalCreditoExibidoAposAntecipacoes([{ v: -2922.26 }], 500),
-        -2422.26
-    );
+  assert.equal(
+    contexto.totalCreditoExibidoAposAntecipacoes([{ v: -2922.26 }], 500),
+    -2422.26
+  );
 });
 
-test('o único título de Crédito exibe o limite livre de cada cartão, com a garantia só no Nubank', () => {
-    assert.match(dominio, /let LIMITE_CARTAO = 3350;/);
-    assert.match(dominio, /let LIMITE_CARTAO_MP = 1100;/);
-    assert.match(visoes, /const guardadoGarantido = guardadoGarantidoAte\(Estado\.lancamentos, i\)/);
-    assert.match(visoes, /const garantiaNubank = garantiaDoCiclo\(i, guardadoGarantido\);/);
-    assert.match(visoes, /const garantidoDoCartao = cartao === CARTAO_NUBANK \? garantiaNubank\.efetiva : 0;/);
-    assert.match(visoes, /const aprovado = aprovadoDoCiclo\(i, cartao\);/);
-    assert.match(visoes, /limiteTotal: limiteCartaoTotal\(garantidoDoCartao, cartao, aprovado\),/);
-    assert.match(visoes, /limiteLivreHoje: limiteLivreHojeDoCartao\(Estado\.lancamentos, i, cartao\),/);
-    assert.match(visoes, /limiteLivreFuturo: limiteCartaoLivreFuturo\(/);
-    assert.match(visoes, /Estado\.lancamentos, garantidoDoCartao, idxCreditoExibido, totalExibidoDoCartao, cartao/);
-    assert.match(visoes, /data-limite-cartao/);
-    // Garantia editável no próprio título (quanto do guardado vira garantia no ciclo).
-    assert.match(visoes, /data-garantia-cartao data-ciclo="\$\{i\}"/);
-    assert.match(visoes, /placeholder="0,00"/);
-    assert.match(visoes, /limiteGarantido/);
-    assert.match(visoes, /const resumoLimiteCartao/);
-    // Teto = Aprovado vira o próprio campo depois de "de"; com garantia, o Aprovado vem num
-    // pedaço próprio e a garantia em outro (só no Nubank).
-    assert.match(visoes, /: tetoSemGarantia\(l\) \? `<span class=limiteCartaoBase>R\$ \$\{campoAprovado\(l\)\}<\/span>` : brl\(l\.limiteTotal\),/);
-    assert.match(visoes, /pedaco\(`<span class=limiteTeto><span class=limiteCartaoBase>R\$ \$\{campoAprovado\(l\)\}<span class=limiteCartaoRotulo>Aprovado<\/span><\/span><\/span>`\)/);
-    assert.match(visoes, /l\.cartao === CARTAO_NUBANK && mostraGarantia && tetoNaFaixa\(chaveLivre\) \? `<span class="pedaco limiteGarantido">\+ R\$ \$\{campoGarantia\(\)\} Garantido<\/span>` : ''/);
-    assert.match(visoes, /const creditoAcimaLimite = !cicloDebitoPassado && limitesDosCartoes\.some\(l =>\s*Math\.abs\(l\.totalHoje\) > l\.limiteTotal \|\| \(exibeFuturoCredito && l\.limiteLivreFuturo < -TOLERANCIA_FINANCEIRA\)\);/);
-    assert.match(visoes, /const alertaTituloCredito = alertaTitulo\('alertaLimite', creditoAcimaLimite,/);
-    assert.match(visoes, /Math\.abs\(l\.totalHoje\) > l\.limiteTotal/);
-    assert.match(visoes, /l\.limiteLivreFuturo < -TOLERANCIA_FINANCEIRA/);
-    assert.match(visoes, /'Gasto acima do limite'/);
-    assert.match(visoes, /`Crédito\$\{alertaTituloCredito\}`/);
-    assert.match(visoes, /value="\$\{emReais\(l\.aprovado\)\}"/);
-    // Largura pelo próprio valor, sem vão até Aprovado/Garantido sem field-sizing.
-    assert.match(visoes, /const larguraDoCampo = texto => `style="width:\$\{Math\.max\(4, String\(texto\)\.length \+ 1\)\}ch"`;/);
-    // Teto igual ao Aprovado (sem garantia): só o campo editável depois do "de", sem repetir.
-    assert.match(visoes, /const tetoSemGarantia = l => Math\.abs\(l\.limiteTotal - l\.aprovado\) < TOLERANCIA_FINANCEIRA;/);
-    assert.match(visoes, /\? `<span class=limiteCartaoBase>R\$ \$\{campoAprovado\(l\)\}<\/span>`/);
-    assert.match(visoes, /const garantiaExibida = garantiaNubank\.escolhida != null \|\| i === Estado\.idxHoje\s*\n\s*\? garantiaNubank\.efetiva : Math\.floor\(garantiaNubank\.efetiva \/ 100\) \* 100;/);
-    assert.doesNotMatch(visoes, /Garantido<\/span>` : ''\}\)<\/span>/);
-    assert.match(estilos, /\.limiteCartao/);
-    assert.match(estilos, /\.limiteCartaoEditavel/);
-    assert.match(estilos, /\.limiteCartaoEditavel::placeholder/);
-    assert.match(estilos, /\.limiteCartaoRotulo/);
-    assert.match(estilos, /gap: \.1rem/);
-    assert.match(interacoes, /formataMascaraDinheiro\(input\.value\)/);
-    assert.match(interacoes, /input\.select\(\)/);
-    assert.match(interacoes, /const valor = texto \? Math\.round\(numeroDoLimiteDigitado\(texto\) \* 100\) \/ 100 : null;/);
-    assert.doesNotMatch(estilos, /\.limiteTotal/);
-    assert.match(estilos, /\.alertaTitulo/);
-    assert.match(estilos, /\.alertaTitulo\.vazio/);
-    assert.match(estilos, /flex: 0 0 5\.7rem/);
+test('o único título de Crédito exibe o limite livre de cada cartão, com a garantia só no Nubank', async () => {
+  const sem = await desenhar(dadosDe(compra(-150)), 1);
+
+  assert.equal(sem.tela.rodar('LIMITE_CARTAO'), 3350);
+  assert.equal(sem.tela.rodar('LIMITE_CARTAO_MP'), 1100);
+  // Um título só, com o limite livre do Nubank (3.350 − 150) e o campo editável do Aprovado.
+  assert.match(
+    sem.texto,
+    /Crédito .*Hoje Fatura R\$ 150,00 Usado R\$ 150,00 Livre R\$ 3\.200,00 de R\$/
+  );
+  assert.match(
+    sem.html,
+    /<input class=limiteCartaoEditavel data-limite-cartao="nubank" data-ciclo="1" style="width:9ch" value="3\.350,00" placeholder="0,00"/
+  );
+  assert.doesNotMatch(sem.html, /data-garantia-cartao|Garantido/); // sem aporte pago, sem garantia
+
+  // Com um aporte pago, o guardado vira garantia: o campo dela aparece no próprio título, a largura
+  // segue o valor ("500,00" + 1 = 7ch), e o limite do Nubank sobe pela garantia (3.350 + 500).
+  const com = await desenhar(dadosDe(aporte, compra(-150)), 1);
+
+  assert.match(
+    com.html,
+    /<input class=limiteCartaoEditavel data-garantia-cartao data-ciclo="1" style="width:7ch" value="500,00" placeholder="todo"/
+  );
+  assert.match(
+    com.texto,
+    /Livre R\$ 3\.700,00 de R\$ 3\.850,00 R\$ Aprovado \+ R\$ Garantido/
+  );
+
+  // Acima do limite: o aviso do título acende (só no ciclo que ainda não fechou).
+  const acima = await desenhar(dadosDe(compra(-4000)), 1);
+
+  assert.match(acima.texto, /Livre -R\$ 650,00 de R\$/);
+  assert.match(
+    acima.html,
+    /<span class="alertaTitulo alertaLimite" role=img title="Acima do limite" aria-label="Gasto acima do limite">/
+  );
+  assert.match(
+    sem.html,
+    /<span class="alertaTitulo alertaLimite vazio" aria-hidden=true>/
+  );
+
+  const passado = await desenhar(
+    dadosDe(lanc(6, 'Fone', '2026-09-16', -4000, { cred: true, fatura: '2026-11-12' })),
+    0
+  );
+
+  assert.match(passado.html, /<span class="alertaTitulo alertaLimite vazio"/);
 });
 
-test('títulos distinguem o retrato pago até hoje da previsão futura', () => {
-    assert.match(visoes, /const debitoHoje = resumoDebitoPago\(Estado\.lancamentos\)/);
-    assert.match(visoes, /const pagosAteHoje = lancamentosPagos\(Estado\.lancamentos\)/);
-    assert.match(visoes, /const cicloDebitoFuturo = dataISO\(periodo\.ini\) > hojeISO\(\)/);
-    assert.match(visoes, /const cicloDebitoPassado = dataISO\(periodo\.fat\) < hojeISO\(\)/);
-    assert.match(visoes, /const linhaFuturoDebito = exibeFuturo \?/);
-    assert.match(visoes, /const linhaFuturoCredito = exibeFuturoCredito \?/);
-    assert.match(visoes, /linhaHojeDebito \+ linhaFuturoDebito/);
-    assert.match(visoes, /linhaHojeCredito \+ linhaFuturoCredito/);
-    assert.match(visoes, /const linhaHojeDebito = cicloDebitoFuturo \? ''/);
-    assert.match(visoes, /const temHoje = !\(cicloDebitoFuturo \|\| cicloDebitoPassado\);[\s\S]*?const linhaHojeCredito = !temHoje \? ''/);
-    assert.match(visoes, /const resumoCredito = cicloDebitoPassado \? '' :/);
-    assert.match(visoes, /const totalCreditoHistorico = creditosExibidos\.reduce\(\(soma, r\) => soma \+ r\.v, 0\)/);
-    assert.match(visoes, /const totalTituloCredito = cicloDebitoPassado \? totalCreditoHistorico : totalCreditoExibido/);
-    assert.match(visoes, /`Crédito\$\{alertaTituloCredito\}`, totalTituloCredito,/);
-    assert.match(visoes, /cicloDebitoPassado \? ' ' : undefined/);
-    assert.match(fs.readFileSync('js\/tables\.js', 'utf8'), /separadorTotal = ' · '/);
-    assert.match(visoes, /const alertaTitulo = \(classe, visivel, titulo, rotulo\) =>/);
-    assert.match(visoes, /'Saldo negativo após usar o guardado'/);
-    assert.match(visoes, /const debitoTemSaldoVermelho = classeSaldoNaLinhaUnica == 'vm' \|\| \(exibeFuturo && classeSaldoFuturo == 'vm'\)/);
-    assert.match(visoes, /!cicloDebitoPassado && limitesDosCartoes\.some\(l =>\s*Math\.abs\(l\.totalHoje\) > l\.limiteTotal/);
-    assert.match(visoes, /const alertaTituloDebito = alertaTitulo\('alertaSaldo', debitoTemSaldoVermelho,/);
-    assert.match(visoes, /`Débito\$\{alertaTituloDebito\}`/);
-    assert.doesNotMatch(visoes, /Pago \+ aberto/);
-    assert.match(visoes, /Guardado/);
-    assert.match(estilos, /\.resumoTitulo/);
-    assert.match(estilos, /\.resumoLinha/);
-    assert.match(estilos, /\.alertaTitulo/);
-    assert.match(visoes, /class=resumoDados/);
-    assert.match(estilos, /grid-template-columns: 3\.65rem minmax\(0, 1fr\)/);
-    // No celular a faixa usa a largura toda, sem o recuo do botão de recolher.
-    assert.match(estilosMobile, /\.resumoTitulo \{\s*flex-basis: 100%;\s*margin-left: 0;/);
-    assert.doesNotMatch(interacoes, /voltouDoAtualParaHistorico/);
-    assert.match(interacoes, /if \(direcao > 0 && \+novoValor >= Estado\.idxHoje\) abrirBlocosFinanceiros\(\)/);
-    assert.match(interacoes, /function voltarAoCicloAtualELimpar\(\) \{[\s\S]*abrirBlocosFinanceiros\(\)/);
+test('o CSS do título de Crédito define o campo editável e o aviso', () => {
+  // CSS é texto: só a existência dos seletores que o HTML desenhado acima usa.
+  for (const classe of [
+    'limiteCartao',
+    'limiteCartaoEditavel',
+    'limiteCartaoRotulo',
+    'alertaTitulo',
+    'resumoTitulo',
+    'resumoLinha',
+  ])
+    assert.ok(declaracoes(estilos, `.${classe}`).length > 0, classe);
 });
 
-test('prévia de crédito do ciclo atual mantém Hoje mesmo quando a fatura vence depois', () => {
-    assert.match(visoes, /A prévia de Crédito do ciclo atual continua tendo/);
-    assert.doesNotMatch(visoes, /cicloCreditoFuturo/);
-    const inicioHoje = visoes.indexOf('const linhaHojeCredito');
-    const fimHoje = visoes.indexOf('const resumoCredito');
-    assert.doesNotMatch(visoes.slice(inicioHoje, fimHoje), /Pago <b/);
+test('títulos distinguem o retrato pago até hoje da previsão futura', async () => {
+  // Ciclo atual: Hoje e Futuro, cada um com Saldo e Guardado.
+  const atual = await desenhar(dadosDe(compra(-150, { pago: false })), 1);
+
+  assert.match(
+    atual.texto,
+    /Débito .*Hoje Saldo R\$ 9\.000,00 Guardado R\$ 0,00 .*Futuro Saldo/
+  );
+  assert.match(
+    atual.texto,
+    /Crédito .*Hoje Fatura R\$ 0,00 Usado R\$ 0,00 .*Futuro Fatura R\$ 150,00 Usado R\$ 150,00/
+  );
+  assert.doesNotMatch(atual.texto, /Pago \+ aberto/);
+  assert.match(atual.html, /class=resumoDados/);
+
+  // Ciclo futuro: sem o retrato de hoje, só a previsão.
+  const futuro = await desenhar(
+    dadosDe(lanc(2, 'Luz', '2026-11-25', -100, { pago: false })),
+    2
+  );
+
+  assert.doesNotMatch(futuro.texto, /Hoje/);
+  assert.match(futuro.texto, /Débito .*Futuro Saldo/);
+
+  // Saldo negativo após usar o guardado acende o aviso do Débito.
+  const negativo = await desenhar(dadosDe(lanc(7, 'Carro', '2026-10-17', -20000)), 1);
+
+  assert.match(
+    negativo.html,
+    /<span class="alertaTitulo alertaSaldo" role=img title="Saldo negativo" aria-label="Saldo negativo após usar o guardado">/
+  );
+  assert.match(atual.html, /<span class="alertaTitulo alertaSaldo vazio"/);
+
+  // Grade do resumo (rótulo + dados) e, no celular, a faixa usa a largura toda. CSS é texto.
+  assert.ok(
+    declaracoes(estilos, '.resumoLinha').includes(
+      'grid-template-columns: 3.65rem minmax(0, 1fr)'
+    )
+  );
+
+  assert.deepEqual(
+    declaracoes(
+      estilosMobile,
+      '.blk h3:has(.resumoTitulo) .resumoTitulo',
+      '@media (max-width: 640px)'
+    ),
+    ['flex-basis: 100%', 'margin-left: 0']
+  );
 });
 
-test('ciclo anterior ao atual troca o rótulo Hoje do Débito por Passado', () => {
-    // Mesmo cálculo de sempre (pago = true); só o texto muda, porque um ciclo que já
-    // fechou não é "agora".
-    assert.match(visoes, /resumoRotulo>\$\{cicloDebitoPassado \? 'Passado' : 'Hoje'\}<\/span>/);
+test('o título do Crédito do ciclo atual mantém Hoje mesmo quando a fatura vence depois', async () => {
+  // A compra vence em dezembro (ciclo 2), mas a prévia do ciclo atual continua com Hoje.
+  const { texto } = await desenhar(dadosDe(compra(-150)), 1);
+
+  assert.match(texto, /Crédito .*Hoje Fatura R\$ 150,00/);
 });
 
-test('Passado mostra o total fechado daquele ciclo, não o retrato de hoje', () => {
-    // debitoHoje é um valor GLOBAL (mesmo não importa o ciclo aberto); um ciclo passado
-    // precisa do total acumulado ATÉ ELE (totalDebito/guardado), senão todo ciclo antigo
-    // mostraria o mesmo número de hoje, o que não faz sentido pra histórico.
-    assert.match(visoes, /const saldoExibidoNaLinhaUnica = cicloDebitoPassado \? totalDebito : debitoHoje\.saldo;/);
-    assert.match(visoes, /const guardadoExibidoNaLinhaUnica = cicloDebitoPassado \? guardado : debitoHoje\.guardado;/);
-    assert.match(visoes, /const classeSaldoNaLinhaUnica = cicloDebitoPassado \? classeSaldoFuturo : classeSaldoHoje;/);
-    assert.match(regras, /não repete o retrato de agora.*mostra Saldo e Guardado acumulados até o fechamento daquele ciclo específico/);
+test('ciclo anterior ao atual troca o rótulo Hoje por Passado e mostra o fechamento daquele ciclo', async () => {
+  // Setembro: entra 1.000 e sai 300 (guardado 700 no fechamento); hoje o saldo é outro.
+  const dados = dadosDe(
+    lanc(2, 'Salário', '2026-09-15', 1000, { categ: 'Salário' }),
+    lanc(3, 'Luz', '2026-09-20', -300)
+  );
+
+  const passado = await desenhar(dados, 0);
+
+  assert.match(passado.texto, /Débito .*Passado Saldo R\$ 0,00 Guardado R\$ 700,00/);
+  assert.doesNotMatch(passado.texto, /Hoje|Futuro/);
+
+  const atual = await desenhar(dados, 1);
+
+  assert.match(atual.texto, /Débito .*Hoje Saldo R\$ 9\.700,00/);
+  assert.doesNotMatch(atual.texto, /Passado/);
+
+  // O título do Crédito de um ciclo passado mostra o total bruto da fatura, sem Hoje/Futuro.
+  const credito = await desenhar(
+    dadosDe(lanc(6, 'Fone', '2026-09-16', -4000, { cred: true, fatura: '2026-11-12' })),
+    0
+  );
+
+  assert.match(credito.texto, /Crédito .*R\$ 4\.000,00 1 registro/);
+  assert.doesNotMatch(credito.texto, /Crédito .*Hoje/);
+  assert.match(
+    regras,
+    /não repete o retrato de agora.*mostra Saldo e Guardado acumulados até o fechamento daquele ciclo específico/
+  );
 });
 
-test('ciclo anterior ao atual nunca recolhe automaticamente ao navegar para o histórico', () => {
-    // Antes, voltar do ciclo atual pra um ciclo passado (Anterior) recolhia Débito e
-    // Crédito de propósito; a regra mudou para manter o histórico sempre aberto e
-    // detalhado, deixando o recolhimento só no toggle manual do usuário.
-    assert.doesNotMatch(interacoes, /voltouDoAtualParaHistorico/);
-    assert.doesNotMatch(interacoes, /histórico abre com Débito e Crédito recolhidos/);
-    assert.match(regras, /Ciclos anteriores ao atual sempre ficam abertos e detalhados/);
-    assert.match(regras, /navegar para o histórico, com Anterior ou selecionando o ciclo diretamente, nunca recolhe Débito nem Crédito/);
+test('navegar com ‹ › nunca recolhe Débito e Crédito; ao chegar no ciclo atual ou além, eles voltam a abrir', () => {
+  const inicioNav = interacoes.indexOf('function navegaCiclo(');
+  const trecho = interacoes.slice(inicioNav, interacoes.indexOf('\n}\n', inicioNav) + 3);
+
+  const montar = (compDe) => {
+    const elementos = {
+      compDe: {
+        value: compDe,
+        options: ['', '-1', '0', '1', '2', '3'].map((value) => ({ value })),
+      },
+      compAte: { value: compDe },
+    };
+
+    const ctx = {
+      Estado: { idxHoje: 2 },
+      aberturas: 0,
+      desenhos: 0,
+      el: (id) => elementos[id],
+      abrirBlocosFinanceiros: () => ctx.aberturas++,
+      desenhar: () => ctx.desenhos++,
+    };
+
+    vm.runInNewContext(`${trecho}\nthis.navegaCiclo = navegaCiclo;`, ctx);
+
+    return { ctx, elementos };
+  };
+
+  const ir = (de, direcao) => {
+    const { ctx, elementos } = montar(de);
+
+    ctx.navegaCiclo(direcao);
+
+    return [elementos.compDe.value, ctx.aberturas, ctx.desenhos];
+  };
+
+  assert.deepEqual(ir('0', 1), ['1', 0, 1]); // ainda no histórico: não abre nada
+  assert.deepEqual(ir('1', 1), ['2', 1, 1]); // chegou no ciclo atual: abre
+  assert.deepEqual(ir('2', 1), ['3', 1, 1]); // além do atual: abre
+  assert.deepEqual(ir('2', -1), ['1', 0, 1]); // voltando ao histórico: não mexe
+  assert.match(regras, /Ciclos anteriores ao atual sempre ficam abertos e detalhados/);
+  assert.match(
+    regras,
+    /navegar para o histórico, com Anterior ou selecionando o ciclo diretamente, nunca recolhe Débito nem Crédito/
+  );
 });
 
-test('igualdade de valores não recolhe débito ou crédito com lançamento real ainda aberto', () => {
-    // Um débito aberto pode compensar outro em valor (ex.: +100 e -100 abertos) e zerar
-    // a diferença entre Hoje e Futuro por coincidência, sem que o ciclo esteja quitado.
-    // A mesma fatura do cartão pendente (linhasFatura não vazia) também não pode sumir.
-    assert.match(visoes, /const debitoTemPendencia = debitos\.some\(r => r\.pago === false\) \|\| linhasFatura\.length > 0;/);
-    assert.match(visoes, /const resumoDebitoIgual = cicloAtual && !cicloDebitoFuturo && !debitoTemPendencia &&/);
-    assert.match(visoes, /const creditoTemPendencia = creditosExibidos\.some\(r => r\.pago === false\);/);
-    assert.match(visoes, /const resumoCreditoIgual = cicloAtual && !cicloDebitoFuturo && !creditoTemPendencia &&/);
-    assert.match(regras, /A igualdade de valores sozinha nunca basta: um lançamento aberto pode compensar outro e zerar a diferença por coincidência/);
-});
+test('igualdade de valores não recolhe o crédito com lançamento real ainda aberto', async () => {
+  // Hoje = Futuro e nada pendente: o Crédito recolhe e o Futuro some.
+  const igual = await desenhar(dadosDe(compra(-150)), 1);
 
-test('resumos iguais no ciclo atual recolhem apenas o bloco repetido e ocultam seu Futuro', () => {
-    assert.match(visoes, /const resumoDebitoIgual = cicloAtual && !cicloDebitoFuturo/);
-    assert.match(visoes, /Math\.abs\(debitoHoje\.saldo - totalDebito\) <= TOLERANCIA_FINANCEIRA/);
-    assert.match(visoes, /const resumoCreditoIgual = cicloAtual && !cicloDebitoFuturo/);
-    assert.match(visoes, /Math\.abs\(totalCreditoHoje - totalCreditoExibido\) <= TOLERANCIA_FINANCEIRA/);
-    assert.match(visoes, /const exibeFuturoDebito = !cicloDebitoPassado && !resumoDebitoIgual;/);
-    assert.match(visoes, /const exibeFuturoCredito = !cicloDebitoPassado && !resumoCreditoIgual;/);
-    assert.match(visoes, /blocosResumosIguais\.split\(\/\(\?=cr\)\/\)\.filter\(Boolean\)\.forEach\(recolherBloco\)/);
-    assert.match(regras, /cada bloco é avaliado separadamente[\s\S]*Hoje e Futuro forem iguais/);
+  assert.deepEqual(igual.recolhidos, ['cr']);
+  assert.doesNotMatch(igual.texto, /Crédito .*Futuro/);
+
+  // Compra ainda aberta: Hoje e Futuro diferem e nada é recolhido.
+  const aberta = await desenhar(dadosDe(compra(-150, { pago: false })), 1);
+
+  assert.deepEqual(aberta.recolhidos, []);
+  assert.match(aberta.texto, /Crédito .*Futuro Fatura R\$ 150,00/);
+
+  // Um débito aberto que compensa outro (+100 e −100) não muda o Crédito, que segue igual e recolhido.
+  const compensa = await desenhar(
+    dadosDe(
+      lanc(2, 'Luz', '2026-10-25', -100, { pago: false }),
+      lanc(3, 'Extra', '2026-10-26', 100, { pago: false, categ: 'Salário' })
+    ),
+    1
+  );
+
+  assert.deepEqual(compensa.recolhidos, ['cr']);
+  assert.match(compensa.texto, /Débito .*Hoje .*Futuro/); // o Débito aberto segue com as duas faixas
+
+  // Só o ciclo atual recolhe: o passado e o futuro não.
+  assert.deepEqual((await desenhar(dadosDe(compra(-150)), 0)).recolhidos, []);
+  assert.deepEqual((await desenhar(dadosDe(compra(-150)), 2)).recolhidos, []);
+  assert.match(
+    regras,
+    /A igualdade de valores sozinha nunca basta: um lançamento aberto pode compensar outro e zerar a diferença por coincidência/
+  );
+  assert.match(
+    regras,
+    /cada bloco é avaliado separadamente[\s\S]*Hoje e Futuro forem iguais/
+  );
 });
 
 test('documenta o cartão pelo dia do vencimento como regra provisória, com saída por migration', () => {
-    // Decisão do mantenedor: dois cartões sem coluna nova. A identidade explícita continua
-    // sendo o caminho quando os vencimentos coincidirem ou entrar um terceiro cartão.
-    assert.match(regras, /Identificar o cartão pelo dia do vencimento é uma regra provisória/);
-    assert.match(regras, /identificação explícita de cartão/);
-    assert.match(decisoes, /identidade explícita de cartão em crédito e antecipação/);
-    assert.match(decisoes, /Nome e categoria continuam sem identificar cartão/);
+  // Decisão do mantenedor: dois cartões sem coluna nova. A identidade explícita continua
+  // sendo o caminho quando os vencimentos coincidirem ou entrar um terceiro cartão.
+  assert.match(
+    regras,
+    /Identificar o cartão pelo dia do vencimento é uma regra provisória/
+  );
+  assert.match(regras, /identificação explícita de cartão/);
+  assert.match(decisoes, /identidade explícita de cartão em crédito e antecipação/);
+  assert.match(decisoes, /Nome e categoria continuam sem identificar cartão/);
 });

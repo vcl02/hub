@@ -13,4 +13,4 @@ Sem os passos 2 a 4 o app funciona com digitação à mão (a prévia abre para 
 
 ## Testes
 
-`node scripts/check.mjs` dentro de `al/`. Os testes de navegador usam o Playwright instalado em `tr/` (`npm ci` e `npx playwright install chromium` lá).
+`node scripts/check.mjs` dentro de `al/`. Os testes de navegador usam o Playwright instalado na raiz (`npm ci` e `npx playwright install chromium` lá).

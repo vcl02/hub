@@ -1,5 +1,6 @@
-// No navegador: serve a raiz do hub em /hub/, faz login na página inicial, mostra os hábitos com os dados dos apps e abre
-// o fin e o tr com a mesma sessão.
+// No navegador (poucos casos, os que precisam de tela e de banco): serve a raiz do hub em /hub/, faz login na página inicial,
+// mostra os hábitos com os dados dos apps e abre os apps com a mesma sessão. As regras do login (mensagens, outra conta, ?volta),
+// do toque e do service worker são funções testadas em hub.test.mjs.
 // Usa o Playwright e o Supabase falso do tr (tr/tests/helpers); nada sai pra rede.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -9,182 +10,354 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fakeSupabase, novaNuvem } from '../tr/tests/helpers/app.mjs';
+import { iniciarRelogio, pausarRelogio } from './relogio.mjs';
 
 const RAIZ = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const { chromium } = createRequire(path.join(RAIZ, 'tr', 'package.json'))('playwright');
-const TIPOS = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.png': 'image/png', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json', '.json': 'application/json' };
+const { chromium } = createRequire(path.join(RAIZ, 'package.json'))('playwright');
+
+const TIPOS = {
+  '.html': 'text/html',
+  '.css': 'text/css',
+  '.js': 'text/javascript',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+  '.webmanifest': 'application/manifest+json',
+  '.json': 'application/json',
+};
+
 let servidor, navegador, base;
 
 before(async () => {
   servidor = createServer(async (req, res) => {
-    let caminho = decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/^\/hub/, '');
+    let caminho = decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(
+      /^\/hub/,
+      ''
+    );
+
     if (caminho.endsWith('/')) caminho += 'index.html';
     const arquivo = path.join(RAIZ, path.normalize(caminho));
-    if (!arquivo.startsWith(RAIZ)) { res.writeHead(403).end(); return; }
-    try { res.writeHead(200, { 'Content-Type': TIPOS[path.extname(arquivo)] || 'application/octet-stream' }).end(await readFile(arquivo)); }
-    catch { res.writeHead(404).end(); }
+
+    if (!arquivo.startsWith(RAIZ)) {
+      res.writeHead(403).end();
+
+      return;
+    }
+
+    try {
+      res
+        .writeHead(200, {
+          'Content-Type': TIPOS[path.extname(arquivo)] || 'application/octet-stream',
+        })
+        .end(await readFile(arquivo));
+    } catch {
+      res.writeHead(404).end();
+    }
   });
-  await new Promise(ok => servidor.listen(0, '127.0.0.1', ok));
-  base = `http://127.0.0.1:${servidor.address().port}/hub/`;   // mesmo caminho do GitHub Pages
+  await new Promise((ok) => servidor.listen(0, '127.0.0.1', ok));
+  base = `http://127.0.0.1:${servidor.address().port}/hub/`; // mesmo caminho do GitHub Pages
   navegador = await chromium.launch();
 });
-after(async () => { await navegador?.close(); servidor?.close(); });
+after(async () => {
+  await navegador?.close();
+  servidor?.close();
+});
 
 // Tudo fora do servidor local é abortado, menos o Supabase falso (registrado depois, tem prioridade).
 async function abrir(url, { conta, nuvem = novaNuvem() } = {}) {
   const ctx = await navegador.newContext({ serviceWorkers: 'block' });
-  await ctx.route(u => !u.href.startsWith(base), r => r.abort());
+
+  await ctx.route(
+    (u) => !u.href.startsWith(base),
+    (r) => r.abort()
+  );
   await fakeSupabase(ctx, nuvem, conta);
   // O fin carrega o supabase-js do CDN com integrity (SRI); sem rede no teste, vai a cópia local
   // (a do tr, 2.118.0) e o HTML do fin chega sem o atributo integrity, só nesta cópia de teste.
   const supabaseLocal = await readFile(path.join(RAIZ, 'supabase.js'));
-  await ctx.route(/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@/, r => r.fulfill({ contentType: 'text/javascript', body: supabaseLocal }));
-  await ctx.route(u => u.href.startsWith(base) && /\/hub\/fin\/(index\.html)?$/.test(u.pathname), async r => {
-    const html = await readFile(path.join(RAIZ, 'fin', 'index.html'), 'utf8');
-    await r.fulfill({ contentType: 'text/html', body: html.replace(/\s+integrity="[^"]*"/g, '') });
-  });
+
+  await ctx.route(/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@/, (r) =>
+    r.fulfill({ contentType: 'text/javascript', body: supabaseLocal })
+  );
+  await ctx.route(
+    (u) => u.href.startsWith(base) && /\/hub\/fin\/(index\.html)?$/.test(u.pathname),
+    async (r) => {
+      const html = await readFile(path.join(RAIZ, 'fin', 'index.html'), 'utf8');
+
+      await r.fulfill({
+        contentType: 'text/html',
+        body: html.replace(/\s+integrity="[^"]*"/g, ''),
+      });
+    }
+  );
   const pg = await ctx.newPage();
-  const faltando = [], erros = [];
-  pg.on('response', r => { if (r.url().startsWith(base) && r.status() >= 400) faltando.push(`${r.status()} ${r.url()}`); });
-  pg.on('pageerror', e => erros.push(e.message));
+
+  const faltando = [],
+    erros = [];
+
+  pg.on('response', (r) => {
+    if (r.url().startsWith(base) && r.status() >= 400)
+      faltando.push(`${r.status()} ${r.url()}`);
+  });
+  pg.on('pageerror', (e) => erros.push(e.message));
   await pg.goto(url);
+
   return { ctx, pg, faltando, erros };
 }
+
 const entrar = async (pg, usuario, senha) => {
-  await pg.fill('#l-usuario', usuario); await pg.fill('#l-senha', senha); await pg.press('#l-senha', 'Enter');
+  await pg.fill('#l-usuario', usuario);
+  await pg.fill('#l-senha', senha);
+  await pg.press('#l-senha', 'Enter');
 };
 
-test('login antes de tudo: sem sessão só aparece o login; senha errada e usuário desconhecido dão a mesma mensagem', async () => {
-  const { ctx, pg, erros } = await abrir(base);
-  await pg.waitForSelector('#v-login:not([hidden])');
-  assert.equal(await pg.isVisible('#v-apps'), false);
-  assert.equal(await pg.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(27, 30, 33)');
-  await entrar(pg, 'eu@teste.com', 'errada');
-  await pg.waitForFunction(() => document.getElementById('l-erro').textContent);
-  assert.equal(await pg.textContent('#l-erro'), 'Usuário ou senha inválidos.');
-  await entrar(pg, 'fulano', 'senha123');   // nem chega ao Supabase
-  assert.equal(await pg.textContent('#l-erro'), 'Usuário ou senha inválidos.');
-  assert.equal(await pg.isVisible('#v-apps'), false);
-  assert.deepEqual(erros, []);
-  await ctx.close();
-});
-
-test('sem internet no login: avisa que é a conexão, não a senha', async () => {
-  const nuvem = novaNuvem(); nuvem.online = false;
-  const { ctx, pg } = await abrir(base, { nuvem });
-  await entrar(pg, 'eu@teste.com', 'senha123');
-  await pg.waitForFunction(() => document.getElementById('l-erro').textContent);
-  assert.equal(await pg.textContent('#l-erro'), 'Sem conexão. Tente de novo.');
-  assert.equal(await pg.isEnabled('#l-usuario'), true);               // destrava pra tentar de novo
-  assert.equal(await pg.textContent('#l-botao'), 'Entrar');
-  await ctx.close();
-});
-
-test('outra conta entra no Supabase mas não passa do login', async () => {
-  const { ctx, pg } = await abrir(base, { conta: 'outra-conta' });
-  await entrar(pg, 'eu@teste.com', 'senha123');
-  await pg.waitForFunction(() => document.getElementById('l-erro').textContent);
-  assert.equal(await pg.textContent('#l-erro'), 'Esta conta não tem acesso.');
-  assert.equal(await pg.isVisible('#v-apps'), false);
-  await ctx.close();
-});
-
-test('entrou no hub: os apps abrem direto com a mesma sessão, sem login próprio', async () => {
+test('entrou no hub: login no tema escuro, os apps abrem direto com a mesma sessão, sem login próprio', async () => {
   const { ctx, pg, faltando, erros } = await abrir(base);
+
+  await pg.waitForSelector('#v-login:not([hidden])');
+  assert.equal(await pg.isVisible('#v-apps'), false); // sem sessão só aparece o login
+  assert.equal(
+    await pg.evaluate(() => getComputedStyle(document.body).backgroundColor),
+    'rgb(27, 30, 33)'
+  );
   await entrar(pg, 'eu@teste.com', 'senha123');
   await pg.waitForSelector('#v-apps:not([hidden])');
-  assert.deepEqual(await pg.$$eval('.app-nome', s => s.map(x => x.textContent)), ['Treino', 'Alimentação', 'Corpo (Peso e Sono)', 'Água', 'Fin (Besteira)', 'Agenda', 'Anotações']);
-  const larguras = await pg.$$eval('.doca .atalho', L => L.map(x => Math.round(x.getBoundingClientRect().width)));
-  assert.equal(larguras.length, 2); assert.ok(Math.abs(larguras[0] - larguras[1]) <= 1, `atalhos dividem a doca ao meio: ${larguras}`);
-  await pg.reload();                                                   // sessão salva: entra direto
+  assert.deepEqual(await pg.$$eval('.app-nome', (s) => s.map((x) => x.textContent)), [
+    'Treino',
+    'Alimentação',
+    'Corpo (Peso e Sono)',
+    'Água',
+    'Fin (Besteira)',
+    'Agenda',
+    'Anotações',
+  ]);
+
+  const larguras = await pg.$$eval('.doca .atalho', (L) =>
+    L.map((x) => Math.round(x.getBoundingClientRect().width))
+  );
+
+  assert.equal(larguras.length, 2);
+  assert.ok(
+    Math.abs(larguras[0] - larguras[1]) <= 1,
+    `atalhos dividem a doca ao meio: ${larguras}`
+  );
+  await pg.reload(); // sessão salva: entra direto
   await pg.waitForSelector('#v-apps:not([hidden])');
   assert.equal(await pg.isVisible('#v-login'), false);
   await pg.click('a[href="tr/"]');
   await pg.waitForURL(`${base}tr/`);
-  await pg.waitForSelector('#v-inicio:not([hidden])');                 // tela inicial do tr, não o login dele
+  await pg.waitForSelector('#v-inicio:not([hidden])'); // tela inicial do tr, não o login dele
   assert.equal(await pg.isVisible('#v-bloqueio'), false);
   await pg.goBack();
   await pg.click('a[href="fin/"]');
   await pg.waitForURL(`${base}fin/`);
-  await pg.waitForFunction(() => getComputedStyle(document.getElementById('app')).display === 'block');
-  assert.equal(await pg.evaluate(() => getComputedStyle(document.getElementById('login')).display), 'none');
+  await pg.waitForFunction(
+    () => getComputedStyle(document.getElementById('app')).display === 'block'
+  );
+  assert.equal(
+    await pg.evaluate(() => getComputedStyle(document.getElementById('login')).display),
+    'none'
+  );
   assert.equal(await pg.getAttribute('#i-hub', 'href'), '../');
   assert.deepEqual(faltando, []);
-  assert.deepEqual(erros.filter(e => !/tabela\?|404|Falh|carreg/i.test(e)), []);   // o falso não tem as tabelas do fin
+  assert.deepEqual(
+    erros.filter((e) => !/tabela\?|404|Falh|carreg/i.test(e)),
+    []
+  ); // o falso não tem as tabelas do fin
   await ctx.close();
 });
 
 test('hábitos com os dados dos apps: valor de hoje, ofensivas, dias perfeitos e proteções; sem internet, abre com a cópia', async () => {
-  const nuvem = novaNuvem(), T = nuvem.tabelas;
+  const nuvem = novaNuvem(),
+    T = nuvem.tabelas;
+
   const em = (d, h) => new Date(`${d}T${h}:00-03:00`).toISOString();
+
   // Semana perfeita de treino (qua 21 e qui 22/10): 1 proteção, que segura a água que faltou em 24/10
-  for (const d of ['2026-10-21', '2026-10-22']) T.tr_treino.push({ inicio: em(d, '18:00'), fim: em(d, '19:00') });
-  for (const d of ['2026-10-23', '2026-10-25', '2026-10-26']) T.agua_dia.push({ data: d, aguas: [{ hora: '10:00', ml: d === '2026-10-26' ? 400 : 1000 }], xixis: [] });
-  T.corpo_medida.push({ data: '2026-10-26', hora: '07:00', peso: 100.4, cintura: null, peso_em: em('2026-10-26', '07:01') });
-  T.corpo_dia.push({ data: '2026-10-25', evacuacoes: [], sono: 7 }, { data: '2026-10-26', evacuacoes: [], sono: 7.5 });
-  T.al_registro.push({ id: 'a', data: '2026-10-26', hora: '12:00', nome: 'Almoço', porcao: '1 prato', qtd: 1, kcal: 700, prot: 0, carb: 0, gord: 0 });
+  for (const d of ['2026-10-21', '2026-10-22'])
+    T.tr_treino.push({ inicio: em(d, '18:00'), fim: em(d, '19:00') });
+
+  for (const d of ['2026-10-23', '2026-10-25', '2026-10-26'])
+    T.agua_dia.push({
+      data: d,
+      aguas: [{ hora: '10:00', ml: d === '2026-10-26' ? 400 : 1000 }],
+      xixis: [],
+    });
+  T.corpo_medida.push({
+    data: '2026-10-26',
+    hora: '07:00',
+    peso: 100.4,
+    cintura: null,
+    peso_em: em('2026-10-26', '07:01'),
+  });
+  T.corpo_dia.push(
+    { data: '2026-10-25', evacuacoes: [], sono: 7 },
+    { data: '2026-10-26', evacuacoes: [], sono: 7.5 }
+  );
+  T.al_registro.push({
+    id: 'a',
+    data: '2026-10-26',
+    hora: '12:00',
+    nome: 'Almoço',
+    porcao: '1 prato',
+    qtd: 1,
+    kcal: 700,
+    prot: 0,
+    carb: 0,
+    gord: 0,
+  });
   const { ctx, pg, erros } = await abrir(base, { nuvem });
+
   // Antes da hora real: o token do Supabase falso vence 1 h depois do relógio de verdade
-  await pg.clock.install({ time: new Date('2026-10-26T12:00:00-03:00') });
+  const horario = new Date('2026-10-26T12:00:00-03:00');
+
+  await iniciarRelogio(pg, horario);
   await pg.reload();
   await entrar(pg, 'eu@teste.com', 'senha123');
   await pg.waitForSelector('#v-apps:not([hidden])');
-  const linha = id => pg.$eval(`[data-habito="${id}"]`, el => [el.querySelector('.hab-valor').textContent, el.querySelector('.hab-ofensiva b').textContent]);
-  await pg.waitForFunction(() => document.querySelector('[data-habito="corpo"] .hab-valor').textContent === '100,4 kg · 7 h 30');
-  assert.deepEqual(await linha('corpo'), ['100,4 kg · 7 h 30', '1']);             // peso e sono só hoje (25/10 teve sono, sem peso)
-  assert.deepEqual(await linha('agua'), ['400 / 1.000 ml', '2']);                  // 25 e 23/10, com 24/10 protegido
+  await pausarRelogio(pg, horario); // o tempo real não entra na conta do app
+
+  const linha = (id) =>
+    pg.$eval(`[data-habito="${id}"]`, (el) => [
+      el.querySelector('.hab-valor').textContent,
+      el.querySelector('.hab-ofensiva b').textContent,
+    ]);
+
+  await pg.waitForFunction(
+    () =>
+      document.querySelector('[data-habito="corpo"] .hab-valor').textContent ===
+      '100,4 kg · 7 h 30'
+  );
+  assert.deepEqual(await linha('corpo'), ['100,4 kg · 7 h 30', '1']); // peso e sono só hoje (25/10 teve sono, sem peso)
+  assert.deepEqual(await linha('agua'), ['400 / 1.000 ml', '2']); // 25 e 23/10, com 24/10 protegido
   assert.deepEqual(await linha('treino'), ['Próximo: qua', '2']);
-  assert.deepEqual(await linha('deficit'), [(await linha('deficit'))[0], '1']);   // 700 kcal cabem na meta: hoje já conta
+  assert.deepEqual(await linha('deficit'), [(await linha('deficit'))[0], '1']); // 700 kcal cabem na meta: hoje já conta
   assert.match((await linha('deficit'))[0], /kcal restantes$/);
-  assert.equal(await pg.$eval('[data-habito="treino"] .hab-ofensiva', el => el.classList.contains('acesa')), true);   // segunda (folga) com qua e qui feitos
-  assert.equal(await pg.textContent('#h-protecoes b'), '0');                      // ganhou 1 e gastou em 24/10
+  assert.equal(
+    await pg.$eval('[data-habito="treino"] .hab-ofensiva', (el) =>
+      el.classList.contains('acesa')
+    ),
+    true
+  ); // segunda (folga) com qua e qui feitos
+  assert.equal(await pg.textContent('#h-protecoes b'), '0'); // ganhou 1 e gastou em 24/10
   // A semana de hoje, de segunda a domingo: hoje é segunda, o resto ainda não chegou (o 22/10, quinta passada, não aparece)
-  assert.equal(await pg.$$eval('[data-habito="agua"] .hab-dias i', L => L.map(i => i.className).join(' ')), 'pendente hoje futuro futuro futuro futuro futuro futuro');
-  assert.equal(await pg.$$eval('[data-habito="treino"] .hab-dias i', L => L.map(i => i.className).join(' ')), 'folga hoje futuro futuro futuro futuro futuro futuro');
-  assert.equal(await pg.$$eval('#h-semana li', L => L.map(li => li.textContent + (li.className.trim() ? ':' + li.className.trim() : '')).join(' ')), 'S:hoje T:futuro Q:futuro Q:futuro S:futuro S:futuro D:futuro');
-  assert.equal(await pg.$eval('[data-habito="corpo"] .hab-ofensiva', el => el.classList.contains('acesa')), true);   // feito hoje: chama acesa
+  assert.equal(
+    await pg.$$eval('[data-habito="agua"] .hab-dias i', (L) =>
+      L.map((i) => i.className).join(' ')
+    ),
+    'pendente hoje futuro futuro futuro futuro futuro futuro'
+  );
+  assert.equal(
+    await pg.$$eval('[data-habito="treino"] .hab-dias i', (L) =>
+      L.map((i) => i.className).join(' ')
+    ),
+    'folga hoje futuro futuro futuro futuro futuro futuro'
+  );
+  assert.equal(
+    await pg.$$eval('#h-semana li', (L) =>
+      L.map(
+        (li) => li.textContent + (li.className.trim() ? ':' + li.className.trim() : '')
+      ).join(' ')
+    ),
+    'S:hoje T:futuro Q:futuro Q:futuro S:futuro S:futuro D:futuro'
+  );
+  assert.equal(
+    await pg.$eval('[data-habito="corpo"] .hab-ofensiva', (el) =>
+      el.classList.contains('acesa')
+    ),
+    true
+  ); // feito hoje: chama acesa
   // Dia anterior: arrastar para a direita volta um dia; tudo é do fim daquele dia e cada hábito abre o app nele (só leitura)
   assert.equal(await pg.getAttribute('[data-habito="agua"]', 'href'), 'agua/');
   assert.equal(await pg.isVisible('#h-hoje'), false);
-  const arrastar = dx => pg.evaluate(dx => {
-    const el = document.getElementById('v-apps'), toque = x => [new Touch({ identifier: 1, target: el, clientX: x, clientY: 300 })];
-    el.dispatchEvent(new TouchEvent('touchstart', { touches: toque(100), changedTouches: toque(100), bubbles: true }));
-    el.dispatchEvent(new TouchEvent('touchmove', { touches: toque(100 + dx), changedTouches: toque(100 + dx), bubbles: true }));
-    el.dispatchEvent(new TouchEvent('touchend', { touches: [], changedTouches: toque(100 + dx), bubbles: true }));
-  }, dx);
-  await arrastar(150);                                                              // domingo 25/10
-  assert.equal(await pg.textContent('#h-data'), 'domingo, 25 de outubro');           // sem "ontem"
-  assert.deepEqual(await linha('agua'), ['1.000 / 1.000 ml', '2']);                // 23/10, 24/10 protegido e 25/10
+
+  const arrastar = (dx) =>
+    pg.evaluate((dx) => {
+      const el = document.getElementById('v-apps'),
+        toque = (x) => [
+          new Touch({ identifier: 1, target: el, clientX: x, clientY: 300 }),
+        ];
+
+      el.dispatchEvent(
+        new TouchEvent('touchstart', {
+          touches: toque(100),
+          changedTouches: toque(100),
+          bubbles: true,
+        })
+      );
+      el.dispatchEvent(
+        new TouchEvent('touchmove', {
+          touches: toque(100 + dx),
+          changedTouches: toque(100 + dx),
+          bubbles: true,
+        })
+      );
+      el.dispatchEvent(
+        new TouchEvent('touchend', {
+          touches: [],
+          changedTouches: toque(100 + dx),
+          bubbles: true,
+        })
+      );
+    }, dx);
+
+  await arrastar(150); // domingo 25/10
+  assert.equal(await pg.textContent('#h-data'), 'domingo, 25 de outubro'); // sem "ontem"
+  assert.deepEqual(await linha('agua'), ['1.000 / 1.000 ml', '2']); // 23/10, 24/10 protegido e 25/10
   assert.deepEqual(await linha('corpo'), ['Sem pesagem · 7 h', '0']);
-  assert.equal(await pg.getAttribute('[data-habito="agua"]', 'href'), 'agua/?dia=2026-10-25');
-  assert.equal(await pg.getAttribute('[data-habito="besteira"]', 'href'), 'fin/?dia=2026-10-25');   // o Fin no ciclo do dia, normal
+  assert.equal(
+    await pg.getAttribute('[data-habito="agua"]', 'href'),
+    'agua/?dia=2026-10-25'
+  );
+  assert.equal(
+    await pg.getAttribute('[data-habito="besteira"]', 'href'),
+    'fin/?dia=2026-10-25'
+  ); // o Fin no ciclo do dia, normal
   assert.equal(await pg.isVisible('#h-hoje'), true);
+
   // Hoje: só o ícone, o mesmo botão do Sair (tamanho e forma); a data não muda de largura de um dia para o outro
-  const caixa = sel => pg.$eval(sel, el => { const r = el.getBoundingClientRect(), s = getComputedStyle(el); return [r.width, r.height, s.borderRadius]; });
+  const caixa = (sel) =>
+    pg.$eval(sel, (el) => {
+      const r = el.getBoundingClientRect(),
+        s = getComputedStyle(el);
+
+      return [r.width, r.height, s.borderRadius];
+    });
+
   assert.deepEqual(await caixa('#h-hoje'), await caixa('#sair'));
-  assert.equal((await pg.textContent('#h-hoje')).trim(), '');                      // sem texto
-  const largura = () => pg.$eval('#h-data', el => el.getBoundingClientRect().width);
+  assert.equal((await pg.textContent('#h-hoje')).trim(), ''); // sem texto
+  const largura = () => pg.$eval('#h-data', (el) => el.getBoundingClientRect().width);
   const antes = await largura();
-  assert.equal(await pg.$$eval('#h-semana li', L => L.findIndex(li => li.classList.contains('hoje'))), 6);   // domingo da semana de 19 a 25/10
-  assert.equal(await pg.evaluate(() => location.search), '?dia=2026-10-25');      // o dia no endereço, como o ?ciclo do Fin
-  await pg.reload(); await pg.waitForSelector('#v-apps:not([hidden])');             // recarregar mantém o dia
-  await pg.waitForFunction(() => document.getElementById('h-data').textContent === 'domingo, 25 de outubro');
-  await pg.keyboard.press('ArrowLeft');                                             // no computador, as setas
+
+  assert.equal(
+    await pg.$$eval('#h-semana li', (L) =>
+      L.findIndex((li) => li.classList.contains('hoje'))
+    ),
+    6
+  ); // domingo da semana de 19 a 25/10
+  assert.equal(await pg.evaluate(() => location.search), '?dia=2026-10-25'); // o dia no endereço, como o ?ciclo do Fin
+  await pg.reload();
+  await pg.waitForSelector('#v-apps:not([hidden])'); // recarregar mantém o dia
+  await pg.waitForFunction(
+    () => document.getElementById('h-data').textContent === 'domingo, 25 de outubro'
+  );
+  await pg.keyboard.press('ArrowLeft'); // no computador, as setas
   assert.match(await pg.textContent('#h-data'), /^sábado, 24 de outubro$/);
   assert.deepEqual(await linha('agua'), ['0 / 1.000 ml', '1']);
-  await pg.goBack();                                                                // Voltar do navegador: o dia visto antes
-  await pg.waitForFunction(() => document.getElementById('h-data').textContent === 'domingo, 25 de outubro');
+  await pg.goBack(); // Voltar do navegador: o dia visto antes
+  await pg.waitForFunction(
+    () => document.getElementById('h-data').textContent === 'domingo, 25 de outubro'
+  );
   await pg.keyboard.press('ArrowLeft');
-  await arrastar(-150);                                                             // para a esquerda avança
+  await arrastar(-150); // para a esquerda avança
   assert.equal(await pg.textContent('#h-data'), 'domingo, 25 de outubro');
-  await pg.click('#h-hoje');                                                        // Hoje volta direto
-  assert.equal(await pg.evaluate(() => location.search), '');                       // hoje: sem ?dia
+  await pg.click('#h-hoje'); // Hoje volta direto
+  assert.equal(await pg.evaluate(() => location.search), ''); // hoje: sem ?dia
   assert.equal(await largura(), antes);
-  assert.equal(await pg.isVisible('#h-hoje'), false);                                // some em hoje
+  assert.equal(await pg.isVisible('#h-hoje'), false); // some em hoje
   assert.match(await pg.textContent('#h-data'), /^segunda-feira, 26 de outubro$/);
   assert.equal(await pg.getAttribute('[data-habito="agua"]', 'href'), 'agua/');
-  assert.equal(await pg.isDisabled('#h-proximo'), true);                            // não passa de hoje
-  nuvem.online = false;                                                            // sem internet: a cópia do aparelho
+  assert.equal(await pg.isDisabled('#h-proximo'), true); // não passa de hoje
+  nuvem.online = false; // sem internet: a cópia do aparelho
   await pg.reload();
   await pg.waitForSelector('#v-apps:not([hidden])');
   assert.deepEqual(await linha('agua'), ['400 / 1.000 ml', '2']);
@@ -192,103 +365,144 @@ test('hábitos com os dados dos apps: valor de hoje, ofensivas, dias perfeitos e
   await ctx.close();
 });
 
-test('dia anterior: o hábito abre o app naquele dia, só leitura (a Água)', async () => {
-  const nuvem = novaNuvem();
-  nuvem.tabelas.agua_dia.push({ data: '2026-10-25', aguas: [{ hora: '10:00', ml: 700 }], xixis: [] });
-  const { ctx, pg, erros } = await abrir(base, { nuvem });
-  await pg.clock.install({ time: new Date('2026-10-26T12:00:00-03:00') });
-  await pg.reload();
-  await entrar(pg, 'eu@teste.com', 'senha123');
-  await pg.waitForFunction(() => document.querySelector('[data-habito="agua"] .hab-valor').textContent === '0 / 1.000 ml');
-  await pg.click('#h-anterior');                                                    // no computador, o ‹
-  assert.equal(await pg.getAttribute('[data-habito="agua"]', 'href'), 'agua/?dia=2026-10-25');
-  await pg.click('[data-habito="agua"]');
-  await pg.waitForURL(`${base}agua/?dia=2026-10-25`);
-  await pg.waitForFunction(() => document.getElementById('t-ml')?.textContent === '700');
-  assert.equal(await pg.isVisible('#dia-visto'), true);
-  assert.equal(await pg.isVisible('#b-form'), false);
-  assert.deepEqual(erros.filter(e => !/tabela\?|404|Falh|carreg/i.test(e)), []);   // o falso não tem as tabelas do fin
-  await ctx.close();
-});
-
 test('cada hábito entra no app no dia selecionado na tela inicial: num dia anterior, naquele dia; em hoje, em hoje', async () => {
   const nuvem = novaNuvem();
-  nuvem.tabelas.agua_dia.push({ data: '2026-10-25', aguas: [{ hora: '10:00', ml: 700 }], xixis: [] });   // só a Água tem algo no domingo
-  nuvem.tabelas.al_item = [];                                                       // o al abre só com as tabelas dele
+
+  nuvem.tabelas.agua_dia.push({
+    data: '2026-10-25',
+    aguas: [{ hora: '10:00', ml: 700 }],
+    xixis: [],
+  }); // só a Água tem algo no domingo
+  nuvem.tabelas.al_item = []; // o al abre só com as tabelas dele
   const { ctx, pg } = await abrir(base, { nuvem });
-  await pg.clock.install({ time: new Date('2026-10-26T12:00:00-03:00') });
+
+  const horario = new Date('2026-10-26T12:00:00-03:00');
+
+  await iniciarRelogio(pg, horario);
   await pg.reload();
   await entrar(pg, 'eu@teste.com', 'senha123');
   await pg.waitForSelector('#v-apps:not([hidden])');
+  await pausarRelogio(pg, horario);
+
   // O que cada app mostra ao abrir: o dia em que ele entrou
   const diaNoApp = {
-    treino: () => pg.evaluate(() => document.getElementById('v-fim').hidden ? 'hoje' : document.getElementById('f-data').textContent),
+    treino: () =>
+      pg.evaluate(() =>
+        document.getElementById('v-fim').hidden
+          ? 'hoje'
+          : document.getElementById('f-data').textContent
+      ),
     deficit: () => pg.evaluate(() => document.getElementById('d-nome').textContent),
     corpo: () => pg.evaluate(() => document.getElementById('c-data').value),
-    agua: () => pg.evaluate(() => document.getElementById('dia-visto').hidden ? 'hoje' : document.getElementById('dia-nome').textContent),
+    agua: () =>
+      pg.evaluate(() =>
+        document.getElementById('dia-visto').hidden
+          ? 'hoje'
+          : document.getElementById('dia-nome').textContent
+      ),
   };
-  const pronto = { treino: '#v-inicio:not([hidden]), #v-fim:not([hidden])', deficit: '#v-dia:not([hidden])', corpo: '#v-corpo:not([hidden])', agua: '#v-agua:not([hidden])' };
+
+  const pronto = {
+    treino: '#v-inicio:not([hidden]), #v-fim:not([hidden])',
+    deficit: '#v-dia:not([hidden])',
+    corpo: '#v-corpo:not([hidden])',
+    agua: '#v-agua:not([hidden])',
+  };
+
   const entrarNo = async (id, dia) => {
     await pg.click(`[data-habito="${id}"]`);
-    await pg.waitForURL(url => url.pathname !== '/hub/' && (!dia || url.search.includes(`dia=${dia}`) || url.search.includes('ciclo=')));
+    await pg.clock.runFor(200); // relógio pausado: o hub navega 180 ms depois do toque
+    await pg.waitForURL(
+      (url) =>
+        url.pathname !== '/hub/' &&
+        (!dia || url.search.includes(`dia=${dia}`) || url.search.includes('ciclo='))
+    );
+
     if (id === 'besteira') return pg.url();
     await pg.waitForSelector(pronto[id]);
+
     return diaNoApp[id]();
   };
-  const voltarAoHub = async dia => { await pg.goto(base + (dia ? `?dia=${dia}` : '')); await pg.waitForSelector('#v-apps:not([hidden])'); };
-  await pg.click('#h-anterior');                                                    // domingo, 25/10
+
+  const voltarAoHub = async (dia) => {
+    await pg.goto(base + (dia ? `?dia=${dia}` : ''));
+    await pg.waitForSelector('#v-apps:not([hidden])');
+  };
+
+  await pg.click('#h-anterior'); // domingo, 25/10
   const ontem = {};
-  for (const id of ['treino', 'deficit', 'corpo', 'agua', 'besteira']) { ontem[id] = await entrarNo(id, '2026-10-25'); await voltarAoHub('2026-10-25'); }
+
+  for (const id of ['treino', 'deficit', 'corpo', 'agua', 'besteira']) {
+    ontem[id] = await entrarNo(id, '2026-10-25');
+    await voltarAoHub('2026-10-25');
+  }
+
   assert.match(ontem.treino, /25 de outubro/);
-  assert.equal(ontem.deficit, 'Ontem');                                             // mesmo sem nada lançado no al naquele dia
+  assert.equal(ontem.deficit, 'Ontem'); // mesmo sem nada lançado no al naquele dia
   assert.equal(ontem.corpo, '2026-10-25');
   assert.match(ontem.agua, /25 de outubro/);
   assert.match(ontem.besteira, /fin\/\?dia=2026-10-25/);
-  assert.equal(await pg.textContent('#h-data'), 'domingo, 25 de outubro');          // ao voltar, a tela inicial segue no dia escolhido
+  assert.equal(await pg.textContent('#h-data'), 'domingo, 25 de outubro'); // ao voltar, a tela inicial segue no dia escolhido
   await pg.click('#h-hoje');
   const hoje = {};
-  for (const id of ['treino', 'deficit', 'corpo', 'agua']) { hoje[id] = await entrarNo(id); await voltarAoHub(); }
-  assert.deepEqual(hoje, { treino: 'hoje', deficit: 'Hoje', corpo: '2026-10-26', agua: 'hoje' });
+
+  for (const id of ['treino', 'deficit', 'corpo', 'agua']) {
+    hoje[id] = await entrarNo(id);
+    await voltarAoHub();
+  }
+
+  assert.deepEqual(hoje, {
+    treino: 'hoje',
+    deficit: 'Hoje',
+    corpo: '2026-10-26',
+    agua: 'hoje',
+  });
   await ctx.close();
 });
 
 test('Sair no hub pede toque duplo e encerra a sessão dos apps também', async () => {
   const { ctx, pg } = await abrir(base);
+
   await entrar(pg, 'eu@teste.com', 'senha123');
   await pg.waitForSelector('#v-apps:not([hidden])');
   await pg.click('#sair');
-  assert.match(await pg.getAttribute('#sair', 'class'), /armado/);    // 1º toque: só arma
+  assert.match(await pg.getAttribute('#sair', 'class'), /armado/); // 1º toque: só arma
   assert.equal(await pg.isVisible('#v-apps'), true);
   await pg.click('#sair');
   await pg.waitForSelector('#v-login:not([hidden])');
-  await pg.goto(`${base}tr/`);                                         // sem sessão, o tr manda pro login do hub
+  await pg.goto(`${base}tr/`); // sem sessão, o tr manda pro login do hub
   await pg.waitForURL(`${base}?volta=tr%2F`);
   await pg.waitForSelector('#v-login:not([hidden])');
   await entrar(pg, 'eu@teste.com', 'senha123');
-  await pg.waitForURL(`${base}tr/`);                                   // e volta pro tr depois de entrar
+  await pg.waitForURL(`${base}tr/`); // e volta pro tr depois de entrar
   await pg.waitForSelector('#v-inicio:not([hidden])');
   await ctx.close();
 });
 
 test('link do fin sem sessão: login no hub e volta pro mesmo ciclo', async () => {
   const { ctx, pg } = await abrir(`${base}fin/?ciclo=2026-10`);
+
   await pg.waitForURL(`${base}?volta=fin%2F%3Fciclo%3D2026-10`);
   await pg.waitForSelector('#v-login:not([hidden])');
   await entrar(pg, 'eu@teste.com', 'senha123');
-  await pg.waitForURL(url => url.href.startsWith(`${base}fin/`));
-  await pg.waitForFunction(() => getComputedStyle(document.getElementById('app')).display === 'block');
+  await pg.waitForURL((url) => url.href.startsWith(`${base}fin/`));
+  await pg.waitForFunction(
+    () => getComputedStyle(document.getElementById('app')).display === 'block'
+  );
   await ctx.close();
 });
 
 test('Alimentação sem sessão: login no hub e volta pro al, que abre com a mesma sessão', async () => {
   const nuvem = novaNuvem();
-  Object.assign(nuvem.tabelas, { al_item: [], al_registro: [], al_dia: [] });   // o falso do tr só precisa listar as tabelas do al
+
+  Object.assign(nuvem.tabelas, { al_item: [], al_registro: [], al_dia: [] }); // o falso do tr só precisa listar as tabelas do al
   const { ctx, pg, faltando, erros } = await abrir(`${base}al/`, { nuvem });
+
   await pg.waitForURL(`${base}?volta=al%2F`);
   await pg.waitForSelector('#v-login:not([hidden])');
   await entrar(pg, 'eu@teste.com', 'senha123');
   await pg.waitForURL(`${base}al/`);
-  await pg.waitForSelector('#v-dia:not([hidden])');                    // tela do dia, não o login próprio do al
+  await pg.waitForSelector('#v-dia:not([hidden])'); // tela do dia, não o login próprio do al
   assert.equal(await pg.isVisible('#l-form'), false);
   assert.equal(await pg.getAttribute('#i-hub', 'href'), '../');
   assert.deepEqual(faltando, []);
@@ -298,6 +512,7 @@ test('Alimentação sem sessão: login no hub e volta pro al, que abre com a mes
 
 test('Corpo sem sessão: login no hub e volta pro Corpo, que abre com a mesma sessão', async () => {
   const { ctx, pg, faltando, erros } = await abrir(`${base}corpo/`);
+
   await pg.waitForURL(`${base}?volta=corpo%2F`);
   await pg.waitForSelector('#v-login:not([hidden])');
   await entrar(pg, 'eu@teste.com', 'senha123');
@@ -311,6 +526,7 @@ test('Corpo sem sessão: login no hub e volta pro Corpo, que abre com a mesma se
 
 test('Água sem sessão: login no hub e volta pra Água, que abre com a mesma sessão', async () => {
   const { ctx, pg, faltando, erros } = await abrir(`${base}agua/`);
+
   await pg.waitForURL(`${base}?volta=agua%2F`);
   await entrar(pg, 'eu@teste.com', 'senha123');
   await pg.waitForURL(`${base}agua/`);
@@ -318,22 +534,4 @@ test('Água sem sessão: login no hub e volta pra Água, que abre com a mesma se
   assert.deepEqual(faltando, []);
   assert.deepEqual(erros, []);
   await ctx.close();
-});
-
-test('?volta só leva para a pasta de um app do hub, nunca para fora', async () => {
-  for (const volta of ['https://exemplo.test/', '//exemplo.test/', 'fin/../../x', 'javascript:alert(1)', 'outro/']) {
-    const { ctx, pg } = await abrir(`${base}?volta=${encodeURIComponent(volta)}`);
-    await entrar(pg, 'eu@teste.com', 'senha123');
-    await pg.waitForSelector('#v-apps:not([hidden])');                 // fica nos hábitos
-    assert.ok(pg.url().startsWith(base), volta);
-    await ctx.close();
-  }
-});
-
-test('fin, tr, al, Corpo e Água carregam todos os próprios arquivos em subpasta (caminhos relativos)', async () => {
-  for (const app of ['fin/', 'tr/', 'al/', 'corpo/', 'agua/']) {
-    const { ctx, faltando } = await abrir(base + app);
-    assert.deepEqual(faltando, [], app);
-    await ctx.close();
-  }
 });

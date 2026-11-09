@@ -30,3 +30,10 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md`; o jeito de trabalha
 
 - Uma cópia velha do celular apagou a água do dia porque o envio sobrescrevia o dia inteiro.
   Desde então o envio mescla as listas do dia com a nuvem (ver `../../docs/DECISOES.md`).
+
+## Auditoria dos testes (02/11/2026)
+
+- Sem navegador agora: `tests/funcoes.test.mjs` (23 testes) é o lugar das regras da Água: beber (cada bebida, limites, dia anterior, toque repetido), o dia no endereço, o arrasto e ← →, o Esc, o envio ao Supabase com dois aparelhos, o envio sem resposta e o formato antigo (com uma nuvem falsa), o limite de rede, as notificações e o registro do service worker. `tests/notificacoes.test.mjs` ficou com 1 teste de função. O navegador de `tests/agua.test.mjs` tem 5 testes (contagem de 02/11/2026; no HEAD eram 17, e o relatório dizia 15).
+- Continua em Playwright: beber e ver o botão na tela, os lembretes desenhados, os dias (gestos e `?dia`), os últimos 7 dias com o caso sem internet, e login, tema e rolagem no celular.
+- Ressalva fechada em 02/11/2026: o `js/bootstrap.js` roda em `node:vm` (`rodarBootstrapApp`, `tests/bootstrap-falso.mjs`), em `tests/estrutura.test.mjs` da Água. Com sessão salva, baixa a nuvem em vez de ir ao login; sem sessão, dentro do hub vai ao login do hub; fora dele mostra o login próprio. O `install` do `sw.js` também sai do teste de estrutura: `instalar()` de `tests/sw-falso.mjs` confere que o evento segura o `waitUntil` e que o cache `agua-estatico` guarda exatamente `ARQUIVOS_ESTATICOS`.
+- Relógio falso pausado (02/11/2026): o helper de navegador usa `../tests/relogio.mjs`, o mesmo dos outros apps e da raiz; a regra está em `../docs/DIRETRIZES.md`, seção 3.

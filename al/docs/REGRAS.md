@@ -7,6 +7,7 @@
 - **Rede ruim (metrô):** cada pedido ao Supabase tem limite de 15 s (a IA, 40 s); estourou, conta como sem internet (fica salvo no aparelho e envia na próxima tentativa), e o envio nunca fica preso. Envio que chegou à nuvem mas cuja resposta se perdeu não é somado de novo na tentativa seguinte (o mesmo trecho de caminhada não entra duas vezes; comida vai por id e repetir não duplica).
 - **O dia no endereço** (`?dia=AAAA-MM-DD`, como o `?ciclo` do Fin; em hoje, sem): ‹ ›, os últimos 7 dias e a página inicial abrem o dia com ele; recarregar mantém, e o Voltar do navegador volta ao dia de antes. Dia anterior é só leitura, como sempre. Aberto com `?dia` num dia antes do 1º lançamento do al, abre nele mesmo (e o ‹ vai até ele). Hoje, futuro ou texto inválido em `?dia`: hoje.
 - **Esc:** fecha a prévia aberta; num campo de texto, só tira o foco; sem nada aberto, sai do app para a página inicial do hub (`../`), como em todos os apps.
+- **Toque duplo para confirmar (tirar trecho de caminhada, apagar comida, jogar fora marmita):** o 1º toque deixa o botão vermelho por 3 s e o 2º confirma. O armado é do item, não do botão: a lista redesenhada no meio (a nuvem que chega) mantém o vermelho no mesmo item até o fim dos 3 s, e o 2º toque tira esse item, nunca o vizinho que ficou no lugar dele; se o item sumiu da lista, nada sai. Igual em todos os apps.
 
 ## Gasto do dia
 

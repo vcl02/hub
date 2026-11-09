@@ -1,240 +1,624 @@
 <!doctype html>
 <html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#1B1E21">
-<meta name="color-scheme" content="dark">
-<title>Treino</title>
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
-<!-- Base comum de todos os módulos (tokens e peças), depois os estilos do Treino em ordem de cascata (ver AGENTS.md) -->
-<link rel="stylesheet" href="../base/tokens.css">
-<link rel="stylesheet" href="../base/componentes.css">
-<link rel="stylesheet" href="css/base.css">
-<link rel="stylesheet" href="css/inicio.css">
-<link rel="stylesheet" href="css/telas.css">
-<link rel="stylesheet" href="css/flutuantes.css">
-<link rel="stylesheet" href="css/exercicio.css">
-<link rel="stylesheet" href="css/resumo.css">
-<link rel="stylesheet" href="css/cardio.css">
-</head>
-<body>
-<div class="wrap">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#1B1E21" />
+    <meta name="color-scheme" content="dark" />
+    <title>Treino</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon-192.png" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap"
+    />
+    <!-- Base comum de todos os módulos (tokens e peças), depois os estilos do Treino em ordem de cascata (ver AGENTS.md) -->
+    <link rel="stylesheet" href="../base/tokens.css" />
+    <link rel="stylesheet" href="../base/componentes.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/inicio.css" />
+    <link rel="stylesheet" href="css/telas.css" />
+    <link rel="stylesheet" href="css/flutuantes.css" />
+    <link rel="stylesheet" href="css/exercicio.css" />
+    <link rel="stylesheet" href="css/resumo.css" />
+    <link rel="stylesheet" href="css/cardio.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <!-- Login (Supabase), como no fin: usuário ou e-mail + senha, Enter entra. "victor" vira o e-mail em emailDoLogin (js/config.js). -->
+      <section id="v-bloqueio" class="view" hidden>
+        <form id="l-form" class="form login">
+          <fieldset id="l-campos" class="form">
+            <input
+              id="l-email"
+              type="text"
+              autocomplete="username"
+              autocapitalize="none"
+              spellcheck="false"
+              placeholder="Usuário"
+              aria-label="Usuário"
+              required
+            />
+            <input
+              id="l-senha"
+              type="password"
+              autocomplete="current-password"
+              placeholder="Senha"
+              aria-label="Senha"
+              required
+            />
+          </fieldset>
+          <p id="l-carregando" class="carregando" role="status" hidden>
+            <span class="spin" aria-hidden="true"></span>Entrando…
+          </p>
+          <p id="l-erro" class="erro" role="alert"></p>
+          <button id="l-btn" type="submit" hidden>Entrar</button>
+        </form>
+      </section>
 
-<!-- Login (Supabase), como no fin: usuário ou e-mail + senha, Enter entra. "victor" vira o e-mail em emailDoLogin (js/config.js). -->
-<section id="v-bloqueio" class="view" hidden>
-  <form id="l-form" class="form login">
-    <fieldset id="l-campos" class="form">
-      <input id="l-email" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Usuário" aria-label="Usuário" required>
-      <input id="l-senha" type="password" autocomplete="current-password" placeholder="Senha" aria-label="Senha" required>
-    </fieldset>
-    <p id="l-carregando" class="carregando" role="status" hidden><span class="spin" aria-hidden="true"></span>Entrando…</p>
-    <p id="l-erro" class="erro" role="alert"></p>
-    <button id="l-btn" type="submit" hidden>Entrar</button>
-  </form>
-</section>
+      <!-- Início: semana + lista de exercícios -->
+      <section id="v-inicio" class="view" hidden>
+        <!-- Cabeçalho da base: hub (volta à página inicial, ../), nome do módulo e a engrenagem (editar exercícios) -->
+        <header class="topo">
+          <a class="bt-ic" href="../" id="i-hub" title="Hub" aria-label="Hub">
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M9.9 9.9 6.6 6.6M14.1 9.9l3.3-3.3M9.9 14.1l-3.3 3.3M14.1 14.1l3.3 3.3"
+              />
+              <circle cx="5" cy="5" r="2" />
+              <circle cx="19" cy="5" r="2" />
+              <circle cx="5" cy="19" r="2" />
+              <circle cx="19" cy="19" r="2" />
+            </svg>
+          </a>
+          <h1>Treino</h1>
+          <button
+            class="bt-ic"
+            type="button"
+            data-ir="editar"
+            title="Editar exercícios"
+            aria-label="Editar exercícios"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+              />
+            </svg>
+          </button>
+        </header>
+        <!-- ‹ › trocam a semana mostrada: para trás até a do 1º treino, para frente até a atual (barra do dia da base) -->
+        <nav class="dia-nav week-msg">
+          <button
+            type="button"
+            class="bt-ic"
+            id="i-sem-ant"
+            title="Semana anterior"
+            aria-label="Semana anterior"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M15 5l-7 7 7 7" />
+            </svg></button
+          ><span id="i-msg"></span><b id="i-cont-semana"></b
+          ><button
+            type="button"
+            class="bt-ic"
+            id="i-sem-prox"
+            title="Próxima semana"
+            aria-label="Próxima semana"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </nav>
+        <ul id="i-semana" class="week" aria-label="Dias de treino desta semana"></ul>
+        <button type="button" class="game" data-ir="conquistas">
+          <span class="g-top"
+            ><b id="g-nivel">Nível 1</b><span id="g-pts">0 pts</span></span
+          >
+          <span class="barra"><span id="g-barra"></span></span>
+          <span class="g-info" id="g-info"></span>
+        </button>
+        <p class="sync" id="i-sync" role="status" hidden></p>
+        <p class="treino-tempo" id="i-treino"></p>
+        <div class="progress">
+          <!-- Dia mostrado na lista: hoje, ou um treino anterior (arrastar a lista); "Hoje" volta -->
+          <div class="progress-row">
+            <span id="i-cont-l">Registrados hoje</span
+            ><button type="button" class="chip ativo" id="i-hoje" hidden>Hoje</button
+            ><b id="i-cont">0/6</b>
+          </div>
+          <div class="barra"><span id="i-barra"></span></div>
+        </div>
+        <ul id="i-lista" class="slots"></ul>
+      </section>
 
-<!-- Início: semana + lista de exercícios -->
-<section id="v-inicio" class="view" hidden>
-  <!-- Cabeçalho da base: hub (volta à página inicial, ../), nome do módulo e a engrenagem (editar exercícios) -->
-  <header class="topo">
-    <a class="bt-ic" href="../" id="i-hub" title="Hub" aria-label="Hub">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M9.9 9.9 6.6 6.6M14.1 9.9l3.3-3.3M9.9 14.1l-3.3 3.3M14.1 14.1l3.3 3.3"/><circle cx="5" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></svg>
-      </a>
-    <h1>Treino</h1>
-    <button class="bt-ic" type="button" data-ir="editar" title="Editar exercícios" aria-label="Editar exercícios">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      </button>
-  </header>
-  <!-- ‹ › trocam a semana mostrada: para trás até a do 1º treino, para frente até a atual (barra do dia da base) -->
-  <nav class="dia-nav week-msg"><button type="button" class="bt-ic" id="i-sem-ant" title="Semana anterior" aria-label="Semana anterior"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><span id="i-msg"></span><b id="i-cont-semana"></b><button type="button" class="bt-ic" id="i-sem-prox" title="Próxima semana" aria-label="Próxima semana"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button></nav>
-  <ul id="i-semana" class="week" aria-label="Dias de treino desta semana"></ul>
-  <button type="button" class="game" data-ir="conquistas">
-    <span class="g-top"><b id="g-nivel">Nível 1</b><span id="g-pts">0 pts</span></span>
-    <span class="barra"><span id="g-barra"></span></span>
-    <span class="g-info" id="g-info"></span>
-  </button>
-  <p class="sync" id="i-sync" role="status" hidden></p>
-  <p class="treino-tempo" id="i-treino"></p>
-  <div class="progress">
-    <!-- Dia mostrado na lista: hoje, ou um treino anterior (arrastar a lista); "Hoje" volta -->
-    <div class="progress-row"><span id="i-cont-l">Registrados hoje</span><button type="button" class="chip ativo" id="i-hoje" hidden>Hoje</button><b id="i-cont">0/6</b></div>
-    <div class="barra"><span id="i-barra"></span></div>
-  </div>
-  <ul id="i-lista" class="slots"></ul>
-</section>
+      <!-- Exercício: variação, pirâmide, descanso e histórico (arraste para trocar) -->
+      <section id="v-exercicio" class="view" hidden>
+        <div class="topo nav">
+          <button
+            class="bt-ic back"
+            type="button"
+            data-voltar
+            title="Voltar"
+            aria-label="Voltar"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M15 5l-7 7 7 7" />
+            </svg>
+          </button>
+          <div class="pn">
+            <span class="tempo" id="e-tempo"></span><b id="e-pos">1/6</b>
+          </div>
+        </div>
+        <div class="trilha" id="e-trilha" aria-hidden="true"></div>
+        <div class="travado-box" id="e-travado" hidden>
+          <p id="e-travado-msg"></p>
+          <button type="button" class="btn sm" data-reabrir>
+            Reabrir treino de hoje
+          </button>
+        </div>
+        <p class="eyebrow" id="e-grupo"></p>
+        <div
+          class="segs"
+          id="e-variacoes"
+          role="radiogroup"
+          aria-label="Variação usada hoje"
+        ></div>
+        <div class="ex-head">
+          <div class="ex-fig" id="e-fig"></div>
+          <div class="ex-tit">
+            <h2 id="e-nome"></h2>
+            <p class="ex-desc" id="e-desc"></p>
+            <p class="presc" id="e-presc"></p>
+            <!-- Plano por mês (flexão, barra): etapa, semana e a próxima etapa -->
+            <p class="presc plano-mes" id="e-plano" hidden></p>
+            <label class="equip"
+              >Aparelho nº
+              <input
+                id="e-equip"
+                inputmode="numeric"
+                maxlength="8"
+                placeholder="—"
+                autocomplete="off"
+            /></label>
+          </div>
+        </div>
+        <details class="dicas" id="e-dicas">
+          <summary>Como fazer, ajustes e anotações</summary>
+          <p class="guia" id="e-guia"></p>
+          <ul>
+            <li><b>Sem impulso:</b> movimento controlado, sem tranco.</li>
+            <li><b>Volte devagar:</b> 2 a 3 segundos na volta.</li>
+            <li>
+              <b>Respiração:</b> solte o ar pela boca no esforço, puxe pelo nariz na
+              volta.
+            </li>
+            <li>
+              <b>Peito estufado:</b> pode arquear as costas e estufar o peito, com as
+              escápulas juntas. Só não tire o quadril do banco nem jogue o tronco para
+              ajudar a subir o peso; se precisar disso, o peso está alto.
+            </li>
+            <li><b>Abdômen firme</b> o tempo todo.</li>
+          </ul>
+          <label class="nota-l" for="e-nota">Suas anotações</label>
+          <textarea id="e-nota" rows="2"></textarea>
+          <div class="row acoes">
+            <a class="btn" id="e-youtube" target="_blank" rel="noopener"
+              >▶ Ver no YouTube</a
+            >
+            <label class="btn" for="e-foto" id="e-foto-l">Foto da máquina</label>
+            <input type="file" accept=".jpg,.jpeg,.png,.webp,.heic" id="e-foto" hidden />
+          </div>
+          <button type="button" class="link" id="e-foto-rm" hidden>Remover foto</button>
+        </details>
 
-<!-- Exercício: variação, pirâmide, descanso e histórico (arraste para trocar) -->
-<section id="v-exercicio" class="view" hidden>
-  <div class="topo nav"><button class="bt-ic back" type="button" data-voltar title="Voltar" aria-label="Voltar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
-    <div class="pn"><span class="tempo" id="e-tempo"></span><b id="e-pos">1/6</b></div></div>
-  <div class="trilha" id="e-trilha" aria-hidden="true"></div>
-  <div class="travado-box" id="e-travado" hidden><p id="e-travado-msg"></p><button type="button" class="btn sm" data-reabrir>Reabrir treino de hoje</button></div>
-  <p class="eyebrow" id="e-grupo"></p>
-  <div class="segs" id="e-variacoes" role="radiogroup" aria-label="Variação usada hoje"></div>
-  <div class="ex-head">
-    <div class="ex-fig" id="e-fig"></div>
-    <div class="ex-tit">
-      <h2 id="e-nome"></h2>
-      <p class="ex-desc" id="e-desc"></p>
-      <p class="presc" id="e-presc"></p>
-      <!-- Plano por mês (flexão, barra): etapa, semana e a próxima etapa -->
-      <p class="presc plano-mes" id="e-plano" hidden></p>
-      <label class="equip">Aparelho nº <input id="e-equip" inputmode="numeric" maxlength="8" placeholder="—" autocomplete="off"></label>
+        <p class="last" id="e-ultima"></p>
+        <div class="log">
+          <div class="field">
+            <div class="lbl-row">
+              <label for="e-carga" id="e-carga-l">Peso da 1ª série</label
+              ><button type="button" class="chip" id="e-lados" aria-pressed="false">
+                por lado
+              </button>
+            </div>
+            <div class="stepper">
+              <button
+                type="button"
+                data-passo="carga"
+                data-dir="-1"
+                aria-label="Diminuir 1"
+              >
+                −
+              </button>
+              <div class="mid">
+                <input
+                  id="e-carga"
+                  inputmode="decimal"
+                  autocomplete="off"
+                  placeholder="0"
+                /><button
+                  type="button"
+                  class="unit"
+                  id="e-unidade"
+                  aria-label="Trocar unidade (kg ↔ lb)"
+                >
+                  kg
+                </button>
+              </div>
+              <button
+                type="button"
+                data-passo="carga"
+                data-dir="1"
+                aria-label="Aumentar 1"
+              >
+                +
+              </button>
+            </div>
+            <!-- O mesmo peso na outra unidade (lb ↔ kg): editável, ± de 1 em 1 -->
+            <div class="conv-ed" id="e-conv-ed" hidden>
+              <span>≈</span>
+              <button type="button" data-conv="-1" aria-label="Menos 1 na outra unidade">
+                −
+              </button>
+              <input
+                id="e-conv-in"
+                inputmode="decimal"
+                autocomplete="off"
+                placeholder="0"
+                aria-label="Peso na outra unidade"
+              />
+              <span class="u" id="e-conv-u">kg</span>
+              <button type="button" data-conv="1" aria-label="Mais 1 na outra unidade">
+                +
+              </button>
+            </div>
+            <p class="conv" id="e-conv" hidden></p>
+          </div>
+        </div>
+
+        <div class="cartao timer">
+          <div class="t-top">
+            <div
+              class="modos"
+              id="t-modos"
+              role="radiogroup"
+              aria-label="Tipo de pirâmide"
+            ></div>
+          </div>
+          <ol class="plano" id="t-plano"></ol>
+          <p class="t-ajuste" id="t-ajuste" role="status" hidden>Se ajuste</p>
+          <div class="t-clock" id="t-relogio" role="timer">1:15</div>
+          <p class="t-note" id="t-nota"></p>
+          <div class="row" id="t-parado">
+            <button type="button" class="btn primario big" id="t-feita">
+              Série feita · descansar
+            </button>
+          </div>
+          <div class="row" id="t-rodando" hidden>
+            <button type="button" class="btn" id="t-menos">−15 s</button>
+            <button type="button" class="btn" id="t-mais">+15 s</button>
+            <button type="button" class="btn" id="t-pular">Pular</button>
+          </div>
+          <div class="row t-links">
+            <button type="button" class="link" id="t-desfazer" hidden>
+              Desfazer última série</button
+            ><button type="button" class="link" id="t-zerar" hidden>Zerar séries</button>
+          </div>
+        </div>
+
+        <p class="salvo" id="e-salvo" role="status"></p>
+        <button type="button" class="link fin" id="e-finalizar" data-finalizar hidden>
+          Finalizar treino
+        </button>
+
+        <h3 class="sec">Evolução da carga</h3>
+        <div id="e-grafico" class="chart"></div>
+        <h3 class="sec">Histórico</h3>
+        <ul id="e-historico" class="hist"></ul>
+      </section>
+
+      <!-- Fim do treino -->
+      <section id="v-fim" class="view" hidden>
+        <div class="fim-top">
+          <!-- ‹ › e arrastar para o lado: treino anterior / seguinte (dias treinados) -->
+          <p class="eyebrow f-nav">
+            <button
+              type="button"
+              class="bt-ic"
+              id="f-ant"
+              title="Treino anterior"
+              aria-label="Treino anterior"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M15 5l-7 7 7 7" />
+              </svg></button
+            ><span id="f-data"></span
+            ><button
+              type="button"
+              class="bt-ic"
+              id="f-prox"
+              title="Próximo treino"
+              aria-label="Próximo treino"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </p>
+          <h1 id="f-titulo">Treino concluído!</h1>
+          <p class="hint" id="f-msg"></p>
+        </div>
+        <ul class="tiles" id="f-tiles"></ul>
+        <p class="aviso" id="f-faltou" hidden></p>
+        <ul class="hist" id="f-treino" hidden></ul>
+        <!-- Cardio na esteira: o feito no dia (com lixeira) ou, no treino de hoje, o botão que abre o cronômetro -->
+        <div id="f-cardio" hidden></div>
+        <h3 class="sec">O que você fez</h3>
+        <ul class="hist" id="f-lista"></ul>
+        <button type="button" class="btn primario big wide" data-ir="inicio">
+          Voltar ao início
+        </button>
+      </section>
+
+      <!-- Cardio na esteira depois do treino: duração, velocidade e inclinação; depois, o anel da contagem regressiva -->
+      <section id="v-cardio" class="view" hidden>
+        <header class="topo">
+          <button
+            class="bt-ic back"
+            type="button"
+            data-voltar
+            title="Voltar"
+            aria-label="Voltar"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M15 5l-7 7 7 7" />
+            </svg>
+          </button>
+          <h1>Cardio · esteira</h1>
+        </header>
+        <div class="cd-anel" id="cd-anel">
+          <svg viewBox="0 0 200 200" aria-hidden="true">
+            <circle class="cd-trilho" cx="100" cy="100" r="90" />
+            <circle
+              class="cd-arco"
+              id="cd-arco"
+              cx="100"
+              cy="100"
+              r="90"
+              pathLength="100"
+            />
+          </svg>
+          <div class="cd-centro">
+            <b id="cd-relogio" role="timer">20:00</b><span id="cd-sub"></span>
+          </div>
+        </div>
+        <p class="cd-info" id="cd-info"></p>
+        <div class="cd-ajustes" id="cd-ajustes"></div>
+        <div class="row" id="cd-parado">
+          <button type="button" class="btn primario big" id="cd-comecar">Começar</button>
+        </div>
+        <div class="row" id="cd-rodando" hidden>
+          <button type="button" class="btn primario" id="cd-pausar">Pausar</button>
+          <button type="button" class="btn" id="cd-mais">+5 min</button>
+          <button
+            type="button"
+            class="btn"
+            id="cd-encerrar"
+            data-armavel="encerrar-cardio"
+          >
+            Encerrar
+          </button>
+        </div>
+        <button type="button" class="btn primario big wide" id="cd-resumo" hidden>
+          Ver resumo
+        </button>
+      </section>
+
+      <!-- Pontos e conquistas -->
+      <section id="v-conquistas" class="view" hidden>
+        <header class="topo">
+          <button
+            class="bt-ic back"
+            type="button"
+            data-voltar
+            title="Voltar"
+            aria-label="Voltar"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M15 5l-7 7 7 7" />
+            </svg>
+          </button>
+          <h1>Conquistas</h1>
+        </header>
+        <div class="cartao" id="q-resumo"></div>
+        <ul class="conq" id="q-lista"></ul>
+        <div class="cartao">
+          <p><b>Como ganhar pontos</b></p>
+          <ul class="q-pontos" id="q-pontos"></ul>
+        </div>
+      </section>
+
+      <section id="v-editar" class="view" hidden>
+        <header class="topo">
+          <button
+            class="bt-ic back"
+            type="button"
+            data-voltar
+            title="Voltar"
+            aria-label="Voltar"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M15 5l-7 7 7 7" />
+            </svg>
+          </button>
+          <h1>Exercícios</h1>
+        </header>
+        <form id="ed-form" class="view">
+          <div id="ed-lista" class="view"></div>
+          <button type="button" class="btn" id="ed-novo">+ Adicionar exercício</button>
+          <div class="sticky">
+            <button type="submit" class="btn primario big">Salvar exercícios</button>
+          </div>
+        </form>
+        <button type="button" class="btn" id="a-instalar" hidden>
+          Instalar na tela inicial
+        </button>
+        <p class="muted small" id="a-info"></p>
+      </section>
     </div>
-  </div>
-  <details class="dicas" id="e-dicas">
-    <summary>Como fazer, ajustes e anotações</summary>
-    <p class="guia" id="e-guia"></p>
-    <ul>
-      <li><b>Sem impulso:</b> movimento controlado, sem tranco.</li>
-      <li><b>Volte devagar:</b> 2 a 3 segundos na volta.</li>
-      <li><b>Respiração:</b> solte o ar pela boca no esforço, puxe pelo nariz na volta.</li>
-      <li><b>Peito estufado:</b> pode arquear as costas e estufar o peito, com as escápulas juntas. Só não tire o quadril do banco nem jogue o tronco para ajudar a subir o peso; se precisar disso, o peso está alto.</li>
-      <li><b>Abdômen firme</b> o tempo todo.</li>
-    </ul>
-    <label class="nota-l" for="e-nota">Suas anotações</label>
-    <textarea id="e-nota" rows="2"></textarea>
-    <div class="row acoes">
-      <a class="btn" id="e-youtube" target="_blank" rel="noopener">▶ Ver no YouTube</a>
-      <label class="btn" for="e-foto" id="e-foto-l">Foto da máquina</label>
-      <input type="file" accept=".jpg,.jpeg,.png,.webp,.heic" id="e-foto" hidden>
+    <!-- Lembrete da garrafinha em tela cheia: aparece ao abrir o 1º exercício do dia (js/exercicio.js) -->
+    <div id="agua" role="dialog" aria-modal="true" aria-labelledby="agua-t" hidden>
+      <button type="button" class="fechar" id="agua-x" title="Fechar" aria-label="Fechar">
+        <svg
+          viewBox="0 0 24 24"
+          width="22"
+          height="22"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+        >
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg></button
+      ><span class="agua-ico" aria-hidden="true">💧</span>
+      <p id="agua-t">Pegou a garrafinha de água?</p>
+      <button type="button" class="btn big" id="agua-ok">Já peguei</button>
     </div>
-    <button type="button" class="link" id="e-foto-rm" hidden>Remover foto</button>
-  </details>
-
-  <p class="last" id="e-ultima"></p>
-  <div class="log">
-    <div class="field">
-      <div class="lbl-row"><label for="e-carga" id="e-carga-l">Peso da 1ª série</label><button type="button" class="chip" id="e-lados" aria-pressed="false">por lado</button></div>
-      <div class="stepper">
-        <button type="button" data-passo="carga" data-dir="-1" aria-label="Diminuir 1">−</button>
-        <div class="mid"><input id="e-carga" inputmode="decimal" autocomplete="off" placeholder="0"><button type="button" class="unit" id="e-unidade" aria-label="Trocar unidade (kg ↔ lb)">kg</button></div>
-        <button type="button" data-passo="carga" data-dir="1" aria-label="Aumentar 1">+</button>
-      </div>
-      <!-- O mesmo peso na outra unidade (lb ↔ kg): editável, ± de 1 em 1 -->
-      <div class="conv-ed" id="e-conv-ed" hidden>
-        <span>≈</span>
-        <button type="button" data-conv="-1" aria-label="Menos 1 na outra unidade">−</button>
-        <input id="e-conv-in" inputmode="decimal" autocomplete="off" placeholder="0" aria-label="Peso na outra unidade">
-        <span class="u" id="e-conv-u">kg</span>
-        <button type="button" data-conv="1" aria-label="Mais 1 na outra unidade">+</button>
-      </div>
-      <p class="conv" id="e-conv" hidden></p>
+    <!-- Parabéns em tela cheia ao finalizar o treino de hoje, com as conquistas ganhas no dia (js/treino.js) -->
+    <div
+      id="parabens"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="parabens-t"
+      hidden
+    >
+      <span class="agua-ico" aria-hidden="true">🏆</span>
+      <p id="parabens-t">Parabéns! Treino concluído</p>
+      <span id="parabens-info"></span>
+      <ul id="parabens-ganhos"></ul>
+      <button type="button" class="btn big" id="parabens-ok">Ver resumo</button>
     </div>
-  </div>
-
-  <div class="cartao timer">
-    <div class="t-top"><div class="modos" id="t-modos" role="radiogroup" aria-label="Tipo de pirâmide"></div></div>
-    <ol class="plano" id="t-plano"></ol>
-    <p class="t-ajuste" id="t-ajuste" role="status" hidden>Se ajuste</p>
-    <div class="t-clock" id="t-relogio" role="timer">1:15</div>
-    <p class="t-note" id="t-nota"></p>
-    <div class="row" id="t-parado"><button type="button" class="btn primario big" id="t-feita">Série feita · descansar</button></div>
-    <div class="row" id="t-rodando" hidden>
-      <button type="button" class="btn" id="t-menos">−15 s</button>
-      <button type="button" class="btn" id="t-mais">+15 s</button>
-      <button type="button" class="btn" id="t-pular">Pular</button>
+    <div id="toast" class="toast" role="status" hidden>
+      <span id="toast-msg"></span
+      ><button type="button" id="toast-desfazer" hidden>Desfazer</button>
     </div>
-    <div class="row t-links"><button type="button" class="link" id="t-desfazer" hidden>Desfazer última série</button><button type="button" class="link" id="t-zerar" hidden>Zerar séries</button></div>
-  </div>
-
-  <p class="salvo" id="e-salvo" role="status"></p>
-  <button type="button" class="link fin" id="e-finalizar" data-finalizar hidden>Finalizar treino</button>
-
-  <h3 class="sec">Evolução da carga</h3>
-  <div id="e-grafico" class="chart"></div>
-  <h3 class="sec">Histórico</h3>
-  <ul id="e-historico" class="hist"></ul>
-</section>
-
-<!-- Fim do treino -->
-<section id="v-fim" class="view" hidden>
-  <div class="fim-top">
-    <!-- ‹ › e arrastar para o lado: treino anterior / seguinte (dias treinados) -->
-    <p class="eyebrow f-nav"><button type="button" class="bt-ic" id="f-ant" title="Treino anterior" aria-label="Treino anterior"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><span id="f-data"></span><button type="button" class="bt-ic" id="f-prox" title="Próximo treino" aria-label="Próximo treino"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button></p>
-    <h1 id="f-titulo">Treino concluído!</h1>
-    <p class="hint" id="f-msg"></p>
-  </div>
-  <ul class="tiles" id="f-tiles"></ul>
-  <p class="aviso" id="f-faltou" hidden></p>
-  <ul class="hist" id="f-treino" hidden></ul>
-  <!-- Cardio na esteira: o feito no dia (com lixeira) ou, no treino de hoje, o botão que abre o cronômetro -->
-  <div id="f-cardio" hidden></div>
-  <h3 class="sec">O que você fez</h3>
-  <ul class="hist" id="f-lista"></ul>
-  <button type="button" class="btn primario big wide" data-ir="inicio">Voltar ao início</button>
-</section>
-
-<!-- Cardio na esteira depois do treino: duração, velocidade e inclinação; depois, o anel da contagem regressiva -->
-<section id="v-cardio" class="view" hidden>
-  <header class="topo"><button class="bt-ic back" type="button" data-voltar title="Voltar" aria-label="Voltar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h1>Cardio · esteira</h1></header>
-  <div class="cd-anel" id="cd-anel">
-    <svg viewBox="0 0 200 200" aria-hidden="true"><circle class="cd-trilho" cx="100" cy="100" r="90"/><circle class="cd-arco" id="cd-arco" cx="100" cy="100" r="90" pathLength="100"/></svg>
-    <div class="cd-centro"><b id="cd-relogio" role="timer">20:00</b><span id="cd-sub"></span></div>
-  </div>
-  <p class="cd-info" id="cd-info"></p>
-  <div class="cd-ajustes" id="cd-ajustes"></div>
-  <div class="row" id="cd-parado"><button type="button" class="btn primario big" id="cd-comecar">Começar</button></div>
-  <div class="row" id="cd-rodando" hidden>
-    <button type="button" class="btn primario" id="cd-pausar">Pausar</button>
-    <button type="button" class="btn" id="cd-mais">+5 min</button>
-    <button type="button" class="btn" id="cd-encerrar">Encerrar</button>
-  </div>
-  <button type="button" class="btn primario big wide" id="cd-resumo" hidden>Ver resumo</button>
-</section>
-
-<!-- Pontos e conquistas -->
-<section id="v-conquistas" class="view" hidden>
-  <header class="topo"><button class="bt-ic back" type="button" data-voltar title="Voltar" aria-label="Voltar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h1>Conquistas</h1></header>
-  <div class="cartao" id="q-resumo"></div>
-  <ul class="conq" id="q-lista"></ul>
-  <div class="cartao"><p><b>Como ganhar pontos</b></p><ul class="q-pontos" id="q-pontos"></ul></div>
-</section>
-
-<section id="v-editar" class="view" hidden>
-  <header class="topo"><button class="bt-ic back" type="button" data-voltar title="Voltar" aria-label="Voltar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><h1>Exercícios</h1></header>
-  <form id="ed-form" class="view">
-    <div id="ed-lista" class="view"></div>
-    <button type="button" class="btn" id="ed-novo">+ Adicionar exercício</button>
-    <div class="sticky"><button type="submit" class="btn primario big">Salvar exercícios</button></div>
-  </form>
-  <button type="button" class="btn" id="a-instalar" hidden>Instalar na tela inicial</button>
-  <p class="muted small" id="a-info"></p>
-</section>
-
-</div>
-<!-- Lembrete da garrafinha em tela cheia: aparece ao abrir o 1º exercício do dia (js/exercicio.js) -->
-<div id="agua" role="dialog" aria-modal="true" aria-labelledby="agua-t" hidden><button type="button" class="fechar" id="agua-x" title="Fechar" aria-label="Fechar"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button><span class="agua-ico" aria-hidden="true">💧</span><p id="agua-t">Pegou a garrafinha de água?</p><button type="button" class="btn big" id="agua-ok">Já peguei</button></div>
-<!-- Parabéns em tela cheia ao finalizar o treino de hoje, com as conquistas ganhas no dia (js/treino.js) -->
-<div id="parabens" role="dialog" aria-modal="true" aria-labelledby="parabens-t" hidden>
-  <span class="agua-ico" aria-hidden="true">🏆</span>
-  <p id="parabens-t">Parabéns! Treino concluído</p>
-  <span id="parabens-info"></span>
-  <ul id="parabens-ganhos"></ul>
-  <button type="button" class="btn big" id="parabens-ok">Ver resumo</button>
-</div>
-<div id="toast" class="toast" role="status" hidden><span id="toast-msg"></span><button type="button" id="toast-desfazer" hidden>Desfazer</button></div>
-<button type="button" id="mini" hidden><span id="mini-t">0:00</span><span id="mini-n"></span><span>Abrir ›</span></button>
-<!-- Scripts clássicos em ordem de dependência (ver AGENTS.md) -->
-<script src="supabase.js"></script>
-<script src="../corpo/perfil.js"></script>
-<script src="js/config.js"></script>
-<script src="js/util.js"></script>
-<script src="js/piramide.js"></script>
-<script src="js/banco.js"></script>
-<script src="js/login.js"></script>
-<script src="js/pontos.js"></script>
-<script src="js/inicio.js"></script>
-<script src="js/exercicio.js"></script>
-<script src="js/treino.js"></script>
-<script src="js/cardio.js"></script>
-<script src="js/series.js"></script>
-<script src="js/interacoes.js"></script>
-<script src="js/ajustes.js"></script>
-<script src="js/bootstrap.js"></script>
-</body>
+    <button type="button" id="mini" hidden>
+      <span id="mini-t">0:00</span><span id="mini-n"></span><span>Abrir ›</span>
+    </button>
+    <!-- Scripts clássicos em ordem de dependência (ver AGENTS.md) -->
+    <script src="supabase.js"></script>
+    <script src="../base/nucleo.js"></script>
+    <script src="../corpo/perfil.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/util.js"></script>
+    <script src="js/piramide.js"></script>
+    <script src="js/banco.js"></script>
+    <script src="js/login.js"></script>
+    <script src="js/pontos.js"></script>
+    <script src="js/inicio.js"></script>
+    <script src="js/exercicio.js"></script>
+    <script src="js/treino.js"></script>
+    <script src="js/cardio.js"></script>
+    <script src="js/series.js"></script>
+    <script src="js/interacoes.js"></script>
+    <script src="js/ajustes.js"></script>
+    <script src="js/bootstrap.js"></script>
+  </body>
 </html>

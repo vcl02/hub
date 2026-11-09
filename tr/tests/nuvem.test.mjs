@@ -1,137 +1,213 @@
-// Login e sincronização com o Supabase (falso): outro aparelho, offline, migração da versão antiga, conta única.
+// Login e sincronização com o Supabase (falso), no navegador: outro aparelho, offline, migração da versão antiga, conta única.
+// A forma dos dados (linhas, diferença, junção, e-mail do usuário) roda como função em banco.test.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { prepararApp, app, abrirApp, novaNuvem, fakeSupabase, sincronizado } from './helpers/app.mjs';
+import {
+  prepararApp,
+  app,
+  abrirApp,
+  novaNuvem,
+  fakeSupabase,
+  sincronizado,
+} from './helpers/app.mjs';
 
 prepararApp();
 
 test('salva na nuvem e abre em outro aparelho', async () => {
   const a = await abrirApp();
-  await a.pg.tap('.slot >> nth=0'); await a.pg.fill('#e-carga', '40'); await a.pg.dispatchEvent('#e-carga', 'input');
-  await a.pg.click('#t-feita'); await a.pg.click('#t-feita');
+
+  await a.pg.tap('.slot >> nth=0');
+  await a.pg.fill('#e-carga', '40');
+  await a.pg.dispatchEvent('#e-carga', 'input');
+  await a.pg.click('#t-feita');
+  await a.pg.click('#t-feita');
   await sincronizado(a.pg);
   assert.equal(a.nuvem.tabelas.tr_exercicio.length, 6);
-  assert.deepEqual(a.nuvem.tabelas.tr_registro.map(r => r.series), [[{ kg: 40, reps: 8 }]]);   // padrão: pirâmide invertida
-  const b = await abrirApp({ nuvem: a.nuvem });                                              // outro aparelho, mesma conta
+  assert.deepEqual(
+    a.nuvem.tabelas.tr_registro.map((r) => r.series),
+    [[{ kg: 40, reps: 8 }]]
+  ); // padrão: pirâmide invertida
+  const b = await abrirApp({ nuvem: a.nuvem }); // outro aparelho, mesma conta
+
   assert.match(await b.pg.textContent('.slot >> nth=0'), /40kg.*8/);
-  assert.deepEqual([...a.erros, ...b.erros], []); await a.ctx.close(); await b.ctx.close();
+  assert.deepEqual([...a.erros, ...b.erros], []);
+  await a.ctx.close();
+  await b.ctx.close();
 });
 
 test('sem internet guarda no aparelho e envia ao reconectar', async () => {
   const { ctx, pg, nuvem, erros } = await abrirApp();
+
   await sincronizado(pg);
   nuvem.online = false;
-  await pg.tap('.slot >> nth=0'); await pg.fill('#e-carga', '40'); await pg.dispatchEvent('#e-carga', 'input'); await pg.click('#t-feita'); await pg.click('#t-feita');
+  await pg.tap('.slot >> nth=0');
+  await pg.fill('#e-carga', '40');
+  await pg.dispatchEvent('#e-carga', 'input');
+  await pg.click('#t-feita');
+  await pg.click('#t-feita');
   await pg.waitForFunction(() => erroSync);
   await pg.goBack();
   assert.match(await pg.textContent('#i-sync'), /Sem internet/);
-  await pg.reload(); await pg.waitForSelector('#v-inicio:not([hidden])');                     // abre offline com a cópia local
+  await pg.reload();
+  await pg.waitForSelector('#v-inicio:not([hidden])'); // abre offline com a cópia local
   assert.match(await pg.textContent('.slot >> nth=0'), /40kg/);
   nuvem.online = true;
   await pg.evaluate(() => dispatchEvent(new Event('online')));
   await sincronizado(pg);
   assert.equal(nuvem.tabelas.tr_registro[0].series[0].kg, 40);
   assert.equal(await pg.isVisible('#i-sync'), false);
-  assert.deepEqual(erros, []); await ctx.close();
+  assert.deepEqual(erros, []);
+  await ctx.close();
 });
 
-test('senha errada não entra', async () => {
-  const ctx = await app.navegador.newContext();
-  await fakeSupabase(ctx, novaNuvem());
-  const pg = await ctx.newPage(); await pg.goto(app.url);
-  await pg.fill('#l-email', 'eu@teste.com'); await pg.fill('#l-senha', 'errada'); await pg.press('#l-senha', 'Enter');
+test('login: senha errada, usuário desconhecido e conta de outra pessoa não entram; o usuário vale no lugar do e-mail', async () => {
+  const ctx = await app.navegador.newContext(),
+    nuvem = novaNuvem(),
+    emails = [];
+
+  await fakeSupabase(ctx, nuvem);
+  ctx.on('request', (r) => {
+    if (r.url().includes('/auth/v1/token')) emails.push(r.postDataJSON()?.email);
+  });
+  const pg = await ctx.newPage();
+
+  await pg.goto(app.url);
+  await pg.waitForFunction(
+    async () => !!(await navigator.serviceWorker.getRegistration())
+  ); // o app se instala para abrir offline
+  await pg.fill('#l-email', 'eu@teste.com');
+  await pg.fill('#l-senha', 'errada');
+  await pg.press('#l-senha', 'Enter');
   await pg.waitForFunction(() => $('l-erro').textContent);
   assert.match(await pg.textContent('#l-erro'), /inválidos/);
   assert.equal(await pg.isVisible('#v-inicio'), false);
+  await pg.fill('#l-email', 'fulano'); // não é e-mail nem usuário conhecido: nem chega ao Supabase
+  await pg.fill('#l-senha', 'x');
+  await pg.press('#l-senha', 'Enter');
+  assert.match(await pg.textContent('#l-erro'), /Usuário ou senha inválidos/);
+  await pg.fill('#l-email', 'Victor');
+  await pg.fill('#l-senha', 'senha123');
+  await pg.press('#l-senha', 'Enter');
+  await pg.waitForSelector('#v-inicio:not([hidden])');
+  assert.deepEqual(emails, ['eu@teste.com', 'victor.cabrera0209@gmail.com']);
+
+  // outra conta do Supabase (não é a do dono) não entra
+  const outro = await app.navegador.newContext();
+
+  await fakeSupabase(outro, novaNuvem(), 'outra-conta');
+  const pg2 = await outro.newPage();
+
+  await pg2.goto(app.url);
+  await pg2.fill('#l-email', 'eu@teste.com');
+  await pg2.fill('#l-senha', 'senha123');
+  await pg2.press('#l-senha', 'Enter');
+  await pg2.waitForFunction(() => $('l-erro').textContent);
+  assert.match(await pg2.textContent('#l-erro'), /não tem acesso/);
+  assert.equal(await pg2.isVisible('#v-inicio'), false);
+  await outro.close();
+  await ctx.close();
+});
+
+test('login: campos na cor das superfícies sobre o fundo escuro; trava e mostra "Entrando…" sem apagar a senha', async () => {
+  const ctx = await app.navegador.newContext(),
+    nuvem = novaNuvem();
+
+  await fakeSupabase(ctx, nuvem);
+  const pg = await ctx.newPage();
+
+  await pg.goto(app.url);
+  await pg.waitForSelector('#v-bloqueio:not([hidden])');
+  assert.equal(
+    await pg.evaluate(() => getComputedStyle($('l-email')).backgroundColor),
+    'rgb(36, 39, 43)'
+  );
+  nuvem.atraso = 800;
+  await pg.fill('#l-email', 'victor');
+  await pg.fill('#l-senha', 'senha123');
+  await pg.press('#l-senha', 'Enter');
+  assert.equal(await pg.isVisible('#l-carregando'), true);
+  assert.equal(await pg.isDisabled('#l-senha'), true);
+  assert.equal(await pg.inputValue('#l-senha'), 'senha123'); // não some enquanto entra
+  await pg.waitForSelector('#v-inicio:not([hidden])', { timeout: 15000 });
+  assert.equal(await pg.inputValue('#l-senha'), '');
   await ctx.close();
 });
 
 test('junta à conta o banco criptografado da versão antiga', async () => {
   // Monta o cofre antigo como a versão anterior gravava (AES-GCM, chave salva por "manter desbloqueado")
   const antes = async () => {
-    const k = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']), iv = crypto.getRandomValues(new Uint8Array(12));
-    const b64 = a => btoa(String.fromCharCode(...new Uint8Array(a)));
-    const velho = { exercicios: [{ id: 'e1', grupo: 'Peito', regiao: 'Superior', variacoes: [{ id: 'v1', nome: 'Supino máquina' }] }],
-      registros: [{ variacao: 'v1', data: '2026-10-21', series: [{ kg: 30, reps: 12 }] }], treinos: [{ inicio: 1, fim: 2 }], medidas: [] };
-    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, new TextEncoder().encode(JSON.stringify(velho)));
-    localStorage.setItem('carga.vault.v1', JSON.stringify({ it: 1, salt: b64(new Uint8Array(16)), iv: b64(iv), ct: b64(ct) }));
+    const k = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, [
+        'encrypt',
+        'decrypt',
+      ]),
+      iv = crypto.getRandomValues(new Uint8Array(12));
+
+    const b64 = (a) => btoa(String.fromCharCode(...new Uint8Array(a)));
+
+    const velho = {
+      exercicios: [
+        {
+          id: 'e1',
+          grupo: 'Peito',
+          regiao: 'Superior',
+          variacoes: [{ id: 'v1', nome: 'Supino máquina' }],
+        },
+      ],
+      registros: [{ variacao: 'v1', data: '2026-10-21', series: [{ kg: 30, reps: 12 }] }],
+      treinos: [{ inicio: 1, fim: 2 }],
+      medidas: [],
+    };
+
+    const ct = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv },
+      k,
+      new TextEncoder().encode(JSON.stringify(velho))
+    );
+
+    localStorage.setItem(
+      'carga.vault.v1',
+      JSON.stringify({ it: 1, salt: b64(new Uint8Array(16)), iv: b64(iv), ct: b64(ct) })
+    );
     localStorage.setItem('carga.key.v1', b64(await crypto.subtle.exportKey('raw', k)));
   };
+
   const { ctx, pg, nuvem, erros } = await abrirApp({ antes });
+
   await pg.waitForFunction(() => db.registros.length === 1);
   await sincronizado(pg);
-  assert.deepEqual(nuvem.tabelas.tr_registro.map(r => r.variacao_id), ['v1']);
+  assert.deepEqual(
+    nuvem.tabelas.tr_registro.map((r) => r.variacao_id),
+    ['v1']
+  );
   assert.equal(await pg.evaluate(() => localStorage.getItem('carga.vault.v1')), null);
-  assert.deepEqual(erros, []); await ctx.close();
-});
-
-test('sem botão de sair: o Sair fica só no hub', async () => {
-  const { ctx, pg } = await abrirApp();
-  assert.equal(await pg.locator('#sair').count(), 0);
-  assert.match(readFileSync(new URL('../docs/REGRAS.md', import.meta.url), 'utf8'), /o login e o Sair ficam só na página inicial do hub/);
-  await ctx.close();
-});
-
-test('outra conta do Supabase não entra', async () => {
-  const ctx = await app.navegador.newContext();
-  await fakeSupabase(ctx, novaNuvem(), 'outra-conta');
-  const pg = await ctx.newPage(); await pg.goto(app.url);
-  await pg.fill('#l-email', 'eu@teste.com'); await pg.fill('#l-senha', 'senha123'); await pg.press('#l-senha', 'Enter');
-  await pg.waitForFunction(() => $('l-erro').textContent);
-  assert.match(await pg.textContent('#l-erro'), /não tem acesso/);
-  assert.equal(await pg.isVisible('#v-inicio'), false);
-  await ctx.close();
-});
-
-test('login aceita o usuário no lugar do e-mail; usuário desconhecido nem chega ao Supabase', async () => {
-  const ctx = await app.navegador.newContext(), nuvem = novaNuvem(), emails = [];
-  await fakeSupabase(ctx, nuvem);
-  ctx.on('request', r => { if (r.url().includes('/auth/v1/token')) emails.push(r.postDataJSON()?.email); });
-  const pg = await ctx.newPage(); await pg.goto(app.url);
-  await pg.fill('#l-email', 'fulano'); await pg.fill('#l-senha', 'x'); await pg.press('#l-senha', 'Enter');
-  assert.match(await pg.textContent('#l-erro'), /Usuário ou senha inválidos/);
-  await pg.fill('#l-email', 'Victor'); await pg.fill('#l-senha', 'senha123'); await pg.press('#l-senha', 'Enter');
-  await pg.waitForSelector('#v-inicio:not([hidden])');
-  assert.deepEqual(emails, ['victor.cabrera0209@gmail.com']);
-  await ctx.close();
-});
-
-test('login: campos na cor das superfícies sobre o fundo escuro, com o nome dentro', async () => {
-  const ctx = await app.navegador.newContext();
-  await fakeSupabase(ctx, novaNuvem());
-  const pg = await ctx.newPage(); await pg.goto(app.url); await pg.waitForSelector('#v-bloqueio:not([hidden])');
-  assert.equal(await pg.evaluate(() => getComputedStyle($('l-email')).backgroundColor), 'rgb(36, 39, 43)');
-  assert.equal(await pg.getAttribute('#l-email', 'placeholder'), 'Usuário');
-  assert.equal(await pg.getAttribute('#l-senha', 'placeholder'), 'Senha');
-  await ctx.close();
-});
-
-test('login trava os campos e mostra "Entrando…" sem apagar a senha antes de entrar', async () => {
-  const ctx = await app.navegador.newContext(), nuvem = novaNuvem();
-  await fakeSupabase(ctx, nuvem);
-  const pg = await ctx.newPage(); await pg.goto(app.url);
-  nuvem.atraso = 800;
-  await pg.fill('#l-email', 'victor'); await pg.fill('#l-senha', 'senha123'); await pg.press('#l-senha', 'Enter');
-  assert.equal(await pg.isVisible('#l-carregando'), true);
-  assert.equal(await pg.isDisabled('#l-senha'), true);
-  assert.equal(await pg.inputValue('#l-senha'), 'senha123');                                    // não some enquanto entra
-  await pg.waitForSelector('#v-inicio:not([hidden])', { timeout: 15000 });
-  assert.equal(await pg.inputValue('#l-senha'), '');
+  assert.deepEqual(erros, []);
   await ctx.close();
 });
 
 test('conta recriada: adota a cópia do aparelho da conta antiga e reenvia tudo à nuvem vazia', async () => {
   const a = await abrirApp();
-  await a.pg.tap('.slot >> nth=0'); await a.pg.fill('#e-carga', '55'); await a.pg.dispatchEvent('#e-carga', 'input');
-  await a.pg.click('#t-feita'); await a.pg.click('#t-feita');
+
+  await a.pg.tap('.slot >> nth=0');
+  await a.pg.fill('#e-carga', '55');
+  await a.pg.dispatchEvent('#e-carga', 'input');
+  await a.pg.click('#t-feita');
+  await a.pg.click('#t-feita');
   await sincronizado(a.pg);
   const copia = await a.pg.evaluate(() => store.get(K_LOCAL(usuario.id)));
+
   await a.ctx.close();
-  const b = await abrirApp({ antes: `localStorage.setItem('tr.db.' + DONO_ANTIGO, ${JSON.stringify(copia)})` });   // nuvem nova, vazia
+
+  const b = await abrirApp({
+    antes: `localStorage.setItem('tr.db.' + DONO_ANTIGO, ${JSON.stringify(copia)})`,
+  }); // nuvem nova, vazia
+
   await sincronizado(b.pg);
-  assert.deepEqual(b.nuvem.tabelas.tr_registro.map(r => r.series), [[{ kg: 55, reps: 8 }]]);
+  assert.deepEqual(
+    b.nuvem.tabelas.tr_registro.map((r) => r.series),
+    [[{ kg: 55, reps: 8 }]]
+  );
   assert.equal(b.nuvem.tabelas.tr_exercicio.length, 6);
-  assert.ok(await b.pg.evaluate(() => store.get(K_LOCAL(DONO_ANTIGO))));                     // a antiga fica como reserva
-  assert.deepEqual(b.erros, []); await b.ctx.close();
+  assert.ok(await b.pg.evaluate(() => store.get(K_LOCAL(DONO_ANTIGO)))); // a antiga fica como reserva
+  assert.deepEqual(b.erros, []);
+  await b.ctx.close();
 });

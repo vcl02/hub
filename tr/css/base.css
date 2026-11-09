@@ -2,33 +2,134 @@
    módulo, superfícies próprias (registro do peso, gráfico, histórico, dicas, jogo), botões e cabeçalhos das telas internas.
    Cores com significado (da base): azul = o módulo e as ações · verde = feito/sucesso · vermelho = erro/abaixo da meta.
    Hierarquia: números e títulos em condensada negrito · nomes em semi-negrito · rótulos em texto normal · datas e dicas em itálico. */
-:root{--cor:#6E9BFF}
-i,em{font-style:italic}
+:root {
+  --cor: #6e9bff;
+}
+i,
+em {
+  font-style: italic;
+}
 
 /* ---------- Tipografia ---------- */
-.eyebrow{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:500}
-.eyebrow i{text-transform:none;letter-spacing:0;font-size:var(--t-sm)}
-.small{font-size:var(--t-sm)}
-.hint,.t-note{font-style:italic;color:var(--muted);font-size:var(--t-sm)}
-.hint b{font-style:normal;color:var(--fg)}
+.eyebrow {
+  font-size: var(--t-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+  font-weight: 500;
+}
+.eyebrow i {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: var(--t-sm);
+}
+.small {
+  font-size: var(--t-sm);
+}
+.hint,
+.t-note {
+  font-style: italic;
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+.hint b {
+  font-style: normal;
+  color: var(--fg);
+}
 
 /* ---------- Superfícies e controles ---------- */
-.log,.chart,.hist,.menu,.dicas,.game,.treino-tempo,.slot,.ed{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg)}
-.cartao{display:flex;flex-direction:column;gap:10px}
-.log{padding:var(--e-4);display:flex;flex-direction:column;gap:var(--e-3)}
-.btn.big{min-height:56px;font-size:1.05rem}
-.btn.wide{width:100%}
-.btn:disabled{opacity:.55}
-.link{background:none;border:0;color:var(--cor);padding:8px 0;font-weight:600}
-.row{display:flex;gap:var(--e-2);flex-wrap:wrap}
-.row .btn{flex:1 1 0}
-.slots.travado .slot{opacity:.6}
-.del{border:1px solid var(--line);background:transparent;border-radius:var(--r-sm);padding:6px 10px;font-size:var(--t-sm);color:var(--muted)}
-.del.armado{border-color:var(--erro);background:var(--erro);color:var(--bg);font-weight:600}
-.barra{height:6px}
+.log,
+.chart,
+.hist,
+.menu,
+.dicas,
+.game,
+.treino-tempo,
+.slot,
+.ed {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+.cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.log {
+  padding: var(--e-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+}
+.btn.big {
+  min-height: 56px;
+  font-size: 1.05rem;
+}
+.btn.wide {
+  width: 100%;
+}
+.btn:disabled {
+  opacity: 0.55;
+}
+.link {
+  background: none;
+  border: 0;
+  color: var(--cor);
+  padding: 8px 0;
+  font-weight: 600;
+}
+.row {
+  display: flex;
+  gap: var(--e-2);
+  flex-wrap: wrap;
+}
+.row .btn {
+  flex: 1 1 0;
+}
+.slots.travado .slot {
+  opacity: 0.6;
+}
+.del {
+  border: 1px solid var(--line);
+  background: transparent;
+  border-radius: var(--r-sm);
+  padding: 6px 10px;
+  font-size: var(--t-sm);
+  color: var(--muted);
+}
+.del.armado {
+  border-color: var(--erro);
+  background: var(--erro);
+  color: var(--bg);
+  font-weight: 600;
+}
+.barra {
+  height: 6px;
+}
 
 /* ---------- Telas internas: ‹ (volta uma tela) e, no exercício, o tempo e a posição à direita ---------- */
-.nav{justify-content:space-between}
-.pn{display:flex;align-items:center;gap:6px}
-.pn b{font-variant-numeric:tabular-nums;font-size:var(--t-sm);color:var(--muted);font-weight:500;min-width:2.4em;text-align:center}
-.tempo{font-size:var(--t-sm);font-weight:600;color:var(--cor);font-variant-numeric:tabular-nums;margin-right:4px;white-space:nowrap}
+.nav {
+  justify-content: space-between;
+}
+.pn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pn b {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--t-sm);
+  color: var(--muted);
+  font-weight: 500;
+  min-width: 2.4em;
+  text-align: center;
+}
+.tempo {
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--cor);
+  font-variant-numeric: tabular-nums;
+  margin-right: 4px;
+  white-space: nowrap;
+}

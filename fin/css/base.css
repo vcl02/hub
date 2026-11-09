@@ -1,191 +1,197 @@
-  /* Base do Fin: os tons próprios, tipografia, elementos nativos e comportamentos comuns. As cores com significado e as
+/* Base do Fin: os tons próprios, tipografia, elementos nativos e comportamentos comuns. As cores com significado e as
      superfícies vêm da base comum do hub (../base/tokens.css); os demais arquivos do Fin consomem estas variáveis. */
-  :root {
-      /* Cursor de bloqueado (círculo cortado) em vermelho, com contorno escuro pra ler sobre
+:root {
+  /* Cursor de bloqueado (círculo cortado) em vermelho, com contorno escuro pra ler sobre
          qualquer fundo; not-allowed nativo de reserva se o SVG não carregar. */
-      --cursor-bloqueado: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Cg stroke='%231B1E21' stroke-width='5'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Cpath d='M6.5 6.5l11 11'/%3E%3C/g%3E%3Cg stroke='%23F06A61' stroke-width='2.5'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Cpath d='M6.5 6.5l11 11'/%3E%3C/g%3E%3C/svg%3E") 12 12, not-allowed;
-      /* Cores, superfícies, linhas e sombra vêm de ../base/tokens.css (carregado antes): aqui só a cor do módulo e
-         os tons que só o Fin usa (passar o mouse, o fundo mais leve e o laranja da simulação). */
-      --cor: #A78BFA;
-      --bg-soft: #202428;
-      --surface-2-hover: #34393F;
-      --ok-hover: #254634;
-      --erro-hover: #4D2D2A;
-      --laranja-soft: #403326;
-  }
+  --cursor-bloqueado:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'%3E%3Cg stroke='%231B1E21' stroke-width='5'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Cpath d='M6.5 6.5l11 11'/%3E%3C/g%3E%3Cg stroke='%23F06A61' stroke-width='2.5'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Cpath d='M6.5 6.5l11 11'/%3E%3C/g%3E%3C/svg%3E")
+      12 12,
+    not-allowed;
+  /* Cores, superfícies, linhas e sombra vêm de ../base/tokens.css (carregado antes), com o laranja de atenção
+         (--aviso, --aviso-soft: simulação, perto do teto, ainda falta): aqui só a cor do módulo e os tons que só o Fin
+         usa (passar o mouse, o fundo mais leve e as cores das marcas Reserva, Comprometido e Pra sempre, que as
+         tabelas e os filtros ligados usam). */
+  --cor: #a78bfa;
+  --bg-soft: #202428;
+  --surface-2-hover: #34393f;
+  --ok-hover: #254634;
+  --erro-hover: #4d2d2a;
+  --reserva: #f6e58d;
+  --comprometido: #d9741e;
+  --pra-sempre: #6cb8f0;
+}
 
-  * {
-      box-sizing: border-box;
-  }
+* {
+  box-sizing: border-box;
+}
 
-  [hidden] {
-      display: none !important;
-  }
+[hidden] {
+  display: none !important;
+}
 
-  html {
-      color-scheme: dark;
-  }
+html {
+  color-scheme: dark;
+}
 
-  body {
-      background: var(--bg);
-      color: var(--fg);
-      margin: 0;
-      padding: 2rem 1.4rem 7rem;
-      /* Fonte, tamanho e entrelinha da base comum (Barlow 16 px), como nos outros módulos; a largura continua a da tela
+body {
+  background: var(--bg);
+  color: var(--fg);
+  margin: 0;
+  padding: 2rem 1.4rem 7rem;
+  /* Fonte, tamanho e entrelinha da base comum (Barlow 16 px), como nos outros módulos; a largura continua a da tela
          toda (as tabelas precisam), sem a coluna de 560 px da base (pedido do mantenedor, 01/11/2026). */
-  }
+}
 
-  /* =========================================================
+/* =========================================================
        CABEÇALHO
        ========================================================= */
 
-  .head {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: .7rem;
-      margin: 0 0 1rem;
-  }
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0 0 1rem;
+}
 
-  /* Todo controle desativado mostra o cursor de bloqueado vermelho. !important porque
+/* Todo controle desativado mostra o cursor de bloqueado vermelho. !important porque
      vários botões definem cursor próprio (pointer) com a mesma especificidade de :disabled. */
-  :disabled {
-      cursor: var(--cursor-bloqueado) !important;
-  }
+:disabled {
+  cursor: var(--cursor-bloqueado) !important;
+}
 
-  /* Botões do cabeçalho: um bloco que nunca se parte — se não couber na linha, desce inteiro.
+/* Botões do cabeçalho: um bloco que nunca se parte — se não couber na linha, desce inteiro.
      Sem margin-left:auto: na mesma linha, quem o empurra pra direita é a navegação
      (margin-right:auto) ou os indicadores (flex-grow); sozinho numa linha, fica à esquerda. */
-  .acoesCabecalho {
-      display: flex;
-      flex-wrap: nowrap;
-      align-items: center;
-      gap: .7rem;
-  }
+.acoesCabecalho {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.7rem;
+}
 
-  .sub {
-      font-size: .85rem;
-      color: var(--muted);
-      font-style: italic;
-      margin: 0 0 1.8rem;
-  }
+.sub {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-style: italic;
+  margin: 0 0 1.8rem;
+}
 
-  /* Linha de status vazia (o caso comum) não reserva espaço entre o cabeçalho e a tabela. */
-  .sub:has(#st:empty) {
-      display: none;
-  }
+/* Linha de status vazia (o caso comum) não reserva espaço entre o cabeçalho e a tabela. */
+.sub:has(#st:empty) {
+  display: none;
+}
 
-  /* =========================================================
+/* =========================================================
        BOTÕES DO CABEÇALHO
        ========================================================= */
 
-  /* Todos são o botão de ícone da base (.bt-ic: tamanho, borda, raio e fundo); aqui só a cor de cada um que tem
+/* Todos são o botão de ícone da base (.bt-ic: tamanho, borda, raio e fundo); aqui só a cor de cada um que tem
      significado no Fin. Novo lançamento é o .bt-ic.ok da base (preenchido na cor do módulo). */
-  #recarregar {
-      color: var(--ok);
-      background: var(--ok-soft);
-      border-color: var(--ok);
-  }
+#recarregar {
+  color: var(--ok);
+  background: var(--ok-soft);
+  border-color: var(--ok);
+}
 
-  #recarregar:hover:not(:disabled) {
-      color: #10231A;
-      background: var(--ok);
-  }
+#recarregar:hover:not(:disabled) {
+  color: #10231a;
+  background: var(--ok);
+}
 
-  #recarregar.carregando svg {
-      animation: girar 0.8s linear infinite;
-  }
+#recarregar.carregando svg {
+  animation: girar 0.8s linear infinite;
+}
 
-  /* Diagnóstico é discreto quando a última carga está íntegra; o ponto chama atenção
+/* Diagnóstico é discreto quando a última carga está íntegra; o ponto chama atenção
      sem poluir o cabeçalho quando há registros que precisam ser revisados. */
-  #btDiagnostico {
-      position: relative;
-      color: var(--muted);
-  }
+#btDiagnostico {
+  position: relative;
+  color: var(--muted);
+}
 
-  #btDiagnostico.temInconsistencia {
-      color: var(--erro);
-      border-color: var(--erro);
-      background: var(--erro-soft);
-  }
+#btDiagnostico.temInconsistencia {
+  color: var(--erro);
+  border-color: var(--erro);
+  background: var(--erro-soft);
+}
 
-  #btDiagnostico.temInconsistencia::after {
-      content: '';
-      position: absolute;
-      top: -.2rem;
-      right: -.2rem;
-      width: .5rem;
-      height: .5rem;
-      border: 1px solid var(--bg);
-      border-radius: 50%;
-      background: var(--erro);
-  }
+#btDiagnostico.temInconsistencia::after {
+  content: '';
+  position: absolute;
+  top: -0.2rem;
+  right: -0.2rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border: 1px solid var(--bg);
+  border-radius: 50%;
+  background: var(--erro);
+}
 
-  /* Simular (lançamentos provisórios): sempre em laranja, como o Recarregar é sempre verde.
+/* Simular (lançamentos provisórios): sempre em laranja, como o Recarregar é sempre verde.
      Ligado, o botão fica preenchido de laranja, pra não deixar dúvida de que nada está sendo
      gravado. */
-  #toggleSimulacao {
-      color: #F0A83A;
-      background: var(--laranja-soft);
-      border-color: #F0A83A;
+#toggleSimulacao {
+  color: var(--aviso);
+  background: var(--aviso-soft);
+  border-color: var(--aviso);
+}
+
+#toggleSimulacao:hover,
+#toggleSimulacao.ativo {
+  color: #10231a;
+  background: var(--aviso);
+}
+
+#toggleSimulacao.ativo:hover {
+  background: #f5bc63;
+  border-color: #f5bc63;
+}
+
+/* ‹ › da navegação de ciclos: a seta um pouco maior, como a barra do dia da base */
+#cicloAnterior,
+#cicloProximo {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+@keyframes girar {
+  from {
+    transform: rotate(0deg);
   }
 
-  #toggleSimulacao:hover,
-  #toggleSimulacao.ativo {
-      color: #10231A;
-      background: #F0A83A;
+  to {
+    transform: rotate(360deg);
   }
+}
 
-  #toggleSimulacao.ativo:hover {
-      background: #F5BC63;
-      border-color: #F5BC63;
-  }
-
-  /* ‹ › da navegação de ciclos: a seta um pouco maior, como a barra do dia da base */
-  #cicloAnterior,
-  #cicloProximo {
-      font-size: 1.2rem;
-      line-height: 1;
-  }
-
-  @keyframes girar {
-      from {
-          transform: rotate(0deg);
-      }
-
-      to {
-          transform: rotate(360deg);
-      }
-  }
-
-  /* disfarca a troca de estrutura de #out ao mudar de visao (tabelas Debito/Credito <->
+/* disfarca a troca de estrutura de #out ao mudar de visao (tabelas Debito/Credito <->
      matriz Comparar) e o aparecer/sumir dos filtros exclusivos de cada visao (Origem,
      Agrupar por, Grafico, Ver evolucao) com o MESMO fade suave, em vez de uma troca
      abrupta — os dois usam a mesma duracao/curva pra sentirem parte do mesmo gesto. */
+#out.fadeIn,
+.f.fadeIn {
+  animation: fadeSuave 0.32s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.f.fadeOut {
+  animation: fadeSuave 0.18s cubic-bezier(0.4, 0, 1, 1) reverse;
+}
+
+@keyframes fadeSuave {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
   #out.fadeIn,
-  .f.fadeIn {
-      animation: fadeSuave .32s cubic-bezier(.25, .1, .25, 1);
-  }
-
+  .f.fadeIn,
   .f.fadeOut {
-      animation: fadeSuave .18s cubic-bezier(.4, 0, 1, 1) reverse;
+    animation: none;
   }
-
-  @keyframes fadeSuave {
-      from {
-          opacity: 0;
-      }
-
-      to {
-          opacity: 1;
-      }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-
-      #out.fadeIn,
-      .f.fadeIn,
-      .f.fadeOut {
-          animation: none;
-      }
-  }
+}
