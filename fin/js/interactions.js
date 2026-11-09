@@ -538,7 +538,7 @@ el('out').addEventListener('click', async e => {
             const cicloDeHoje = periodoDoDebito(hoje);
             const mesmoCiclo = cicloDoLancamento >= 0 && cicloDoLancamento === cicloDeHoje;
             if (mesmoCiclo) {
-                if (dataAtual > hoje) novaData = hoje;
+                novaData = hoje;
             } else if (!confirm(`"${r.nome ?? ''}" está datado ${dataBR(dataAtual)}, fora do ciclo atual. Marcar como pago mesmo assim?`)) {
                 return;
             }

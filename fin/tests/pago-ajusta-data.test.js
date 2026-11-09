@@ -1,6 +1,6 @@
 // Regressão: ao MARCAR como pago um Débito real (nunca ao desmarcar, nunca Crédito), a data
-// é ajustada automaticamente pra hoje quando o vencimento ainda não chegou mas cai no MESMO
-// ciclo; fora do ciclo atual, pede confirmação antes em vez de aplicar direto.
+// vira hoje quando a linha cai no MESMO ciclo (futura ou já passada, 31/10/2026); fora do ciclo
+// atual, pede confirmação antes em vez de aplicar direto.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const test = require('node:test');
@@ -65,13 +65,13 @@ test('vencimento futuro no MESMO ciclo: ajusta a data pra hoje, sem perguntar', 
     assert.equal(chamadasConfirm.length, 0);
 });
 
-test('vencimento já passado no MESMO ciclo: mantém a data original, sem perguntar', () => {
+test('data já passada no MESMO ciclo: vira hoje, sem perguntar (pago agora = pago hoje)', () => {
     const { decide, chamadasConfirm } = criaDecideAjustePago({
         hoje: '2026-10-09',
         periodoPorData: { '2026-10-09': 2, '2026-10-01': 2 },
     });
     const resultado = decide({ pago: false, cred: false, data: '2026-10-01', nome: 'Água' });
-    assert.deepEqual({ ...resultado }, { novoPago: true, novaData: '2026-10-01' });
+    assert.deepEqual({ ...resultado }, { novoPago: true, novaData: '2026-10-09' });
     assert.equal(chamadasConfirm.length, 0);
 });
 
@@ -131,8 +131,8 @@ test('desmarcar (já pago) nunca entra nessa regra, mesmo com data fora do ciclo
 test('regra documentada em REGRAS.md', () => {
     assert.match(regras, /Clicar no badge Pago\/Aberto de um lançamento real de Débito \(nunca Crédito/);
     assert.match(regras, /para MARCAR como pago \(nunca ao desmarcar\) compara a data gravada com hoje/);
-    assert.match(regras, /dentro do MESMO ciclo, com a data gravada ainda no futuro, ajustam a data para hoje automaticamente, sem perguntar/);
+    assert.match(regras, /Datas diferentes mas dentro do MESMO ciclo ajustam a data para hoje automaticamente, sem perguntar/);
     assert.match(regras, /a conta de água, paga logo no início do ciclo/);
-    assert.match(regras, /Dentro do mesmo ciclo mas já no passado, ou em qualquer ciclo diferente do de hoje \(incluindo um já encerrado\), a data nunca é tocada/);
-    assert.match(regras, /só no caso de ciclo diferente, a ação pede confirmação antes de marcar como pago/);
+    assert.match(regras, /Em qualquer ciclo diferente do de hoje \(incluindo um já encerrado\), a data nunca é tocada/);
+    assert.match(regras, /a ação pede confirmação antes de marcar como pago/);
 });
