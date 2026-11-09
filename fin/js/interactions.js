@@ -530,17 +530,23 @@ el('out').addEventListener('click', async e => {
     const dataDoAtraso = novoPago && ehDebitoAtrasado(r) ? dataISO(r.data) : null;
     if (dataDoAtraso) {
         novaData = hojeISO();
-    } else if (novoPago && !r.cred && r.data) {
+    } else if (novoPago && r.data) {
         const hoje = hojeISO();
         const dataAtual = dataISO(r.data);
         if (dataAtual !== hoje) {
-            const cicloDoLancamento = periodoDoDebito(dataAtual);
-            const cicloDeHoje = periodoDoDebito(hoje);
-            const mesmoCiclo = cicloDoLancamento >= 0 && cicloDoLancamento === cicloDeHoje;
-            if (mesmoCiclo) {
-                novaData = hoje;
-            } else if (!confirm(`"${r.nome ?? ''}" está datado ${dataBR(dataAtual)}, fora do ciclo atual. Marcar como pago mesmo assim?`)) {
-                return;
+            if (r.cred) {
+                // Crédito: a data é a da compra (o ciclo vem da fatura). No ciclo atual vira hoje;
+                // fora dele não muda e não pergunta.
+                if (r.periodoIdx === cicloDeHoje()) novaData = hoje;
+            } else {
+                const cicloDoLancamento = periodoDoDebito(dataAtual);
+                const indiceHoje = periodoDoDebito(hoje);
+                const mesmoCiclo = cicloDoLancamento >= 0 && cicloDoLancamento === indiceHoje;
+                if (mesmoCiclo) {
+                    novaData = hoje;
+                } else if (!confirm(`"${r.nome ?? ''}" está datado ${dataBR(dataAtual)}, fora do ciclo atual. Marcar como pago mesmo assim?`)) {
+                    return;
+                }
             }
         }
     }

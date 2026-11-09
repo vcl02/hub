@@ -250,10 +250,11 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 ### Badge Pago/Aberto
 
-- Clicar no badge Pago/Aberto de um lançamento real de Débito (nunca Crédito, cujo `pago` é "compra confirmada" e não tem vencimento comparável) para MARCAR como pago (nunca ao desmarcar) compara a data gravada com hoje antes de aplicar a mudança: datas iguais seguem direto, sem nenhum ajuste.
+- Clicar no badge Pago/Aberto de um lançamento real (Débito ou Crédito) para MARCAR como pago (nunca ao desmarcar) compara a data gravada com hoje antes de aplicar a mudança: datas iguais seguem direto, sem nenhum ajuste.
   Datas diferentes mas dentro do MESMO ciclo ajustam a data para hoje automaticamente, sem perguntar, seja a data gravada futura (ex.: a conta de água, paga logo no início do ciclo) ou já passada (ex.: uma conta de 20/10 paga hoje, 31/10, continua no ciclo e vira 31/10).
   Débito **atrasado** (ver **Atrasados**) é a exceção: a data vira hoje, sem perguntar.
-  Em qualquer ciclo diferente do de hoje (incluindo um já encerrado), a data nunca é tocada, e a ação pede confirmação antes de marcar como pago — é o mesmo padrão da recorrência que nasce paga sem querer (regra acima), só que pego no momento do clique em vez de só depois, no diagnóstico.
+  Em qualquer ciclo diferente do de hoje (incluindo um já encerrado), a data nunca é tocada, e a ação pede confirmação antes de marcar como pago
+  No Crédito, a data é a da compra e o ciclo vem da fatura: no ciclo atual (pela fatura), marcar como pago também põe a data de hoje; fora dele a data não muda e não pergunta (pela fatura, o `periodoIdx` do lançamento; não muda a fatura nem o ciclo). — é o mesmo padrão da recorrência que nasce paga sem querer (regra acima), só que pego no momento do clique em vez de só depois, no diagnóstico.
 
 ### Toasts e confirmações
 

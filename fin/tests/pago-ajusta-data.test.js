@@ -9,8 +9,9 @@ const vm = require('node:vm');
 const interacoes = fs.readFileSync('js/interactions.js', 'utf8');
 const regras = fs.readFileSync('docs/REGRAS.md', 'utf8');
 
-test('guarda só MARCAR (nunca desmarcar) e só Débito (nunca Crédito)', () => {
-    assert.match(interacoes, /if \(novoPago && !r\.cred && r\.data\) \{/);
+test('guarda só MARCAR (nunca desmarcar); Débito e Crédito têm cada um a sua conta de ciclo', () => {
+    assert.match(interacoes, /else if \(novoPago && r\.data\) \{/);
+    assert.match(interacoes, /if \(r\.cred\) \{/);
 });
 
 test('fora do ciclo pede confirmação; é a 2ª caixa nativa permitida, documentada em REGRAS.md', () => {
@@ -38,6 +39,7 @@ function criaDecideAjustePago({ hoje, periodoPorData, confirmResposta = true }) 
         dataISO: v => v,
         dataBR: v => v,
         periodoDoDebito: data => periodoPorData[data] ?? -1,
+        cicloDeHoje: () => periodoPorData[hoje] ?? -1,
         confirm: msg => { chamadasConfirm.push(msg); return confirmResposta; },
     };
     vm.createContext(contexto);
@@ -108,12 +110,22 @@ test('ciclo não encontrado (periodoDoDebito devolve -1) conta como fora do cicl
     assert.equal(chamadasConfirm.length, 1);
 });
 
-test('Crédito nunca entra nessa regra, mesmo com data fora do ciclo', () => {
+test('Crédito no ciclo atual (pela fatura) vira hoje, sem perguntar', () => {
+    const { decide, chamadasConfirm } = criaDecideAjustePago({
+        hoje: '2026-10-09',
+        periodoPorData: { '2026-10-09': 2, '2026-10-20': 2 },
+    });
+    const resultado = decide({ pago: false, cred: true, data: '2026-10-20', periodoIdx: 2, nome: 'Compra cartão' });
+    assert.deepEqual({ ...resultado }, { novoPago: true, novaData: '2026-10-09' });
+    assert.equal(chamadasConfirm.length, 0);
+});
+
+test('Crédito fora do ciclo atual não muda a data e não pergunta', () => {
     const { decide, chamadasConfirm } = criaDecideAjustePago({
         hoje: '2026-10-09',
         periodoPorData: { '2026-10-09': 2, '2026-12-01': 5 },
     });
-    const resultado = decide({ pago: false, cred: true, data: '2026-12-01', nome: 'Compra cartão' });
+    const resultado = decide({ pago: false, cred: true, data: '2026-12-01', periodoIdx: 5, nome: 'Compra cartão' });
     assert.deepEqual({ ...resultado }, { novoPago: true, novaData: '2026-12-01' });
     assert.equal(chamadasConfirm.length, 0);
 });
@@ -129,7 +141,8 @@ test('desmarcar (já pago) nunca entra nessa regra, mesmo com data fora do ciclo
 });
 
 test('regra documentada em REGRAS.md', () => {
-    assert.match(regras, /Clicar no badge Pago\/Aberto de um lançamento real de Débito \(nunca Crédito/);
+    assert.match(regras, /Clicar no badge Pago\/Aberto de um lançamento real \(Débito ou Crédito\) para MARCAR como pago/);
+    assert.match(regras, /No Crédito, a data é a da compra e o ciclo vem da fatura: no ciclo atual \(pela fatura\), marcar como pago também põe a data de hoje/);
     assert.match(regras, /para MARCAR como pago \(nunca ao desmarcar\) compara a data gravada com hoje/);
     assert.match(regras, /Datas diferentes mas dentro do MESMO ciclo ajustam a data para hoje automaticamente, sem perguntar/);
     assert.match(regras, /a conta de água, paga logo no início do ciclo/);
