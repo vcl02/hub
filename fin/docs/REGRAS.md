@@ -270,7 +270,8 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 
 - Erros operacionais usam toast, sem interromper a tela com `alert()`.
   Cada toast tenta tocar um tom curto e baixo, sem arquivo externo; bloqueio de autoplay do navegador nunca impede o aviso visual.
-  As únicas caixas nativas (`confirm()`) permitidas são: a confirmação antes de excluir um lançamento real ou simulado, porque essa ação não pode ser desfeita; a confirmação ao marcar como pago um Débito cuja data cai fora do ciclo atual (ver regra do badge Pago abaixo), porque é o mesmo padrão da recorrência que nasce paga sem querer; a confirmação ao corrigir a data de uma recorrência duplicada no ciclo (ver regra logo abaixo); e a confirmação antes de excluir uma meta (ver **Metas**) — nos quatro casos, por alterar dado real sem volta fácil.
+  As únicas caixas nativas (`confirm()`) permitidas são: a confirmação antes de excluir um lançamento real ou simulado (uma linha avulsa ou uma seleção de várias linhas), porque essa ação não pode ser desfeita;
+  uma linha de série com 2 ou mais linhas não usa `confirm()`, abre o diálogo próprio de escopo (ver **Excluir uma linha de série**); a confirmação ao marcar como pago um Débito cuja data cai fora do ciclo atual (ver regra do badge Pago abaixo), porque é o mesmo padrão da recorrência que nasce paga sem querer; a confirmação ao corrigir a data de uma recorrência duplicada no ciclo (ver regra logo abaixo); e a confirmação antes de excluir uma meta (ver **Metas**) — nos quatro casos, por alterar dado real sem volta fácil.
 
 ### Recorrência duplicada no mesmo ciclo
 
@@ -288,6 +289,25 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
 - No desktop, o botão Excluir da barra de seleção aceita quantas linhas reais estiverem marcadas, não só uma; linhas sintéticas misturadas na mesma seleção são ignoradas por essa ação, pois não existem no banco.
   A confirmação lista cada lançamento escolhido por nome e valor antes de prosseguir.
   Se algum selecionado for `_sim` (só desta simulação) e outro for real, a confirmação deixa claro que o simulado some ao recarregar enquanto o real é excluído sem volta; fora do modo simulação, isso não ocorre porque recarregar já descarta os simulados.
+  Uma linha só, de série com 2 ou mais linhas, não passa por aqui: abre o diálogo de escopo (ver **Excluir uma linha de série**).
+
+### Excluir uma linha de série
+
+- Com exatamente uma linha marcada (real ou simulada) que pertence a uma série de 2 ou mais linhas, o botão Excluir da barra de seleção abre o diálogo de escopo (`#modalExcluirSerie`) em vez do `confirm()`.
+  Ele mostra o nome e o valor da linha e quatro botões: **Só esta**, **Esta e as próximas (N)**, **Todas (N)** (com ", M já paga(s)" quando alguma já estiver paga) e **Cancelar**.
+  O N é quantas linhas o botão apaga, contado ao abrir o diálogo.
+- A série segue o vínculo gravado: linhas com o mesmo `recorrencia_id` (lote).
+  Sem lote, mas com Frequência, a série são as linhas sem lote com o mesmo compromisso (mesmo nome e categoria, sem o `(n/m)` do fim do nome) e a mesma Frequência.
+  Linha sem lote nem Frequência é série de uma só, e linha com lote nunca entra numa série sem lote.
+  Previstas, faturas e ajustes do app nunca entram, pois não existem no banco.
+- **Esta e as próximas** apaga a linha e as de data posterior, e as de mesma data com id igual ou maior; linha sem data (Backlog) conta como posterior.
+  **Todas** apaga a série inteira, inclusive as anteriores e as já pagas; o número de pagas no rótulo avisa antes.
+- Embaixo de cada botão, o aviso diz o que acontece: "Não dá pra desfazer" para linha real; "Só nesta simulação, volta ao recarregar" para simulada; e "Não dá pra desfazer; as simuladas voltam ao recarregar" quando a série mistura real e simulada.
+- Real vai pro banco uma linha por vez (um `DELETE` por linha); simulada só sai da memória.
+  Enquanto grava, os botões ficam travados, e o título e o Excluir mostram "Excluindo…" (ou "Ocultando…" na simulação); Esc e toque fora não fecham nesse meio-tempo.
+- Esc e toque fora fecham sem excluir nada.
+  Nenhum botão recebe o foco ao abrir, então um Enter ou espaço sozinho não escolhe um escopo.
+- Seleção de várias linhas, linha avulsa e série de uma linha só continuam no `confirm()` de sempre.
 
 ### Textos curtos
 
@@ -583,6 +603,7 @@ Este arquivo é a referência de comportamento financeiro da aplicação. `AGENT
   Não há botão de sair no fin: o login e o Sair ficam só na página inicial do hub (a sessão é a mesma).
 - **Esc** sai do fin para a página inicial do hub (`../`), como em todos os apps, quando nada mais usou a tecla.
   Modal aberto fecha antes (o próprio `<dialog>` fecha com Esc), e o menu de visualização e a edição na célula também.
+  Exceção: o diálogo de escopo da série não fecha com Esc enquanto a exclusão está no ar (ver **Excluir uma linha de série**).
   Num campo de texto, o 1º Esc só tira o foco.
 - Os seletores **De** e **Até** mostram cada ciclo pelo mês abreviado (`Out/26`, mês do início do ciclo), com o nome completo (`Outubro 2026`) no tooltip da opção.
   Os dois ficam lado a lado, sem texto ou traço entre eles (`Out/26` `Nov/26`).

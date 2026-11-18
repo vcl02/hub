@@ -9,12 +9,18 @@ import { prepararApp, app, abrirApp, arrastar, inicioDoRelogio } from './helpers
 prepararApp();
 
 test('o relógio de teste nunca nasce no dia anterior: entre 00:00 e 00:05 a margem encolhe para o início do mesmo dia', async () => {
-  const dia = (d) => new Date(d).getDate();
+  // O relógio dos testes é o de São Paulo (FUSO de tests/relogio.mjs): horários com o deslocamento explícito e o dia lido
+  // lá, para o teste não depender do fuso da máquina (o GitHub Actions roda em UTC).
+  const dia = (d) =>
+    +new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'America/Sao_Paulo',
+      day: 'numeric',
+    }).format(new Date(d));
 
   for (const h of [
-    '2026-10-22T00:02:00',
-    '2026-10-22T00:00:30',
-    '2026-10-22T00:04:59.999',
+    '2026-10-22T00:02:00-03:00',
+    '2026-10-22T00:00:30-03:00',
+    '2026-10-22T00:04:59.999-03:00',
   ]) {
     const inicio = inicioDoRelogio(new Date(h));
 
@@ -24,16 +30,20 @@ test('o relógio de teste nunca nasce no dia anterior: entre 00:00 e 00:05 a mar
 
   // longe da meia-noite, a margem cheia de 5 min
   assert.equal(
-    new Date('2026-10-22T19:00:00') - inicioDoRelogio(new Date('2026-10-22T19:00:00')),
+    new Date('2026-10-22T19:00:00-03:00') -
+      inicioDoRelogio(new Date('2026-10-22T19:00:00-03:00')),
     5 * 60 * 1000
   );
   assert.equal(
-    new Date('2026-10-22T00:05:00') - inicioDoRelogio(new Date('2026-10-22T00:05:00')),
+    new Date('2026-10-22T00:05:00-03:00') -
+      inicioDoRelogio(new Date('2026-10-22T00:05:00-03:00')),
     5 * 60 * 1000
   );
 
   // e o app aberto às 00:02 mostra o dia pedido como hoje (sem ?dia = hoje, não o dia anterior)
-  const { ctx, pg, erros } = await abrirApp({ relogio: new Date('2026-10-22T00:02:00') });
+  const { ctx, pg, erros } = await abrirApp({
+    relogio: new Date('2026-10-22T00:02:00-03:00'),
+  });
 
   assert.equal(await pg.evaluate(() => hoje()), '2026-10-22');
   assert.deepEqual(erros, []);

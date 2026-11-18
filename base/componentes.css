@@ -481,6 +481,10 @@ label.bt-ic {
   background: var(--cor);
   color: var(--on-cor);
 }
+/* Ação que apaga (como o .bt-ic.perigo, com texto): o Excluir com escopo do Fin */
+.btn.perigo {
+  color: var(--erro);
+}
 .mais {
   display: grid;
   place-items: center;

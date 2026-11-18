@@ -197,9 +197,9 @@ test('simulação espelha o mesmo critério (parcelas > 1), usando o contador de
   };
 
   assert.deepEqual(em(3, [-10, -10, -10]), [
-    ['sim-1-0', 1, true, '2026-10-15'],
-    ['sim-1-1', 1, true, '2026-11-15'],
-    ['sim-1-2', 1, true, '2026-12-15'],
+    ['sim-1-0', 'sim-1', true, '2026-10-15'],
+    ['sim-1-1', 'sim-1', true, '2026-11-15'],
+    ['sim-1-2', 'sim-1', true, '2026-12-15'],
   ]);
   // o contador anda a cada compra simulada; lançamento único (Vezes = 1) nunca ganha lote
   assert.deepEqual(em(1, [-10]), [['sim-2-0', null, true, '2026-10-15']]);

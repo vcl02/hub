@@ -81,6 +81,11 @@ Registro do que deu errado e do que mudou para não repetir.
 
 - Os XMLs do Tasker subiram para o repositório (público) com o token da Edge Function no cabeçalho `x-fin-token`. O valor saiu dos arquivos (passaram a usar `%FINTOKEN`) e a função foi reescrita para ler o token do secret `FIN_TOKEN` em vez de um hash no código. Em 18/10/2026 o mantenedor criou o secret com um token novo e essa versão foi publicada (versão 6 no Supabase, conferida igual ao arquivo do repositório): o token antigo, que continua no histórico do git, não é mais aceito. Nenhum lançamento estranho com `obs = 'auto:tasker'` foi encontrado até a troca.
 
+**Nov/2026 — lote da compra simulada**
+
+- A compra parcelada simulada usava o contador da simulação (1, 2, 3…) como `recorrencia_id`, e esse número colidia com os lotes reais: o 10 da simulação virava o lote 10 de outra série. Com o Excluir com escopo, a série do lote juntaria as linhas simuladas com as reais. Corrigido em `js/form.js` (`simulaLancamentoParcelado`): o lote da simulação é `sim-N`, que nunca vai ao banco.
+  Prova: `tests/excluir-serie.test.js` (o teste "lote sim-…" confere o prefixo e cai se ele sai; conferido em cópia de trabalho, 18/11/2026) e `tests/recorrencia-id-lote.test.js` (o lote simulado esperado passou de `1` para `sim-1`).
+
 **Ferramentas de teste**
 
 - O harness de navegador (Playwright com Supabase simulado) remove o `integrity` (SRI) do `index.html` apenas na cópia servida localmente; sem isso o navegador recusa o `supabase-js` falso. O arquivo publicado mantém o SRI.
@@ -246,6 +251,18 @@ Auditoria dos lotes A e B (02/11/2026):
   - **Modais de Mês a mês, comprometidos e gráfico** (e o das metas, de onde se abrem), em 390 e em 1280 px: abertos no navegador com esses dados, a página não ganha rolagem horizontal, o modal cabe na tela, nenhuma peça passa da borda dele (fora da tabela do Mês a mês, que rola por conta própria) e não há erro de página. O gráfico roda com uma classe `Chart` mínima (`abrirFin(..., { chartFalso: true })`), porque o Chart.js vem de uma CDN que o teste bloqueia: o desenho da pizza em si (canvas) não é medido.
   - Mutações (CSS estragado, depois restaurado) que falham o teste: os 44 px do botão, os 44 px do campo compacto, o mínimo de 24 px do chip, o do `.tog`, esses dois mínimos fora do `pointer: coarse`, o `line-height` do selo e um bloco largo dentro do modal dos comprometidos (rolagem horizontal) e `flex-wrap: nowrap` nos chips do gráfico.
   - Não executável neste ambiente: a aparência (cor, espaçamento, sensação ao toque) em aparelho real e `base/referencia.html`. A regra do hub é não tirar captura de tela; o que se mede (tamanho, posição, classe, estilo calculado) está acima.
+
+## Excluir com escopo (18/11/2026)
+
+- **Diálogo próprio, não `confirm()`:** o `confirm()` só tem OK e Cancelar, e excluir uma linha de série pede três escolhas (só esta, esta e as próximas, todas). Por isso o `#modalExcluirSerie` usa a peça `.modal` da base e os botões `.btn.perigo` (ação que apaga, só com texto na cor `--erro`; ver `../docs/DIRETRIZES.md`, seção 8).
+  Seleção de várias linhas, linha avulsa e série de uma linha continuam no `confirm()`, sem mudança.
+- **Série pelo lote, Frequência como reserva:** o lote (`recorrencia_id`) é o vínculo que o cadastro grava, e a regra de Frequência só entra quando não há lote. Sem lote, a identidade é a de `chaveDoCompromisso` (nome e categoria, sem o `(n/m)` do fim do nome, a mesma de `chaveDaRecorrencia`) mais a Frequência.
+  Linha com lote nunca entra numa série sem lote, para que um compromisso gravado em dois lotes não se junte num só.
+  Sem lote nem Frequência, a linha é série de uma só, porque não há nada que a ligue a outra.
+- **"Todas" inclui pagas e anteriores:** o botão diz Todas, então a série inteira entra. A contagem das pagas no rótulo (", M já paga(s)") é o aviso antes de apagar o que já está pago.
+- **Esc e toque fora não fecham durante a exclusão:** o modal só fecha no fim, depois que a tela já foi redesenhada (comentário em `js/form.js`, junto de `excluirLinhas`). A regra está em `REGRAS.md`, "Excluir uma linha de série".
+- **Compra simulada com `sim-N`:** o lote da simulação nunca coincide com um lote real. O defeito que levou a isso está em "Histórico de problemas e correções" (Nov/2026).
+- Prova: `tests/excluir-serie.test.js` (18 testes sem navegador: a série, o escopo, o rótulo, o aviso, `excluirLinhas` e o lote `sim-`; o do lote `sim-` foi conferido por mutação) e o teste 9 de `tests/navegador-linhas.test.js` (Chromium: "Esta e as próximas" apaga 3 linhas e só essas, com um `DELETE` por linha; Esc não grava; o `confirm()` nativo nunca abre).
 
 ## Relógio falso pausado (02/11/2026)
 

@@ -1585,48 +1585,49 @@ async function consolidarTudo(
 // Simulação altera somente Estado.lancamentos: nunca chama DELETE para uma linha real.
 const exclusaoEhSimulada = (r) => Estado.simulando || r._sim;
 
-// Aceita quantas linhas reais estiverem selecionadas (uma ou várias); linhas sintéticas
-// misturadas na mesma seleção são ignoradas aqui, pois não existem no banco. A confirmação
+// Pergunta do confirm() nativo (seleção de várias linhas, linha avulsa ou série de uma só):
 // lista cada lançamento por nome e valor para o usuário auditar antes de uma ação
 // irreversível, inclusive quando a seleção mistura linha real (DELETE) com linha só desta
 // simulação (oculta em memória).
-el('seldel').onclick = async () => {
-  const linhas = [...Estado.selecionados.keys()]
-    .map((chave) => Estado.lancamentos.find((x) => String(x.id) == chave))
-    .filter(Boolean);
+function perguntaDaExclusao(linhas) {
+  if (linhas.length == 1) {
+    const r = linhas[0];
 
-  if (!linhas.length) return;
+    return exclusaoEhSimulada(r)
+      ? `Ocultar "${r.nome ?? ''}" só nesta simulação?\n\nVolta ao recarregar ou sair da simulação.`
+      : `Excluir "${r.nome ?? ''}" (${brl(r.v || 0)})?\n\nNão dá pra desfazer.`;
+  }
 
   const todasSimuladas = linhas.every(exclusaoEhSimulada);
   const nenhumaSimulada = linhas.every((r) => !exclusaoEhSimulada(r));
   const total = linhas.reduce((s, r) => s + (r.v || 0), 0);
+  const lista = linhas.map((r) => `- ${r.nome ?? ''} (${brl(r.v || 0)})`).join('\n');
+  const acao = todasSimuladas ? 'Ocultar' : 'Excluir';
 
-  let pergunta;
+  const aviso = todasSimuladas
+    ? 'Volta ao recarregar ou sair da simulação.'
+    : nenhumaSimulada
+      ? 'Não dá pra desfazer.'
+      : 'Os marcados só desta simulação voltam ao recarregar; os demais não dá pra desfazer.';
 
-  if (linhas.length == 1) {
-    const r = linhas[0];
+  return `${acao} estes ${linhas.length} lançamentos (${brl(total)} no total)?\n\n${lista}\n\n${aviso}`;
+}
 
-    pergunta = exclusaoEhSimulada(r)
-      ? `Ocultar "${r.nome ?? ''}" só nesta simulação?\n\nVolta ao recarregar ou sair da simulação.`
-      : `Excluir "${r.nome ?? ''}" (${brl(r.v || 0)})?\n\nNão dá pra desfazer.`;
-  } else {
-    const lista = linhas.map((r) => `- ${r.nome ?? ''} (${brl(r.v || 0)})`).join('\n');
-    const acao = todasSimuladas ? 'Ocultar' : 'Excluir';
-
-    const aviso = todasSimuladas
-      ? 'Volta ao recarregar ou sair da simulação.'
-      : nenhumaSimulada
-        ? 'Não dá pra desfazer.'
-        : 'Os marcados só desta simulação voltam ao recarregar; os demais não dá pra desfazer.';
-
-    pergunta = `${acao} estes ${linhas.length} lançamentos (${brl(total)} no total)?\n\n${lista}\n\n${aviso}`;
-  }
-
-  if (!confirm(pergunta)) return;
-
+// Exclusão sequencial, a mesma do confirm() e do modal de série: real vai pro banco uma a uma,
+// simulada só sai da memória. A trava é o próprio Excluir desativado, que vale também pros
+// botões do modal: um 2º toque (ou o toque duplo) com o DELETE no ar não exclui de novo.
+async function excluirLinhas(linhas) {
   if (el('seldel').disabled) return; // trava clique duplo enquanto o DELETE esta no ar
+  const todasSimuladas = linhas.every(exclusaoEhSimulada);
+  const modal = el('modalExcluirSerie');
+  const botoesDoModal = [...modal.querySelectorAll('button')];
+
   el('seldel').disabled = true;
   el('seldel').textContent = todasSimuladas ? 'Ocultando…' : 'Excluindo…';
+  botoesDoModal.forEach((b) => (b.disabled = true));
+
+  if (modal.open)
+    el('tituloExcluirSerie').textContent = todasSimuladas ? 'Ocultando…' : 'Excluindo…';
 
   try {
     for (const r of linhas) {
@@ -1644,8 +1645,111 @@ el('seldel').onclick = async () => {
   } finally {
     el('seldel').disabled = false;
     el('seldel').textContent = Estado.simulando ? 'Ocultar' : 'Excluir';
+    botoesDoModal.forEach((b) => (b.disabled = false));
+
+    if (modal.open) modal.close();
   }
+}
+
+// Aceita quantas linhas reais estiverem selecionadas (uma ou várias); linhas sintéticas
+// misturadas na mesma seleção são ignoradas aqui, pois não existem no banco. Uma linha só, de
+// série com 2+ linhas, abre o modal de escopo; o resto confirma pelo confirm() nativo.
+el('seldel').onclick = async () => {
+  const linhas = [...Estado.selecionados.keys()]
+    .map((chave) => Estado.lancamentos.find((x) => String(x.id) == chave))
+    .filter(Boolean);
+
+  if (!linhas.length || el('seldel').disabled) return;
+
+  if (
+    linhas.length == 1 &&
+    linhasDaSerie(linhas[0], 'todas', Estado.lancamentos).length > 1
+  ) {
+    abrirExclusaoDaSerie(linhas[0]);
+
+    return;
+  }
+
+  if (!confirm(perguntaDaExclusao(linhas))) return;
+
+  await excluirLinhas(linhas);
 };
+
+// O que cada botão do modal de série diz embaixo do rótulo: real não volta, simulada volta ao
+// recarregar (e a série pode misturar as duas fora do modo simulação).
+function avisoDoEscopo(linhas) {
+  if (linhas.every(exclusaoEhSimulada)) return 'Só nesta simulação, volta ao recarregar';
+
+  if (linhas.some(exclusaoEhSimulada))
+    return 'Não dá pra desfazer; as simuladas voltam ao recarregar';
+
+  return 'Não dá pra desfazer';
+}
+
+// Rótulo de cada escopo com quantas linhas ele apaga; em Todas, quantas delas já estão pagas.
+function rotuloDoEscopo(escopo, linhas) {
+  if (escopo == 'esta') return 'Só esta';
+
+  if (escopo == 'proximas') return `Esta e as próximas (${linhas.length})`;
+  const pagas = linhas.filter((x) => x.pago).length;
+
+  return `Todas (${linhas.length}${pagas ? `, ${pagas} já paga${pagas > 1 ? 's' : ''}` : ''})`;
+}
+
+// Uma linha de série selecionada: em vez do confirm(), o modal pergunta o escopo (só esta,
+// esta e as próximas, todas). As linhas de cada escopo são contadas na hora de abrir
+// (linhasPorEscopo), as mesmas que o botão apaga; a exclusão em si é a de sempre (excluirLinhas).
+const modalExcluirSerie = el('modalExcluirSerie');
+const botoesDeEscopo = [...modalExcluirSerie.querySelectorAll('[data-escopo]')];
+let linhasPorEscopo = {};
+
+function abrirExclusaoDaSerie(r) {
+  const simulada = exclusaoEhSimulada(r);
+
+  el('tituloExcluirSerie').textContent = simulada ? 'Ocultar' : 'Excluir';
+  el('textoExcluirSerie').textContent = `${r.nome ?? ''} · ${brl(r.v || 0)}`;
+  linhasPorEscopo = {};
+  botoesDeEscopo.forEach((botao) => {
+    const escopo = botao.dataset.escopo;
+    const linhas = linhasDaSerie(r, escopo, Estado.lancamentos);
+
+    linhasPorEscopo[escopo] = linhas;
+    botao.querySelector('.rotuloEscopo').textContent = rotuloDoEscopo(escopo, linhas);
+    botao.querySelector('.sd').textContent = avisoDoEscopo(linhas);
+  });
+  modalExcluirSerie.showModal();
+  // O foco vai pro próprio modal (sem botão focado, como o do cartão): um Enter ou espaço
+  // perdido nunca escolhe um escopo sozinho, e o Esc fecha sem excluir.
+  modalExcluirSerie.focus();
+}
+
+botoesDeEscopo.forEach((botao) => {
+  botao.onclick = () => {
+    const linhas = linhasPorEscopo[botao.dataset.escopo];
+
+    if (linhas) excluirLinhas(linhas);
+  };
+});
+el('cancelaExcluirSerie').onclick = () => modalExcluirSerie.close();
+// Tocar fora fecha sem excluir; com o DELETE no ar, nem Esc nem toque fora fecham (o modal
+// some sozinho no fim, com a tela já redesenhada).
+modalExcluirSerie.addEventListener('click', (e) => {
+  if (e.target == modalExcluirSerie && !el('seldel').disabled) modalExcluirSerie.close();
+});
+modalExcluirSerie.addEventListener('cancel', (e) => {
+  if (el('seldel').disabled) e.preventDefault();
+});
+// O Chromium só deixa o 'cancel' ser barrado uma vez (o 2º Esc fecha o <dialog> mesmo assim): o Esc em si é
+// barrado aqui enquanto o DELETE está no ar (e o Esc global do bootstrap.js respeita o defaultPrevented).
+// Escuta no document (captura): com os botões travados o foco sai do diálogo e o keydown não passa por ele.
+document.addEventListener(
+  'keydown',
+  (e) => {
+    if (e.key == 'Escape' && modalExcluirSerie.open && el('seldel').disabled)
+      e.preventDefault();
+  },
+  true
+);
 
 // divide um valor total em N parcelas iguais, jogando o resto de arredondamento na
 // ultima (ex: R$100 em 3x = 33,33 + 33,33 + 33,34) — a soma das parcelas nunca diverge
@@ -2260,8 +2364,10 @@ function simulaLancamentoParcelado({
       inv: ehCategoriaInvestimento(categ),
       periodoIdx: periodoDoLancamento({ cred, data: dataParcela, fatura: faturaVenc }),
       // mesma ideia do lote real (salvaLancamentoParceladoNoBanco): só parcelas > 1
-      // dividem um identificador de lote, aqui o próprio contador da simulação.
-      recorrencia_id: parcelas > 1 ? grupoSimulado : null,
+      // dividem um identificador de lote, aqui o próprio contador da simulação, com o prefixo
+      // "sim-" pra nunca coincidir com um lote do banco (o 10 da simulação não é o lote 10 de
+      // verdade: a série do Excluir e a contagem das parcelas juntariam as duas).
+      recorrencia_id: parcelas > 1 ? `sim-${grupoSimulado}` : null,
       _sim: true,
     };
   });

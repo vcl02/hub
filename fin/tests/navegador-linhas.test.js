@@ -4,7 +4,13 @@
 // inteira num pedido só, com o número da série.
 const assert = require('./helpers/assert-tolerante');
 const { test } = require('node:test');
-const { prepararNavegador, abrirFin, textoDaTabela } = require('./helpers/navegador');
+
+const {
+  prepararNavegador,
+  abrirFin,
+  textoDaTabela,
+  dadosDeExemplo,
+} = require('./helpers/navegador');
 
 prepararNavegador();
 const linha = (id) => `#out tr[data-sid="${id}"]`;
@@ -205,5 +211,101 @@ test('relógio do helper: o tempo da página não anda sozinho (sem o relógio p
   assert.equal(await pg.evaluate(() => Date.now()), antes);
   await pg.clock.runFor(800); // só anda quando o teste manda
   assert.equal(await pg.evaluate(() => Date.now()), antes + 800);
+  await ctx.close();
+});
+
+// Excluir com escopo, no Chromium: uma linha de série selecionada abre o diálogo (não o confirm()); "Esta e as próximas" apaga
+// só essas, cada uma com um DELETE; Esc fecha sem excluir nada.
+const serieDeAcademia = () => {
+  const d = dadosDeExemplo();
+
+  d.fin.push(
+    ...[
+      ['11', '2026-10-16'],
+      ['12', '2026-10-17'],
+      ['13', '2026-10-18'],
+      ['14', '2026-10-19'],
+    ].map(([id, data]) => ({
+      id,
+      nome: 'Academia',
+      data,
+      valor: -90,
+      categ: 'Saúde',
+      cred: false,
+      pago: false,
+      fatura: null,
+      freq: null,
+      recorrencia_id: 7,
+    }))
+  );
+
+  return d;
+};
+
+test('Excluir numa linha de série: Esc fecha sem excluir; "Esta e as próximas" apaga só essas, um DELETE por linha', async () => {
+  const { ctx, pg, erros, dados, escritas } = await abrirFin('', serieDeAcademia());
+  let confirms = 0;
+
+  pg.on('dialog', (d) => (confirms++, d.dismiss()));
+  await pg.click(`${linha(12)}`);
+  await pg.waitForSelector('#selbar', { state: 'visible' });
+  await pg.click('#seldel');
+  await pg.waitForSelector('#modalExcluirSerie[open]');
+  assert.equal(
+    await pg.textContent('#modalExcluirSerie [data-escopo="proximas"] .rotuloEscopo'),
+    'Esta e as próximas (3)'
+  );
+  assert.equal(
+    await pg.textContent('#modalExcluirSerie [data-escopo="todas"] .rotuloEscopo'),
+    'Todas (4)'
+  );
+  await pg.keyboard.press('Escape');
+  await pg.waitForFunction(() => !document.getElementById('modalExcluirSerie').open);
+  assert.equal(dados.fin.filter((l) => l.nome === 'Academia').length, 4);
+  assert.deepEqual(escritas, []);
+
+  await pg.click('#seldel');
+  await pg.waitForSelector('#modalExcluirSerie[open]');
+  await pg.click('#modalExcluirSerie [data-escopo="proximas"]');
+  await pg.waitForFunction(() => !document.getElementById('modalExcluirSerie').open);
+  await pg.waitForFunction(
+    () =>
+      !document.querySelector('#out tr[data-sid="12"]') &&
+      !!document.querySelector('#out tr[data-sid="11"]')
+  );
+  assert.deepEqual(
+    dados.fin.filter((l) => l.nome === 'Academia').map((l) => l.id),
+    ['11']
+  );
+  assert.deepEqual(
+    escritas.filter(([m]) => m === 'DELETE'),
+    [
+      ['DELETE', 'fin'],
+      ['DELETE', 'fin'],
+      ['DELETE', 'fin'],
+    ]
+  );
+  assert.equal(confirms, 0); // o diálogo próprio, nunca o confirm() nativo
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test('Excluir numa linha de série com o DELETE no ar: Esc duas vezes não fecha o diálogo nem tira linha antes da resposta', async () => {
+  const { ctx, pg, erros, dados, escritas } = await abrirFin('', serieDeAcademia(), 1500);
+
+  await pg.click(`${linha(12)}`);
+  await pg.waitForSelector('#selbar', { state: 'visible' });
+  await pg.click('#seldel');
+  await pg.waitForSelector('#modalExcluirSerie[open]');
+  await pg.click('#modalExcluirSerie [data-escopo="todas"]');
+  await pg.waitForFunction(() => document.getElementById('seldel').disabled);
+  await pg.keyboard.press('Escape');
+  await pg.keyboard.press('Escape');
+  assert.equal(await pg.$eval('#modalExcluirSerie', (m) => m.open), true);
+  assert.ok(await pg.$('#out tr[data-sid="12"]'), 'a linha some só depois da resposta');
+  await pg.waitForFunction(() => !document.getElementById('modalExcluirSerie').open);
+  assert.equal(dados.fin.filter((l) => l.nome === 'Academia').length, 0);
+  assert.equal(escritas.filter(([m]) => m === 'DELETE').length, 4);
+  assert.deepEqual(erros, []);
   await ctx.close();
 });

@@ -25,6 +25,22 @@ dialog#modalNovo {
   width: min(30rem, 92vw);
 }
 
+/* Excluir uma linha de série: os escopos em coluna, cada um na largura do modal (o .btn da
+   base, 48 px de altura: alvo de toque grande no celular), com o aviso (.sd) embaixo do rótulo. */
+dialog#modalExcluirSerie {
+  width: min(24rem, calc(100vw - 2rem));
+}
+
+.escoposExclusao {
+  display: grid;
+  gap: var(--e-2);
+  margin-top: var(--e-3);
+}
+
+.escoposExclusao .btn:disabled {
+  opacity: 0.5;
+}
+
 /* Visualizações com a mesma leitura de pago/aberto para qualquer categoria ou nome. */
 dialog#modalVisualizacao {
   width: min(30rem, 92vw);

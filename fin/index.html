@@ -874,6 +874,29 @@
         <ul class="lista texto muted" id="listaConsolidarTudo"></ul>
       </dialog>
 
+      <!-- Excluir uma linha de série (Excluir da barra de seleção com uma só linha de série):
+         preenchido por abrirExclusaoDaSerie (form.js) com o nome, o valor e quantas linhas cada
+         escopo apaga (linhasDaSerie, finance.js); a escolha segue pro excluirLinhas. Fecha com
+         Esc ou tocando fora, sem excluir nada. -->
+      <dialog id="modalExcluirSerie" class="modal" tabindex="-1">
+        <div class="modal-topo">
+          <h2 id="tituloExcluirSerie">Excluir</h2>
+        </div>
+        <p class="meta" id="textoExcluirSerie"></p>
+        <div class="escoposExclusao">
+          <button type="button" class="btn perigo" data-escopo="esta">
+            <span class="rotuloEscopo">Só esta</span><span class="sd"></span>
+          </button>
+          <button type="button" class="btn perigo" data-escopo="proximas">
+            <span class="rotuloEscopo">Esta e as próximas</span><span class="sd"></span>
+          </button>
+          <button type="button" class="btn perigo" data-escopo="todas">
+            <span class="rotuloEscopo">Todas</span><span class="sd"></span>
+          </button>
+          <button type="button" class="btn" id="cancelaExcluirSerie">Cancelar</button>
+        </div>
+      </dialog>
+
       <!-- Aviso da base comum (um só, embaixo no meio): mostrarToast em data-ui.js. -->
       <p id="toast" class="toast" role="status" hidden></p>
 

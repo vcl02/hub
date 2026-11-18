@@ -329,7 +329,13 @@ test('barra de seleção: na simulação o ajuste vira "Simular" e Excluir vira 
 
 test('ocultar vários na simulação explica que volta ao recarregar ou sair da simulação', async () => {
   const perguntas = [];
-  const botao = { disabled: false, textContent: '' };
+
+  const botao = {
+    disabled: false,
+    textContent: '',
+    open: false,
+    querySelectorAll: () => [],
+  };
 
   const ctx = {
     Estado: {
@@ -351,16 +357,14 @@ test('ocultar vários na simulação explica que volta ao recarregar ou sair da 
       return false;
     },
     excluirLancamento: async () => assert.fail('simulação não exclui no banco'),
+    linhasDaSerie: (r) => [r],
   };
 
+  // de exclusaoEhSimulada até o fim do Excluir: a pergunta, a exclusão e o próprio botão
   const ini = formulario.indexOf('const exclusaoEhSimulada');
-  const simulada = formulario.slice(ini, formulario.indexOf('\n', ini));
   const fim = formulario.indexOf("el('seldel').onclick");
 
-  vm.runInNewContext(
-    `${simulada}\n${formulario.slice(fim, formulario.indexOf('\n};\n', fim) + 4)}`,
-    ctx
-  );
+  vm.runInNewContext(formulario.slice(ini, formulario.indexOf('\n};\n', fim) + 4), ctx);
   await botao.onclick();
   assert.equal(perguntas.length, 1);
   assert.ok(perguntas[0].startsWith('Ocultar estes 2 lançamentos'));

@@ -315,3 +315,74 @@ for (const largura of [390, 1280]) {
     await ctx.close();
   });
 }
+
+// O diálogo de Excluir uma linha de série aberto, em 390 e 1280 px: os 4 botões com 44 px de altura, o diálogo dentro da
+// janela e sem rolagem horizontal (nele nem na página).
+test('Excluir uma linha de série: os 4 botões com 44 px, diálogo dentro da janela e sem rolagem horizontal, em 390 e 1280 px', async () => {
+  const d = dados();
+
+  d.fin.push(
+    ...['2026-10-16', '2026-10-17', '2026-10-18'].map((data, i) => ({
+      id: String(300 + i),
+      nome: 'Academia com um nome bem comprido para testar a quebra de linha do diálogo',
+      data,
+      valor: -90,
+      categ: 'Saúde',
+      cred: false,
+      pago: i === 0,
+      fatura: null,
+      freq: null,
+      recorrencia_id: 7,
+    }))
+  );
+  const { ctx, pg, erros } = await abrirFin('', d, 0);
+
+  for (const [largura, altura] of [
+    [390, 844],
+    [1280, 800],
+  ]) {
+    await pg.setViewportSize({ width: largura, height: altura });
+
+    // a seleção sobrevive ao Esc: só toca na linha se ainda não estiver marcada (tocar de novo desmarca)
+    if (!(await pg.isVisible('#selbar')))
+      await pg.click('#out tr[data-sid="301"] td:last-child');
+    await pg.waitForSelector('#selbar', { state: 'visible' });
+    await pg.click('#seldel');
+    await pg.waitForSelector('#modalExcluirSerie[open]');
+
+    const m = await pg.evaluate(() => {
+      const modal = document.getElementById('modalExcluirSerie');
+      const r = modal.getBoundingClientRect();
+
+      return {
+        botoes: [...modal.querySelectorAll('button')].map((b) => [
+          b.getBoundingClientRect().height,
+          b.scrollWidth > b.clientWidth,
+        ]),
+        dentro:
+          r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight,
+        rolagemDoModal: modal.scrollWidth > modal.clientWidth,
+        rolagemDaPagina:
+          document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      };
+    });
+
+    assert.equal(m.botoes.length, 4, `${largura}px`);
+    assert.ok(
+      m.botoes.every(([h]) => Math.round(h) >= 44),
+      `${largura}px: ${JSON.stringify(m.botoes)}`
+    );
+    assert.ok(
+      m.botoes.every(([, estoura]) => !estoura),
+      `${largura}px: botão estoura`
+    );
+    assert.equal(m.dentro, true, `${largura}px: fora da janela`);
+    assert.equal(m.rolagemDoModal, false, `${largura}px: rolagem no diálogo`);
+    assert.equal(m.rolagemDaPagina, false, `${largura}px: rolagem na página`);
+    await pg.keyboard.press('Escape');
+    await pg.waitForFunction(() => !document.getElementById('modalExcluirSerie').open);
+  }
+
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});

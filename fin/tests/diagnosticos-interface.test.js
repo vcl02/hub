@@ -92,7 +92,14 @@ function excluir({ resposta, simulando = false, falhar = false }) {
   const perguntas = [];
   const excluidos = [];
   const toasts = [];
-  const botao = { disabled: false, textContent: 'Excluir' };
+
+  // o mesmo objeto faz de Excluir e do modal de série (fechado, sem botões): linha avulsa
+  const botao = {
+    disabled: false,
+    textContent: 'Excluir',
+    open: false,
+    querySelectorAll: () => [],
+  };
 
   const ctx = {
     Estado: {
@@ -102,6 +109,7 @@ function excluir({ resposta, simulando = false, falhar = false }) {
     },
     el: () => botao,
     brl: (v) => `R$ ${v}`,
+    linhasDaSerie: (r) => [r],
     confirm: (pergunta) => {
       perguntas.push(pergunta);
 
@@ -115,10 +123,10 @@ function excluir({ resposta, simulando = false, falhar = false }) {
     mostrarToast: (titulo, texto) => toasts.push([titulo, texto]),
   };
 
+  // de exclusaoEhSimulada até o fim do Excluir: a pergunta, a exclusão e o próprio botão
   const iniSimulada = formulario.indexOf('const exclusaoEhSimulada');
-  const simulada = formulario.slice(iniSimulada, formulario.indexOf('\n', iniSimulada));
 
-  vm.runInNewContext(`${simulada}\n${formulario.slice(iniFuncao, fimFuncao)}`, ctx);
+  vm.runInNewContext(formulario.slice(iniSimulada, fimFuncao), ctx);
 
   return { botao, ctx, perguntas, excluidos, toasts };
 }

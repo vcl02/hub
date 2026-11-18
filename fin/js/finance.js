@@ -241,6 +241,51 @@ const chaveDoCompromisso = (r) =>
     nome: String(r.nome ?? '').replace(/\s*\(?\s*\d+\s*\/\s*\d+\s*\)?\s*$/, ''),
   });
 
+// Série da linha, pro Excluir com escopo: mesmo lote (recorrencia_id não nulo) ou, sem lote,
+// mesma chaveDoCompromisso e mesma Frequência (a relação vale nos dois sentidos: linha com lote
+// nunca entra numa série sem lote). Linha avulsa (sem lote nem Frequência) é série de uma só.
+// Só lançamentos de verdade (reais ou simulados): previstas, faturas e ajustes (_sid) não
+// existem no banco. Ordem por data e id; sem data (Backlog) fica no fim, como o que ainda vem.
+// Escopo 'esta' (só ela), 'proximas' (ela e as de depois; mesma data, id maior ou igual) ou
+// 'todas' (a série inteira, inclusive as anteriores e as já pagas).
+function linhasDaSerie(r, escopo, linhas) {
+  const freq = (x) => String(x.freq ?? '').trim();
+
+  const mesmaSerie =
+    r.recorrencia_id != null
+      ? (x) =>
+          x.recorrencia_id != null && String(x.recorrencia_id) == String(r.recorrencia_id)
+      : freq(r)
+        ? (x) =>
+            x.recorrencia_id == null &&
+            freq(x) == freq(r) &&
+            chaveDoCompromisso(x) == chaveDoCompromisso(r)
+        : (x) => x === r;
+
+  const ordem = (x) => [dataISO(x.data) || '9999-99-99', x.id];
+
+  const compara = (a, b) => {
+    const [da, ia] = ordem(a),
+      [db, ib] = ordem(b);
+
+    if (da != db) return da < db ? -1 : 1;
+
+    return typeof ia == 'number' && typeof ib == 'number'
+      ? ia - ib
+      : String(ia).localeCompare(String(ib), 'pt-BR', { numeric: true });
+  };
+
+  const serie = [...new Set([r, ...linhas.filter((x) => !x._sid && mesmaSerie(x))])].sort(
+    compara
+  );
+
+  if (escopo == 'todas') return serie;
+
+  if (escopo == 'proximas') return serie.filter((x) => x === r || compara(x, r) >= 0);
+
+  return [r];
+}
+
 const cicloDaTela = (r) =>
   r.periodoIdx == null ? null : r.cred ? r.periodoIdx - 1 : r.periodoIdx;
 
