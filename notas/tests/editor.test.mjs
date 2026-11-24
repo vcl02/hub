@@ -196,3 +196,46 @@ test('PC: a seleção no editor tem fundo claro e texto escuro', async () => {
 
   await ctx.close();
 });
+
+test('PC: a troca vinda da nuvem não agenda gravação e não entra no desfazer (Ctrl+Z não traz o texto velho)', async () => {
+  const nuvem = novaNuvem([
+      {
+        user_id: DONO,
+        id: 'n1',
+        titulo: 'T',
+        texto: 'velho',
+        criada_em: '2026-11-23T10:00:00+00:00',
+        editada_em: '2026-11-23T10:00:00+00:00',
+      },
+    ]),
+    { ctx, pg, erros } = await abrirApp({ pc: true, busca: '?nota=n1', nuvem });
+
+  await pg.waitForSelector('#editor:not([hidden]) .cm-content');
+  nuvem.tabelas.notas_nota[0].texto = 'novo da nuvem';
+  await pg.evaluate(() => carregar(usuario, mostrar));
+  assert.equal(await doc(pg), 'novo da nuvem');
+  assert.equal(await pg.evaluate(() => tSalvar), null); // nada agendado para gravar de volta
+
+  await pg.locator('.cm-content').click();
+  await pg.keyboard.press('Control+z');
+  await pg.clock.runFor(1000);
+  assert.equal(await doc(pg), 'novo da nuvem');
+  assert.equal(await pg.evaluate(() => notaPorId('n1').texto), 'novo da nuvem');
+  await sincronizado(pg);
+  assert.equal(nuvem.tabelas.notas_nota[0].texto, 'novo da nuvem');
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test('PC: Ctrl+C sem seleção copia a linha inteira e o texto não muda', async () => {
+  const { ctx, pg } = await abrirApp({ pc: true });
+
+  await pg.click('#n-nova');
+  await pg.waitForSelector('#editor:not([hidden]) .cm-content');
+  await pg.keyboard.type('um\ndois\ntres');
+  await pg.keyboard.press('ArrowUp');
+  await pg.keyboard.press('Control+c');
+  assert.equal(await pg.evaluate(() => navigator.clipboard.readText()), 'dois');
+  assert.equal(await doc(pg), 'um\ndois\ntres');
+  await ctx.close();
+});

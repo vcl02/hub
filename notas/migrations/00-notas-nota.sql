@@ -1,6 +1,6 @@
 -- Notas: as anotações (várias notas, cada uma um texto Markdown inteiro). Aplicar no DataGrip, antes da 02 da raiz.
 -- 1 linha por nota: id (gerado no aparelho), texto (a nota inteira, gravada inteira a cada mudança), criada_em e editada_em.
--- Título não é coluna: é a 1ª linha não vazia do texto. Quem salva por último vale (sem mescla entre aparelhos).
+-- O título virou coluna própria na migration 01 (notas_nota.titulo). Quem salva por último vale (sem mescla entre aparelhos).
 -- Só a conta do Victor (mesmo padrão das tabelas do hub), anon sem acesso. Rodar de novo não muda nada.
 -- Formato DataGrip: sem bloco anônimo, sem ponto e vírgula em comentário, tudo entre begin e commit.
 begin;

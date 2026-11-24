@@ -166,3 +166,72 @@ test('?nota= no endereço: recarregar mantém a nota, Voltar (do app e do navega
   assert.deepEqual(erros, []);
   await ctx.close();
 });
+
+const nota = (texto, titulo = 'Lista') => ({
+  user_id: DONO,
+  id: 'n1',
+  titulo,
+  texto,
+  criada_em: '2026-11-23T10:00:00+00:00',
+  editada_em: '2026-11-23T10:00:00+00:00',
+});
+
+// Resposta da nuvem com texto novo: a nuvem muda e o app baixa de novo, como no carregar() ao entrar
+const chegouDaNuvem = (pg, nuvem, texto) => {
+  nuvem.tabelas.notas_nota[0].texto = texto;
+
+  return pg.evaluate(() => carregar(usuario, mostrar));
+};
+
+test('celular: texto da nuvem não limpa o campo nem cancela a edição; enviar acrescenta ao texto mais novo e Cancelar mostra o da nuvem', async () => {
+  const nuvem = novaNuvem([nota('A\n\nB')]),
+    { ctx, pg, erros } = await abrirApp({ busca: '?nota=n1', nuvem }),
+    cdp = await ctx.newCDPSession(pg);
+
+  await pg.waitForSelector('#conversa:not([hidden])');
+
+  // texto digitado no campo: a resposta da nuvem não o apaga nem redesenha a tela
+  await pg.fill('#c-texto', 'rascunho');
+  await chegouDaNuvem(pg, nuvem, 'A\n\nB\n\nC');
+  assert.equal(await pg.inputValue('#c-texto'), 'rascunho');
+  assert.equal((await baloes(pg)).length, 2);
+
+  // enviar: o parágrafo vai para o texto mais novo, sem sobrescrever o que veio de outro aparelho
+  await pg.tap('#c-enviar');
+  await pg.clock.runFor(600);
+  assert.equal(await pg.evaluate(() => notaPorId('n1').texto), 'A\n\nB\n\nC\n\nrascunho');
+  assert.equal((await baloes(pg)).length, 4);
+  await sincronizado(pg);
+  assert.equal(nuvem.tabelas.notas_nota[0].texto, 'A\n\nB\n\nC\n\nrascunho');
+
+  // parágrafo em edição: a edição continua, com o texto do campo
+  await segurar(pg, cdp, 0);
+  await pg.tap('#s-editar');
+  assert.equal(await pg.inputValue('#c-texto'), 'A');
+  await chegouDaNuvem(pg, nuvem, 'A\n\nB\n\nC\n\nrascunho\n\nD');
+  assert.equal(await pg.inputValue('#c-texto'), 'A');
+  assert.equal(await pg.isVisible('#c-editando'), true);
+  assert.equal((await baloes(pg)).length, 4);
+
+  // Cancelar: o texto que chegou da nuvem entra
+  await pg.tap('#c-cancelar');
+  assert.equal(await pg.isHidden('#c-editando'), true);
+  assert.equal((await baloes(pg)).length, 5);
+  assert.equal(await pg.inputValue('#c-texto'), '');
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test('título da aba: volta a "Notas" ao voltar para a lista, na conversa e no editor', async () => {
+  for (const pc of [false, true]) {
+    const nuvem = novaNuvem([nota('item', 'Compras')]),
+      { ctx, pg } = await abrirApp({ busca: '?nota=n1', nuvem, pc });
+
+    await pg.waitForSelector('#v-nota:not([hidden])');
+    assert.equal(await pg.title(), 'Compras · Notas');
+    await pg.click('#n-voltar');
+    await pg.waitForSelector('#v-lista:not([hidden])');
+    assert.equal(await pg.title(), 'Notas');
+    await ctx.close();
+  }
+});
