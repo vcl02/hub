@@ -1,6 +1,6 @@
 ---
 name: qa
-description: Revisa uma mudança já feita e procura bugs, regressões e quebras das regras do hub, sem editar código. Use depois de uma alteração, antes do commit.
+description: Revisa uma mudança já feita e procura bugs, regressões e quebras das regras do hub, sem editar código. Use no fim das mudanças grandes ou que mexem em dados, antes do commit (as pequenas não passam por ele; ver "Fluxo de trabalho" no AGENTS.md da raiz).
 tools: Read, Grep, Glob, Bash
 model: sonnet
 effort: medium
