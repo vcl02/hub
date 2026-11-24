@@ -48,6 +48,19 @@ body.aberta {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.nota-topo .nota-titulo input {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+}
+.nota-topo .nota-titulo input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
 .selecao .num {
   flex: 1;
   font-size: var(--t-xl);

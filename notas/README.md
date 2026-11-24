@@ -4,10 +4,11 @@ Anotações em Markdown, várias notas. No PC, um editor como o do VS Code (Ctrl
 
 ## Implantação (uma vez, feita pelo mantenedor)
 
-1. Rodar `migrations/00-notas-nota.sql` (desta pasta) no DataGrip. Cria `notas_nota` (RLS só do Victor). Sem ela, o app abre vazio e guarda só no aparelho.
-2. Depois, rodar `migrations/02-historico-notas.sql` da raiz do hub no DataGrip. Liga `notas_nota` ao `hub_historico` (antes e depois de cada gravação). Precisa da `00` da raiz (já aplicada) e da tabela do passo 1.
+1. Rodar `migrations/00-notas-nota.sql` (desta pasta) no DataGrip. Cria `notas_nota` (RLS só do Victor).
+2. Rodar `migrations/01-notas-titulo.sql` (desta pasta) no DataGrip. Separa o título e migra a primeira linha das notas existentes para ele.
+3. Rodar `migrations/02-historico-notas.sql` da raiz do hub no DataGrip. Liga `notas_nota` ao `hub_historico` (antes e depois de cada gravação). Precisa da `00` da raiz (já aplicada) e da tabela criada e atualizada nos passos anteriores.
 
-Rodar de novo qualquer uma das duas não muda nada.
+Rodar de novo as migrations não repete a migração de dados.
 
 ## CodeMirror
 

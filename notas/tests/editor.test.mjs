@@ -14,6 +14,8 @@ test('PC: a nota abre no editor; Ctrl+D seleciona as ocorrências com vários cu
 
   await pg.click('#n-nova');
   await pg.waitForSelector('#editor:not([hidden]) .cm-content');
+  await pg.fill('#n-titulo', 'Teste do editor');
+  await pg.locator('.cm-content').click();
   assert.equal(await pg.isHidden('#conversa'), true);
   assert.equal(
     await pg.evaluate(() => document.activeElement.classList.contains('cm-content')),
@@ -49,7 +51,7 @@ test('PC: a nota abre no editor; Ctrl+D seleciona as ocorrências com vários cu
 
   // grava sozinho 0,8 s depois de parar de digitar e envia
   await andarAte(pg, () => notaPorId(aberta).texto === 'bar um\nbar dois\nfim');
-  assert.equal(await pg.textContent('#n-titulo'), 'bar um');
+  assert.equal(await pg.inputValue('#n-titulo'), 'Teste do editor');
   await sincronizado(pg);
   assert.deepEqual(
     nuvem.tabelas.notas_nota.map((l) => l.texto),
@@ -96,12 +98,13 @@ test('PC: abrir outra nota não substitui seu texto pelo da nota anterior', asyn
 });
 
 test('PC: abrir uma nota preexistente mantém o texto no editor', async () => {
-  const texto = '# Nota antiga\nConteúdo original',
+  const texto = 'Conteúdo original',
     nuvem = novaNuvem([
       {
         user_id: DONO,
         id: 'antiga',
-        texto,
+        titulo: 'Nota antiga',
+        texto: 'Conteúdo original',
         criada_em: '2026-11-23T10:00:00+00:00',
         editada_em: '2026-11-23T10:00:00+00:00',
       },
@@ -115,6 +118,7 @@ test('PC: abrir uma nota preexistente mantém o texto no editor', async () => {
   await pg.click('#n-lista li[data-id="antiga"] a.oque');
   await pg.waitForSelector('#editor:not([hidden]) .cm-content');
   assert.equal(await doc(pg), texto);
+  assert.equal(await pg.inputValue('#n-titulo'), 'Nota antiga');
 
   await pg.clock.runFor(1000);
   assert.equal(await pg.evaluate(() => notaPorId('antiga').texto), texto);
@@ -123,6 +127,24 @@ test('PC: abrir uma nota preexistente mantém o texto no editor', async () => {
   await pg.waitForSelector('#v-lista:not([hidden])');
   assert.equal(await pg.locator('#n-lista li[data-id="antiga"]').count(), 1);
   assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test('PC: nota só com título continua na lista', async () => {
+  const { ctx, pg } = await abrirApp({ pc: true });
+
+  await pg.click('#n-nova');
+  await pg.waitForSelector('#editor:not([hidden]) .cm-content');
+  await pg.fill('#n-titulo', 'Só título');
+  await pg.click('#n-voltar');
+  await pg.waitForSelector('#v-lista:not([hidden])');
+
+  assert.equal(await pg.textContent('#n-lista .oque b'), 'Só título');
+  await pg.click('#n-lista .oque');
+  await pg.waitForSelector('#editor:not([hidden]) .cm-content');
+  assert.equal(await pg.inputValue('#n-titulo'), 'Só título');
+  assert.equal(await doc(pg), '');
+
   await ctx.close();
 });
 

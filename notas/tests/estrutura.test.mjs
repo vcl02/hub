@@ -85,6 +85,18 @@ test('migration no formato do DataGrip (sem bloco anônimo, sem ; em comentário
     assert.match(sql, new RegExp(`drop policy if exists ${p} on public\\.notas_nota;`));
 });
 
+test('migration do título separa a primeira linha antiga e pode ser repetida', () => {
+  const sql = ler('migrations/01-notas-titulo.sql');
+
+  assert.match(sql, /^-- /);
+  assert.match(sql, /^begin;$/m);
+  assert.match(sql, /^commit;\n$/m);
+  assert.match(sql, /add column if not exists titulo text/);
+  assert.match(sql, /where n\.titulo is null/);
+  assert.match(sql, /alter column titulo set default ''/);
+  assert.match(sql, /alter column titulo set not null/);
+});
+
 test('a conta do app é o DONO do hub, e o id da nota no aparelho segue o check da tabela', () => {
   const { DONO: doApp } = carregar(path.join(RAIZ, 'js/config.js'), ['DONO']);
 

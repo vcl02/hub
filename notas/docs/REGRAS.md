@@ -11,7 +11,7 @@
 
 ## Lista de notas
 
-- Uma linha por nota, a editada mais recentemente em cima: título (a 1ª linha não vazia, sem os `#` do começo; vazia, "Nota vazia"), prévia (a 2ª linha não vazia, sem as marcas do começo) e quando foi a última edição (hoje, a hora "14:05"; ontem, "ontem"; neste ano, "19/11"; antes, "19/11/25").
+- Uma linha por nota, a editada mais recentemente em cima: título separado (vazio, "Sem título"), prévia (a 1ª linha não vazia do corpo, sem as marcas do começo) e quando foi a última edição (hoje, a hora "14:05"; ontem, "ontem"; neste ano, "19/11"; antes, "19/11/25").
 - **+** cria uma nota nova e já a abre, pronta para escrever. Toque repetido sem querer no + em menos de 0,5 s é ignorado.
 - **Apagar** (lixeira da linha): toque duplo, como em todos os apps (o 1º deixa vermelho por 3 s, o 2º apaga).
 - Nota que fica vazia ao sair (a nova sem nada escrito, ou a que teve tudo apagado) some da lista.
@@ -19,7 +19,8 @@
 ## Nota aberta
 
 - A nota aberta fica no endereço (`?nota=<id>`, como o `?ciclo` do Fin): recarregar mantém, e o Voltar do navegador (ou a seta do app) volta para a lista. Nota que não existe (apagada, de outra conta, endereço estranho) volta para a lista com "Nota não encontrada.", só depois de a nuvem responder. Apagada em outro aparelho com ela aberta: volta para a lista com "A nota foi apagada em outro aparelho.".
-- No topo: voltar, o título (a 1ª linha) e o botão que troca entre **editor** e **conversa**. Sem escolha, vale o aparelho: mouse e tela de 900 px ou mais abrem o editor; celular e tablet, a conversa. A escolha pelo botão fica no aparelho.
+- No topo: voltar, o campo editável do título, e o botão que troca entre **editor** e **conversa**. O título não faz parte do Markdown; alterar o título não altera o corpo e salva sozinho após 0,8 s (ou ao sair do campo). Sem escolha, vale o aparelho: mouse e tela de 900 px ou mais abrem o editor; celular e tablet, a conversa. A escolha pelo botão fica no aparelho.
+- Uma nota vazia só some ao sair se título e corpo estiverem vazios.
 - Texto novo que chega da nuvem com a nota aberta só entra na tela se não há nada digitado esperando para gravar.
 
 ## Editor (PC)

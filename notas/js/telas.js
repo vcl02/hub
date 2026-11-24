@@ -10,7 +10,9 @@ let aberta = null, // id da nota aberta (null: a lista)
   modo = 'conversa', // 'editor' ou 'conversa', na nota aberta
   carregado = false, // a nuvem já respondeu (ou falhou): nota que não existe agora não existe mesmo
   tSalvar = null, // gravação do editor esperando a digitação parar
+  tSalvarTitulo = null,
   mostrado = '', // o texto da nota como está na tela (editor ou balões)
+  tituloMostrado = '',
   selecionados = new Set(), // índices dos parágrafos selecionados na conversa
   editando = null; // índice do parágrafo sendo editado no campo de baixo (null: o campo acrescenta)
 
@@ -26,12 +28,12 @@ const ICONE_LIXO =
   '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>';
 
 // ===== Lista =====
-// A 2ª linha não vazia, como prévia (sem as marcas do começo)
+// A 1ª linha não vazia do corpo, como prévia (sem as marcas do começo)
 const previaDe = (texto) =>
   (
     String(texto || '')
       .split('\n')
-      .filter((l) => l.trim())[1] || ''
+      .find((l) => l.trim()) || ''
   )
     .replace(/^[\s#>*+-]+/, '')
     .trim();
@@ -42,7 +44,7 @@ function desenharLista() {
   $('n-lista').innerHTML = L.map(
     (n) =>
       `<li data-id="${esc(n.id)}"><span class="hora">${esc(quandoFoi(n.editadaEm))}</span>` +
-      `<a class="oque" href="?nota=${esc(n.id)}"><b>${esc(tituloDe(n.texto) || 'Nota vazia')}</b>` +
+      `<a class="oque" href="?nota=${esc(n.id)}"><b>${esc(n.titulo || 'Sem título')}</b>` +
       `<small>${esc(previaDe(n.texto))}</small></a>` +
       `<button type="button" class="bt-ic perigo" data-apagar="${esc(n.id)}" data-armavel="nota:${esc(n.id)}" title="Apagar (toque duas vezes)" aria-label="Apagar">${ICONE_LIXO}</button></li>`
   ).join('');
@@ -94,6 +96,7 @@ function abrirNota(id, empilhar = true) {
   notaNaUrl(id, empilhar);
   aberta = id;
   mostrado = n.texto;
+  tituloMostrado = n.titulo;
   selecionados.clear();
   editando = null;
   $('c-texto').value = '';
@@ -105,7 +108,10 @@ function abrirNota(id, empilhar = true) {
 }
 
 function trocarModo(novo, focar = false, salvar = true) {
-  if (salvar) salvarAgora();
+  if (salvar) {
+    salvarTituloAgora();
+    salvarAgora();
+  }
   modo = novo;
 
   const n = notaPorId(aberta),
@@ -141,10 +147,36 @@ $('n-modo').addEventListener('click', () => {
 
 function desenharTitulo() {
   const n = notaPorId(aberta);
+  const titulo = n?.titulo ?? '';
 
-  $('n-titulo').textContent = tituloDe(n?.texto) || 'Nota vazia';
-  document.title = (tituloDe(n?.texto) || 'Nota') + ' · Notas';
+  if (!tSalvarTitulo) $('n-titulo').value = titulo;
+  tituloMostrado = titulo;
+  document.title = (titulo || 'Nota') + ' · Notas';
 }
+
+function salvarTituloAgora() {
+  clearTimeout(tSalvarTitulo);
+  tSalvarTitulo = null;
+
+  if (!aberta) return;
+
+  salvarTituloNota(aberta, $('n-titulo').value);
+  desenharTitulo();
+}
+
+$('n-titulo').addEventListener('input', () => {
+  const titulo = $('n-titulo').value.trim();
+
+  document.title = (titulo || 'Nota') + ' · Notas';
+  clearTimeout(tSalvarTitulo);
+  tSalvarTitulo = setTimeout(salvarTituloAgora, SALVAR_MS);
+});
+$('n-titulo').addEventListener('blur', salvarTituloAgora);
+$('n-titulo').addEventListener('keydown', (ev) => {
+  if (ev.key !== 'Enter') return;
+  ev.preventDefault();
+  ev.currentTarget.blur();
+});
 
 // O editor mudou: grava quando a digitação parar
 function aoDigitar(texto) {
@@ -163,12 +195,17 @@ function salvarAgora() {
   if (salvarNota(aberta, textoDoEditor())) desenharTitulo();
 }
 
+function salvarTudoAgora() {
+  salvarTituloAgora();
+  salvarAgora();
+}
+
 // Sai da nota para a lista. Nota que ficou vazia (a nova que não recebeu nada, ou a que teve tudo apagado) some.
 function fecharNota() {
-  salvarAgora();
+  salvarTudoAgora();
   const n = notaPorId(aberta);
 
-  if (n && !n.texto.trim()) apagarNota(n.id);
+  if (n && !n.titulo.trim() && !n.texto.trim()) apagarNota(n.id);
   aberta = null;
 }
 
@@ -224,7 +261,11 @@ function mostrar() {
     return;
   }
 
-  if (n.texto === mostrado) return;
+  if (n.texto === mostrado) {
+    if (n.titulo !== tituloMostrado && !tSalvarTitulo) desenharTitulo();
+
+    return;
+  }
 
   // Chegou um texto novo da nuvem: entra na tela se aqui não há nada digitado esperando para gravar
   if (modo === 'editor') {
@@ -462,8 +503,11 @@ document.addEventListener('keydown', (ev) => {
     ev.key.toLowerCase() === 's'
   ) {
     ev.preventDefault();
-    if (modo === 'editor') salvarAgora();
-    else salvarNota(aberta, mostrado);
+    if (modo === 'editor') salvarTudoAgora();
+    else {
+      salvarTituloAgora();
+      salvarNota(aberta, mostrado);
+    }
 
     return;
   }
@@ -481,7 +525,7 @@ document.addEventListener('keydown', (ev) => {
 });
 
 // Página escondida (trocou de app, fechou a aba): o que foi digitado grava já
-addEventListener('pagehide', salvarAgora);
+addEventListener('pagehide', salvarTudoAgora);
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') salvarAgora();
+  if (document.visibilityState === 'hidden') salvarTudoAgora();
 });

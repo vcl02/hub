@@ -15,7 +15,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 });
 
 const TABELA = 'notas_nota',
-  COLUNAS = 'id,texto,criada_em,editada_em';
+  COLUNAS = 'id,titulo,texto,criada_em,editada_em';
 
 const K_LOCAL = (id) => 'notas.db.' + id,
   K_BASE = (id) => 'notas.base.' + id;
@@ -38,6 +38,22 @@ const isoOk = (v) => {
   return Number.isFinite(t) ? new Date(t).toISOString() : null;
 };
 
+function migrarNotaAntiga(texto) {
+  const linhas = String(texto ?? '')
+      .replace(/\r\n?/g, '\n')
+      .split('\n'),
+    i = linhas.findIndex((l) => l.trim());
+
+  if (i < 0) return { titulo: '', texto: linhas.join('\n') };
+
+  const titulo = linhas[i].replace(/^[\s#]+/, '').trim();
+
+  linhas.splice(i, 1);
+  while (linhas.length && !linhas[0].trim()) linhas.shift();
+
+  return { titulo, texto: linhas.join('\n') };
+}
+
 // Valida e completa o db (cópia local ou linhas do servidor): id válido, texto string com quebras \n, datas ISO; id repetido
 // fica com a edição mais recente. Nota vazia continua (acabou de ser criada); quem decide apagá-la é a tela.
 // Ordem: a editada mais recentemente primeiro (empate: pelo id).
@@ -47,10 +63,16 @@ function preparar(d) {
   for (const n of Array.isArray(d?.notas) ? d.notas : []) {
     if (!n || !idOk(n.id)) continue;
     const editadaEm = isoOk(n.editadaEm) || isoOk(n.criadaEm) || EPOCA;
+    const texto = typeof n.texto === 'string' ? n.texto.replace(/\r\n?/g, '\n') : '',
+      separada =
+        typeof n.titulo === 'string'
+          ? { titulo: n.titulo.trim(), texto }
+          : migrarNotaAntiga(texto);
 
     const nota = {
       id: n.id,
-      texto: typeof n.texto === 'string' ? n.texto.replace(/\r\n?/g, '\n') : '',
+      titulo: separada.titulo,
+      texto: separada.texto,
       criadaEm: isoOk(n.criadaEm) || editadaEm,
       editadaEm,
     };
@@ -72,7 +94,13 @@ const linhas = (d) =>
   Object.fromEntries(
     d.notas.map((n) => [
       n.id,
-      { id: n.id, texto: n.texto, criada_em: n.criadaEm, editada_em: n.editadaEm },
+      {
+        id: n.id,
+        titulo: n.titulo,
+        texto: n.texto,
+        criada_em: n.criadaEm,
+        editada_em: n.editadaEm,
+      },
     ])
   );
 
@@ -81,6 +109,7 @@ const deLinhas = (R) =>
   preparar({
     notas: (R || []).map((l) => ({
       id: l?.id,
+      titulo: l?.titulo,
       texto: l?.texto,
       criadaEm: l?.criada_em,
       editadaEm: l?.editada_em,
@@ -105,25 +134,21 @@ function diferenca(a, b) {
 const temPendente = () => !!(db && usuario && diferenca(base, linhas(db)));
 
 // ===== Notas (o que a tela chama; cada uma grava e agenda o envio) =====
-// Título: a 1ª linha não vazia do texto, sem os # e espaços do começo ('' se a nota está vazia)
-const tituloDe = (texto) =>
-  (
-    String(texto || '')
-      .split('\n')
-      .find((l) => l.trim()) || ''
-  )
-    .replace(/^[\s#]+/, '')
-    .trim();
-
 const notaPorId = (id) => db?.notas.find((n) => n.id === id) || null;
 
-function criarNota(texto = '') {
+function criarNota(titulo = '', texto = '') {
   let id;
 
   do id = Math.random().toString(36).slice(2, 10);
   while (notaPorId(id));
   const agora = new Date().toISOString();
-  const nota = { id, texto: String(texto), criadaEm: agora, editadaEm: agora };
+  const nota = {
+    id,
+    titulo: String(titulo).trim(),
+    texto: String(texto),
+    criadaEm: agora,
+    editadaEm: agora,
+  };
 
   db = preparar({ notas: [nota, ...db.notas] });
   gravar();
@@ -138,6 +163,19 @@ function salvarNota(id, texto) {
 
   if (!n || n.texto === t) return false;
   n.texto = t;
+  n.editadaEm = new Date().toISOString();
+  db = preparar(db);
+  gravar();
+
+  return true;
+}
+
+function salvarTituloNota(id, titulo) {
+  const n = notaPorId(id),
+    t = String(titulo ?? '').trim();
+
+  if (!n || n.titulo === t) return false;
+  n.titulo = t;
   n.editadaEm = new Date().toISOString();
   db = preparar(db);
   gravar();

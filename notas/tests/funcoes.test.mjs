@@ -223,22 +223,13 @@ test('notaDaUrl: ?nota=<id> com o formato da tabela; vazio, texto estranho ou lo
   assert.equal(util('?nota=' + 'a'.repeat(64)).notaDaUrl(), 'a'.repeat(64));
 });
 
-// ---------- título e prévia da lista ----------
-test('título: a 1ª linha não vazia sem os # e espaços do começo; prévia: a 2ª linha não vazia sem as marcas do começo', () => {
-  const { tituloDe } = carregar(A('js/banco.js'), ['tituloDe']),
-    { previaDe } = carregar(A('js/telas.js'), ['previaDe']);
+// ---------- prévia da lista ----------
+test('prévia: a 1ª linha não vazia do corpo, sem as marcas do começo', () => {
+  const { previaDe } = carregar(A('js/telas.js'), ['previaDe']);
 
-  assert.equal(tituloDe('\n\n  ## Compras  \n- leite\n\n> pão'), 'Compras');
-  assert.equal(tituloDe('só uma linha'), 'só uma linha');
-  assert.equal(tituloDe('#hashtag'), 'hashtag');
-  assert.equal(tituloDe(''), '');
-  assert.equal(tituloDe(' \n\t\n'), '');
-  assert.equal(tituloDe(null), '');
-
-  assert.equal(previaDe('\n\n  ## Compras  \n- leite\n\n> pão'), 'leite');
-  assert.equal(previaDe('# T\n\n> citação'), 'citação');
-  assert.equal(previaDe('# T\n1. primeiro'), '1. primeiro');
-  assert.equal(previaDe('só uma linha'), '');
+  assert.equal(previaDe('\n\n- leite\n\n> pão'), 'leite');
+  assert.equal(previaDe('> citação\nmais'), 'citação');
+  assert.equal(previaDe('1. primeiro'), '1. primeiro');
   assert.equal(previaDe(''), '');
 });
 
@@ -294,8 +285,9 @@ function aparelho(nuvem, { local = [], base } = {}) {
 
             return {
               data: clonar(nuvem.linhas.slice(de, ate + 1)).map(
-                ({ id, texto, criada_em, editada_em }) => ({
+                ({ id, titulo, texto, criada_em, editada_em }) => ({
                   id,
+                  titulo,
                   texto,
                   criada_em,
                   editada_em,
@@ -320,6 +312,7 @@ function aparelho(nuvem, { local = [], base } = {}) {
       'EPOCA',
       'idOk',
       'isoOk',
+      'migrarNotaAntiga',
       'preparar',
       'linhas',
       'deLinhas',
@@ -329,6 +322,7 @@ function aparelho(nuvem, { local = [], base } = {}) {
       'notaPorId',
       'criarNota',
       'salvarNota',
+      'salvarTituloNota',
       'apagarNota',
       'enviar',
       'baixar',
@@ -366,19 +360,21 @@ function aparelho(nuvem, { local = [], base } = {}) {
 
 const N1 = {
   id: 'n1',
-  texto: '# Um',
+  titulo: 'Um',
+  texto: '',
   criadaEm: '2026-11-20T10:00:00.000Z',
   editadaEm: '2026-11-20T10:00:00.000Z',
 };
 
 const N2 = {
   id: 'n2',
-  texto: '# Dois\n\npar',
+  titulo: 'Dois',
+  texto: 'par',
   criadaEm: '2026-11-21T10:00:00.000Z',
   editadaEm: '2026-11-22T10:00:00.000Z',
 };
 
-test('preparar: id fora do formato e nota sem id saem; id repetido fica com a edição mais recente; texto e datas limpos; a mais recente primeiro', () => {
+test('preparar: valida dados e migra notas antigas separando a primeira linha em título', () => {
   const { preparar, EPOCA } = aparelho({ linhas: [] });
 
   const d = preparar({
@@ -391,8 +387,19 @@ test('preparar: id fora do formato e nota sem id saem; id repetido fica com a ed
       { id: 'x'.repeat(65), texto: 'x' },
       { ...N1, texto: 'velha', editadaEm: '2026-11-19T10:00:00.000Z' },
       N2,
-      { id: 'sem', texto: 'a\r\nb\rc', criadaEm: 'lixo', editadaEm: 'lixo' },
-      { id: 'tz', texto: 5, criadaEm: '2026-11-23T09:00:00.123456+00:00' },
+      {
+        id: 'sem',
+        titulo: '',
+        texto: 'a\r\nb\rc',
+        criadaEm: 'lixo',
+        editadaEm: 'lixo',
+      },
+      { id: 'tz', titulo: '', texto: 5, criadaEm: '2026-11-23T09:00:00.123456+00:00' },
+      {
+        id: 'legada',
+        texto: '\n\n  ## Antiga  \n\ncorpo',
+        criadaEm: '2026-11-19T10:00:00.000Z',
+      },
     ],
   });
 
@@ -400,15 +407,39 @@ test('preparar: id fora do formato e nota sem id saem; id repetido fica com a ed
     notas: [
       {
         id: 'tz',
+        titulo: '',
         texto: '',
         criadaEm: '2026-11-23T09:00:00.123Z',
         editadaEm: '2026-11-23T09:00:00.123Z',
       },
       N2,
       N1,
-      { id: 'sem', texto: 'a\nb\nc', criadaEm: EPOCA, editadaEm: EPOCA },
+      {
+        id: 'legada',
+        titulo: 'Antiga',
+        texto: 'corpo',
+        criadaEm: '2026-11-19T10:00:00.000Z',
+        editadaEm: '2026-11-19T10:00:00.000Z',
+      },
+      {
+        id: 'sem',
+        titulo: '',
+        texto: 'a\nb\nc',
+        criadaEm: EPOCA,
+        editadaEm: EPOCA,
+      },
     ],
   });
+  assert.deepEqual(
+    json(preparar({ notas: [{ id: 'só', texto: 'título único' }] }).notas[0]),
+    {
+      id: 'só',
+      titulo: 'título único',
+      texto: '',
+      criadaEm: EPOCA,
+      editadaEm: EPOCA,
+    }
+  );
   assert.deepEqual(json(preparar(null)), { notas: [] });
   assert.deepEqual(json(preparar({ notas: 'x' })), { notas: [] });
   // limpar de novo não muda nada
@@ -420,8 +451,19 @@ test('linhas ↔ deLinhas: ida e volta pela tabela dá o mesmo db, e a data do s
   const d = preparar({ notas: [N1, N2] });
 
   assert.deepEqual(json(linhas(d)), {
-    n1: { id: 'n1', texto: '# Um', criada_em: N1.criadaEm, editada_em: N1.editadaEm },
-    n2: { id: 'n2', texto: N2.texto, criada_em: N2.criadaEm, editada_em: N2.editadaEm },
+    n1: {
+      id: 'n1',
+      texto: '# Um',
+      criada_em: N1.criadaEm,
+      editada_em: N1.editadaEm,
+    },
+    n2: {
+      id: 'n2',
+      titulo: 'Dois',
+      texto: 'par',
+      criada_em: N2.criadaEm,
+      editada_em: N2.editadaEm,
+    },
   });
   assert.deepEqual(json(deLinhas(Object.values(linhas(d)))), json(d));
   assert.deepEqual(
@@ -429,7 +471,8 @@ test('linhas ↔ deLinhas: ida e volta pela tabela dá o mesmo db, e a data do s
       deLinhas([
         {
           id: 'n1',
-          texto: '# Um',
+          titulo: 'Um',
+          texto: '',
           criada_em: '2026-11-20T10:00:00+00:00',
           editada_em: '2026-11-20T07:00:00.000000-03:00',
         },
@@ -467,22 +510,26 @@ test('base guardada num formato antigo (datas do servidor, \\r\\n, linha inváli
   assert.equal(ap.temPendente(), true);
 });
 
-test('salvarNota: texto igual (também com \\r\\n) não grava nem agenda envio; texto novo grava, muda a edição, sobe para o topo e agenda o envio em 0,8 s', () => {
+test('salvarNota e salvarTituloNota: valores iguais não gravam; mudanças salvam e agendam o envio em 0,8 s', () => {
   const ap = aparelho({ linhas: [] }, { local: [N1, N2] });
 
-  assert.equal(ap.salvarNota('n1', '# Um'), false);
-  assert.equal(ap.salvarNota('n1', '# Um'.replace('\n', '\r\n')), false);
+  assert.equal(ap.salvarNota('n1', ''), false);
+  assert.equal(ap.salvarTituloNota('n1', 'Um'), false);
   assert.equal(ap.salvarNota('nada', 'x'), false);
   assert.deepEqual(ap.agendados, []);
   assert.equal(ap.guardado.size, 0);
   assert.equal(ap.temPendente(), false);
 
-  assert.equal(ap.salvarNota('n1', '# Um\r\nmais'), true);
-  assert.equal(ap.notaPorId('n1').texto, '# Um\nmais');
+  assert.equal(ap.salvarNota('n1', 'mais\r\ntexto'), true);
+  assert.equal(ap.notaPorId('n1').texto, 'mais\ntexto');
   assert.ok(ap.notaPorId('n1').editadaEm > N2.editadaEm);
   assert.deepEqual(json(ap.E.db.notas.map((n) => n.id)), ['n1', 'n2']);
   assert.deepEqual(ap.agendados, [800]);
-  assert.equal(JSON.parse(ap.guardado.get('notas.db.u1')).notas[0].texto, '# Um\nmais');
+  assert.equal(JSON.parse(ap.guardado.get('notas.db.u1')).notas[0].texto, 'mais\ntexto');
+  assert.equal(ap.salvarTituloNota('n1', '  Outro título  '), true);
+  assert.equal(ap.notaPorId('n1').titulo, 'Outro título');
+  assert.equal(ap.notaPorId('n1').texto, 'mais\ntexto');
+  assert.deepEqual(ap.agendados, [800, 800]);
   assert.equal(ap.temPendente(), true);
 });
 
@@ -491,6 +538,7 @@ test('envio: só a nota que mudou sobe, inteira (upsert com onConflict user_id,i
     linhas: [N1, N2].map((n) => ({
       user_id: 'u1',
       id: n.id,
+      titulo: n.titulo,
       texto: n.texto,
       criada_em: n.criadaEm,
       editada_em: n.editadaEm,
@@ -499,7 +547,7 @@ test('envio: só a nota que mudou sobe, inteira (upsert com onConflict user_id,i
 
   const ap = aparelho(nuvem, { local: [N1, N2] });
 
-  ap.salvarNota('n2', '# Dois\n\npar\n\nnovo');
+  ap.salvarNota('n2', 'par\n\nnovo');
   await ap.enviar();
   assert.deepEqual(json(nuvem.pedidos), [
     [
@@ -509,7 +557,8 @@ test('envio: só a nota que mudou sobe, inteira (upsert com onConflict user_id,i
         {
           user_id: 'u1',
           id: 'n2',
-          texto: '# Dois\n\npar\n\nnovo',
+          titulo: 'Dois',
+          texto: 'par\n\nnovo',
           criada_em: N2.criadaEm,
           editada_em: ap.notaPorId('n2').editadaEm,
         },
@@ -541,7 +590,7 @@ test('envio: só a nota que mudou sobe, inteira (upsert com onConflict user_id,i
 test('envio sem internet: fica pendente (a base não muda); ao voltar, sobe; repetir o envio da nota inteira não duplica', async () => {
   const nuvem = { linhas: [], offline: true };
   const ap = aparelho(nuvem, { local: [] });
-  const n = ap.criarNota('# Nova');
+  const n = ap.criarNota('Nova');
 
   await ap.enviar();
   assert.equal(ap.temPendente(), true);
@@ -554,8 +603,8 @@ test('envio sem internet: fica pendente (a base não muda); ao voltar, sobe; rep
   assert.equal(ap.temPendente(), false);
   assert.equal(ap.E.erroSync, '');
   assert.deepEqual(
-    nuvem.linhas.map((l) => [l.user_id, l.id, l.texto]),
-    [['u1', n.id, '# Nova']]
+    nuvem.linhas.map((l) => [l.user_id, l.id, l.titulo, l.texto]),
+    [['u1', n.id, 'Nova', '']]
   );
 
   // o envio "perdido" (chegou, mas a resposta não voltou) é repetido: a nuvem continua com uma linha só
@@ -570,7 +619,8 @@ test('carregar: com pendente no aparelho, envia antes e não troca pela nuvem (n
       {
         user_id: 'u1',
         id: 'n1',
-        texto: '# Um, do outro aparelho',
+        titulo: 'Um, do outro aparelho',
+        texto: '',
         criada_em: N1.criadaEm,
         editada_em: '2026-11-23T10:00:00+00:00',
       },
@@ -582,36 +632,36 @@ test('carregar: com pendente no aparelho, envia antes e não troca pela nuvem (n
   // sem nada no aparelho: abre com a nuvem
   ap.E.usuario = null;
   await ap.carregar({ id: 'u1' }, () => {});
-  assert.equal(ap.notaPorId('n1').texto, '# Um, do outro aparelho');
+  assert.equal(ap.notaPorId('n1').titulo, 'Um, do outro aparelho');
   assert.equal(ap.temPendente(), false);
 
   // aparelho com uma edição pendente (sem internet antes): ao abrir, sobe primeiro e continua com o texto daqui
   ap.guardado.set(
     'notas.db.u1',
     JSON.stringify({
-      notas: [{ ...N1, texto: '# Um, daqui', editadaEm: '2026-11-24T10:00:00.000Z' }],
+      notas: [{ ...N1, texto: 'daqui', editadaEm: '2026-11-24T10:00:00.000Z' }],
     })
   );
   nuvem.pedidos = [];
   await ap.carregar({ id: 'u1' }, () => {});
-  assert.equal(ap.notaPorId('n1').texto, '# Um, daqui');
+  assert.equal(ap.notaPorId('n1').texto, 'daqui');
   assert.deepEqual(
     nuvem.pedidos.map((p) => p[0]),
     ['upsert', 'select']
   );
-  assert.equal(nuvem.linhas[0].texto, '# Um, daqui');
+  assert.equal(nuvem.linhas[0].texto, 'daqui');
 
   // a gravação falhou (erro do servidor) mas a leitura deu certo: o texto daqui continua pendente, não é trocado pela nuvem
-  nuvem.linhas[0].texto = '# Um, do outro de novo';
+  nuvem.linhas[0].texto = 'do outro de novo';
   ap.guardado.set(
     'notas.db.u1',
     JSON.stringify({
-      notas: [{ ...N1, texto: '# Um, daqui 2', editadaEm: '2026-11-24T11:00:00.000Z' }],
+      notas: [{ ...N1, texto: 'daqui 2', editadaEm: '2026-11-24T11:00:00.000Z' }],
     })
   );
   nuvem.recusar = 'permission denied';
   await ap.carregar({ id: 'u1' }, () => {});
-  assert.equal(ap.notaPorId('n1').texto, '# Um, daqui 2');
+  assert.equal(ap.notaPorId('n1').texto, 'daqui 2');
   assert.equal(ap.temPendente(), true);
   assert.equal(ap.E.erroSync, 'permission denied');
 });

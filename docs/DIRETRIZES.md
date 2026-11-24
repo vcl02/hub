@@ -16,7 +16,7 @@ Pedido explícito do mantenedor vence tudo.
 | Alimentação          | `al/`    | `/hub/al/`    | `al_item`, `al_registro`, `al_dia`, `al_marmita`, `al_uso`                 | 00 a 03               | `al-estimar`     |
 | Corpo                | `corpo/` | `/hub/corpo/` | `corpo_medida`, `corpo_dia`                                                | 00 a 05               | —                |
 | Água                 | `agua/`  | `/hub/agua/`  | `agua_dia`, `push_inscricao`, `push_chave`, `push_agendado`, `push_ultimo` | 00 a 02               | `agua-lembrete`  |
-| Notas                | `notas/` | `/hub/notas/` | `notas_nota`                                                               | 00                    | —                |
+| Notas                | `notas/` | `/hub/notas/` | `notas_nota`                                                               | 00 a 01               | —                |
 
 Todos usam o mesmo projeto Supabase e a mesma conta `DONO`.
 
@@ -238,7 +238,7 @@ Pedido do mantenedor em 30/10/2026, feito aos poucos, passo a passo, e sempre pa
 
 ## 7. Pendências
 
-A aplicar pelo mantenedor (24/11/2026), no DataGrip, nesta ordem: `notas/migrations/00-notas-nota.sql` e depois `migrations/02-historico-notas.sql` (raiz). Até lá, as Notas guardam só no aparelho.
+A aplicar pelo mantenedor (24/11/2026), no DataGrip, nesta ordem: `notas/migrations/00-notas-nota.sql`, `notas/migrations/01-notas-titulo.sql` e `migrations/02-historico-notas.sql` (raiz). Até lá, as Notas guardam só no aparelho.
 
 Aplicadas em 28/10/2026 pelo mantenedor, num script só pelo SQL Editor do Supabase: `fin/41`, `00` da raiz e `agua/02` (rodar de novo não muda nada, então a `00` já aplicada antes não teria mudado).
 Conferidas pelo `SELECT` do fim do script: gatilho `fin_meta_historico`, `hub_historico` com os 10 gatilhos, `push_agendado`, `push_ultimo`, gatilho `agendar_dentes` e o agendamento `dentes-lembrete`.

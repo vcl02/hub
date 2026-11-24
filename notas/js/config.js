@@ -1,9 +1,9 @@
 'use strict';
 /*
-  Notas — anotações: várias notas, cada uma um texto Markdown inteiro (o título é a 1ª linha não vazia). No PC, editor como o
-  VS Code; no celular, cada parágrafo um balão, como uma conversa.
+  Notas — anotações: várias notas, cada uma com título separado e texto Markdown. No PC, editor como o VS Code; no celular,
+  cada parágrafo um balão, como uma conversa.
   Dados no Supabase (projeto fin, tabela notas_nota), com cópia local para funcionar sem internet (js/banco.js):
-    db = { notas: [{ id, texto, criadaEm, editadaEm }] }   // a mais recente (editadaEm) primeiro; datas em ISO (UTC)
+    db = { notas: [{ id, titulo, texto, criadaEm, editadaEm }] } // a mais recente primeiro; datas em ISO (UTC)
   Cada nota é gravada inteira (o texto final): quem salva por último vale, sem mescla entre aparelhos. O histórico de cada
   gravação (antes e depois) fica no hub_historico.
 */

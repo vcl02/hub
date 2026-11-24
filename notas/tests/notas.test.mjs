@@ -39,22 +39,24 @@ test('celular: nota nova como conversa — enviar 2 parágrafos (formatados, che
   assert.match(pg.url(), /\?nota=[A-Za-z0-9_-]+$/);
   assert.equal(await pg.isHidden('#editor'), true);
 
-  await enviarParagrafo(pg, '# Compras\n**leite** e <b>pão</b>');
+  await pg.fill('#n-titulo', 'Compras');
+  await enviarParagrafo(pg, '**leite** e <b>pão</b>');
   await enviarParagrafo(pg, 'ver [site](https://a.com) e [x](javascript:alert(1))');
 
   assert.deepEqual(await baloes(pg), [
-    '<h1>Compras</h1><p><strong>leite</strong> e &lt;b&gt;pão&lt;/b&gt;</p>',
+    '<p><strong>leite</strong> e &lt;b&gt;pão&lt;/b&gt;</p>',
     '<p>ver <a href="https://a.com" target="_blank" rel="noopener noreferrer">site</a> e [x](javascript:alert(1))</p>',
   ]);
-  assert.equal(await pg.textContent('#n-titulo'), 'Compras');
+  assert.equal(await pg.inputValue('#n-titulo'), 'Compras');
 
   await sincronizado(pg);
   assert.deepEqual(
-    nuvem.tabelas.notas_nota.map((l) => [l.user_id, l.texto]),
+    nuvem.tabelas.notas_nota.map((l) => [l.user_id, l.titulo, l.texto]),
     [
       [
         DONO,
-        '# Compras\n**leite** e <b>pão</b>\n\nver [site](https://a.com) e [x](javascript:alert(1))',
+        'Compras',
+        '**leite** e <b>pão</b>\n\nver [site](https://a.com) e [x](javascript:alert(1))',
       ],
     ]
   );
@@ -72,7 +74,7 @@ test('celular: nota nova como conversa — enviar 2 parágrafos (formatados, che
   await pg.waitForSelector('#s-barra', { state: 'hidden' });
   assert.equal(
     await pg.evaluate(() => navigator.clipboard.readText()),
-    '# Compras\n**leite** e <b>pão</b>\n\nver [site](https://a.com) e [x](javascript:alert(1))'
+    '**leite** e <b>pão</b>\n\nver [site](https://a.com) e [x](javascript:alert(1))'
   );
 
   // Editar (1 selecionado): o texto vai para o campo; enviar troca o parágrafo no lugar
@@ -95,8 +97,8 @@ test('celular: nota nova como conversa — enviar 2 parágrafos (formatados, che
 
   await sincronizado(pg);
   assert.deepEqual(
-    nuvem.tabelas.notas_nota.map((l) => l.texto),
-    ['segundo *trocado*']
+    nuvem.tabelas.notas_nota.map((l) => [l.titulo, l.texto]),
+    [['Compras', 'segundo *trocado*']]
   );
   assert.deepEqual(erros, []);
   await ctx.close();
@@ -107,7 +109,8 @@ test('?nota= no endereço: recarregar mantém a nota, Voltar (do app e do navega
     {
       user_id: DONO,
       id: 'n1',
-      texto: '# Lista\nitem',
+      titulo: 'Lista',
+      texto: 'item',
       criada_em: '2026-11-23T10:00:00+00:00',
       editada_em: '2026-11-23T10:00:00+00:00',
     },
@@ -118,11 +121,11 @@ test('?nota= no endereço: recarregar mantém a nota, Voltar (do app e do navega
   const lista = () => pg.waitForSelector('#v-lista:not([hidden])');
 
   await aberta();
-  assert.equal(await pg.textContent('#n-titulo'), 'Lista');
+  assert.equal(await pg.inputValue('#n-titulo'), 'Lista');
 
   await pg.reload();
   await aberta();
-  assert.equal(await pg.textContent('#n-titulo'), 'Lista');
+  assert.equal(await pg.inputValue('#n-titulo'), 'Lista');
   assert.match(pg.url(), /\?nota=n1$/);
 
   // botão Voltar do app: a lista, sem ?nota
