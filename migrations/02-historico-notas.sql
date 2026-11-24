@@ -1,6 +1,6 @@
 -- Histórico das notas: notas_nota entra no hub_historico (antes e depois de cada gravação da nota inteira), com a função de
 -- gatilho que a 00 criou (registrar_historico_hub), sem função nova. A chave no histórico é o id da nota.
--- Aplicar no DataGrip, depois da notas/00 e da 00 daqui. Rodar de novo não muda nada (o gatilho é recriado).
+-- Aplicar no DataGrip, depois da 00 daqui, da notas/00 e da notas/01, e antes da notas/02. Rodar de novo não muda nada (o gatilho é recriado).
 -- Falha sozinha, sem mudar nada, se faltar a tabela ou a função.
 -- Formato DataGrip: sem bloco anônimo, sem ponto e vírgula em comentário, tudo entre begin e commit.
 begin;

@@ -1,12 +1,13 @@
 # Notas (`notas`)
 
-Anotações em Markdown, várias notas. No PC, um editor como o do VS Code (Ctrl+D, Ctrl+X na linha, Alt+↑/↓); no celular, a nota como conversa (um balão por parágrafo, segurar para selecionar, apagar, editar e copiar). Abre pelo atalho Anotações da página inicial. Regras em `docs/REGRAS.md`; guia em `AGENTS.md`.
+Anotações em Markdown, várias notas. No PC, um editor como o do VS Code (Ctrl+D, Ctrl+X na linha, Alt+↑/↓); no celular, a nota como conversa (um balão por parágrafo, segurar para selecionar, apagar, editar e copiar). A lista das notas se ordena arrastando a alça ⠿ (ou Alt+↑/↓ com a alça em foco). Abre pelo atalho Anotações da página inicial. Regras em `docs/REGRAS.md`; guia em `AGENTS.md`.
 
 ## Implantação (uma vez, feita pelo mantenedor)
 
 1. Rodar `migrations/00-notas-nota.sql` (desta pasta) no DataGrip. Cria `notas_nota` (RLS só do Victor).
 2. Rodar `migrations/01-notas-titulo.sql` (desta pasta) no DataGrip. Separa o título e migra a primeira linha das notas existentes para ele.
 3. Rodar `migrations/02-historico-notas.sql` da raiz do hub no DataGrip. Liga `notas_nota` ao `hub_historico` (antes e depois de cada gravação). Precisa da `00` da raiz (já aplicada) e da tabela criada e atualizada nos passos anteriores.
+4. Rodar `migrations/02-notas-ordem.sql` (desta pasta) no DataGrip. Acrescenta a coluna `ordem` e dá às notas que já existem a ordem de hoje (a editada mais recente primeiro). Sem ela, o envio das Notas falha e fica pendente no aparelho.
 
 Rodar de novo as migrations não repete a migração de dados.
 

@@ -40,3 +40,14 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md`; o jeito de trabalha
 ## Linha do cursor translúcida no editor (24/11/2026)
 
 - A seleção do editor é de fundo claro e texto escuro (escolha do mantenedor). No CodeMirror a camada da seleção fica atrás das linhas, e o fundo da linha do cursor (`.cm-activeLine`) fica por cima dela: com esse fundo opaco, ao selecionar de baixo para cima (cursor na 1ª linha), a parte selecionada dessa linha virava texto escuro em fundo escuro e sumia. O fundo da linha do cursor agora é o `--fg` a 6% translúcido (no escuro, quase o mesmo tom de antes; sobre a seleção, deixa o claro passar). O teste da seleção confere a opacidade abaixo de 10% com o cursor na 1ª linha (com o fundo opaco antigo, falha).
+
+## Ordem manual das notas (24/11/2026)
+
+- Pedido do mantenedor: a ordem das notas é definida por ele, arrastando pela alça ⠿ (como as sub-issues do GitHub), e fica para sempre. Antes, a lista era "editada mais recente em cima".
+- Escolhas do coordenador (troca barata, se o mantenedor preferir outra): nota nova entra **no topo**; **editar não muda a posição** (a data da última edição continua na linha).
+- Coluna `ordem` em `double precision` (`notas/migrations/02-notas-ordem.sql`). Mover dá à nota a média das vizinhas da nova posição (no topo, a primeira − 1; no fim, a última + 1), então **só a nota movida sobe** no envio: não se renumera a lista a cada arraste.
+- Fracionária tem limite: cada movimento para o mesmo espaço divide a folga ao meio. Quando a folga entre as vizinhas fica abaixo de 1e-6 (ou a média não cabe entre elas), a lista inteira é renumerada 1, 2, 3… na ordem nova. Esse caso sobe várias linhas, e é raro. Teste: "moverNota sem folga entre as vizinhas renumera".
+- Notas sem `ordem` (formato antigo, antes da `notas/02`, ou linha da nuvem sem a coluna) vão depois das que têm, pela edição (a mais recente primeiro, empate pelo id). A migration grava a mesma ordem para as notas que já existiam, então aparelho antigo e nuvem nova chegam ao mesmo resultado e a base antiga não vira pendente só de formato.
+- Até a `notas/02` ser aplicada, o envio falha (a nuvem não conhece a coluna `ordem`) e a mudança fica pendente no aparelho; ao aplicar, a pendência sobe sozinha na próxima tentativa. Nada se perde, porque a cópia local é a fonte até lá.
+- Alça ⠿ com Pointer Events (mouse e toque iguais), só na alça (`touch-action: none` nela), para o toque não rolar a página ao arrastar. Teclado: Alt+↑/↓ com a alça em foco move uma posição, sem mouse nem toque, e mantém o foco na alça da mesma nota.
+- Esc durante o arraste só cancela o arraste (não sai do app), porque o Esc da lista sai para a página inicial e o arraste em curso não pode perder o gesto.
