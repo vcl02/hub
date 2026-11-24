@@ -29,8 +29,12 @@ const temaEditor = () =>
       },
       '.cm-line': { padding: '0 var(--e-5)' },
       '.cm-cursor, .cm-dropCursor': { borderLeft: '2px solid var(--cor)' },
-      '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection':
-        { backgroundColor: 'var(--line-strong)' },
+      '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground':
+        { backgroundColor: 'var(--fg)' },
+      '.cm-content ::selection': {
+        backgroundColor: 'var(--fg)',
+        color: 'var(--bg)',
+      },
       '.cm-activeLine': { backgroundColor: 'var(--surface)' },
       '.cm-selectionMatch': { backgroundColor: 'var(--cor-soft)' },
       '.cm-searchMatch': {

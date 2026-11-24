@@ -115,3 +115,26 @@ test('PC: Ctrl+S grava o Markdown aberto sem acionar salvar página', async () =
 
   await ctx.close();
 });
+
+test('PC: a seleção no editor tem fundo claro e texto escuro', async () => {
+  const { ctx, pg } = await abrirApp({ pc: true });
+
+  await pg.click('#n-nova');
+  await pg.waitForSelector('#editor:not([hidden]) .cm-content');
+  await pg.keyboard.type('texto selecionado');
+  await pg.keyboard.press('Control+Home');
+  await pg.keyboard.press('Shift+End');
+
+  assert.deepEqual(
+    await pg.evaluate(() => {
+      const selecao = editor.dom.querySelector('.cm-selectionBackground');
+      return [
+        getComputedStyle(selecao).backgroundColor,
+        getComputedStyle(editor.contentDOM, '::selection').color,
+      ];
+    }),
+    ['rgb(233, 236, 239)', 'rgb(27, 30, 33)']
+  );
+
+  await ctx.close();
+});
