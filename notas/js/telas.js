@@ -101,11 +101,11 @@ function abrirNota(id, empilhar = true) {
   $('w-lista').hidden = true;
   $('v-nota').hidden = false;
   $('v-nota').append($('sync'));
-  trocarModo(modoAtual(), true);
+  trocarModo(modoAtual(), true, false);
 }
 
-function trocarModo(novo, focar = false) {
-  salvarAgora();
+function trocarModo(novo, focar = false, salvar = true) {
+  if (salvar) salvarAgora();
   modo = novo;
 
   const n = notaPorId(aberta),

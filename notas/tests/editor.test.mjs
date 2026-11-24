@@ -58,3 +58,39 @@ test('PC: a nota abre no editor; Ctrl+D seleciona as ocorrências com vários cu
   assert.deepEqual(erros, []);
   await ctx.close();
 });
+
+test('PC: abrir outra nota não substitui seu texto pelo da nota anterior', async () => {
+  const { ctx, pg } = await abrirApp({ pc: true });
+
+  await pg.click('#n-nova');
+  await pg.waitForSelector('#editor:not([hidden]) .cm-content');
+  await pg.keyboard.type('primeira nota');
+  await andarAte(pg, () => notaPorId(aberta).texto === 'primeira nota');
+  await pg.click('#n-voltar');
+  await pg.waitForSelector('#v-lista:not([hidden])');
+
+  await pg.click('#n-nova');
+  await pg.waitForSelector('#editor:not([hidden]) .cm-content');
+  await pg.keyboard.type('segunda nota');
+  const segunda = await pg.evaluate(() => aberta);
+  await andarAte(pg, () => notaPorId(aberta).texto === 'segunda nota');
+  await pg.click('#n-voltar');
+  await pg.waitForSelector('#v-lista:not([hidden])');
+
+  const primeira = await pg.evaluate(
+    () => db.notas.find((n) => n.texto === 'primeira nota').id
+  );
+  await pg.click(`#n-lista li[data-id="${primeira}"] a.oque`);
+  await pg.waitForSelector('#editor:not([hidden]) .cm-content');
+
+  assert.equal(await doc(pg), 'primeira nota');
+  assert.equal(await pg.evaluate((id) => notaPorId(id).texto, primeira), 'primeira nota');
+
+  await pg.click('#n-voltar');
+  await pg.waitForSelector('#v-lista:not([hidden])');
+  await pg.click(`#n-lista li[data-id="${segunda}"] a.oque`);
+  await pg.waitForSelector('#editor:not([hidden]) .cm-content');
+  assert.equal(await doc(pg), 'segunda nota');
+
+  await ctx.close();
+});
