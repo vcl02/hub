@@ -16,14 +16,7 @@ const extensoes = new Set([
   '.svg',
 ]);
 
-const arquivos = [
-  'AGENTS.md',
-  'README.md',
-  'index.html',
-  'sw.js',
-  'gasto.js',
-  'manifest.webmanifest',
-];
+const arquivos = ['AGENTS.md', 'index.html', 'sw.js', 'gasto.js', 'manifest.webmanifest'];
 
 const coletar = (pasta) =>
   readdirSync(pasta, { withFileTypes: true }).forEach((e) => {

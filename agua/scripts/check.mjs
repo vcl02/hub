@@ -18,7 +18,6 @@ const extensoes = new Set([
 
 const arquivos = [
   'AGENTS.md',
-  'README.md',
   'index.html',
   'sw.js',
   'bebidas.js',

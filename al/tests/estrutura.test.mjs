@@ -219,7 +219,6 @@ test('nenhum segredo no repositório; o app só fala com a IA pela Edge Function
     'index.html',
     'sw.js',
     'AGENTS.md',
-    'README.md',
     ...listar('js', '.js'),
     ...listar('docs', '.md'),
     ...listar('migrations', '.sql'),

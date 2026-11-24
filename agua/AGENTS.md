@@ -3,7 +3,7 @@
 ## Propósito e fontes de verdade
 
 - App estático (HTML/CSS/JavaScript clássico, sem build): água bebida (ml, com horário) contra a meta do dia. Xixi e bexiga ficam no Corpo, que lê `agua_dia` (só leitura) para os ml por xixi. Lembretes dentro do app e por notificação de verdade (Web Push), com as mesmas regras.
-- `docs/REGRAS.md` é a fonte de verdade das regras e do comportamento visível; `README.md` tem a implantação. Guia geral do hub em `../AGENTS.md`.
+- `docs/REGRAS.md` é a fonte de verdade das regras e do comportamento visível; a implantação está na seção Infraestrutura. Guia geral do hub em `../AGENTS.md`.
 
 ## Arquitetura
 
@@ -27,10 +27,18 @@
 Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para todos fica lá).
 
 - **Migrations:** `migrations/` 00 a 02, formato DataGrip, RLS só do Victor em `agua_dia`; tabelas `push_*` sem policy. A 02 tem função de gatilho em `plpgsql` (exceção das diretrizes): vai pelo SQL Editor do Supabase, não pelo DataGrip; aplicada em 28/10/2026. Conferido em `tests/estrutura.test.mjs`, numeração em `../tests/documentacao.test.mjs`.
-- **Testes:** navegador em `tests/agua.test.mjs` (5 testes, Playwright da raiz, Supabase falso em `tests/helpers/app.mjs`); sem navegador, `tests/funcoes.test.mjs` (23 testes: beber, dia no endereço, arrasto e ← →, Esc, envio ao Supabase com dois aparelhos, envio sem resposta e formato antigo, limite de rede, notificações e registro do service worker, com as funções tiradas do arquivo publicado) e `tests/notificacoes.test.mjs` (1 teste); a Edge Function em `tests/funcao.test.mjs` (rede falsa); estrutura em `tests/estrutura.test.mjs`, que roda o `js/bootstrap.js` em `node:vm` (`../tests/bootstrap-falso.mjs`, com sessão e sem sessão) e o `install` do `sw.js` por `instalar()` de `../tests/sw-falso.mjs`. O relógio falso vem de `../tests/relogio.mjs` (pausado; ver `../docs/DIRETRIZES.md`, seção 3). Auditoria de 02/11/2026 em `docs/DECISOES.md`.
+- **Testes:** navegador em `tests/agua.test.mjs` (Playwright da raiz, Supabase falso em `tests/helpers/app.mjs`); sem navegador, `tests/funcoes.test.mjs` (beber, dia no endereço, arrasto e ← →, Esc, envio ao Supabase com dois aparelhos, envio sem resposta e formato antigo, limite de rede, notificações e registro do service worker, com as funções tiradas do arquivo publicado) e `tests/notificacoes.test.mjs`; a Edge Function em `tests/funcao.test.mjs` (rede falsa); estrutura em `tests/estrutura.test.mjs`, que roda o `js/bootstrap.js` em `node:vm` (`../tests/bootstrap-falso.mjs`, com sessão e sem sessão) e o `install` do `sw.js` por `instalar()` de `../tests/sw-falso.mjs`. O relógio falso vem de `../tests/relogio.mjs` (pausado; ver `../docs/DIRETRIZES.md`, seção 3). Auditoria de 02/11/2026 em `docs/DECISOES.md`.
 - **Pacotes:** sem `package.json`. `../supabase.js` da raiz e o Playwright da raiz; a função não usa pacote (WebCrypto do Deno), só os tipos `jsr:@supabase/functions-js@2.118.0`.
 - **Backups:** cópia no aparelho (`agua.db.<conta>`, base em `agua.base.<conta>`) e `hub_historico` com `agua_dia`. As tabelas `push_*` ficam fora: perdida `push_chave`, a função gera chaves novas e cada aparelho precisa reativar as notificações.
 - **Domínio:** `/hub/agua/`. Externos: o Supabase (inclusive `functions/v1/agua-lembrete`, chamada pelo pg_cron e pelo `sw.js`) e o serviço de push de cada navegador inscrito. Os testes usam `https://vcl02.github.io/hub/agua/`: mudou o domínio, eles mudam.
+
+**Implantação (uma vez, feita pelo mantenedor):**
+
+1. Rodar `migrations/00-agua-dia.sql` no DataGrip. Cria `agua_dia` (RLS só do Victor). Sem ela, o app abre vazio e não sobe nada para a nuvem.
+2. Rodar `migrations/01-notificacoes.sql` no DataGrip. Liga `pg_net` e `pg_cron` (se o DataGrip recusar, ligar as duas em Database → Extensions no painel do Supabase e rodar de novo), cria `push_inscricao` e `push_chave` e agenda a chamada da função de hora em hora.
+3. Publicar a função `supabase/functions/agua-lembrete` com **Verify JWT desligado** (`supabase functions deploy agua-lembrete --no-verify-jwt`). Não precisa de secret: as chaves nascem na 1ª chamada.
+4. No celular, abrir a Água e tocar em **Ativar notificações**. No iPhone, só funciona com a Água instalada na tela de início (Compartilhar → Adicionar à Tela de Início) e aberta por lá; no Android, direto no Chrome.
+5. `migrations/02-lembrete-dentes.sql`: já aplicada em 28/10/2026 (função em `plpgsql`, ver Migrations).
 
 ## Como concluir uma mudança
 

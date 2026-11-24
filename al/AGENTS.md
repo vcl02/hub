@@ -3,7 +3,7 @@
 ## Propósito e fontes de verdade
 
 - App estático (HTML/CSS/JavaScript clássico, sem build) para controlar o déficit calórico: o que comi no dia (kcal e macros) contra o gasto do dia. Usa o Supabase do projeto `fin` (tabelas `al_*`) pelo cliente do navegador e uma Edge Function (`al-estimar`) para a IA.
-- `docs/REGRAS.md` é a fonte de verdade das regras e do comportamento visível; atualize-o junto com a mudança. `README.md` tem a implantação (migration, secret e deploy da função). Guia geral do hub em `../AGENTS.md`.
+- `docs/REGRAS.md` é a fonte de verdade das regras e do comportamento visível; atualize-o junto com a mudança. A implantação (migration, secret e deploy da função) está na seção Infraestrutura. Guia geral do hub em `../AGENTS.md`.
 
 ## Arquitetura
 
@@ -17,7 +17,7 @@
 
 ## IA (Edge Function `al-estimar`)
 
-- Código em `supabase/functions/al-estimar/index.ts`, publicado por deploy (o repositório não publica sozinho; ver `README.md`).
+- Código em `supabase/functions/al-estimar/index.ts`, publicado por deploy (o repositório não publica sozinho; ver a implantação na Infraestrutura).
 - A chave da Anthropic fica só no secret `ANTHROPIC_API_KEY` da função. Nunca no código, no navegador, no histórico ou em print: o repositório é público. `tests/funcao.test.mjs` e `tests/estrutura.test.mjs` barram chave no código.
 - A função confere a sessão no Auth (só a conta `DONO`), limita as chamadas do dia (`al_uso`, com a sessão do próprio Victor, sem chave de serviço) e devolve só itens limpos. Modelo: `claude-haiku-5-5`, effort `low`, saída em JSON com esquema.
 - O que a IA devolve vira comida salva (`al_item`) quando adicionado: a mesma comida não volta para a IA.
@@ -34,10 +34,19 @@
 Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para todos fica lá).
 
 - **Migrations:** `migrations/` 00 a 03 (`03` marmitas; o histórico delas é a `01` da raiz), formato DataGrip, RLS só do Victor em todas as `al_*`; conferido em `tests/estrutura.test.mjs`, numeração em `../tests/documentacao.test.mjs`.
-- **Testes:** navegador em `tests/dia.test.mjs` (20 testes, Playwright da raiz, Supabase e IA falsos em `tests/helpers/app.mjs`); sem navegador, `tests/regras.test.mjs` (contas, avisos do saldo, comidas salvas, marmitas e respostas da IA, com as funções tiradas dos arquivos publicados) e `tests/helpers/rodar.mjs` (service worker e `bootstrap.js` em `node:vm`); a Edge Function em `tests/funcao.test.mjs` (SDK e rede simulados); estrutura em `tests/estrutura.test.mjs`. As contas de `gasto.js` também são conferidas pelos hábitos da raiz. O relógio falso vem de `../tests/relogio.mjs` (pausado; ver `../docs/DIRETRIZES.md`, seção 3). Auditoria de 02/11/2026 em `docs/DECISOES.md`.
+- **Testes:** navegador em `tests/dia.test.mjs` (Playwright da raiz, Supabase e IA falsos em `tests/helpers/app.mjs`); sem navegador, `tests/regras.test.mjs` (contas, avisos do saldo, comidas salvas, marmitas e respostas da IA, com as funções tiradas dos arquivos publicados) e `tests/helpers/rodar.mjs` (service worker e `bootstrap.js` em `node:vm`); a Edge Function em `tests/funcao.test.mjs` (SDK e rede simulados); estrutura em `tests/estrutura.test.mjs`. As contas de `gasto.js` também são conferidas pelos hábitos da raiz. O relógio falso vem de `../tests/relogio.mjs` (pausado; ver `../docs/DIRETRIZES.md`, seção 3). Auditoria de 02/11/2026 em `docs/DECISOES.md`.
 - **Pacotes:** sem `package.json`. `../supabase.js` da raiz; a função usa `npm:@anthropic-ai/sdk@0.133.0` (versão exata, conferida em `tests/funcao.test.mjs`) e os tipos `jsr:@supabase/functions-js@2.118.0`; Playwright da raiz.
 - **Backups:** cópia no aparelho (`al.db.<conta>`, base em `al.base.<conta>`) e `hub_historico` com `al_dia`, `al_item`, `al_registro` e `al_marmita`. `al_uso` (contador de consultas à IA) fica fora: não é dado a recuperar.
 - **Domínio:** `/hub/al/`. Externos: o Supabase (inclusive `functions/v1/al-estimar`); a função chama a API da Anthropic.
+
+**Implantação (uma vez, feita pelo mantenedor):**
+
+1. Tabelas: rodar `migrations/00-tabelas-al.sql` no DataGrip (projeto do fin). Cria `al_item`, `al_registro`, `al_dia` e `al_uso`, com RLS só do Victor. Depois, na ordem, as outras de `migrations/`: `01` (tempo e distância) e `02` (caminhada em trechos); a `03` (marmitas) também.
+2. Chave da IA: criar uma chave em console.anthropic.com (cobrança da API, separada da assinatura do Claude). Não colar em chat, arquivo nem print.
+3. Secret: no painel do Supabase, Edge Functions → Secrets, criar `ANTHROPIC_API_KEY` com a chave. Pela CLI: `supabase secrets set ANTHROPIC_API_KEY=<chave> --project-ref yzmyncxoskvqzdczaill` (cuidado: fica no histórico do terminal).
+4. Função: dentro de `al/`, `supabase functions deploy al-estimar --project-ref yzmyncxoskvqzdczaill --no-verify-jwt`. O `--no-verify-jwt` deixa o pedido de CORS do navegador (sem sessão) chegar à função; a própria função confere a sessão no Auth e recusa quem não for o Victor.
+
+Sem os passos 2 a 4 o app funciona com digitação à mão (a prévia abre para preencher os valores).
 
 ## Como concluir uma mudança
 

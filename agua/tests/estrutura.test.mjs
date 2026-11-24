@@ -369,7 +369,6 @@ test('nenhum segredo', () => {
     'index.html',
     'sw.js',
     'AGENTS.md',
-    'README.md',
     ...listar('js', '.js'),
     ...listar('docs', '.md'),
     ...listar('migrations', '.sql'),

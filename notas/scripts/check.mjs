@@ -32,8 +32,7 @@ const coletar = (pasta) =>
   .filter((p) => readdirSync('.').includes(p))
   .forEach(coletar);
 
-for (const doc of ['AGENTS.md', 'README.md'])
-  if (readdirSync('.').includes(doc)) arquivos.push(doc);
+if (readdirSync('.').includes('AGENTS.md')) arquivos.push('AGENTS.md');
 const erros = [];
 
 for (const arquivo of arquivos) {

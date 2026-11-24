@@ -206,7 +206,6 @@ test('nenhum segredo; só este app grava corpo_medida (perfil.js só lê)', () =
     'sw.js',
     'perfil.js',
     'AGENTS.md',
-    'README.md',
     ...listar('js', '.js'),
     ...listar('docs', '.md'),
     ...listar('migrations', '.sql'),

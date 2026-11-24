@@ -4,7 +4,7 @@
 
 - App estático (HTML/CSS/JavaScript clássico, sem build) com os dados sobre mim: pesagem e barriga dia a dia (tabela `corpo_medida`), IMC e evolução, e o perfil fixo (altura, nascimento, sexo, só em código).
 - **Módulo compartilhado:** `perfil.js` é o que os outros apps usam (`<script src="../corpo/perfil.js">`): `PERFIL`, `ROTINA` (dias de treino e presenciais), `idadeEm`, `tmb`, `kcalTreino`, `kcalEsteira` (cardio do Treino) e a leitura das medidas (`lerMedidas`, `medidasGuardadas`, `pesoNoDia`). Mudou a forma? Ajuste os apps que usam (tr, al) na mesma alteração.
-- `docs/REGRAS.md` é a fonte de verdade das regras e do comportamento visível; `README.md` tem a implantação. Guia geral do hub em `../AGENTS.md`.
+- `docs/REGRAS.md` é a fonte de verdade das regras e do comportamento visível; a implantação está na seção Infraestrutura. Guia geral do hub em `../AGENTS.md`.
 
 ## Arquitetura
 
@@ -26,10 +26,15 @@
 Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para todos fica lá).
 
 - **Migrations:** `migrations/` 00 a 05, formato DataGrip, RLS só do Victor; a 00 não roda de novo (lê `tr_medida`, já apagada). Conferido em `tests/estrutura.test.mjs`, numeração em `../tests/documentacao.test.mjs`.
-- **Testes:** navegador em `tests/corpo.test.mjs` (19 testes, Playwright da raiz, Supabase falso em `tests/helpers/app.mjs`); sem navegador, `tests/regras.test.mjs` (IMC e faixas, horário de sempre, validação das medidas, bexiga, texto do sono, cópia das pesagens, limiar do arrasto) e `tests/helpers/rodar.mjs` (service worker e `bootstrap.js` em `node:vm`); estrutura em `tests/estrutura.test.mjs`. As funções de `perfil.js` (idade, basal, calorias, pesagens) são testadas em `../tests/hub.test.mjs`. O relógio falso vem de `../tests/relogio.mjs` (pausado; ver `../docs/DIRETRIZES.md`, seção 3). Auditoria de 02/11/2026 em `docs/DECISOES.md`.
+- **Testes:** navegador em `tests/corpo.test.mjs` (Playwright da raiz, Supabase falso em `tests/helpers/app.mjs`); sem navegador, `tests/regras.test.mjs` (IMC e faixas, horário de sempre, validação das medidas, bexiga, texto do sono, cópia das pesagens, limiar do arrasto) e `tests/helpers/rodar.mjs` (service worker e `bootstrap.js` em `node:vm`); estrutura em `tests/estrutura.test.mjs`. As funções de `perfil.js` (idade, basal, calorias, pesagens) são testadas em `../tests/hub.test.mjs`. O relógio falso vem de `../tests/relogio.mjs` (pausado; ver `../docs/DIRETRIZES.md`, seção 3). Auditoria de 02/11/2026 em `docs/DECISOES.md`.
 - **Pacotes:** sem `package.json`. `../supabase.js` da raiz e o Playwright da raiz.
 - **Backups:** cópia no aparelho (`corpo.db.<conta>`, base em `corpo.base.<conta>`) e `hub_historico` com `corpo_medida` e `corpo_dia`. O perfil está no código (git).
 - **Domínio:** `/hub/corpo/`. Externo: só o Supabase.
+
+**Implantação (uma vez, feita pelo mantenedor):**
+
+1. Rodar `migrations/00-corpo-medida.sql` no DataGrip. Cria `corpo_medida` (RLS só do Victor) e copia o que já estava em `tr_medida`, sem apagar nada lá.
+2. Depois, na ordem, as outras de `migrations/`: `01` e `02` (registro do dia), `03` (quando foi lançado), `04` (xixi vindo da Água, que tira `xixis` de `agua_dia`) e `05` (horários do sono).
 
 ## Como concluir uma mudança
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Sessões do Claude Code na nuvem: instala o Playwright da raiz pra `node scripts/check.mjs` (raiz,
-# fin e tr) rodar sempre. Local, não faz nada: cada um instala do jeito do README.
+# fin e tr) rodar sempre. Local, não faz nada: cada um instala do jeito da Infraestrutura do AGENTS.md dele.
 set -euo pipefail
 
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then

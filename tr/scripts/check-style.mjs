@@ -20,7 +20,6 @@ const raizes = ['css', 'docs', 'js', 'migrations', 'scripts', 'tests'];
 const arquivos = [
   '.editorconfig',
   'AGENTS.md',
-  'README.md',
   'index.html',
   'sw.js',
   'manifest.webmanifest',
