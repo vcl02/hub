@@ -11,8 +11,9 @@
 
 ## Lista de notas
 
-- Uma linha por nota, a editada mais recentemente em cima: título separado (vazio, "Sem título"), prévia (a 1ª linha não vazia do corpo, sem as marcas do começo) e quando foi a última edição (hoje, a hora "14:05"; ontem, "ontem"; neste ano, "19/11"; antes, "19/11/25").
-- **+** cria uma nota nova e já a abre, pronta para escrever. Toque repetido sem querer no + em menos de 0,5 s é ignorado.
+- Uma linha por nota, na ordem que eu defino (fica para sempre, em todos os aparelhos): título separado (vazio, "Sem título"), prévia (a 1ª linha não vazia do corpo, sem as marcas do começo) e quando foi a última edição (hoje, a hora "14:05"; ontem, "ontem"; neste ano, "19/11"; antes, "19/11/25").
+- **Ordem:** a alça **⠿** à esquerda de cada linha arrasta a nota (mouse ou dedo, só pela alça; o resto da linha abre a nota e rola a página); a linha segue o ponteiro, as outras abrem espaço e, ao soltar, a nota fica ali. Esc (ou o sistema interromper o toque) durante o arraste cancela e a nota volta ao lugar, sem sair do app. Com a alça em foco, **Alt+↑**/**Alt+↓** sobe ou desce uma posição. Nota nova entra no topo; editar não muda a posição.
+- **+** cria uma nota nova (no topo) e já a abre, pronta para escrever. Toque repetido sem querer no + em menos de 0,5 s é ignorado.
 - **Apagar** (lixeira da linha): toque duplo, como em todos os apps (o 1º deixa vermelho por 3 s, o 2º apaga).
 - Nota que fica vazia ao sair (a nova sem nada escrito, ou a que teve tudo apagado) some da lista.
 
@@ -43,4 +44,4 @@
 ## Esc
 
 - Na nota, na ordem: desmarca a seleção; cancela a edição do parágrafo; no editor, desfaz os vários cursores ou fecha a busca e depois só tira o foco; num campo de texto, o 1º Esc só tira o foco; sem nada disso, volta para a lista.
-- Na lista, sai do app para a página inicial do hub (`../`), como em todos os apps.
+- Na lista, durante um arraste, só cancela o arraste; sem arraste, sai do app para a página inicial do hub (`../`), como em todos os apps.

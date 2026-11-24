@@ -1,7 +1,7 @@
 'use strict';
 // Telas: a lista de notas e a nota aberta, no editor (PC, js/editor.js) ou como conversa (celular: um balão por parágrafo,
 // js/markdown.js). A nota aberta fica no endereço (?nota=<id>): recarregar mantém, o Voltar do navegador volta para a lista.
-// Tudo grava pelo banco (salvarNota, criarNota, apagarNota de js/banco.js), que envia à nuvem 0,8 s depois.
+// Tudo grava pelo banco (salvarNota, criarNota, apagarNota, moverNota de js/banco.js), que envia à nuvem 0,8 s depois.
 
 const SALVAR_MS = 800; // o editor grava 0,8 s depois de parar de digitar
 const SEGURAR_MS = 500; // segurar um balão esse tempo seleciona
@@ -27,6 +27,10 @@ const ICONE_MODO = {
 const ICONE_LIXO =
   '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>';
 
+// Alça da linha (⠿): 6 pontos, 2 colunas de 3
+const ICONE_ALCA =
+  '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/><circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/><circle cx="9" cy="18" r="1.7"/><circle cx="15" cy="18" r="1.7"/></svg>';
+
 // ===== Lista =====
 // A 1ª linha não vazia do corpo, como prévia (sem as marcas do começo)
 const previaDe = (texto) =>
@@ -38,12 +42,21 @@ const previaDe = (texto) =>
     .replace(/^[\s#>*+-]+/, '')
     .trim();
 
+// A lista na ordem do banco (db.notas, pela ordem que o dono definiu arrastando a alça). Durante um arraste não redesenha
+// (a linha está na mão): fica para quando soltar.
 function desenharLista() {
+  if (arraste) {
+    arraste.redesenhar = true;
+
+    return;
+  }
+
   const L = db?.notas || [];
 
   $('n-lista').innerHTML = L.map(
     (n) =>
-      `<li data-id="${esc(n.id)}"><span class="hora">${esc(quandoFoi(n.editadaEm))}</span>` +
+      `<li data-id="${esc(n.id)}"><button type="button" class="alca" title="Arrastar para reordenar (Alt+↑/↓)" aria-label="Arrastar para reordenar">${ICONE_ALCA}</button>` +
+      `<span class="hora">${esc(quandoFoi(n.editadaEm))}</span>` +
       `<a class="oque" href="?nota=${esc(n.id)}"><b>${esc(n.titulo || 'Sem título')}</b>` +
       `<small>${esc(previaDe(n.texto))}</small></a>` +
       `<button type="button" class="bt-ic perigo" data-apagar="${esc(n.id)}" data-armavel="nota:${esc(n.id)}" title="Apagar (toque duas vezes)" aria-label="Apagar">${ICONE_LIXO}</button></li>`
@@ -79,6 +92,147 @@ $('n-lista').addEventListener('click', (ev) => {
   if (!link || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button) return;
   ev.preventDefault();
   abrirNota(link.closest('li').dataset.id);
+});
+
+// ===== Ordem da lista: arrastar pela alça (⠿) =====
+// Pointer Events (mouse e toque iguais) só na alça (touch-action: none nela): a linha segue o ponteiro e as outras abrem
+// espaço; soltar leva a nota para onde ela ficou (moverNota de js/banco.js). Esc ou pointercancel cancelam (volta ao lugar).
+let arraste = null; // { id, li, i, ponteiro, y0, centros, passo, linhas, ids, pos, redesenhar } enquanto uma linha está na mão
+
+function comecarArraste(ev) {
+  const alca = ev.target.closest('.alca');
+
+  if (!alca || arraste || ev.button > 0 || !ev.isPrimary) return;
+
+  const linhas = [...$('n-lista').children],
+    li = alca.closest('li'),
+    i = linhas.indexOf(li),
+    gap = parseFloat(getComputedStyle($('n-lista')).rowGap) || 0;
+
+  arraste = {
+    id: li.dataset.id,
+    li,
+    i,
+    pos: i, // posição final (0-based) se soltar agora
+    ponteiro: ev.pointerId,
+    y0: ev.pageY,
+    // centro de cada linha no começo (na página, para valer mesmo com a página rolada)
+    centros: linhas.map((l) => {
+      const r = l.getBoundingClientRect();
+
+      return r.top + scrollY + r.height / 2;
+    }),
+    passo: li.getBoundingClientRect().height + gap, // quanto as outras andam para abrir espaço
+    linhas,
+    ids: linhas.map((l) => l.dataset.id), // a ordem da tela no começo
+    redesenhar: false,
+  };
+  alca.setPointerCapture(ev.pointerId);
+  li.classList.add('arrastando');
+  document.body.classList.add('arrastando-lista');
+}
+
+// A linha na mão segue o ponteiro; a posição final é quantas das outras têm o centro acima do centro dela agora
+function moverArraste(ev) {
+  if (!arraste) return;
+
+  const { li, i, linhas, centros, passo } = arraste,
+    dy = ev.pageY - arraste.y0,
+    centro = centros[i] + dy;
+
+  let pos = 0;
+
+  for (let j = 0; j < linhas.length; j++) if (j !== i && centros[j] < centro) pos++;
+  arraste.pos = pos;
+  li.style.transform = `translateY(${dy}px)`;
+
+  // as de cima que ficam abaixo dela descem um passo; as de baixo que ficam acima sobem
+  for (let j = 0; j < linhas.length; j++) {
+    if (j === i) continue;
+    const anda = j < i && j >= pos ? passo : j > i && j <= pos ? -passo : 0;
+
+    linhas[j].style.transform = anda ? `translateY(${anda}px)` : '';
+  }
+}
+
+// Termina o arraste: soltar (cancelar = false) grava a ordem nova; cancelar volta tudo ao lugar
+function terminarArraste(cancelar) {
+  if (!arraste) return;
+
+  const { id, i, pos, ids, li, linhas, ponteiro, redesenhar } = arraste,
+    alca = li.querySelector('.alca');
+
+  let mudou = false;
+
+  arraste = null;
+  document.body.classList.remove('arrastando-lista');
+
+  if (!cancelar && pos !== i) {
+    // a posição pela vizinha de cima na tela (se a lista mudou durante o arraste, a nota fica logo abaixo dela)
+    const antes = ids.filter((x) => x !== id)[pos - 1],
+      atual = (db?.notas || []).filter((n) => n.id !== id),
+      k = antes ? atual.findIndex((n) => n.id === antes) : -1;
+
+    mudou = moverNota(id, antes && k >= 0 ? k + 1 : antes ? pos : 0);
+  }
+
+  if (mudou || redesenhar) {
+    desenharLista();
+    $('n-lista')
+      .querySelector(`li[data-id="${CSS.escape(id)}"] .alca`)
+      ?.focus();
+  } else {
+    for (const l of linhas) l.style.transform = '';
+    li.classList.remove('arrastando');
+
+    if (alca?.hasPointerCapture(ponteiro)) alca.releasePointerCapture(ponteiro); // Esc com o ponteiro ainda na alça
+  }
+}
+
+$('n-lista').addEventListener('pointerdown', comecarArraste);
+$('n-lista').addEventListener('pointermove', moverArraste);
+$('n-lista').addEventListener('pointerup', () => terminarArraste(false));
+$('n-lista').addEventListener('pointercancel', () => terminarArraste(true));
+// perdeu o ponteiro sem soltar (a alça saiu da página): cancela; depois de soltar, o arraste já terminou
+$('n-lista').addEventListener('lostpointercapture', () => terminarArraste(true));
+
+// O menu do toque longo (Android) e o do botão direito não aparecem sobre a alça: segurar é arrastar
+$('n-lista').addEventListener('contextmenu', (ev) => {
+  if (ev.target.closest('.alca')) ev.preventDefault();
+});
+
+// Teclado: com a alça em foco, Alt+↑ e Alt+↓ movem uma posição (o foco fica na alça da mesma nota)
+$('n-lista').addEventListener('keydown', (ev) => {
+  const alca = ev.target.closest?.('.alca');
+
+  if (
+    !alca ||
+    !ev.altKey ||
+    ev.ctrlKey ||
+    ev.metaKey ||
+    ev.shiftKey ||
+    (ev.key !== 'ArrowUp' && ev.key !== 'ArrowDown')
+  )
+    return;
+  ev.preventDefault();
+
+  if (arraste) return;
+
+  const id = alca.closest('li').dataset.id,
+    i = (db?.notas || []).findIndex((n) => n.id === id);
+
+  if (i < 0 || !moverNota(id, i + (ev.key === 'ArrowUp' ? -1 : 1))) return;
+  desenharLista();
+  $('n-lista')
+    .querySelector(`li[data-id="${CSS.escape(id)}"] .alca`)
+    ?.focus();
+});
+
+// Esc durante o arraste: só cancela (não sai do app, js/util.js)
+document.addEventListener('keydown', (ev) => {
+  if (ev.key !== 'Escape' || ev.defaultPrevented || !arraste) return;
+  ev.preventDefault();
+  terminarArraste(true);
 });
 
 $('n-nova').addEventListener('click', () => {
