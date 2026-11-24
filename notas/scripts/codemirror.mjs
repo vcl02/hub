@@ -35,10 +35,12 @@ const ENTRADA = `
 export { EditorState, EditorSelection, Compartment, Prec } from '@codemirror/state';
 export {
   EditorView, keymap, drawSelection, dropCursor, highlightActiveLine, highlightSpecialChars, rectangularSelection,
-  crosshairCursor, placeholder
+  crosshairCursor, placeholder, Decoration, ViewPlugin, WidgetType
 } from '@codemirror/view';
 export { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
-export { LanguageSupport, syntaxHighlighting, HighlightStyle, indentOnInput, bracketMatching } from '@codemirror/language';
+export {
+  LanguageSupport, syntaxHighlighting, HighlightStyle, indentOnInput, bracketMatching, syntaxTree
+} from '@codemirror/language';
 export { markdownLanguage, markdownKeymap } from '@codemirror/lang-markdown';
 export { search, searchKeymap, highlightSelectionMatches } from '@codemirror/search';
 export { tags } from '@lezer/highlight';
