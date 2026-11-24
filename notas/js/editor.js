@@ -129,9 +129,11 @@ let aoMudarEditor = () => {}; // o aoMudar da nota aberta, para o estado novo do
 
 // Mostra o texto no editor (cria o editor na 1ª vez, dentro de pai)
 function abrirNoEditor(pai, texto, aoMudar) {
-  if (!editor) editor = new CM.EditorView({ parent: pai });
   aoMudarEditor = aoMudar;
-  editor.setState(estadoDoEditor(texto, aoMudar));
+  const estado = estadoDoEditor(texto, aoMudar);
+
+  if (!editor) editor = new CM.EditorView({ parent: pai, state: estado });
+  else editor.setState(estado);
 }
 
 const textoDoEditor = () => (editor ? editor.state.doc.toString() : '');

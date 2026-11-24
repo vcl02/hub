@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { andarAte } from '../../tests/relogio.mjs';
-import { prepararApp, abrirApp, sincronizado } from './helpers/app.mjs';
+import { prepararApp, abrirApp, novaNuvem, sincronizado, DONO } from './helpers/app.mjs';
 
 prepararApp();
 
@@ -92,6 +92,37 @@ test('PC: abrir outra nota não substitui seu texto pelo da nota anterior', asyn
   await pg.waitForSelector('#editor:not([hidden]) .cm-content');
   assert.equal(await doc(pg), 'segunda nota');
 
+  await ctx.close();
+});
+
+test('PC: abrir uma nota preexistente mantém o texto no editor', async () => {
+  const texto = '# Nota antiga\nConteúdo original',
+    nuvem = novaNuvem([
+      {
+        user_id: DONO,
+        id: 'antiga',
+        texto,
+        criada_em: '2026-11-23T10:00:00+00:00',
+        editada_em: '2026-11-23T10:00:00+00:00',
+      },
+    ]),
+    { ctx, pg, erros } = await abrirApp({ pc: true, nuvem });
+
+  assert.equal(
+    await pg.textContent('#n-lista li[data-id="antiga"] small'),
+    'Conteúdo original'
+  );
+  await pg.click('#n-lista li[data-id="antiga"] a.oque');
+  await pg.waitForSelector('#editor:not([hidden]) .cm-content');
+  assert.equal(await doc(pg), texto);
+
+  await pg.clock.runFor(1000);
+  assert.equal(await pg.evaluate(() => notaPorId('antiga').texto), texto);
+
+  await pg.click('#n-voltar');
+  await pg.waitForSelector('#v-lista:not([hidden])');
+  assert.equal(await pg.locator('#n-lista li[data-id="antiga"]').count(), 1);
+  assert.deepEqual(erros, []);
   await ctx.close();
 });
 
