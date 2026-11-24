@@ -43,6 +43,12 @@ if (m = s.match(/Compra de R\$\s?([\d.]+,\d{2}) APROVADA em (.+?) para o cartão
   tipo = "despesa_credito"; valor = m[1]; parcelas = m[2]; estab = m[3];
 } else if (/débito/i.test(s) &amp;&amp; (m = s.match(/Compra de R\$\s?([\d.]+,\d{2}) em (.+?)\.?\s*$/))) {
   tipo = "despesa_debito"; valor = m[1]; estab = m[2];
+} else if (/boleto/i.test(s) &amp;&amp; /\b(pago|paga|realizad[oa]|confirmad[oa]|efetuad[oa])\b/i.test(s) &amp;&amp;
+           !/venc|agendad|lembrete/i.test(s) &amp;&amp; (m = s.match(/R\$\s?([\d.]+,\d{2})/))) {
+  // Boleto pago (texto ainda sem print: lembrete, agendamento e "vence" ficam de fora): sai da conta, como débito.
+  tipo = "despesa_debito"; valor = m[1];
+  var q = s.match(/\bpara\s+(.+?)\s*(?:\s(?:foi|com sucesso)\b|\.(?:\s|$)|\||$)/i);
+  estab = q ? q[1] : "Boleto";
 }
 
 setLocal("tipo", tipo || "nenhum");
@@ -161,12 +167,12 @@ x-fin-token:%FINTOKEN</Str>
 					<RegexText-type>java.lang.Boolean</RegexText-type>
 					<RegexTitle>false</RegexTitle>
 					<RegexTitle-type>java.lang.Boolean</RegexTitle-type>
-					<Text>(?is).*(compra|nupay).*</Text>
+					<Text>(?is).*(compra|nupay|boleto).*</Text>
 					<Text-type>java.lang.String</Text-type>
 					<Title>&lt;null&gt;</Title>
 					<Title-type>java.lang.String</Title-type>
 					<com.twofortyfouram.locale.intent.extra.BLURB>Notification Apps: Nubank
-Notification Text: (?is).*(compra|nupay).* (regex)</com.twofortyfouram.locale.intent.extra.BLURB>
+Notification Text: (?is).*(compra|nupay|boleto).* (regex)</com.twofortyfouram.locale.intent.extra.BLURB>
 					<com.twofortyfouram.locale.intent.extra.BLURB-type>java.lang.String</com.twofortyfouram.locale.intent.extra.BLURB-type>
 					<net.dinglisch.android.tasker.RELEVANT_VARIABLES>&lt;StringArray sr=""&gt;&lt;_array_net.dinglisch.android.tasker.RELEVANT_VARIABLES0&gt;%err
 Error Code

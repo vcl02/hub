@@ -64,9 +64,9 @@ test('a tarefa é curta: lê, para se não é gasto, manda o POST, apaga a notif
   assert.match(a[3].corpo, /captura-nubank<\/Str>/);
   assert.match(a[3].corpo, /x-fin-token:%FINTOKEN/);
   assert.match(a[3].corpo, /<Str sr="arg5" ve="3">%body<\/Str>/);
-  // Só com resposta 2xx apaga a notificação do Nubank (app Nubank, compra ou NuPay); senão avisa e a deixa lá.
+  // Só com resposta 2xx apaga a notificação do Nubank (app Nubank, compra, NuPay ou boleto); senão avisa e a deixa lá.
   assert.match(a[4].corpo, /_array_InterceptApps0&gt;com\.nu\.production&lt;/);
-  assert.match(a[4].corpo, /<Text>\(\?is\)\.\*\(compra\|nupay\)\.\*<\/Text>/);
+  assert.match(a[4].corpo, /<Text>\(\?is\)\.\*\(compra\|nupay\|boleto\)\.\*<\/Text>/);
   assert.match(
     a[4].corpo,
     /<lhs>%http_response_code<\/lhs>\s*<op>2<\/op>\s*<rhs>2\*<\/rhs>/
@@ -109,10 +109,29 @@ test('lê crédito, NuPay em Nx e débito; Pix, boleto, cashback e o resto não 
     ['despesa_debito', '5.90', 'EMV CMT*156596385', '1']
   );
 
+  // Boleto pago (texto suposto, sem print): sai da conta como débito; com "para X" leva o X, senão "Boleto".
+  assert.deepEqual(
+    campos(
+      le(
+        'Pagamento realizado',
+        'O pagamento do boleto de R$ 250,00 para TRYBE foi realizado.'
+      )
+    ),
+    ['despesa_debito', '250.00', 'TRYBE', '1']
+  );
+  assert.deepEqual(campos(le('Boleto pago', 'Pagamento de R$ 1.250,50 confirmado.')), [
+    'despesa_debito',
+    '1250.50',
+    'Boleto',
+    '1',
+  ]);
+
   for (const [titulo, texto] of [
+    ['Boleto vence amanhã', 'Seu boleto de R$ 250,00 vence amanhã'],
+    ['Pagamento agendado', 'O boleto de R$ 250,00 foi agendado'],
+    ['Lembrete', 'Você tem um boleto de R$ 250,00 disponível'],
     ['Transferência realizada', 'Você transferiu R$ 50,00 para Fulano.'],
     ['Transferência recebida', 'Você recebeu R$ 199,90 de Cintia'],
-    ['Boleto pago', 'Pagamento de R$ 250,00 confirmado.'],
     ['Você ganhou R$ 0,16 de cashback', 'Continue usando seu cartão.'],
     ['Compra aprovada', 'Compra de R$ 5,90 em LOJA'],
   ])
