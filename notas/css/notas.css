@@ -25,9 +25,9 @@
 #n-lista .oque small:empty {
   display: none;
 }
-/* A linha com a alça à esquerda: alça · hora · o quê · apagar (a base tem 4 colunas para hora · o quê · valor · ação) */
+/* A linha com a alça à esquerda: alça · título · apagar (sem a data: a base tem 4 colunas para hora · o quê · valor · ação) */
 #n-lista li {
-  grid-template-columns: auto minmax(3em, auto) 1fr auto;
+  grid-template-columns: auto 1fr auto;
   padding-left: var(--e-1);
   transition: transform var(--rapido);
 }
