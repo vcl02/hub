@@ -10,7 +10,7 @@ const RAIZ = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ler = (arquivo) => readFileSync(path.join(RAIZ, arquivo), 'utf8');
 // Tabelas Markdown alinhadas pelo Prettier: espaços repetidos viram um só.
 const compacto = (texto) => texto.replace(/ +/g, ' ');
-const PROJETOS = ['.', 'fin', 'tr', 'al', 'corpo', 'agua'];
+const PROJETOS = ['.', 'fin', 'tr', 'al', 'corpo', 'agua', 'notas'];
 const ITENS = ['Migrations', 'Testes', 'Pacotes', 'Backups', 'Domínio'];
 const em = (projeto, arquivo) => path.posix.join(projeto, arquivo);
 
@@ -121,6 +121,54 @@ test('inventário de pacotes das diretrizes bate com o código', () => {
   )[1];
 
   assert.ok(diretrizes.includes(`| \`@anthropic-ai/sdk\` | ${sdk} |`), sdk);
+
+  // CodeMirror das Notas: as versões exatas do script que gera o vendor estão no cabeçalho do vendor, no AGENTS das Notas
+  // e no inventário das diretrizes (nas linhas do CodeMirror).
+  const gerador = ler('notas/scripts/codemirror.mjs');
+
+  const objeto = (nome) =>
+    Object.fromEntries(
+      [
+        ...gerador
+          .match(new RegExp(`const ${nome} = \\{([^}]*)\\}`))[1]
+          .matchAll(/'([^']+)': '([\d.]+)'/g),
+      ].map((m) => [m[1], m[2]])
+    );
+
+  const versoes = objeto('VERSOES');
+  const indiretas = objeto('INDIRETAS');
+  const esbuild = gerador.match(/const ESBUILD = '([\d.]+)'/)[1];
+  const cabecalho = ler('notas/vendor/codemirror.js').split('\n')[0];
+  const agentesNotas = ler('notas/AGENTS.md');
+
+  const linhasCm = diretrizes
+    .split('\n')
+    .filter((l) => /codemirror|lezer|style-mod|esbuild/.test(l) && l.startsWith('| `'))
+    .join('\n');
+
+  assert.ok(Object.keys(versoes).length >= 7 && Object.keys(indiretas).length >= 4);
+  assert.ok(cabecalho.includes(`esbuild ${esbuild}:`), `vendor: esbuild ${esbuild}`);
+
+  for (const [pacote, versao] of Object.entries(versoes))
+    assert.ok(cabecalho.includes(`${pacote}@${versao}`), `vendor: ${pacote}@${versao}`);
+
+  for (const [pacote, versao] of [
+    ...Object.entries(versoes),
+    ...Object.entries(indiretas),
+    ['esbuild', esbuild],
+  ]) {
+    assert.ok(
+      agentesNotas.includes(`\`${pacote}\` ${versao}`),
+      `notas/AGENTS.md: ${pacote}`
+    );
+    assert.ok(
+      linhasCm.includes(`${pacote.split('/').pop()}\``) &&
+        new RegExp(`\\| [^|]*\\b${versao.replaceAll('.', '\\.')}\\b[^|]* \\|`).test(
+          linhasCm
+        ),
+      `diretrizes: ${pacote} ${versao}`
+    );
+  }
 
   // Só a raiz tem package.json: os apps usam o Playwright dela.
   for (const projeto of PROJETOS.filter((p) => p !== '.'))

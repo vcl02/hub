@@ -7,7 +7,7 @@ import globals from 'globals';
 // declaram no topo. Em vez de desligar o no-undef, o que cada arquivo enxerga é a lista dos
 // scripts que o index.html da página carrega (menos ele mesmo, por causa do no-redeclare).
 const RAIZ = import.meta.dirname;
-const PAGINAS = ['.', 'fin', 'tr', 'al', 'corpo', 'agua'];
+const PAGINAS = ['.', 'fin', 'tr', 'al', 'corpo', 'agua', 'notas'];
 // Bibliotecas que chegam por <script> de terceiros (não são arquivos do hub).
 const DE_TERCEIROS = { supabase: 'readonly', Chart: 'readonly' };
 
@@ -109,8 +109,8 @@ const testesDaPagina = PAGINAS.map((pasta, i) => {
 });
 
 export default [
-  // Cópias minificadas de terceiros (UMD do supabase-js): não são código do hub.
-  { ignores: ['supabase.js', 'tr/supabase.js', '**/node_modules/**'] },
+  // Cópias minificadas de terceiros (UMD do supabase-js, o CodeMirror das Notas): não são código do hub.
+  { ignores: ['supabase.js', 'tr/supabase.js', 'notas/vendor/**', '**/node_modules/**'] },
   js.configs.recommended,
   {
     rules: {

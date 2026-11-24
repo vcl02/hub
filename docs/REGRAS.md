@@ -30,4 +30,4 @@ Comportamento visível da página inicial. As regras comuns a todos os apps (tem
 ## Atalhos
 
 - Atalho com `class="app atalho externo"` (ex.: Agenda → Google Agenda): link para fora, em outra aba, nunca aceito como `?volta`. No Android, `hub.js` troca o link por um `intent://` que abre o app (`com.google.android.calendar`), com a web como reserva (`browser_fallback_url`).
-- Anotações → conversa do WhatsApp comigo mesmo (ícone `icons/anotacoes.svg`, bloco de anotações) (`wa.me/<número>`, número público no repositório).
+- Anotações → o app Notas (`notas/`, ícone `icons/anotacoes.svg`, bloco de anotações), na mesma aba, como um app do hub: aceito como `?volta` (`notas/…`). Até 24/11/2026 abria a conversa do WhatsApp comigo mesmo (`wa.me`). Regras do app em `../notas/docs/REGRAS.md`.

@@ -1,4 +1,5 @@
-// Validação do hub inteiro: higiene e testes da raiz, depois a validação própria do fin, do tr, do al, do Corpo e da Água (juntas).
+// Validação do hub inteiro: higiene e testes da raiz, depois a validação própria do fin, do tr, do al, do Corpo, da Água e das
+// Notas (juntas).
 import { readdirSync, readFileSync } from 'node:fs';
 import { spawn, spawnSync } from 'node:child_process';
 
@@ -73,7 +74,11 @@ const tarefas = [
         .map((n) => `tests/${n}`),
     ],
   ],
-  ...['fin', 'tr', 'al', 'corpo', 'agua'].map((app) => [app, app, ['scripts/check.mjs']]),
+  ...['fin', 'tr', 'al', 'corpo', 'agua', 'notas'].map((app) => [
+    app,
+    app,
+    ['scripts/check.mjs'],
+  ]),
 ];
 
 const rodar = ([nome, cwd, args]) =>

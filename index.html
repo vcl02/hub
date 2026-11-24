@@ -358,8 +358,8 @@
         </a>
       </nav>
 
-      <!-- Atalhos sem hábito, fixos embaixo: os externos (Google Agenda e a conversa do WhatsApp comigo mesmo).
-       No Android, hub.js troca o link da Agenda para abrir o app. -->
+      <!-- Atalhos sem hábito, fixos embaixo: o Google Agenda (externo; no Android, hub.js troca o link para abrir o app) e
+       as Anotações (o app Notas, notas/). -->
       <nav class="doca" aria-label="Atalhos">
         <a
           class="app atalho externo"
@@ -372,14 +372,7 @@
           <img class="app-icone" src="icons/agenda.svg" alt="" width="32" height="32" />
           <span class="app-nome">Agenda</span>
         </a>
-        <a
-          class="app atalho externo"
-          id="eu"
-          href="https://wa.me/5511978058566"
-          target="_blank"
-          rel="noopener"
-          style="--cor: #f2b544"
-        >
+        <a class="app atalho" id="notas" href="notas/" style="--cor: #f2b544">
           <img
             class="app-icone"
             src="icons/anotacoes.svg"

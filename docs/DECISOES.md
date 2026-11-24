@@ -5,7 +5,7 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md` (página inicial), `
 ## Um repositório, uma origem
 
 - O Fin e o Treino vieram dos repositórios `vcl02/fin` e `vcl02/tr` com o histórico completo (`git subtree`); os antigos foram excluídos em 22/10/2026.
-  Os apps novos (al, Corpo, Água) nasceram aqui.
+  Os apps novos (al, Corpo, Água, Notas) nasceram aqui.
 - Tudo publicado junto no GitHub Pages, na mesma origem: uma sessão do Supabase vale para todos, um login entra em todos e um Sair sai de todos.
   O custo é dividir `localStorage` e caches, resolvido com prefixo por app e service worker que nunca apaga cache de outro prefixo.
 - Login e Sair só na página inicial; app aberto sem sessão vai para o login do hub com `?volta`, aceito só para a pasta de um app da página (nunca externo nem `..`).
@@ -149,3 +149,9 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md` (página inicial), `
 - **Relógio:** as duas funções usam `Date.now()`, que o relógio falso do Playwright (`tests/relogio.mjs`, pausado) e o contexto do `node:vm` nos testes controlam; não precisou de relógio injetado.
 - **Testes:** as funções são testadas uma vez, no arquivo publicado (`tests/nucleo.test.mjs`: mesma ação em menos de 0,5 s ignorada, 0,499 s e 0,5 s na fronteira, conta do último toque, ações diferentes não se bloqueiam, chave por botão, quantidade e dia; armado por 3 s, o armado que sobrevive ao redesenho, botão sem `data-armavel`, o observador que só repinta com item armado e as chaves por conteúdo e vez). `tests/repetidas.test.mjs` deixou de testar quatro cópias e passou a provar pela árvore do código (`espree`) que nenhum script de nenhuma das quatro páginas declara essas funções nem as recebe como parâmetro, quantas vezes cada arquivo chama `repetido`, `confirmar` e `chavesDosItens` (um botão que deixa de chamar falha), e que quem chama vem depois do núcleo na página. Mutações nos 500 ms (499, 501, `<=`), na chave, em "conta do último", nos 3 s, na chave vazia, no observador, nas chaves dos itens, num app que declara a própria cópia, num handler sem a chamada e no núcleo fora de ordem fazem os testes falharem. Os testes de navegador de toque duplo e de "+1"/"+ml" de cada app continuam passando sem mudança.
 - **Próximas fatias, nesta ordem:** armazenamento com prefixo do app; o toast; datas (`hoje`, `diaDaUrl`/`diaNaUrl`, barra do dia); login e volta ao hub; e por último o motor de sincronização (diferença, mescla e voo). O Fin continua fora (trava o botão enquanto o pedido está no ar, sem `repetido`; `confirmar` próprio).
+
+## Módulo Notas (24/11/2026)
+
+- Pedido do mantenedor: anotações com a fluidez do VS Code no PC (Ctrl+X sem seleção recorta a linha, Ctrl+D com vários cursores) e a de um grupo do WhatsApp no celular (selecionar, apagar, editar). App novo `notas/`, que o atalho **Anotações** da doca passou a abrir no lugar da conversa do WhatsApp comigo mesmo (`wa.me`), com o mesmo ícone. Deixou de ser externo: `wa.me` saiu da lista de domínios das diretrizes, e `?volta=notas/…` é aceito.
+- **Nota inteira, quem salva por último vale** (decisão do mantenedor: "pega sempre o resultado final da edição e coloca no banco, não compara mudanças"): é a única exceção ao "Envio que mescla" (`../AGENTS.md`), porque a unidade é o texto de uma nota, não uma lista do dia. O log de cada edição é o `hub_historico`, ligado a `notas_nota` pela migration `02` da raiz (a `01` já era das marmitas).
+- **CodeMirror 6 vendorizado** (`notas/vendor/codemirror.js`): primeira biblioteca que só existe em módulos ES; sem build no hub, vira um arquivo só gerado por `notas/scripts/codemirror.mjs`, com versões exatas, fora do `package.json` da raiz. O porquê e as alternativas em `notas/docs/DECISOES.md`.

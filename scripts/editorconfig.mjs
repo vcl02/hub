@@ -16,8 +16,13 @@ const BINARIOS = new Set([
   '.woff2',
 ]);
 
-// Cópia de terceiros (UMD minificado do supabase-js): não é código do hub.
-const DE_TERCEIROS = new Set(['supabase.js', 'tr/supabase.js']);
+// Cópias de terceiros (UMD minificado do supabase-js, o CodeMirror das Notas): não são código do hub.
+const DE_TERCEIROS = new Set([
+  'supabase.js',
+  'tr/supabase.js',
+  'notas/vendor/codemirror.js',
+]);
+
 // Exportações do Tasker (XML com tab, gerado pelo app no celular): não se edita à mão.
 const EXPORTADOS = ['fin/tasker/'];
 

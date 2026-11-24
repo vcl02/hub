@@ -82,8 +82,8 @@ test('um hábito por linha (os de habitos.js, o Fin pela Besteira); cada um apon
   ); // mesma lista e ordem do habitos.js
   assert.deepEqual(
     atalhos.map((a) => a.href),
-    []
-  ); // o Fin virou o hábito Besteira; os externos (class externo) à parte
+    ['notas/']
+  ); // o Fin virou o hábito Besteira; as Anotações são o app Notas; os externos (class externo) à parte
 
   for (const { href, icone, cor } of [...habitos, ...atalhos]) {
     assert.ok(existe(`${href}index.html`), href);
@@ -131,7 +131,7 @@ const marcaDoHub = (conteudo) => {
 };
 
 test('cada app volta para o hub (../) pelo botão com a mesma marca em traço', () => {
-  for (const app of ['fin', 'tr', 'al', 'corpo', 'agua']) {
+  for (const app of ['fin', 'tr', 'al', 'corpo', 'agua', 'notas']) {
     const marca = marcaDoHub(ler(`${app}/index.html`));
 
     assert.equal(marca.botao.tag, 'a', app);
@@ -149,7 +149,7 @@ test('tema escuro único: hub, fin e os módulos na base com o mesmo fundo', () 
     etiquetas(conteudo).find((e) => e.tag === 'meta' && e.attrs.name === nome)?.attrs
       .content;
 
-  for (const app of ['fin', 'tr', 'al', 'corpo', 'agua'])
+  for (const app of ['fin', 'tr', 'al', 'corpo', 'agua', 'notas'])
     assert.ok(
       etiquetas(ler(`${app}/index.html`)).some(
         (e) =>
@@ -180,6 +180,7 @@ test('tema escuro único: hub, fin e os módulos na base com o mesmo fundo', () 
     'al/index.html',
     'corpo/index.html',
     'agua/index.html',
+    'notas/index.html',
   ])
     assert.equal(tema(ler(arquivo), 'theme-color').toLowerCase(), '#1b1e21', arquivo);
   assert.equal(tema(html, 'color-scheme'), 'dark');
@@ -202,6 +203,7 @@ test('service workers dividem a origem sem apagar o cache um do outro: cada app 
     'al-estatico',
     'corpo-estatico',
     'agua-estatico',
+    'notas-estatico',
     'fin-estatico',
   ];
 
@@ -210,6 +212,7 @@ test('service workers dividem a origem sem apagar o cache um do outro: cada app 
     ['al/sw.js', 'al-'],
     ['corpo/sw.js', 'corpo-'],
     ['agua/sw.js', 'agua-'],
+    ['notas/sw.js', 'notas-'],
   ]) {
     const sw = rodarSw(path.join(RAIZ, arquivo), {
       existentes: [...todos, prefixo + 'velho', prefixo + 'outro'],
@@ -428,6 +431,7 @@ test('?volta só leva para a pasta de um app da página (hábito ou atalho do hu
     'al/#x',
     'corpo/',
     'agua/?dia=2026-10-18#y',
+    'notas/?nota=abc123', // atalho da doca (o app Notas), não hábito
   ])
     assert.equal(volta('?volta=' + encodeURIComponent(ok)), ok, ok);
 
@@ -496,9 +500,7 @@ test('marca do hub em todo lugar: favicon, celular, login e o botão de volta no
     0
   ); // nenhum hábito ou atalho usa a marca
 
-  const anotacoes = tags.findIndex(
-    (e) => e.tag === 'a' && /^https:\/\/wa\.me\/\d+$/.test(e.attrs.href)
-  );
+  const anotacoes = tags.findIndex((e) => e.tag === 'a' && e.attrs.href === 'notas/');
 
   assert.ok(anotacoes >= 0);
   assert.equal(
@@ -761,7 +763,7 @@ test('histórico no banco: toda tabela dos apps (menos o Fin, que tem o dele) co
   for (const linha of sql.split('\n').filter((l) => l.trim().startsWith('--')))
     assert.ok(!linha.includes(';'), `; em comentário: ${linha}`);
 
-  // As migrations da raiz juntas (00 e as que acrescentam tabela nova, como a 01 das marmitas), só reaproveitando a função da 00
+  // As migrations da raiz juntas (00 e as que acrescentam tabela nova, como a 01 das marmitas e a 02 das notas), só reaproveitando a função da 00
   const todas = readdirSync(path.join(RAIZ, 'migrations'))
     .sort()
     .map((n) => ler(`migrations/${n}`));
@@ -788,6 +790,7 @@ test('histórico no banco: toda tabela dos apps (menos o Fin, que tem o dele) co
     'al_registro',
     'corpo_dia',
     'corpo_medida',
+    'notas_nota',
     'tr_exercicio',
     'tr_registro',
     'tr_treino',
@@ -810,6 +813,7 @@ test('núcleo comum (base/nucleo.js): com cabeçalho, carregado uma vez pela pá
     ['al/index.html', 'al/sw.js', '../base/nucleo.js'],
     ['corpo/index.html', 'corpo/sw.js', '../base/nucleo.js'],
     ['agua/index.html', 'agua/sw.js', '../base/nucleo.js'],
+    ['notas/index.html', 'notas/sw.js', '../base/nucleo.js'],
   ]) {
     assert.equal(scriptsDe(ler(pagina)).filter((s) => s === src).length, 1, pagina);
 
@@ -910,7 +914,9 @@ test('módulos na base comum só usam as cores da base: todo var(--x) do CSS, do
 
   const modulos = {
     '': ['hub.css'],
-    ...Object.fromEntries(['agua', 'corpo', 'al', 'tr', 'fin'].map((a) => [a, cssDe(a)])),
+    ...Object.fromEntries(
+      ['agua', 'corpo', 'al', 'tr', 'fin', 'notas'].map((a) => [a, cssDe(a)])
+    ),
   };
 
   // O que cada módulo define (a base inteira mais os próprios arquivos) e o que usa, declaração por declaração
@@ -949,7 +955,7 @@ test('módulos na base comum só usam as cores da base: todo var(--x) do CSS, do
 });
 
 test('cada app abre com os próprios arquivos: todo src e href relativo do index.html aponta para um arquivo que existe no disco (subpastas, ../)', () => {
-  for (const pasta of ['', 'fin/', 'tr/', 'al/', 'corpo/', 'agua/']) {
+  for (const pasta of ['', 'fin/', 'tr/', 'al/', 'corpo/', 'agua/', 'notas/']) {
     const base = path.join(RAIZ, pasta);
 
     const refs = etiquetas(ler(pasta + 'index.html'))

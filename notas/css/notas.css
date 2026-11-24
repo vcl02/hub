@@ -1,0 +1,224 @@
+/* Notas — o que é só delas, sobre a base comum (../base/tokens.css e ../base/componentes.css): a cor (a do atalho
+   Anotações), a nota aberta na tela toda (o editor do PC sem a coluna de 560 px; a conversa na coluna), os balões com o
+   Markdown formatado, a seleção e o campo que cresce. */
+:root {
+  --cor: #f2b544;
+}
+
+/* ---------- Lista ---------- */
+.vazio {
+  text-align: center;
+  padding: var(--e-5) 0;
+}
+#n-lista .oque {
+  color: inherit;
+  text-decoration: none;
+  min-height: 36px;
+  justify-content: center;
+}
+#n-lista .oque b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#n-lista .oque small:empty {
+  display: none;
+}
+
+/* ---------- Nota aberta: a página inteira (cabeçalho, o editor ou a conversa, o aviso de envio) ---------- */
+body.aberta {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+.nota {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.nota > .topo {
+  flex: none;
+  padding: max(var(--e-2), env(safe-area-inset-top, 0px))
+    max(var(--e-4), env(safe-area-inset-right, 0px)) var(--e-2)
+    max(var(--e-4), env(safe-area-inset-left, 0px));
+  border-bottom: 1px solid var(--line);
+}
+.nota-topo h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.selecao .num {
+  flex: 1;
+  font-size: var(--t-xl);
+  color: var(--cor);
+}
+.nota > .sync {
+  flex: none;
+  margin: 0;
+  padding: var(--e-1) var(--e-4);
+}
+
+/* ---------- Editor (PC): a tela toda, o CodeMirror rola por dentro ---------- */
+.editor {
+  flex: 1;
+  min-height: 0;
+}
+.editor .cm-editor {
+  height: 100%;
+}
+
+/* ---------- Conversa: os balões na coluna, o mais novo embaixo, o campo fixo no pé ---------- */
+.conversa {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: var(--largura);
+  margin: 0 auto;
+}
+.baloes {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+  margin: 0;
+  padding: var(--e-3) max(var(--e-4), env(safe-area-inset-right, 0px)) var(--e-3)
+    max(var(--e-4), env(safe-area-inset-left, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-2);
+}
+.baloes:empty {
+  flex: 0;
+}
+.conversa .vazio {
+  flex: 1;
+}
+/* Balão: o parágrafo formatado; segurar seleciona (sem o menu e sem a seleção de texto do navegador) */
+.balao {
+  align-self: flex-end;
+  max-width: 88%;
+  min-width: 3em;
+  padding: var(--e-2) var(--e-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg) var(--r-lg) var(--r-sm) var(--r-lg);
+  background: var(--surface);
+  overflow-wrap: anywhere;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  transition: background var(--rapido);
+}
+.balao.sel {
+  border-color: var(--cor);
+  background: var(--cor-soft);
+}
+.balao.editando {
+  border-style: dashed;
+  border-color: var(--cor);
+}
+/* Markdown dentro do balão: títulos menores que os da página, listas e citações com recuo curto */
+.balao > :first-child {
+  margin-top: 0;
+}
+.balao > :last-child {
+  margin-bottom: 0;
+}
+.balao p,
+.balao ul,
+.balao ol,
+.balao pre,
+.balao blockquote {
+  margin: 0 0 var(--e-2);
+}
+.balao h1,
+.balao h2,
+.balao h3,
+.balao h4,
+.balao h5,
+.balao h6 {
+  margin: 0 0 var(--e-1);
+  font-family: var(--display);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--cor);
+}
+.balao h1 {
+  font-size: var(--t-xl);
+}
+.balao h2 {
+  font-size: var(--t-lg);
+}
+.balao h3,
+.balao h4,
+.balao h5,
+.balao h6 {
+  font-size: var(--t-md);
+}
+.balao ul,
+.balao ol {
+  padding-left: 1.3em;
+}
+.balao code {
+  padding: 1px 4px;
+  border-radius: var(--e-1);
+  background: var(--bg);
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 0.9em;
+}
+.balao pre {
+  padding: var(--e-2);
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  overflow-x: auto;
+  white-space: pre;
+}
+.balao pre code {
+  padding: 0;
+  background: none;
+}
+.balao blockquote {
+  padding-left: var(--e-2);
+  border-left: 3px solid var(--line-strong);
+  color: var(--muted);
+}
+.balao hr {
+  border: 0;
+  border-top: 1px solid var(--line-strong);
+  margin: var(--e-2) 0;
+}
+.balao a {
+  color: var(--cor);
+}
+.balao .tarefa.feita {
+  color: var(--ok);
+}
+
+/* ---------- Campo de baixo: cresce com o texto até 40% da tela, depois rola ---------- */
+.c-editando {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-2);
+  padding: var(--e-1) var(--e-4) 0;
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+.c-form {
+  flex: none;
+  align-items: flex-end;
+  padding: var(--e-2) max(var(--e-4), env(safe-area-inset-right, 0px))
+    max(var(--e-3), env(safe-area-inset-bottom, 0px))
+    max(var(--e-4), env(safe-area-inset-left, 0px));
+}
+.c-form textarea {
+  resize: none;
+  max-height: 40vh;
+  max-height: 40dvh;
+  overflow-y: auto;
+  line-height: 1.4;
+}
