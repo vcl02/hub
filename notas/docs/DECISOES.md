@@ -31,3 +31,7 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md`; o jeito de trabalha
 - Markdown formatado (decisão do mantenedor) por um renderizador próprio e pequeno (`markdownHtml`), só com o que uma anotação usa: sem dependência nova e com a segurança na mão. Todo texto é escapado antes de virar HTML, e link só aceita `http(s)`, `mailto` e `tel` (`javascript:` fica como texto), com `rel="noopener noreferrer"`.
 - Segurar ~0,5 s seleciona, como no WhatsApp; o menu do toque longo do Android não aparece sobre os balões. Apagar com o toque duplo do núcleo, como em todos os apps; a chave do armado é a própria seleção, então mudar a seleção desarma.
 - Enter envia no PC (Shift+Enter quebra a linha) e quebra a linha no celular, onde o envio é pelo botão, como no WhatsApp; Ctrl+Enter envia sempre.
+
+## Título num campo dentro do h1 (24/11/2026)
+
+- O título da nota é um `<input>` dentro do `h1` do topo, que da base tem `nowrap` + `text-overflow: ellipsis` e a bolinha da cor antes. Com o campo inline a 100% da largura depois da bolinha, ele passava do `h1`, e o Chromium troca o elemento inteiro que passa por "…": no PC só aparecia "…" e clicar não mostrava nada. Corrigido com o `h1` das Notas em flex (bolinha e campo lado a lado, o campo com `flex: 1`), sem ellipsis. O teste do editor confere que o campo cabe no `h1` (sem a correção, ele passa 26 px e o teste falha).

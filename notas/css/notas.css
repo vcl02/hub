@@ -48,8 +48,17 @@ body.aberta {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* O título é um campo: o h1 vira flex (a bolinha da cor e o campo lado a lado) e o campo ocupa o que sobra. Com o campo
+   inline de largura 100% depois da bolinha, ele passava do h1 e o text-overflow: ellipsis o trocava inteiro por "…"
+   (no PC só se via "…" e clicar não mostrava nada). */
+.nota-topo .nota-titulo {
+  display: flex;
+  align-items: center;
+  text-overflow: clip;
+}
 .nota-topo .nota-titulo input {
-  width: 100%;
+  flex: 1;
+  width: auto;
   min-width: 0;
   padding: 0;
   border: 0;

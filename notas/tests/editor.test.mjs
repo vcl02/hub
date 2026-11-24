@@ -15,6 +15,16 @@ test('PC: a nota abre no editor; Ctrl+D seleciona as ocorrências com vários cu
   await pg.click('#n-nova');
   await pg.waitForSelector('#editor:not([hidden]) .cm-content');
   await pg.fill('#n-titulo', 'Teste do editor');
+
+  // O campo do título cabe no h1 (passando dele, o ellipsis do h1 o trocava inteiro por "…")
+  const [h1, campo] = await pg.$$eval('.nota-titulo, #n-titulo', (L) =>
+    L.map((e) => e.getBoundingClientRect()).map((r) => ({ x: r.x, direita: r.right }))
+  );
+
+  assert.ok(
+    campo.x >= h1.x && campo.direita <= h1.direita + 0.5,
+    JSON.stringify({ h1, campo })
+  );
   await pg.locator('.cm-content').click();
   assert.equal(await pg.isHidden('#conversa'), true);
   assert.equal(
