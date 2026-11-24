@@ -25,6 +25,17 @@ test('PC: a nota abre no editor; Ctrl+D seleciona as ocorrências com vários cu
     campo.x >= h1.x && campo.direita <= h1.direita + 0.5,
     JSON.stringify({ h1, campo })
   );
+
+  // Com o foco, nada de contorno (o h1 o cortava e sobrava uma barra no começo, parecendo o cursor): um sublinhado
+  await pg.focus('#n-titulo');
+  assert.deepEqual(
+    await pg.$eval('#n-titulo', (i) => {
+      const e = getComputedStyle(i);
+
+      return [i.matches(':focus-visible'), e.outlineStyle, e.boxShadow.includes('inset')];
+    }),
+    [true, 'none', true]
+  );
   await pg.locator('.cm-content').click();
   assert.equal(await pg.isHidden('#conversa'), true);
   assert.equal(

@@ -35,6 +35,7 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md`; o jeito de trabalha
 ## Título num campo dentro do h1 (24/11/2026)
 
 - O título da nota é um `<input>` dentro do `h1` do topo, que da base tem `nowrap` + `text-overflow: ellipsis` e a bolinha da cor antes. Com o campo inline a 100% da largura depois da bolinha, ele passava do `h1`, e o Chromium troca o elemento inteiro que passa por "…": no PC só aparecia "…" e clicar não mostrava nada. Corrigido com o `h1` das Notas em flex (bolinha e campo lado a lado, o campo com `flex: 1`), sem ellipsis. O teste do editor confere que o campo cabe no `h1` (sem a correção, ele passa 26 px e o teste falha).
+- O foco do campo também era cortado pelo `h1`: do contorno de 3 px da base (`:focus-visible`, 2 px para fora) só sobrava o lado esquerdo, uma barra amarela no começo que parecia o cursor parado ali. O título tem foco próprio: sublinhado por dentro (`box-shadow` inset na cor) e o cursor na cor; o teste confere sem contorno e com o sublinhado.
 
 ## Linha do cursor translúcida no editor (24/11/2026)
 

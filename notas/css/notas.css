@@ -66,6 +66,15 @@ body.aberta {
   color: var(--fg);
   font: inherit;
 }
+/* Foco do título: o contorno da base (3 px, 2 px para fora) era cortado pelo h1 e só sobrava o lado esquerdo, uma barra
+   amarela que parecia o cursor parado no começo. Aqui o foco é um sublinhado por dentro do campo, e o cursor na cor. */
+.nota-topo .nota-titulo input:focus-visible {
+  outline: none;
+  box-shadow: inset 0 -2px 0 var(--cor);
+}
+.nota-topo .nota-titulo input {
+  caret-color: var(--cor);
+}
 .nota-topo .nota-titulo input::placeholder {
   color: var(--muted);
   opacity: 1;
