@@ -35,3 +35,7 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md`; o jeito de trabalha
 ## Título num campo dentro do h1 (24/11/2026)
 
 - O título da nota é um `<input>` dentro do `h1` do topo, que da base tem `nowrap` + `text-overflow: ellipsis` e a bolinha da cor antes. Com o campo inline a 100% da largura depois da bolinha, ele passava do `h1`, e o Chromium troca o elemento inteiro que passa por "…": no PC só aparecia "…" e clicar não mostrava nada. Corrigido com o `h1` das Notas em flex (bolinha e campo lado a lado, o campo com `flex: 1`), sem ellipsis. O teste do editor confere que o campo cabe no `h1` (sem a correção, ele passa 26 px e o teste falha).
+
+## Linha do cursor translúcida no editor (24/11/2026)
+
+- A seleção do editor é de fundo claro e texto escuro (escolha do mantenedor). No CodeMirror a camada da seleção fica atrás das linhas, e o fundo da linha do cursor (`.cm-activeLine`) fica por cima dela: com esse fundo opaco, ao selecionar de baixo para cima (cursor na 1ª linha), a parte selecionada dessa linha virava texto escuro em fundo escuro e sumia. O fundo da linha do cursor agora é o `--fg` a 6% translúcido (no escuro, quase o mesmo tom de antes; sobre a seleção, deixa o claro passar). O teste da seleção confere a opacidade abaixo de 10% com o cursor na 1ª linha (com o fundo opaco antigo, falha).

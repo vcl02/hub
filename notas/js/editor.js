@@ -37,7 +37,11 @@ const temaEditor = () =>
         backgroundColor: 'var(--fg)',
         color: 'var(--bg)',
       },
-      '.cm-activeLine': { backgroundColor: 'var(--surface)' },
+      // Linha do cursor translúcida: ela fica por cima da camada da seleção, e com fundo opaco a parte selecionada dela
+      // sumia (texto escuro da seleção sobre o fundo escuro da linha, ao selecionar de baixo para cima).
+      '.cm-activeLine': {
+        backgroundColor: 'color-mix(in srgb, var(--fg) 6%, transparent)',
+      },
       '.cm-selectionMatch': { backgroundColor: 'var(--cor-soft)' },
       '.cm-searchMatch': {
         backgroundColor: 'var(--cor-soft)',

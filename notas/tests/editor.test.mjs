@@ -204,6 +204,24 @@ test('PC: a seleção no editor tem fundo claro e texto escuro', async () => {
     ['rgb(233, 236, 239)', 'rgb(27, 30, 33)']
   );
 
+  // Selecionando de baixo para cima, o cursor fica na 1ª linha (a linha do cursor, que fica por cima da seleção): o
+  // fundo dela tem de deixar o claro da seleção passar, senão o texto escuro selecionado some no fundo escuro
+  await pg.keyboard.press('End');
+  await pg.keyboard.type('\nsegunda linha');
+  await pg.keyboard.press('Shift+Control+Home');
+  await pg.clock.runFor(100);
+
+  const linhaDoCursor = await pg.evaluate(
+    () =>
+      getComputedStyle(editor.contentDOM.querySelector('.cm-activeLine')).backgroundColor
+  );
+
+  // A opacidade do fundo: "color(srgb … / 0.06)" ou "rgba(…, 0.06)"; rgb() sem alfa é opaco
+  const m = linhaDoCursor.match(/\/\s*([\d.]+)\)$|rgba\([^)]*,\s*([\d.]+)\)$/);
+  const alfa = m ? Number(m[1] ?? m[2]) : 1;
+
+  assert.ok(alfa < 0.1, linhaDoCursor);
+
   await ctx.close();
 });
 
