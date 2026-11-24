@@ -76,8 +76,7 @@ function desenharLista() {
     (n) =>
       `<li data-id="${esc(n.id)}"><button type="button" class="alca" title="Arrastar para reordenar (Alt+↑/↓)" aria-label="Arrastar para reordenar">${ICONE_ALCA}</button>` +
       `<span class="hora">${esc(quandoFoi(n.editadaEm))}</span>` +
-      `<a class="oque" href="?nota=${esc(n.id)}"><b>${esc(n.titulo || 'Sem título')}</b>` +
-      `<small>${esc(previaDe(n.texto))}</small></a>` +
+      `<a class="oque" href="?nota=${esc(n.id)}"><b>${esc(n.titulo || 'Sem título')}</b></a>` +
       `<button type="button" class="bt-ic perigo" data-apagar="${esc(n.id)}" data-armavel="nota:${esc(n.id)}" title="Apagar (toque duas vezes)" aria-label="Apagar">${ICONE_LIXO}</button></li>`
   ).join('');
   $('n-vazio').hidden = L.length > 0;
