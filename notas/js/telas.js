@@ -454,6 +454,20 @@ $('c-form').addEventListener('submit', (ev) => {
 // Na ordem: desmarca a seleção; cancela a edição de um parágrafo; no editor, só tira o foco; sem nada, volta para a lista.
 // (A busca e os vários cursores do editor tratam o Esc antes, no próprio CodeMirror.) Na lista, o Esc sai do app (js/util.js).
 document.addEventListener('keydown', (ev) => {
+  if (
+    aberta &&
+    (ev.ctrlKey || ev.metaKey) &&
+    !ev.shiftKey &&
+    !ev.altKey &&
+    ev.key.toLowerCase() === 's'
+  ) {
+    ev.preventDefault();
+    if (modo === 'editor') salvarAgora();
+    else salvarNota(aberta, mostrado);
+
+    return;
+  }
+
   if (ev.key !== 'Escape' || ev.defaultPrevented || ev.isComposing || !aberta) return;
 
   if (selecionados.size) limparSelecao();

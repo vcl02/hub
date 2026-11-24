@@ -94,3 +94,24 @@ test('PC: abrir outra nota não substitui seu texto pelo da nota anterior', asyn
 
   await ctx.close();
 });
+
+test('PC: Ctrl+S grava o Markdown aberto sem acionar salvar página', async () => {
+  const { ctx, pg } = await abrirApp({ pc: true });
+
+  await pg.click('#n-nova');
+  await pg.waitForSelector('#editor:not([hidden]) .cm-content');
+  await pg.keyboard.type('# nota salva');
+  await pg.evaluate(() => {
+    document.addEventListener('keydown', (ev) => {
+      if (ev.ctrlKey && ev.key.toLowerCase() === 's')
+        window.ctrlSSalvoPreventDefault = ev.defaultPrevented;
+    });
+  });
+
+  await pg.keyboard.press('Control+s');
+
+  assert.equal(await pg.evaluate(() => notaPorId(aberta).texto), '# nota salva');
+  assert.equal(await pg.evaluate(() => window.ctrlSSalvoPreventDefault), true);
+
+  await ctx.close();
+});
