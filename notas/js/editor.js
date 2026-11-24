@@ -257,6 +257,31 @@ const formatacaoAoVivo = () =>
     { decorations: (p) => p.decorations }
   );
 
+// O botão do meio no editor só seleciona em coluna: sem a rolagem automática (Windows) e sem colar a seleção primária
+// (Linux), que viria num paste logo depois de soltar o botão.
+let meioEm = 0;
+
+const botaoDoMeio = CM.EditorView.domEventHandlers({
+  mousedown(ev) {
+    if (ev.button !== 1) return false;
+    meioEm = Date.now();
+
+    return false; // segue para a seleção em coluna (que já cancela o padrão do navegador)
+  },
+  auxclick(ev) {
+    if (ev.button === 1) ev.preventDefault();
+
+    return false;
+  },
+  paste(ev) {
+    if (Date.now() - meioEm > 1000) return false;
+    meioEm = 0;
+    ev.preventDefault();
+
+    return true;
+  },
+});
+
 // Um estado novo do editor para o texto (desfazer começa do zero a cada nota); aoMudar(texto) a cada mudança no texto
 function estadoDoEditor(texto, aoMudar) {
   return CM.EditorState.create({
@@ -269,8 +294,12 @@ function estadoDoEditor(texto, aoMudar) {
       CM.EditorState.allowMultipleSelections.of(true),
       CM.indentOnInput(),
       CM.bracketMatching(),
-      CM.rectangularSelection(),
-      CM.crosshairCursor(),
+      // Seleção em coluna (vários cursores, um por linha) arrastando com o botão do meio, como no VS Code, ou com Alt.
+      // Sem o crosshairCursor: ele trocava o ponteiro por uma cruz grande ao segurar Alt (aparecia no Alt+S).
+      CM.rectangularSelection({
+        eventFilter: (ev) => ev.button === 1 || (ev.altKey && ev.button === 0),
+      }),
+      botaoDoMeio,
       CM.highlightActiveLine(),
       CM.highlightSelectionMatches(),
       CM.search({ top: true }),
