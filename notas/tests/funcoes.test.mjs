@@ -285,10 +285,11 @@ function aparelho(nuvem, { local = [], base } = {}) {
 
             return {
               data: clonar(nuvem.linhas.slice(de, ate + 1)).map(
-                ({ id, titulo, texto, criada_em, editada_em }) => ({
+                ({ id, titulo, texto, ordem, criada_em, editada_em }) => ({
                   id,
                   titulo,
                   texto,
+                  ordem,
                   criada_em,
                   editada_em,
                 })
@@ -313,6 +314,11 @@ function aparelho(nuvem, { local = [], base } = {}) {
       'idOk',
       'isoOk',
       'migrarNotaAntiga',
+      'ordemOk',
+      'pelaEdicao',
+      'pelaOrdem',
+      'FOLGA_MINIMA',
+      'ordemEntre',
       'preparar',
       'linhas',
       'deLinhas',
@@ -324,6 +330,7 @@ function aparelho(nuvem, { local = [], base } = {}) {
       'salvarNota',
       'salvarTituloNota',
       'apagarNota',
+      'moverNota',
       'enviar',
       'baixar',
       'carregar',
@@ -403,21 +410,24 @@ test('preparar: valida dados e migra notas antigas separando a primeira linha em
     ],
   });
 
+  // sem ordem (formato antigo): 1, 2, 3… pela edição, a mais recente primeiro
   assert.deepEqual(json(d), {
     notas: [
       {
         id: 'tz',
         titulo: '',
         texto: '',
+        ordem: 1,
         criadaEm: '2026-11-23T09:00:00.123Z',
         editadaEm: '2026-11-23T09:00:00.123Z',
       },
-      N2,
-      N1,
+      { ...N2, ordem: 2 },
+      { ...N1, ordem: 3 },
       {
         id: 'legada',
         titulo: 'Antiga',
         texto: 'corpo',
+        ordem: 4,
         criadaEm: '2026-11-19T10:00:00.000Z',
         editadaEm: '2026-11-19T10:00:00.000Z',
       },
@@ -425,6 +435,7 @@ test('preparar: valida dados e migra notas antigas separando a primeira linha em
         id: 'sem',
         titulo: '',
         texto: 'a\nb\nc',
+        ordem: 5,
         criadaEm: EPOCA,
         editadaEm: EPOCA,
       },
@@ -436,6 +447,7 @@ test('preparar: valida dados e migra notas antigas separando a primeira linha em
       id: 'so',
       titulo: 'título único',
       texto: '',
+      ordem: 1,
       criadaEm: EPOCA,
       editadaEm: EPOCA,
     }
@@ -455,6 +467,7 @@ test('linhas ↔ deLinhas: ida e volta pela tabela dá o mesmo db, e a data do s
       id: 'n1',
       titulo: 'Um', // formato antigo (sem título): a 1ª linha vira o título
       texto: '',
+      ordem: 2,
       criada_em: N1.criadaEm,
       editada_em: N1.editadaEm,
     },
@@ -462,6 +475,7 @@ test('linhas ↔ deLinhas: ida e volta pela tabela dá o mesmo db, e a data do s
       id: 'n2',
       titulo: 'Dois',
       texto: 'par',
+      ordem: 1,
       criada_em: N2.criadaEm,
       editada_em: N2.editadaEm,
     },
@@ -479,7 +493,7 @@ test('linhas ↔ deLinhas: ida e volta pela tabela dá o mesmo db, e a data do s
         },
       ])
     ),
-    { notas: [N1] }
+    { notas: [{ ...N1, ordem: 1 }] }
   );
   assert.deepEqual(json(deLinhas(null)), { notas: [] });
 });
@@ -524,9 +538,10 @@ test('salvarNota e salvarTituloNota: valores iguais não gravam; mudanças salva
   assert.equal(ap.salvarNota('n1', 'mais\r\ntexto'), true);
   assert.equal(ap.notaPorId('n1').texto, 'mais\ntexto');
   assert.ok(ap.notaPorId('n1').editadaEm > N2.editadaEm);
-  assert.deepEqual(json(ap.E.db.notas.map((n) => n.id)), ['n1', 'n2']);
+  // editar não muda a posição na lista (a ordem é a que o mantenedor definiu)
+  assert.deepEqual(json(ap.E.db.notas.map((n) => n.id)), ['n2', 'n1']);
   assert.deepEqual(ap.agendados, [800]);
-  assert.equal(JSON.parse(ap.guardado.get('notas.db.u1')).notas[0].texto, 'mais\ntexto');
+  assert.equal(JSON.parse(ap.guardado.get('notas.db.u1')).notas[1].texto, 'mais\ntexto');
   assert.equal(ap.salvarTituloNota('n1', '  Outro título  '), true);
   assert.equal(ap.notaPorId('n1').titulo, 'Outro título');
   assert.equal(ap.notaPorId('n1').texto, 'mais\ntexto');
@@ -560,6 +575,7 @@ test('envio: só a nota que mudou sobe, inteira (upsert com onConflict user_id,i
           id: 'n2',
           titulo: 'Dois',
           texto: 'par\n\nnovo',
+          ordem: 1,
           criada_em: N2.criadaEm,
           editada_em: ap.notaPorId('n2').editadaEm,
         },
