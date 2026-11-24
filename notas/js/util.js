@@ -35,8 +35,6 @@ const esc = (s) =>
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
   );
 
-const pad = (n) => String(n).padStart(2, '0');
-
 let tToast;
 
 function toast(msg, erro = false) {
@@ -87,30 +85,6 @@ function modoAtual() {
   if (escolhido === 'editor' || escolhido === 'conversa') return escolhido;
 
   return modoDoAparelho(matchMedia('(pointer: fine)').matches, innerWidth);
-}
-
-// ===== Data da última edição, na lista =====
-// Hoje: a hora ("14:05"); ontem: "ontem"; neste ano: "19/11"; antes: "19/11/25". Na hora local do aparelho.
-function quandoFoi(isoTexto, agora = new Date()) {
-  const d = new Date(isoTexto);
-
-  if (!Number.isFinite(d.getTime())) return '';
-
-  const dia = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime(),
-    dias = Math.round((dia(agora) - dia(d)) / 864e5);
-
-  if (dias === 0) return pad(d.getHours()) + ':' + pad(d.getMinutes());
-
-  if (dias === 1) return 'ontem';
-
-  return (
-    pad(d.getDate()) +
-    '/' +
-    pad(d.getMonth() + 1) +
-    (d.getFullYear() !== agora.getFullYear()
-      ? '/' + String(d.getFullYear()).slice(2)
-      : '')
-  );
 }
 
 // ===== Esc =====

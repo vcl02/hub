@@ -2,7 +2,7 @@
 // em notas.test.mjs (poucos casos); aqui estão:
 //   · a conversa (js/markdown.js): parágrafos com blocos de código, acrescentar, trocar, apagar e copiar sem mexer no resto
 //   · o Markdown em HTML: texto sempre escapado, links só http(s)/mailto/tel em outra aba, títulos, listas, tarefas, código
-//   · o jeito de abrir (editor ou conversa), a data da lista, a nota no endereço, título e prévia
+//   · o jeito de abrir (editor ou conversa), a nota no endereço e o título
 //   · o banco (js/banco.js): limpeza do db, ida e volta com as linhas da tabela, base sem pendente falso, salvar texto igual não
 //     grava, e o envio com uma nuvem falsa (só a nota que mudou, inteira; apagada sai; sem internet fica pendente)
 import { test } from 'node:test';
@@ -26,6 +26,14 @@ const M = carregarArquivos(
     'limparParagrafo',
     'markdownHtml',
     'alternarFavorito',
+    'terminaEmCodigo',
+    'ehFavorito',
+    'semMarca',
+    'mudancasFavorito',
+    'favoritarBlocos',
+    'ligarFavorito',
+    'blocosTocados',
+    'favoritas',
   ]
 );
 
@@ -189,9 +197,9 @@ test('markdownHtml: listas com marcador e numeradas (começando do número escri
   );
 });
 
-// ---------- util.js: editor ou conversa, data da lista, nota no endereço ----------
+// ---------- util.js: editor ou conversa, nota no endereço ----------
 const util = (search = '') =>
-  carregar(A('js/util.js'), ['pad', 'notaDaUrl', 'quandoFoi'], {
+  carregar(A('js/util.js'), ['notaDaUrl'], {
     location: { search },
     URLSearchParams,
   });
@@ -209,20 +217,6 @@ test('modo pelo aparelho: editor só com mouse (ponteiro fino) e tela de 900 px 
   assert.equal(modoDoAparelho(false, 390), 'conversa');
 });
 
-test('quandoFoi: hoje a hora, ontem "ontem", neste ano dia/mês, antes com o ano; data que não se lê fica vazia', () => {
-  const { quandoFoi } = util(),
-    agora = new Date(2026, 10, 24, 15, 0); // 24/11/2026 15:00, hora local
-
-  assert.equal(quandoFoi(new Date(2026, 10, 24, 0, 5).toISOString(), agora), '00:05');
-  assert.equal(quandoFoi(new Date(2026, 10, 24, 14, 7).toISOString(), agora), '14:07');
-  assert.equal(quandoFoi(new Date(2026, 10, 23, 23, 59).toISOString(), agora), 'ontem');
-  assert.equal(quandoFoi(new Date(2026, 10, 22, 12, 0).toISOString(), agora), '22/11');
-  assert.equal(quandoFoi(new Date(2026, 0, 3, 12, 0).toISOString(), agora), '03/01');
-  assert.equal(quandoFoi(new Date(2025, 11, 31, 12, 0).toISOString(), agora), '31/12/25');
-  assert.equal(quandoFoi('lixo', agora), '');
-  assert.equal(quandoFoi(undefined, agora), '');
-});
-
 test('notaDaUrl: ?nota=<id> com o formato da tabela; vazio, texto estranho ou longo demais vale como lista (null)', () => {
   assert.equal(util('?nota=ab_12-Z').notaDaUrl(), 'ab_12-Z');
   assert.equal(util('?x=1&nota=k3').notaDaUrl(), 'k3');
@@ -232,16 +226,6 @@ test('notaDaUrl: ?nota=<id> com o formato da tabela; vazio, texto estranho ou lo
   assert.equal(util('?nota=%3Cscript%3E').notaDaUrl(), null);
   assert.equal(util('?nota=' + 'a'.repeat(65)).notaDaUrl(), null);
   assert.equal(util('?nota=' + 'a'.repeat(64)).notaDaUrl(), 'a'.repeat(64));
-});
-
-// ---------- prévia da lista ----------
-test('prévia: a 1ª linha não vazia do corpo, sem as marcas do começo', () => {
-  const { previaDe } = carregar(A('js/telas.js'), ['previaDe']);
-
-  assert.equal(previaDe('\n\n- leite\n\n> pão'), 'leite');
-  assert.equal(previaDe('> citação\nmais'), 'citação');
-  assert.equal(previaDe('1. primeiro'), '1. primeiro');
-  assert.equal(previaDe(''), '');
 });
 
 // ---------- banco: formato e envio, com uma nuvem falsa ----------
@@ -942,4 +926,193 @@ test('carregar: com pendente no aparelho, envia antes e não troca pela nuvem (n
   assert.equal(ap.notaPorId('n1').texto, 'daqui 2');
   assert.equal(ap.temPendente(), true);
   assert.equal(ap.E.erroSync, 'permission denied');
+});
+
+// ---------- Favoritas: a marca " ★" no fim do parágrafo ----------
+test('ehFavorito e semMarca: só o " ★" do FIM, com espaço ou tab antes; ★ colada, no meio, sozinha ou fecho de bloco de código não são favoritos', () => {
+  for (const p of ['a ★', 'a  ★', 'a\t★', 'a\nb ★', 'a ★ ★'])
+    assert.equal(M.ehFavorito(p), true, p);
+
+  for (const p of ['a★', 'a ★ x', '★', ' ★', '', 'a', '```\nx\n``` ★', '```\nx ★'])
+    assert.equal(M.ehFavorito(p), false, JSON.stringify(p));
+
+  assert.equal(M.ehFavorito(undefined), false);
+  assert.equal(M.semMarca('a ★'), 'a');
+  assert.equal(M.semMarca('a  \t★'), 'a', 'tira todos os espaços antes da estrela');
+  assert.equal(M.semMarca('a\nb ★'), 'a\nb');
+  assert.equal(M.semMarca('a ★ ★'), 'a ★', 'só a última estrela é a marca');
+  assert.equal(M.semMarca('a ★ x'), 'a ★ x');
+  assert.equal(
+    M.semMarca('```\nx ★'),
+    '```\nx ★',
+    'código aberto: o " ★" é texto do código'
+  );
+  assert.equal(M.semMarca(null), '');
+});
+
+test('terminaEmCodigo: a última linha é a cerca, está dentro de bloco aberto, ou o bloco já fechou antes (~~~ e ``` , cerca mais curta não fecha a longa)', () => {
+  assert.equal(M.terminaEmCodigo('x\n```\ny\n```'), true);
+  assert.equal(M.terminaEmCodigo('```\ny'), true);
+  assert.equal(M.terminaEmCodigo('z\n```js\ny'), true);
+  assert.equal(M.terminaEmCodigo('~~~\ny\n~~~'), true);
+  assert.equal(M.terminaEmCodigo('```\ny\n```\nz'), false, 'depois do fecho é texto');
+  assert.equal(M.terminaEmCodigo('````\n```\nz'), true, '``` não fecha ````');
+  assert.equal(M.terminaEmCodigo('~~~\n```\nz'), true, '``` não fecha ~~~');
+  assert.equal(M.terminaEmCodigo('texto\nmais'), false);
+});
+
+test('favoritarBlocos: liga e tira só no fim de cada parágrafo; espaços do fim viram a marca; o resto byte a byte igual; índices repetidos, fora da faixa e código não mudam', () => {
+  const t = 'a\n\n\nb  \t\n\n```\nx\n```\n\nc ★  \n';
+  const ligado = M.favoritarBlocos(t, [0, 1, 2, 3], true);
+
+  // "c ★  ": espaço digitado depois da estrela não tira o favorito (e favoritar de novo não dobra a estrela)
+  assert.equal(ligado, 'a ★\n\n\nb ★\n\n```\nx\n```\n\nc ★  \n');
+  assert.equal(M.ehFavorito('c ★  '), true);
+  assert.equal(M.semMarca('c ★ \t'), 'c');
+  assert.equal(
+    M.favoritarBlocos('a\n\nb', [1, 1, 1], true),
+    'a\n\nb ★',
+    'repetido liga uma vez'
+  );
+  assert.equal(M.favoritarBlocos('a\n\nb', [-1, 7], true), 'a\n\nb');
+  assert.equal(M.favoritarBlocos('a ★\n\nb  ★\n', [0, 1], false), 'a\n\nb\n');
+  assert.equal(M.favoritarBlocos('a ★ ★', [0], false), 'a ★', 'tira só a marca do fim');
+  assert.equal(
+    M.favoritarBlocos('a ★\n\nb', [0], true),
+    'a ★\n\nb',
+    'já favorito: igual'
+  );
+  assert.equal(M.favoritarBlocos('a\n\nb', [0], false), 'a\n\nb', 'não favorito: igual');
+  assert.equal(M.favoritarBlocos(undefined, [0], true), '');
+  // texto em volta intacto: tirar o que pôs devolve o original (menos os espaços do fim, que a marca absorveu)
+  assert.equal(
+    M.favoritarBlocos(M.favoritarBlocos('a\n\nb', [0, 1], true), [0, 1], false),
+    'a\n\nb'
+  );
+});
+
+test('favoritarBlocos: parágrafo só com ★ (ou só espaço) não é favorito e não ganha marca; "★" sozinho é um parágrafo comum e ganha " ★"', () => {
+  assert.equal(M.favoritarBlocos(' ★\n\nb', [0], false), ' ★\n\nb');
+  assert.equal(M.favoritarBlocos(' ★', [0], true), ' ★');
+  assert.equal(M.alternarFavorito('★', 0), '★ ★');
+  assert.equal(M.alternarFavorito(' ★', 0), ' ★');
+  assert.equal(M.ehFavorito(' ★'), false);
+});
+
+test('mudancasFavorito: as trocas {from,to,insert} em ordem crescente, uma por parágrafo que muda, com as posições do texto (o editor do PC as aplica como estão)', () => {
+  const t = 'a\n\nb ★\n\nc  ';
+
+  assert.deepEqual(json(M.mudancasFavorito(t, [2, 0, 1], true)), [
+    { from: 1, to: 1, insert: ' ★' },
+    { from: 9, to: 11, insert: ' ★' },
+  ]);
+  assert.deepEqual(json(M.mudancasFavorito(t, [1, 0], false)), [
+    { from: 4, to: 6, insert: '' },
+  ]);
+  assert.deepEqual(json(M.mudancasFavorito(t, [], true)), []);
+  assert.deepEqual(json(M.mudancasFavorito('```\nx\n```', [0], true)), []);
+
+  // aplicar as mudanças de trás para a frente dá o mesmo que favoritarBlocos
+  let r = t;
+
+  for (const m of json(M.mudancasFavorito(t, [0, 1, 2], true)).reverse())
+    r = r.slice(0, m.from) + m.insert + r.slice(m.to);
+  assert.equal(r, M.favoritarBlocos(t, [0, 1, 2], true));
+});
+
+test('ligarFavorito (a regra da estrela): null sem nenhum que possa; true se algum ainda não é; false se todos os que podem já são; o código na seleção é ignorado', () => {
+  assert.equal(M.ligarFavorito('a\n\nb', [0]), true);
+  assert.equal(M.ligarFavorito('a ★\n\nb', [0, 1]), true, 'misto: favorita todos');
+  assert.equal(M.ligarFavorito('a ★\n\nb ★', [0, 1]), false);
+  assert.equal(
+    M.ligarFavorito('a ★\n\n```\nx\n```', [0, 1]),
+    false,
+    'o código não conta'
+  );
+  assert.equal(M.ligarFavorito('```\nx\n```', [0]), null);
+  assert.equal(M.ligarFavorito('a', []), null);
+  assert.equal(M.ligarFavorito('a', [5]), null);
+  assert.equal(M.ligarFavorito('a ★\n\na ★', [0, 0, 1, 1]), false);
+  assert.equal(M.ligarFavorito(' ★', [0]), null, 'só a estrela: nada a favoritar');
+});
+
+test('blocosTocados: cursor no começo, no meio e logo depois do fim tocam o parágrafo; na linha em branco entre dois, nenhum; seleção e vários cursores somam sem repetir e em ordem', () => {
+  const t = 'ab\n\ncd\n\nef';
+
+  assert.deepEqual(json(M.blocosTocados(t, [[0, 0]])), [0]);
+  assert.deepEqual(json(M.blocosTocados(t, [[1, 1]])), [0]);
+  assert.deepEqual(json(M.blocosTocados(t, [[2, 2]])), [0]);
+  assert.deepEqual(json(M.blocosTocados(t, [[3, 3]])), []);
+  assert.deepEqual(json(M.blocosTocados(t, [[1, 5]])), [0, 1]);
+  assert.deepEqual(
+    json(
+      M.blocosTocados(t, [
+        [10, 10],
+        [0, 0],
+      ])
+    ),
+    [0, 2]
+  );
+  assert.deepEqual(
+    json(
+      M.blocosTocados(t, [
+        [0, 9],
+        [4, 4],
+      ])
+    ),
+    [0, 1, 2]
+  );
+  assert.deepEqual(json(M.blocosTocados(t, [])), []);
+  assert.deepEqual(json(M.blocosTocados('', [[0, 0]])), []);
+});
+
+test('favoritas: todas as notas na ordem da lista (db.notas), dentro da nota na ordem do texto, sem a marca, com o índice do parágrafo; título vazio fica "" (a tela mostra "Sem título"); código com " ★" e notas sem favorito não entram', () => {
+  const notas = [
+    { id: 'x', titulo: '', texto: 'a ★\n\nb\n\nc  ★' },
+    { id: 'w', titulo: 'Sem nada', texto: 'nada\n\naqui' },
+    { id: 'y', titulo: 'Y', texto: '```\n ★\n```\n\nd ★ \n\ne\nlinha ★' },
+    { id: 'z', titulo: 'Z', texto: 'f ★' },
+  ];
+
+  assert.deepEqual(json(M.favoritas(notas)), [
+    { notaId: 'x', titulo: '', i: 0, texto: 'a' },
+    { notaId: 'x', titulo: '', i: 2, texto: 'c' },
+    { notaId: 'y', titulo: 'Y', i: 1, texto: 'd' }, // espaço depois da estrela ainda é favorito
+    { notaId: 'y', titulo: 'Y', i: 2, texto: 'e\nlinha' },
+    { notaId: 'z', titulo: 'Z', i: 0, texto: 'f' },
+  ]);
+  assert.deepEqual(json(M.favoritas([])), []);
+  assert.deepEqual(json(M.favoritas(null)), []);
+  assert.deepEqual(json(M.favoritas([{ id: 'q', texto: 'p ★' }])), [
+    { notaId: 'q', titulo: '', i: 0, texto: 'p' },
+  ]);
+
+  // a ordem é a de db.notas, não a do id: inverter a lista inverte as notas
+  assert.deepEqual(
+    json(M.favoritas([...notas].reverse())).map((f) => f.notaId),
+    ['z', 'y', 'y', 'x', 'x']
+  );
+  // o índice devolvido tira o favorito de volta no texto de origem
+  const f = M.favoritas(notas)[1];
+
+  assert.equal(M.favoritarBlocos(notas[0].texto, [f.i], false), 'a ★\n\nb\n\nc');
+});
+
+test('copiarBlocos: leva o parágrafo favorito sem a " ★", o que não é favorito (código com " ★") igual, e o texto original não muda', () => {
+  const t = 'a ★\n\nb\n\n```\nx ★\n```\n\nc  ★';
+
+  assert.equal(M.copiarBlocos(t, [0, 1, 2, 3]), 'a\n\nb\n\n```\nx ★\n```\n\nc');
+  assert.equal(M.copiarBlocos(t, [3, 0]), 'a\n\nc', 'em ordem do texto');
+  assert.equal(t, 'a ★\n\nb\n\n```\nx ★\n```\n\nc  ★');
+});
+
+test('editar um favorito mantém a marca, apagar o conteúdo não deixa parágrafo só com a estrela: trocarBloco + favoritarBlocos como a tela usa', () => {
+  const t = 'a ★\n\nb';
+  const trocado = M.trocarBloco(t, 0, 'novo');
+
+  assert.equal(M.favoritarBlocos(trocado, [0], true), 'novo ★\n\nb');
+  assert.equal(
+    M.favoritarBlocos(M.trocarBloco(t, 0, 'novo ★'), [0], true),
+    'novo ★\n\nb'
+  );
 });

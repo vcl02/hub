@@ -229,7 +229,10 @@ function decoracoesMarkdown(view) {
 
       if (!codigo)
         marcas.push(
-          CM.Decoration.mark({ class: 'cm-n-estrela' }).range(linha.to - 1, linha.to)
+          CM.Decoration.mark({ class: 'cm-n-estrela' }).range(
+            linha.from + linha.text.lastIndexOf('★'),
+            linha.from + linha.text.lastIndexOf('★') + 1
+          )
         );
     }
 

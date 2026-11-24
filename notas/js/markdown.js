@@ -108,7 +108,7 @@ function copiarBlocos(texto, indices) {
 }
 
 // ===== Favoritas: a marca " ★" no fim do parágrafo =====
-const MARCA_FAVORITO = /[ \t]+★$/; // o espaço (ou vários) e a estrela do fim
+const MARCA_FAVORITO = /[ \t]+★[ \t]*$/; // o espaço (ou vários) e a estrela do fim (espaço digitado depois dela não conta)
 
 // A última linha do parágrafo está num bloco de código (é a cerca ou fica dentro de um bloco aberto): a marca ali quebraria
 // o bloco (ou viraria código), então ele não pode ser favorito

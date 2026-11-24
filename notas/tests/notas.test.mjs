@@ -383,3 +383,132 @@ test('PC: Esc no meio do arraste cancela (a nota volta, nada grava) sem sair do 
   assert.deepEqual(erros, []);
   await ctx.close();
 });
+
+// ---------- Favoritas ----------
+async function segurarFav(pg, cdp, k) {
+  const r = await pg.locator(`#f-baloes li.balao[data-k="${k}"]`).boundingBox(),
+    ponto = { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [ponto],
+  });
+  await pg.clock.runFor(600);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+}
+
+test('celular: favoritar pela barra → o card conta → a Favoritas mostra o balão com o título da origem → tocar abre a origem no parágrafo → tirar das favoritas grava na origem → recarregar mantém', async () => {
+  const nuvem = novaNuvem([
+      { ...nota('primeiro\n\nsegundo\n\n```\ncodigo\n```', 'Compras'), ordem: 1 },
+      { ...nota('outro ★', ''), id: 'n2', ordem: 2 },
+    ]),
+    { ctx, pg, erros } = await abrirApp({ busca: '?nota=n1', nuvem }),
+    cdp = await ctx.newCDPSession(pg),
+    texto = (id) => pg.evaluate((i) => notaPorId(i).texto, id);
+
+  await pg.waitForSelector('#conversa:not([hidden])');
+
+  // o bloco de código sozinho: a estrela fica desativada
+  await segurar(pg, cdp, 2);
+  assert.equal(await pg.isDisabled('#s-favoritar'), true);
+
+  // o parágrafo comum com o de código selecionados: a estrela vale só para o comum e favorita
+  await pg.tap('#c-baloes li.balao[data-i="1"]');
+  assert.equal(await pg.isDisabled('#s-favoritar'), false);
+  assert.equal(await pg.getAttribute('#s-favoritar', 'title'), 'Favoritar');
+  await pg.tap('#s-favoritar');
+  assert.equal(await pg.isHidden('#s-barra'), true);
+  assert.equal(await texto('n1'), 'primeiro\n\nsegundo ★\n\n```\ncodigo\n```');
+  assert.equal(await pg.locator('#c-baloes li.balao.favorito').count(), 1);
+  assert.equal(await pg.locator('#c-baloes li.balao.favorito .estrela').count(), 1);
+  // o balão não mostra a marca de texto
+  assert.equal(await pg.textContent('#c-baloes li.balao[data-i="1"] p'), 'segundo');
+
+  // selecionar o favorito: a estrela agora tira
+  await segurar(pg, cdp, 1);
+  assert.equal(await pg.getAttribute('#s-favoritar', 'title'), 'Tirar das favoritas');
+  await pg.keyboard.press('Escape');
+  assert.equal(await pg.isHidden('#s-barra'), true);
+
+  // volta para a lista: o card conta as duas favoritas (a de outra nota também)
+  await pg.tap('#n-voltar');
+  await pg.waitForSelector('#v-lista:not([hidden])');
+  assert.equal(await pg.textContent('#n-favs-qtd'), '2 mensagens');
+
+  await pg.tap('#n-favs');
+  await pg.waitForSelector('#v-fav:not([hidden])');
+  assert.match(pg.url(), /\?nota=favoritas$/);
+  assert.deepEqual(
+    await pg.$$eval('#f-baloes li.balao', (L) =>
+      L.map((b) => [b.querySelector('.de').textContent, b.querySelector('p').textContent])
+    ),
+    [
+      ['Compras', 'segundo'],
+      ['Sem título', 'outro'],
+    ]
+  );
+
+  // tocar abre a nota de origem rolada até o parágrafo, com o destaque
+  await pg.tap('#f-baloes li.balao[data-k="0"]');
+  await pg.waitForSelector('#conversa:not([hidden])');
+  assert.match(pg.url(), /\?nota=n1$/);
+  assert.equal(await pg.locator('#c-baloes li.balao[data-i="1"].destaque').count(), 1);
+  await pg.clock.runFor(1600);
+  assert.equal(await pg.locator('#c-baloes li.balao.destaque').count(), 0);
+
+  // Voltar do navegador devolve à Favoritas
+  await pg.goBack();
+  await pg.waitForSelector('#v-fav:not([hidden])');
+
+  // editar o favorito na origem mantém a marca
+  await pg.tap('#f-baloes li.balao[data-k="0"]');
+  await pg.waitForSelector('#conversa:not([hidden])');
+  await segurar(pg, cdp, 1);
+  await pg.tap('#s-editar');
+  assert.equal(await pg.inputValue('#c-texto'), 'segundo');
+  await enviarParagrafo(pg, 'segundo editado');
+  assert.equal(await texto('n1'), 'primeiro\n\nsegundo editado ★\n\n```\ncodigo\n```');
+  // o Voltar da nota aberta pela Favoritas leva de volta a ela
+  await pg.tap('#n-voltar');
+  await pg.waitForSelector('#v-fav:not([hidden])');
+
+  // Favoritas: o Esc sem seleção volta para a lista; com seleção, só desmarca
+  await segurarFav(pg, cdp, 0);
+  assert.equal(await pg.textContent('#f-qtd'), '1');
+  await pg.keyboard.press('Escape');
+  assert.equal(await pg.isHidden('#f-barra'), true);
+  assert.equal(await pg.isVisible('#v-fav'), true);
+  await pg.keyboard.press('Escape');
+  await pg.waitForSelector('#v-lista:not([hidden])');
+
+  // tirar das favoritas: seleciona as duas, o texto das origens perde só a marca e a Favoritas esvazia
+  await pg.tap('#n-favs');
+  await pg.waitForSelector('#v-fav:not([hidden])');
+  await segurarFav(pg, cdp, 0);
+  await pg.tap('#f-baloes li.balao[data-k="1"]');
+  assert.equal(await pg.textContent('#f-qtd'), '2');
+  await pg.tap('#f-desfavoritar');
+  assert.equal(await texto('n1'), 'primeiro\n\nsegundo editado\n\n```\ncodigo\n```');
+  assert.equal(await texto('n2'), 'outro');
+  assert.equal(await pg.locator('#f-baloes li.balao').count(), 0);
+  assert.equal(await pg.isVisible('#f-vazio'), true);
+
+  await sincronizado(pg);
+  assert.deepEqual(
+    nuvem.tabelas.notas_nota.map((l) => [l.id, l.texto]),
+    [
+      ['n1', 'primeiro\n\nsegundo editado\n\n```\ncodigo\n```'],
+      ['n2', 'outro'],
+    ]
+  );
+
+  // recarregar na Favoritas mantém a tela (vazia) e o card da lista diz "Nenhuma ainda"
+  await pg.reload();
+  await pg.waitForSelector('#v-fav:not([hidden])');
+  assert.equal(await pg.isVisible('#f-vazio'), true);
+  await pg.tap('#f-voltar');
+  await pg.waitForSelector('#v-lista:not([hidden])');
+  assert.equal(await pg.textContent('#n-favs-qtd'), 'Nenhuma ainda');
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});

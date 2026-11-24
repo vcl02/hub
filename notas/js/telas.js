@@ -51,16 +51,6 @@ const ICONE_ALCA =
   '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/><circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/><circle cx="9" cy="18" r="1.7"/><circle cx="15" cy="18" r="1.7"/></svg>';
 
 // ===== Lista =====
-// A 1ª linha não vazia do corpo, como prévia (sem as marcas do começo)
-const previaDe = (texto) =>
-  (
-    String(texto || '')
-      .split('\n')
-      .find((l) => l.trim()) || ''
-  )
-    .replace(/^[\s#>*+-]+/, '')
-    .trim();
-
 // A lista na ordem do banco (db.notas, pela ordem que o dono definiu arrastando a alça). Durante um arraste não redesenha
 // (a linha está na mão): fica para quando soltar.
 function desenharLista() {
