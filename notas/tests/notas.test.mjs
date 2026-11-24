@@ -4,7 +4,14 @@
 // testadas sem navegador em funcoes.test.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { prepararApp, abrirApp, novaNuvem, sincronizado, DONO } from './helpers/app.mjs';
+import {
+  prepararApp,
+  abrirApp,
+  novaNuvem,
+  sincronizado,
+  DONO,
+  app,
+} from './helpers/app.mjs';
 
 prepararApp();
 
@@ -234,4 +241,145 @@ test('título da aba: volta a "Notas" ao voltar para a lista, na conversa e no e
     assert.equal(await pg.title(), 'Notas');
     await ctx.close();
   }
+});
+
+// ---------- ordem da lista: arrastar pela alça ----------
+const linhaOrdem = (id, ordem, titulo) => ({
+  user_id: DONO,
+  id,
+  titulo,
+  texto: '',
+  ordem,
+  criada_em: '2026-11-23T10:00:00+00:00',
+  editada_em: '2026-11-23T10:00:00+00:00',
+});
+
+const tresNotas = () =>
+  novaNuvem([
+    linhaOrdem('a', 1, 'Alfa'),
+    linhaOrdem('b', 2, 'Beta'),
+    linhaOrdem('c', 3, 'Gama'),
+  ]);
+
+const titulos = (pg) =>
+  pg.$$eval('#n-lista li', (L) => L.map((l) => l.querySelector('b').textContent));
+
+const centro = async (pg, seletor) => {
+  const r = await pg.locator(seletor).boundingBox();
+
+  return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+};
+
+test('celular: arrastar a alça com o dedo leva a nota para onde soltou, a nuvem recebe a ordem nova só dela e recarregar mantém', async () => {
+  const nuvem = tresNotas(),
+    { ctx, pg, erros } = await abrirApp({ nuvem }),
+    cdp = await ctx.newCDPSession(pg);
+
+  assert.deepEqual(await titulos(pg), ['Alfa', 'Beta', 'Gama']);
+
+  const de = await centro(pg, '#n-lista li[data-id="c"] .alca'),
+    ate = await centro(pg, '#n-lista li[data-id="a"]');
+
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [de] });
+  assert.equal(await pg.locator('#n-lista li[data-id="c"].arrastando').count(), 1);
+
+  for (const t of [0.25, 0.5, 0.75, 1])
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ x: de.x, y: de.y + (ate.y - 10 - de.y) * t }],
+    });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+
+  assert.deepEqual(await titulos(pg), ['Gama', 'Alfa', 'Beta']);
+  assert.equal(await pg.locator('#n-lista li.arrastando').count(), 0);
+
+  await sincronizado(pg);
+  // só a nota movida mudou na nuvem: ordem antes da primeira (1 − 1)
+  assert.deepEqual(
+    nuvem.tabelas.notas_nota.map((l) => [l.id, l.ordem]),
+    [
+      ['a', 1],
+      ['b', 2],
+      ['c', 0],
+    ]
+  );
+  assert.equal(
+    nuvem.tabelas.notas_nota.find((l) => l.id === 'c').editada_em,
+    '2026-11-23T10:00:00.000Z'
+  );
+
+  // recarregar: a ordem definida fica
+  await pg.reload();
+  await pg.waitForFunction(() => typeof carregado !== 'undefined' && carregado);
+  assert.deepEqual(await titulos(pg), ['Gama', 'Alfa', 'Beta']);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test('PC: Alt+↓ na alça move uma posição, mantém o foco nela e grava; no fim não faz nada', async () => {
+  const nuvem = tresNotas(),
+    { ctx, pg, erros } = await abrirApp({ nuvem, pc: true });
+
+  await pg.focus('#n-lista li[data-id="a"] .alca');
+  await pg.keyboard.press('Alt+ArrowDown');
+  assert.deepEqual(await titulos(pg), ['Beta', 'Alfa', 'Gama']);
+  assert.equal(
+    await pg.evaluate(() => document.activeElement.closest('li')?.dataset.id),
+    'a'
+  );
+  assert.equal(await pg.evaluate(() => document.activeElement.className), 'alca');
+
+  await pg.keyboard.press('Alt+ArrowDown');
+  await pg.keyboard.press('Alt+ArrowDown'); // já é a última
+  assert.deepEqual(await titulos(pg), ['Beta', 'Gama', 'Alfa']);
+  await pg.keyboard.press('Alt+ArrowUp');
+  assert.deepEqual(await titulos(pg), ['Beta', 'Alfa', 'Gama']);
+
+  await sincronizado(pg);
+  assert.deepEqual(
+    nuvem.tabelas.notas_nota.map((l) => [l.id, l.ordem]),
+    [
+      ['a', 2.5],
+      ['b', 2],
+      ['c', 3],
+    ]
+  );
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test('PC: Esc no meio do arraste cancela (a nota volta, nada grava) sem sair do app', async () => {
+  const nuvem = tresNotas(),
+    { ctx, pg, erros } = await abrirApp({ nuvem, pc: true }),
+    de = await centro(pg, '#n-lista li[data-id="a"] .alca'),
+    ate = await centro(pg, '#n-lista li[data-id="c"]');
+
+  await pg.mouse.move(de.x, de.y);
+  await pg.mouse.down();
+  await pg.mouse.move(de.x, (de.y + ate.y) / 2, { steps: 4 });
+  await pg.mouse.move(de.x, ate.y + 10, { steps: 4 });
+  assert.equal(await pg.locator('#n-lista li[data-id="a"].arrastando').count(), 1);
+
+  await pg.keyboard.press('Escape');
+  assert.equal(await pg.locator('#n-lista li.arrastando').count(), 0);
+  assert.equal(
+    await pg.evaluate(() => document.body.classList.contains('arrastando-lista')),
+    false
+  );
+  await pg.mouse.up();
+  assert.deepEqual(await titulos(pg), ['Alfa', 'Beta', 'Gama']);
+  assert.equal(await pg.isVisible('#n-lista'), true);
+  assert.equal(pg.url().startsWith(app.url), true);
+
+  await sincronizado(pg);
+  assert.deepEqual(
+    nuvem.tabelas.notas_nota.map((l) => [l.id, l.ordem]),
+    [
+      ['a', 1],
+      ['b', 2],
+      ['c', 3],
+    ]
+  );
+  assert.deepEqual(erros, []);
+  await ctx.close();
 });

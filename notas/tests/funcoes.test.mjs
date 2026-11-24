@@ -549,6 +549,256 @@ test('salvarNota e salvarTituloNota: valores iguais não gravam; mudanças salva
   assert.equal(ap.temPendente(), true);
 });
 
+// ---------- ordem da lista (definida arrastando; migration 02) ----------
+const nt = (id, ordem, extra = {}) => ({
+  id,
+  titulo: id,
+  texto: '',
+  ordem,
+  criadaEm: '2026-11-20T10:00:00.000Z',
+  editadaEm: '2026-11-20T10:00:00.000Z',
+  ...extra,
+});
+
+const ids = (ap) => json(ap.E.db.notas.map((n) => n.id));
+
+test('ordemEntre: lista vazia 0; no topo a primeira − 1; no fim a última + 1; no meio a média; sem folga (< 1e-6 ou empate) devolve null para renumerar', () => {
+  const { ordemEntre, FOLGA_MINIMA } = aparelho({ linhas: [] });
+
+  assert.equal(FOLGA_MINIMA, 1e-6);
+  assert.equal(ordemEntre(null, null), 0);
+  assert.equal(ordemEntre(null, 5), 4);
+  assert.equal(ordemEntre(null, -2.5), -3.5);
+  assert.equal(ordemEntre(7, null), 8);
+  assert.equal(ordemEntre(1, 2), 1.5);
+  assert.equal(ordemEntre(1, 4), 2.5);
+  assert.equal(ordemEntre(-1, 1), 0);
+  // vizinha que não é número vale como "não há vizinha daquele lado"
+  assert.equal(ordemEntre(NaN, 3), 2);
+  assert.equal(ordemEntre('x', undefined), 0);
+  // folga: exatamente 1e-6 ainda cabe; menos, empate ou invertida pedem renumerar
+  assert.equal(ordemEntre(0, 1e-6), 5e-7);
+  assert.equal(ordemEntre(0, 1e-7), null);
+  assert.equal(ordemEntre(1, 1), null);
+  assert.equal(ordemEntre(2, 1), null);
+});
+
+test('preparar com ordem: ordena por ordem (empate: editada mais recente, depois id); sem ordem ou inválida vai depois das válidas pela edição, sempre igual para a mesma entrada', () => {
+  const { preparar } = aparelho({ linhas: [] }),
+    antiga = '2026-11-01T10:00:00.000Z',
+    nova = '2026-11-02T10:00:00.000Z';
+
+  const entrada = [
+    nt('c', 2),
+    nt('a', 2),
+    nt('b', -3),
+    nt('e', undefined, { editadaEm: antiga }),
+    nt('f', 'x', { editadaEm: nova }),
+    nt('g', NaN, { editadaEm: nova }),
+    nt('h', Infinity, { editadaEm: antiga }),
+  ];
+
+  const r = preparar({ notas: entrada });
+
+  // b (-3), a e c empatadas (mesma edição: pelo id), depois sem ordem: f e g (edição mais nova, pelo id), e e h
+  assert.deepEqual(json(r.notas.map((n) => [n.id, n.ordem])), [
+    ['b', -3],
+    ['a', 2],
+    ['c', 2],
+    ['f', 3],
+    ['g', 4],
+    ['e', 5],
+    ['h', 6],
+  ]);
+
+  // a mesma entrada em qualquer ordem dá o mesmo resultado
+  assert.deepEqual(json(preparar({ notas: [...entrada].reverse() })), json(r));
+  assert.deepEqual(
+    json(
+      preparar({
+        notas: [entrada[3], entrada[0], ...entrada.slice(4), entrada[1], entrada[2]],
+      })
+    ),
+    json(r)
+  );
+
+  // só ordens negativas: as sem ordem continuam em max(maior, 0) + 1
+  assert.deepEqual(
+    json(
+      preparar({ notas: [nt('x', -5), nt('y', undefined)] }).notas.map((n) => n.ordem)
+    ),
+    [-5, 1]
+  );
+  // limpar de novo não muda nada
+  assert.deepEqual(json(preparar(r)), json(r));
+});
+
+test('criarNota: a nota nova entra no topo (menor ordem − 1; lista vazia, 0) e as outras não mudam', () => {
+  const ap = aparelho({ linhas: [] }, { local: [nt('a', 3), nt('b', 7)], base: null });
+
+  const n = ap.criarNota('Nova');
+
+  assert.equal(n.ordem, 2);
+  assert.deepEqual(ids(ap), [n.id, 'a', 'b']);
+  assert.deepEqual(json(ap.E.db.notas.slice(1).map((x) => x.ordem)), [3, 7]);
+  assert.equal(ap.criarNota('Outra').ordem, 1);
+
+  const vazio = aparelho({ linhas: [] });
+
+  assert.equal(vazio.criarNota('Primeira').ordem, 0);
+});
+
+test('moverNota: sobe só a linha movida (ordem entre as vizinhas, editadaEm igual); mesma posição, nota que não existe e posição inválida não gravam', async () => {
+  const nuvem = { linhas: [] },
+    ap = aparelho(nuvem, {
+      local: [nt('a', 1), nt('b', 2), nt('c', 3), nt('d', 4)],
+      base: null,
+    });
+
+  await ap.enviar();
+  assert.equal(nuvem.linhas.length, 4);
+  nuvem.pedidos = [];
+  ap.agendados.length = 0;
+
+  // d para a posição 1 (entre a e b): 1,5
+  assert.equal(ap.moverNota('d', 1), true);
+  assert.deepEqual(ids(ap), ['a', 'd', 'b', 'c']);
+  assert.equal(ap.notaPorId('d').ordem, 1.5);
+  assert.equal(ap.notaPorId('d').editadaEm, '2026-11-20T10:00:00.000Z');
+  assert.deepEqual(ap.agendados, [800]);
+
+  await ap.enviar();
+  const up = nuvem.pedidos.filter((p) => p[0] === 'upsert');
+
+  assert.equal(up.length, 1);
+  assert.deepEqual(
+    up[0][2].map((l) => [l.id, l.ordem]),
+    [['d', 1.5]]
+  );
+  assert.deepEqual(json(nuvem.linhas.map((l) => [l.id, l.ordem])), [
+    ['a', 1],
+    ['b', 2],
+    ['c', 3],
+    ['d', 1.5],
+  ]);
+
+  // topo e fim
+  assert.equal(ap.moverNota('c', 0), true);
+  assert.equal(ap.notaPorId('c').ordem, 0);
+  assert.equal(ap.moverNota('c', 99), true);
+  assert.deepEqual(ids(ap), ['a', 'd', 'b', 'c']);
+  assert.equal(ap.notaPorId('c').ordem, 3);
+  assert.equal(ap.moverNota('a', -5), false); // já é a primeira
+
+  // sem mudança: nada grava
+  ap.agendados.length = 0;
+  assert.equal(ap.moverNota('b', 2), false);
+  assert.equal(ap.moverNota('nada', 0), false);
+  assert.equal(ap.moverNota('b', NaN), false);
+  assert.deepEqual(ap.agendados, []);
+});
+
+test('moverNota sem folga entre as vizinhas renumera 1, 2, 3… na ordem nova (várias linhas sobem); com folga só a movida', async () => {
+  const ap = aparelho(
+      { linhas: [] },
+      { local: [nt('a', 1), nt('b', 1.0000001), nt('c', 5)], base: null }
+    ),
+    antes = json(ap.E.db.notas.map((n) => [n.id, n.ordem]));
+
+  assert.deepEqual(antes, [
+    ['a', 1],
+    ['b', 1.0000001],
+    ['c', 5],
+  ]);
+  // c entre a e b: sem folga
+  assert.equal(ap.moverNota('c', 1), true);
+  assert.deepEqual(ids(ap), ['a', 'c', 'b']);
+  assert.deepEqual(json(ap.E.db.notas.map((n) => n.ordem)), [1, 2, 3]);
+  assert.ok(ap.E.db.notas.every((n) => n.editadaEm === '2026-11-20T10:00:00.000Z'));
+
+  // empate exato de ordem: também renumera e a nota fica onde foi posta
+  const emp = aparelho({ linhas: [] }, { local: [nt('a', 1), nt('b', 1), nt('c', 2)] });
+
+  assert.deepEqual(ids(emp), ['a', 'b', 'c']);
+  assert.equal(emp.moverNota('c', 1), true);
+  assert.deepEqual(ids(emp), ['a', 'c', 'b']);
+  assert.deepEqual(json(emp.E.db.notas.map((n) => n.ordem)), [1, 2, 3]);
+});
+
+test('editar (texto ou título) não muda a posição, nem a ordem, nem a ordem que sobe no envio', async () => {
+  const nuvem = { linhas: [] },
+    ap = aparelho(nuvem, { local: [nt('a', 1), nt('b', 2), nt('c', 3)], base: null });
+
+  await ap.enviar();
+  assert.equal(ap.salvarNota('c', 'mudou'), true);
+  assert.equal(ap.salvarTituloNota('c', 'Novo'), true);
+  assert.deepEqual(ids(ap), ['a', 'b', 'c']);
+  assert.deepEqual(json(ap.E.db.notas.map((n) => n.ordem)), [1, 2, 3]);
+  assert.ok(ap.notaPorId('c').editadaEm > '2026-11-21');
+  await ap.enviar();
+  assert.equal(nuvem.linhas.find((l) => l.id === 'c').ordem, 3);
+});
+
+test('linhas ↔ deLinhas levam a ordem; linha da nuvem sem ordem (formato antigo) recebe uma pela edição', () => {
+  const { linhas, deLinhas } = aparelho({ linhas: [] }),
+    d = { notas: [nt('a', -1.5), nt('b', 4)] };
+
+  const l = linhas(d);
+
+  assert.equal(l.a.ordem, -1.5);
+  assert.equal(l.b.ordem, 4);
+  assert.deepEqual(json(deLinhas(Object.values(l))), json(d));
+  assert.deepEqual(
+    json(
+      deLinhas([
+        { id: 'x', titulo: 'x', texto: '', editada_em: '2026-11-01T10:00:00.000Z' },
+        { id: 'y', titulo: 'y', texto: '', editada_em: '2026-11-02T10:00:00.000Z' },
+      ]).notas.map((n) => [n.id, n.ordem])
+    ),
+    [
+      ['y', 1],
+      ['x', 2],
+    ]
+  );
+});
+
+test('formato antigo: cópia e base sem ordem (antes da migration 02) não viram pendência; só a ordem nova sobe quando alguém arrasta', () => {
+  const velha = [N1, N2].map(({ id, titulo, texto, criadaEm, editadaEm }) => ({
+    id,
+    titulo,
+    texto,
+    criadaEm,
+    editadaEm,
+  }));
+
+  const ap = aparelho({ linhas: [] }, { local: velha, base: null });
+
+  // a base guardada do formato antigo: linhas da tabela sem a coluna ordem
+  ap.E.base = ap.baseNormal({
+    n1: {
+      id: 'n1',
+      titulo: 'Um',
+      texto: '',
+      criada_em: N1.criadaEm,
+      editada_em: N1.editadaEm,
+    },
+    n2: {
+      id: 'n2',
+      titulo: 'Dois',
+      texto: 'par',
+      criada_em: N2.criadaEm,
+      editada_em: N2.editadaEm,
+    },
+  });
+  assert.equal(ap.temPendente(), false);
+  assert.deepEqual(ids(ap), ['n2', 'n1']);
+  assert.deepEqual(json(ap.E.db.notas.map((n) => n.ordem)), [1, 2]);
+
+  // arrastar muda só a ordem da movida: um pendente
+  assert.equal(ap.moverNota('n1', 0), true);
+  assert.equal(ap.temPendente(), true);
+});
+
 test('envio: só a nota que mudou sobe, inteira (upsert com onConflict user_id,id); a apagada sai; depois a base é a nuvem e não há pendente', async () => {
   const nuvem = {
     linhas: [N1, N2].map((n) => ({

@@ -97,6 +97,28 @@ test('migration do título separa a primeira linha antiga e pode ser repetida', 
   assert.match(sql, /alter column titulo set not null/);
 });
 
+test('migration da ordem (02) no formato do DataGrip, preenche só onde é nula com a ordem de hoje e pode ser repetida', () => {
+  const sql = ler('migrations/02-notas-ordem.sql');
+
+  assert.match(sql, /^-- /);
+  assert.doesNotMatch(sql, /do \$\$/);
+
+  for (const linha of sql.split('\n').filter((l) => l.trim().startsWith('--')))
+    assert.ok(!linha.includes(';'), `; em comentário: ${linha}`);
+  assert.match(sql, /^begin;$/m);
+  assert.match(sql, /^commit;\n$/m);
+  assert.match(sql, /add column if not exists ordem double precision/);
+  assert.match(
+    sql,
+    /row_number\(\) over \(partition by user_id order by editada_em desc, id\)/
+  );
+  assert.match(sql, /where ordem is null/);
+  assert.match(sql, /alter column ordem set default 0/);
+  assert.match(sql, /alter column ordem set not null/);
+  // o preenchimento vem antes do not null (senão a migration falha com notas existentes)
+  assert.ok(sql.indexOf('where ordem is null') < sql.indexOf('set not null'));
+});
+
 test('a conta do app é o DONO do hub, e o id da nota no aparelho segue o check da tabela', () => {
   const { DONO: doApp } = carregar(path.join(RAIZ, 'js/config.js'), ['DONO']);
 
