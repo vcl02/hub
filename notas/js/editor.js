@@ -282,6 +282,48 @@ const botaoDoMeio = CM.EditorView.domEventHandlers({
   },
 });
 
+// Ctrl+↑ / Ctrl+↓: um cursor a mais na linha de cima / de baixo, na mesma coluna (ou no fim, se a linha for menor), a partir
+// do cursor mais acima / mais abaixo, como o Ctrl+Alt+↑/↓ do VS Code. Ctrl+← / Ctrl+→ andam por palavra com todos os
+// cursores (do próprio CodeMirror). Esc volta a um cursor só.
+let colunaDosCursores = 0;
+
+function cursorNaLinha(direcao) {
+  return (view) => {
+    const { state } = view,
+      ranges = state.selection.ranges,
+      ponta = ranges.reduce((a, r) =>
+        direcao < 0 ? (r.head < a.head ? r : a) : r.head > a.head ? r : a
+      ),
+      linha = state.doc.lineAt(ponta.head),
+      n = linha.number + direcao;
+
+    // A coluna de partida vale para os cursores seguintes, mesmo passando por uma linha menor (como no VS Code)
+    if (ranges.length === 1) colunaDosCursores = ponta.head - linha.from;
+
+    if (n < 1 || n > state.doc.lines) return true;
+
+    const alvo = state.doc.line(n),
+      pos = alvo.from + Math.min(colunaDosCursores, alvo.length);
+
+    view.dispatch({
+      selection: CM.EditorSelection.create(
+        [...ranges, CM.EditorSelection.cursor(pos)],
+        ranges.length
+      ),
+      scrollIntoView: true,
+    });
+
+    return true;
+  };
+}
+
+const atalhosDeCursores = CM.Prec.high(
+  CM.keymap.of([
+    { key: 'Ctrl-ArrowUp', run: cursorNaLinha(-1) },
+    { key: 'Ctrl-ArrowDown', run: cursorNaLinha(1) },
+  ])
+);
+
 // Um estado novo do editor para o texto (desfazer começa do zero a cada nota); aoMudar(texto) a cada mudança no texto
 function estadoDoEditor(texto, aoMudar) {
   return CM.EditorState.create({
@@ -300,6 +342,7 @@ function estadoDoEditor(texto, aoMudar) {
         eventFilter: (ev) => ev.button === 1 || (ev.altKey && ev.button === 0),
       }),
       botaoDoMeio,
+      atalhosDeCursores,
       CM.highlightActiveLine(),
       CM.highlightSelectionMatches(),
       CM.search({ top: true }),
