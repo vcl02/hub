@@ -75,6 +75,7 @@ test('PC: abrir outra nota não substitui seu texto pelo da nota anterior', asyn
   await pg.waitForSelector('#editor:not([hidden]) .cm-content');
   await pg.keyboard.type('segunda nota');
   const segunda = await pg.evaluate(() => aberta);
+
   await andarAte(pg, () => notaPorId(aberta).texto === 'segunda nota');
   await pg.click('#n-voltar');
   await pg.waitForSelector('#v-lista:not([hidden])');
@@ -82,6 +83,7 @@ test('PC: abrir outra nota não substitui seu texto pelo da nota anterior', asyn
   const primeira = await pg.evaluate(
     () => db.notas.find((n) => n.texto === 'primeira nota').id
   );
+
   await pg.click(`#n-lista li[data-id="${primeira}"] a.oque`);
   await pg.waitForSelector('#editor:not([hidden]) .cm-content');
 
@@ -177,13 +179,16 @@ test('PC: a seleção no editor tem fundo claro e texto escuro', async () => {
   await pg.keyboard.type('texto selecionado');
   await pg.keyboard.press('Control+Home');
   await pg.keyboard.press('Shift+End');
+  await pg.clock.runFor(100); // relógio pausado: deixa o editor desenhar a camada da seleção
 
   assert.deepEqual(
     await pg.evaluate(() => {
       const selecao = editor.dom.querySelector('.cm-selectionBackground');
+
       return [
         getComputedStyle(selecao).backgroundColor,
-        getComputedStyle(editor.contentDOM, '::selection').color,
+        getComputedStyle(editor.contentDOM.querySelector('.cm-line'), '::selection')
+          .color, // o texto fica nas linhas
       ];
     }),
     ['rgb(233, 236, 239)', 'rgb(27, 30, 33)']

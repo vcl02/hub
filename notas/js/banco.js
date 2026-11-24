@@ -49,6 +49,7 @@ function migrarNotaAntiga(texto) {
   const titulo = linhas[i].replace(/^[\s#]+/, '').trim();
 
   linhas.splice(i, 1);
+
   while (linhas.length && !linhas[0].trim()) linhas.shift();
 
   return { titulo, texto: linhas.join('\n') };
@@ -63,6 +64,7 @@ function preparar(d) {
   for (const n of Array.isArray(d?.notas) ? d.notas : []) {
     if (!n || !idOk(n.id)) continue;
     const editadaEm = isoOk(n.editadaEm) || isoOk(n.criadaEm) || EPOCA;
+
     const texto = typeof n.texto === 'string' ? n.texto.replace(/\r\n?/g, '\n') : '',
       separada =
         typeof n.titulo === 'string'
@@ -142,6 +144,7 @@ function criarNota(titulo = '', texto = '') {
   do id = Math.random().toString(36).slice(2, 10);
   while (notaPorId(id));
   const agora = new Date().toISOString();
+
   const nota = {
     id,
     titulo: String(titulo).trim(),

@@ -112,6 +112,7 @@ function trocarModo(novo, focar = false, salvar = true) {
     salvarTituloAgora();
     salvarAgora();
   }
+
   modo = novo;
 
   const n = notaPorId(aberta),
@@ -503,6 +504,7 @@ document.addEventListener('keydown', (ev) => {
     ev.key.toLowerCase() === 's'
   ) {
     ev.preventDefault();
+
     if (modo === 'editor') salvarTudoAgora();
     else {
       salvarTituloAgora();

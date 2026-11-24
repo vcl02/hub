@@ -29,7 +29,9 @@ const temaEditor = () =>
       },
       '.cm-line': { padding: '0 var(--e-5)' },
       '.cm-cursor, .cm-dropCursor': { borderLeft: '2px solid var(--cor)' },
-      '&dark .cm-selectionBackground, &dark.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground':
+      // "&dark" só existe no tema base (EditorView.baseTheme); aqui ele derruba a criação do editor
+      // ("Unsupported selector: &dark") e a nota abre vazia. O tema do hub já é o escuro.
+      '.cm-selectionBackground, &.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground':
         { backgroundColor: 'var(--fg)' },
       '.cm-content ::selection': {
         backgroundColor: 'var(--fg)',

@@ -431,9 +431,9 @@ test('preparar: valida dados e migra notas antigas separando a primeira linha em
     ],
   });
   assert.deepEqual(
-    json(preparar({ notas: [{ id: 'só', texto: 'título único' }] }).notas[0]),
+    json(preparar({ notas: [{ id: 'so', texto: 'título único' }] }).notas[0]),
     {
-      id: 'só',
+      id: 'so',
       titulo: 'título único',
       texto: '',
       criadaEm: EPOCA,
@@ -453,7 +453,8 @@ test('linhas ↔ deLinhas: ida e volta pela tabela dá o mesmo db, e a data do s
   assert.deepEqual(json(linhas(d)), {
     n1: {
       id: 'n1',
-      texto: '# Um',
+      titulo: 'Um', // formato antigo (sem título): a 1ª linha vira o título
+      texto: '',
       criada_em: N1.criadaEm,
       editada_em: N1.editadaEm,
     },
