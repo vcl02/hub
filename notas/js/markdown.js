@@ -3,6 +3,8 @@
 // copiar parágrafos sem mexer no resto do texto, e o Markdown de um parágrafo em HTML.
 // Parágrafo = linhas seguidas não vazias; linha em branco separa (menos dentro de um bloco de código ``` ou ~~~, que fica
 // inteiro num balão só). O texto que não foi tocado continua byte a byte igual: só o trecho do parágrafo muda.
+// Favoritas: um parágrafo é favorito quando termina com " ★" (a marca vive no próprio texto, sem coluna nova); bloco de código
+// não pode ser favorito (a marca no fecho ``` quebraria o bloco).
 
 const CERCA = /^ {0,3}(`{3,}|~{3,})/; // abre ou fecha um bloco de código
 
@@ -93,16 +95,116 @@ function apagarBlocos(texto, indices) {
   return t.trim() ? t : '';
 }
 
-// Os parágrafos dos índices, na ordem do texto, separados por uma linha em branco (o que o Copiar põe na área de transferência)
+// Os parágrafos dos índices, na ordem do texto, separados por uma linha em branco (o que o Copiar põe na área de transferência);
+// sem a marca de favorito
 function copiarBlocos(texto, indices) {
   const B = blocos(texto);
 
   return [...new Set(indices)]
     .sort((a, b) => a - b)
     .filter((i) => B[i])
-    .map((i) => B[i].texto)
+    .map((i) => semMarca(B[i].texto))
     .join('\n\n');
 }
+
+// ===== Favoritas: a marca " ★" no fim do parágrafo =====
+const MARCA_FAVORITO = /[ \t]+★$/; // o espaço (ou vários) e a estrela do fim
+
+// A última linha do parágrafo está num bloco de código (é a cerca ou fica dentro de um bloco aberto): a marca ali quebraria
+// o bloco (ou viraria código), então ele não pode ser favorito
+function terminaEmCodigo(p) {
+  let cerca = null,
+    codigo = false;
+
+  for (const linha of String(p).split('\n')) {
+    const m = linha.match(CERCA);
+
+    codigo = Boolean(cerca || m);
+
+    if (m && !cerca) cerca = m[1];
+    else if (
+      m &&
+      cerca &&
+      m[1][0] === cerca[0] &&
+      m[1].length >= cerca.length &&
+      !linha.trim().slice(m[1].length).trim()
+    )
+      cerca = null;
+  }
+
+  return codigo;
+}
+
+const tirarMarca = (p) => String(p ?? '').replace(MARCA_FAVORITO, '');
+
+// Pode levar a marca: tem texto e não termina em bloco de código
+const podeFavoritar = (p) =>
+  Boolean(tirarMarca(p).trim()) && !terminaEmCodigo(tirarMarca(p));
+
+const ehFavorito = (p) => MARCA_FAVORITO.test(String(p ?? '')) && podeFavoritar(p);
+
+// O parágrafo sem a marca do fim (o que o balão mostra e o Copiar leva); o que não é favorito (" ★" num código) fica igual
+const semMarca = (p) => (ehFavorito(p) ? tirarMarca(p) : String(p ?? ''));
+
+// As mudanças [{ from, to, insert }] que ligam (ligar = true) ou tiram a marca dos parágrafos dos índices, só no fim de cada
+// um; os que já estão assim e os que não podem ser favoritos ficam de fora. Em ordem crescente (o editor do PC manda assim).
+function mudancasFavorito(texto, indices, ligar) {
+  const B = blocos(texto);
+
+  return [...new Set(indices)]
+    .sort((a, b) => a - b)
+    .map((i) => B[i])
+    .filter((b) => b && podeFavoritar(b.texto) && ehFavorito(b.texto) !== ligar)
+    .map((b) => {
+      const fim = ligar ? b.texto.match(/[ \t]*$/)[0] : b.texto.match(MARCA_FAVORITO)[0];
+
+      return { from: b.fim - fim.length, to: b.fim, insert: ligar ? ' ★' : '' };
+    });
+}
+
+// Liga ou tira a marca dos parágrafos dos índices; o resto do texto fica byte a byte igual
+function favoritarBlocos(texto, indices, ligar) {
+  let t = String(texto ?? '');
+
+  for (const m of mudancasFavorito(t, indices, ligar).reverse())
+    t = t.slice(0, m.from) + m.insert + t.slice(m.to);
+
+  return t;
+}
+
+// A regra da estrela (na barra do celular e no Alt+S do PC): com todos os que podem ser favoritos já favoritos, tira; senão,
+// favorita todos. null: nenhum dos índices pode ser favorito (a estrela fica desativada).
+function ligarFavorito(texto, indices) {
+  const B = blocos(texto),
+    P = [...new Set(indices)].map((i) => B[i]).filter((b) => b && podeFavoritar(b.texto));
+
+  if (!P.length) return null;
+
+  return !P.every((b) => ehFavorito(b.texto));
+}
+
+// Põe ou tira a marca do parágrafo i
+function alternarFavorito(texto, i) {
+  const ligar = ligarFavorito(texto, [i]);
+
+  return ligar === null ? String(texto ?? '') : favoritarBlocos(texto, [i], ligar);
+}
+
+// Os parágrafos que as faixas [de, ate] tocam (os cursores e seleções do editor; o cursor logo depois do fim conta)
+const blocosTocados = (texto, faixas) =>
+  blocos(texto)
+    .map((b, i) => (faixas.some(([de, ate]) => de <= b.fim && ate >= b.ini) ? i : -1))
+    .filter((i) => i >= 0);
+
+// Todos os parágrafos favoritos de todas as notas, na ordem da lista e, dentro da nota, na ordem do texto (como a conversa),
+// sem a marca: a Favoritas é calculada na hora, sempre com o texto atual de cada parágrafo
+const favoritas = (notas) =>
+  (notas || []).flatMap((n) =>
+    blocos(n.texto)
+      .map((b, i) => ({ notaId: n.id, titulo: n.titulo || '', i, texto: b.texto }))
+      .filter((f) => ehFavorito(f.texto))
+      .map((f) => ({ ...f, texto: semMarca(f.texto) }))
+  );
 
 // ===== Markdown → HTML (pequeno, só o que uma anotação usa) =====
 // Títulos (#), negrito (** ou __), itálico (* ou _), riscado (~~), código (`x` e blocos ``` ou ~~~), listas (-, *, +, 1.),

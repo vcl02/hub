@@ -25,10 +25,21 @@ const M = carregarArquivos(
     'copiarBlocos',
     'limparParagrafo',
     'markdownHtml',
+    'alternarFavorito',
   ]
 );
 
 // ---------- a conversa: parágrafos ----------
+test('alternarFavorito: põe e tira o " ★" do fim do parágrafo i, o resto do texto byte a byte igual; bloco de código e índice que não existe não mudam', () => {
+  const t = 'a\nb  \n\n\n```\nx\n```\n\nc ★\n';
+
+  assert.equal(M.alternarFavorito(t, 0), 'a\nb ★\n\n\n```\nx\n```\n\nc ★\n');
+  assert.equal(M.alternarFavorito(t, 2), 'a\nb  \n\n\n```\nx\n```\n\nc\n');
+  assert.equal(M.alternarFavorito(M.alternarFavorito(t, 2), 2), t);
+  assert.equal(M.alternarFavorito(t, 1), t);
+  assert.equal(M.alternarFavorito(t, 9), t);
+});
+
 test('blocos: linha em branco separa parágrafos; linhas seguidas ficam juntas; o bloco de código (``` ou ~~~) fica inteiro, mesmo com linha em branco dentro', () => {
   const t = 'a\nb\n\n\nc\n\n```js\nx\n\ny\n```\n\n~~~\n1\n\n2\n~~~\nd';
 

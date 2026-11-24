@@ -6,8 +6,10 @@ function telaLogin(erro = '') {
   usuario = null;
   base = null;
   aberta = null;
+  emFavoritas = false;
   document.body.classList.remove('aberta');
   $('v-nota').hidden = true;
+  $('v-fav').hidden = true;
   $('w-lista').hidden = false;
   $('v-lista').hidden = true;
   $('v-login').hidden = false;

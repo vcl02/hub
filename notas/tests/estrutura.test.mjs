@@ -194,6 +194,7 @@ test('bootstrap: com sessão salva carrega (cópia local e nuvem) em vez de ir a
     DONO: 'dono',
     carregado: false,
     aberta: null,
+    emFavoritas: false,
     $: (id) => ({
       addEventListener: () => {},
       classList: { add() {}, remove() {} },

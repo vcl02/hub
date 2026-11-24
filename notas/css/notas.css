@@ -1,6 +1,7 @@
 /* Notas — o que é só delas, sobre a base comum (../base/tokens.css e ../base/componentes.css): a cor (a do atalho
    Anotações), a nota aberta na tela toda (o editor do PC sem a coluna de 560 px; a conversa na coluna), os balões com o
-   Markdown formatado, a seleção e o campo que cresce. */
+   Markdown formatado, a seleção e o campo que cresce; as Favoritas (o card amarelo fraco no topo da lista, a estrela dos
+   balões e a do topo do editor). */
 :root {
   --cor: #f2b544;
 }
@@ -66,6 +67,27 @@ body.arrastando-lista .alca {
   cursor: grabbing;
 }
 
+/* Favoritas: o card sempre primeiro, fora da ordem manual (outra lista, logo acima), no amarelo fraco e opaco do módulo; a
+   estrela na coluna da alça, e a linha inteira abre a "nota" */
+.favs li {
+  grid-template-columns: 40px 1fr;
+  padding-left: var(--e-1);
+  background: var(--cor-soft);
+  border-color: var(--cor-soft);
+  cursor: pointer;
+}
+.favs .estrela {
+  display: grid;
+  place-items: center;
+  color: var(--cor);
+}
+.favs .oque {
+  color: inherit;
+  text-decoration: none;
+  min-height: 36px;
+  justify-content: center;
+}
+
 /* ---------- Nota aberta: a página inteira (cabeçalho, o editor ou a conversa, o aviso de envio) ---------- */
 body.aberta {
   height: 100vh;
@@ -119,6 +141,15 @@ body.aberta {
 .nota-topo .nota-titulo input::placeholder {
   color: var(--muted);
   opacity: 1;
+}
+/* Estrela do topo do editor: acesa (o parágrafo do cursor já é favorito) como o botão ligado da base */
+.estrela-bt[aria-pressed='true'] {
+  border-color: var(--cor);
+  background: var(--cor-soft);
+  color: var(--cor);
+}
+.estrela-bt[aria-pressed='true'] svg {
+  fill: currentColor;
 }
 .selecao .num {
   flex: 1;
@@ -183,11 +214,39 @@ body.aberta {
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
-  transition: background var(--rapido);
+  transition:
+    background var(--rapido),
+    box-shadow var(--rapido);
 }
 .balao.sel {
   border-color: var(--cor);
   background: var(--cor-soft);
+}
+.balao.destaque {
+  border-color: var(--cor);
+  box-shadow: 0 0 0 2px var(--cor);
+}
+/* Favorito: a estrelinha no canto de baixo, como no WhatsApp (o " ★" do texto não aparece) */
+.balao.favorito {
+  position: relative;
+  padding-right: calc(var(--e-3) + 14px);
+}
+.balao > .estrela {
+  position: absolute;
+  right: var(--e-2);
+  bottom: var(--e-2);
+  line-height: 0;
+  color: var(--cor);
+}
+/* Na Favoritas: o título da nota de origem, pequenininho em cima; tocar abre a nota */
+.balao > .de {
+  display: block;
+  margin-bottom: var(--e-1);
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+#f-baloes .balao {
+  cursor: pointer;
 }
 .balao.editando {
   border-style: dashed;

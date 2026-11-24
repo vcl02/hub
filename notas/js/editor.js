@@ -6,6 +6,8 @@
 // acima da linha do cursor, como no VS Code).
 // Formatação ao vivo, como no Obsidian: títulos maiores, "•" no item de lista e as marcas (#, **, *, _, ~~, - * +) escondidas
 // fora das linhas do cursor e da seleção; o texto salvo continua o Markdown, byte a byte (só decorações, nada muda o doc).
+// A marca de favorito (" ★" no fim do parágrafo, js/markdown.js) fica na cor fora dessas linhas; Alt+S e o botão da estrela
+// (js/telas.js) põem ou tiram a marca dos parágrafos dos cursores (favoritarNoEditor).
 // Só as cores da base (var(--…) de ../base/tokens.css).
 
 let editor = null; // o EditorView, criado na 1ª nota aberta no modo editor
@@ -58,6 +60,7 @@ const temaEditor = () =>
       '.cm-n-h2': { fontSize: '1.35em' },
       '.cm-n-h3': { fontSize: '1.15em' },
       '.cm-n-item': { color: 'var(--muted)' },
+      '.cm-n-estrela': { color: 'var(--cor)' },
       '.cm-panels': {
         backgroundColor: 'var(--surface)',
         color: 'var(--fg)',
@@ -203,6 +206,33 @@ function decoracoesMarkdown(view) {
       },
     });
 
+  // A estrela do fim do parágrafo favorito (a última linha dele: a seguinte em branco ou nenhuma), fora de bloco de código
+  for (const { from, to } of view.visibleRanges)
+    for (let pos = from; pos <= to;) {
+      const linha = state.doc.lineAt(pos),
+        seguinte =
+          linha.number < state.doc.lines ? state.doc.line(linha.number + 1) : null;
+
+      pos = linha.to + 1;
+
+      if (
+        !MARCA_FAVORITO.test(linha.text) ||
+        (seguinte && seguinte.text.trim()) ||
+        tocaAtiva(ativas, linha.from, linha.to)
+      )
+        continue;
+
+      let codigo = false;
+
+      for (let no = CM.syntaxTree(state).resolveInner(linha.to, -1); no; no = no.parent)
+        if (no.name === 'FencedCode' || no.name === 'CodeBlock') codigo = true;
+
+      if (!codigo)
+        marcas.push(
+          CM.Decoration.mark({ class: 'cm-n-estrela' }).range(linha.to - 1, linha.to)
+        );
+    }
+
   return CM.Decoration.set(marcas, true);
 }
 
@@ -260,20 +290,65 @@ function estadoDoEditor(texto, aoMudar) {
       ]),
       CM.EditorView.updateListener.of((u) => {
         if (u.docChanged) aoMudar(u.state.doc.toString());
+
+        if (u.docChanged || u.selectionSet) aoCursorEditor(u.state);
       }),
     ],
   });
 }
 
-let aoMudarEditor = () => {}; // o aoMudar da nota aberta, para o estado novo do texto que vem da nuvem
+let aoMudarEditor = () => {}, // o aoMudar da nota aberta, para o estado novo do texto que vem da nuvem
+  aoCursorEditor = () => {}; // aoCursor(estado) da nota aberta: o cursor ou o texto mudou (a estrela do topo acompanha)
 
 // Mostra o texto no editor (cria o editor na 1ª vez, dentro de pai)
-function abrirNoEditor(pai, texto, aoMudar) {
+function abrirNoEditor(pai, texto, aoMudar, aoCursor = () => {}) {
   aoMudarEditor = aoMudar;
+  aoCursorEditor = aoCursor;
   const estado = estadoDoEditor(texto, aoMudar);
 
   if (!editor) editor = new CM.EditorView({ parent: pai, state: estado });
   else editor.setState(estado);
+  aoCursor(editor.state);
+}
+
+// Os parágrafos que os cursores e as seleções tocam
+const tocadosNoEditor = (estado) =>
+  blocosTocados(
+    estado.doc.toString(),
+    estado.selection.ranges.map((r) => [r.from, r.to])
+  );
+
+// A estrela nos parágrafos dos cursores: null (nenhum pode ser favorito), true (favoritar) ou false (todos já são: tirar)
+const estrelaNoEditor = (estado) =>
+  ligarFavorito(estado.doc.toString(), tocadosNoEditor(estado));
+
+// Alt+S e o botão da estrela: a regra da estrela (ligarFavorito, js/markdown.js) nos parágrafos dos cursores, como mudanças
+// no texto (entram no desfazer e gravam como digitar). Devolve null (nada a fazer), true (favoritou) ou false (tirou).
+function favoritarNoEditor() {
+  if (!editor) return null;
+
+  const estado = editor.state,
+    ligar = estrelaNoEditor(estado);
+
+  if (ligar === null) return null;
+  editor.dispatch({
+    changes: mudancasFavorito(estado.doc.toString(), tocadosNoEditor(estado), ligar),
+    userEvent: 'input',
+  });
+
+  return ligar;
+}
+
+// Leva o cursor ao começo do parágrafo i, no meio da tela (abrir uma favorita)
+function irAoParagrafoNoEditor(i) {
+  const b = editor && blocos(editor.state.doc.toString())[i];
+
+  if (!b) return;
+  editor.dispatch({
+    selection: { anchor: b.ini },
+    effects: CM.EditorView.scrollIntoView(b.ini, { y: 'center' }),
+  });
+  editor.focus();
 }
 
 const textoDoEditor = () => (editor ? editor.state.doc.toString() : '');
