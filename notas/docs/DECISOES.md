@@ -51,3 +51,34 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md`; o jeito de trabalha
 - Até a `notas/02` ser aplicada, o envio falha (a nuvem não conhece a coluna `ordem`) e a mudança fica pendente no aparelho; ao aplicar, a pendência sobe sozinha na próxima tentativa. Nada se perde, porque a cópia local é a fonte até lá.
 - Alça ⠿ com Pointer Events (mouse e toque iguais), só na alça (`touch-action: none` nela), para o toque não rolar a página ao arrastar. Teclado: Alt+↑/↓ com a alça em foco move uma posição, sem mouse nem toque, e mantém o foco na alça da mesma nota.
 - Esc durante o arraste só cancela o arraste (não sai do app), porque o Esc da lista sai para a página inicial e o arraste em curso não pode perder o gesto.
+
+## Lista só com o título (24/11/2026)
+
+- A linha da lista tem alça, título e lixeira. Saíram a prévia (a 1ª linha do corpo) e a data da última edição (commits `7e5b308` e `35b06b4`; as funções `previaDe` e `quandoFoi` foram removidas de `js/util.js`).
+
+## Formatação ao vivo no editor do PC (24/11/2026)
+
+- Escolhas do mantenedor: a formatação fica **só no editor do PC** (a conversa do celular já mostra os balões formatados) e a sintaxe é a **do Markdown**, não a do Slack. A nota é um `.md`, então o que se digita é Markdown e o editor só o mostra formatado.
+- Só decorações: marcas escondidas (`Decoration.replace`), títulos e linhas com classe (`Decoration.line`/`mark`) e o "•" como widget (`WidgetType`). Nada insere ou troca texto: o que é gravado é o Markdown byte a byte, e o teste "o texto do doc nunca muda" confere.
+- As marcas somem só fora das linhas do cursor e da seleção, como no Obsidian. Uma ênfase que passa de uma linha tem as marcas das duas pontas decididas juntas, pelas linhas do elemento inteiro (`ENFASES` em `js/editor.js`).
+- Bundle: `ENTRADA` de `scripts/codemirror.mjs` ganhou `Decoration`, `ViewPlugin`, `WidgetType` e `syntaxTree` (o `crosshairCursor` já estava lá, sem uso). Mesmas versões, `vendor/codemirror.js` regenerado.
+- Problema que aconteceu e pode voltar: o seletor `&dark` dentro de `EditorView.theme` faz o CodeMirror recusar o tema ("Unsupported selector"), e a nota abria vazia no PC. Corrigido em `c1410f2` (24/11/2026): o tema usa só `{ dark: true }`, sem seletor `&dark`. Teste: "a nota abre no editor".
+
+## Ctrl+↑/↓ rolam, não criam cursor (24/11/2026)
+
+- Primeiro, Ctrl+↑/↓ acrescentava um cursor na linha de cima ou de baixo (`61f9bf6`, como no VS Code). Passou a rolar a página uma linha, sem mexer no cursor (`bb5bd1a`), para não criar vários cursores sem querer ao rolar. Ctrl+←/→ continuam andando por palavra (padrão do CodeMirror).
+
+## Botão do meio e cruz no Alt (24/11/2026)
+
+- Arrastar com o botão do meio (ou Alt + arrastar com o esquerdo) faz seleção em coluna, como no VS Code (`8a8f36f`).
+- Sem `crosshairCursor`: ele trocava o ponteiro por uma cruz grande ao segurar Alt, e isso aparecia ao usar Alt+S. Por isso Alt+S só favorita e o ponteiro não muda.
+- Um paste logo depois de soltar o botão do meio é ignorado (até 1 s): no Linux, esse botão cola a seleção primária, que não se quer no texto.
+
+## Favoritas como marca no texto (24/11/2026)
+
+- Decisão: favorito é o parágrafo que termina com ` ★` **no próprio texto**. Não há coluna nova, nem tabela, nem migration; a Favoritas é calculada na hora (`favoritas`, em `js/markdown.js`) com o texto atual de cada nota.
+- Caminhos vistos, na ordem (o mantenedor decidiu o último): (1) uma tela própria de favoritos; (2) uma nota de verdade chamada Favoritas, com cópia dos parágrafos; (3) a lista dinâmica, como os favoritos do WhatsApp, que o mantenedor pediu. Com uma cópia, a Favoritas mostraria o que foi copiado, não o texto atual da nota de origem; por isso a dinâmica.
+- Marca no texto e não num campo à parte: o editor do PC e a conversa veem a mesma coisa, e a nota continua um `.md` que vai para o `hub_historico` como qualquer edição.
+- Bloco de código não pode ser favorito: a marca no fecho ``` quebraria o bloco. A estrela fica desativada nesse caso (`podeFavoritar`).
+- Espaços depois da ★ também valem (`0eea2fd`): a marca aceita `[ \t]*` no fim, porque o celular e o editor deixam espaço no fim da linha.
+- O id `favoritas` (9 letras) nunca bate com um id de nota: os ids gerados em `criarNota` têm no máximo 8 caracteres (`Math.random().toString(36).slice(2, 10)`). Se o gerador mudar para um id maior, a Favoritas precisa de outro endereço.

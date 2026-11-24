@@ -11,11 +11,28 @@
 
 ## Lista de notas
 
-- Uma linha por nota, na ordem que eu defino (fica para sempre, em todos os aparelhos): título separado (vazio, "Sem título"), prévia (a 1ª linha não vazia do corpo, sem as marcas do começo) e quando foi a última edição (hoje, a hora "14:05"; ontem, "ontem"; neste ano, "19/11"; antes, "19/11/25").
+- Uma linha por nota, na ordem que eu defino (fica para sempre, em todos os aparelhos): alça **⠿**, título (vazio, "Sem título") e a lixeira. A linha só tem o título: sem prévia do corpo e sem a data da última edição.
+- O card **Favoritas** fica sempre em primeiro, acima da lista (ver "Favoritas").
 - **Ordem:** a alça **⠿** à esquerda de cada linha arrasta a nota (mouse ou dedo, só pela alça; o resto da linha abre a nota e rola a página); a linha segue o ponteiro, as outras abrem espaço e, ao soltar, a nota fica ali. Esc (ou o sistema interromper o toque) durante o arraste cancela e a nota volta ao lugar, sem sair do app. Com a alça em foco, **Alt+↑**/**Alt+↓** sobe ou desce uma posição. Nota nova entra no topo; editar não muda a posição.
 - **+** cria uma nota nova (no topo) e já a abre, pronta para escrever. Toque repetido sem querer no + em menos de 0,5 s é ignorado.
 - **Apagar** (lixeira da linha): toque duplo, como em todos os apps (o 1º deixa vermelho por 3 s, o 2º apaga).
 - Nota que fica vazia ao sair (a nova sem nada escrito, ou a que teve tudo apagado) some da lista.
+
+## Favoritas
+
+- **Favorito é o parágrafo que termina com ` ★`** (um espaço e a estrela; espaços depois da estrela também valem). A marca fica no próprio texto da nota: o editor do PC e a conversa veem a mesma coisa, e nada mais é guardado.
+- Não podem ser favoritos: parágrafo vazio ou só com a estrela, e parágrafo cuja última linha está num bloco de código (a marca ali quebraria o bloco). Nesses casos a estrela fica desativada.
+- O card **Favoritas** (amarelo fraco, no topo da lista, fora da ordem: não arrasta e não apaga) mostra a contagem: "Nenhuma ainda", "1 mensagem" ou "N mensagens". Tocar em qualquer parte dele abre a "nota" Favoritas (`?nota=favoritas`); Ctrl/Shift+clique abre à parte, como um link.
+- **A Favoritas é calculada na hora**, com o texto atual de cada nota: os favoritos de todas as notas, na ordem da lista e, dentro de cada nota, na ordem do texto. Cada balão tem o título da nota de origem em cima, pequeno ("Sem título" se vazio), e a estrela no canto; a ` ★` do texto não aparece. O mais novo fica embaixo e a tela abre no fim. Editar a origem muda a Favoritas; tirar a marca da origem tira o balão.
+- A Favoritas aparece sempre como conversa, também no PC.
+- **Tocar num balão** abre a nota de origem no parágrafo: no celular, rolado até ele com um destaque breve; no PC, com o cursor no começo do parágrafo, no meio da tela.
+- **Segurar** um balão seleciona (como na conversa). Com seleção, a barra no topo mostra a quantidade e tem: **Desmarcar** (X), **Copiar** (os parágrafos na ordem da lista, sem a ★, separados por uma linha em branco) e **Tirar das favoritas** (tira a marca só dos selecionados, em cada nota de origem; o resto do texto fica igual).
+- Sem favoritos, a Favoritas mostra: "Nenhuma favorita ainda. Na conversa, segure um parágrafo e toque na estrela; no editor, Alt+S."
+- **Como favoritar:**
+  - No celular: segurar, selecionar e tocar na estrela da barra (ao lado do Apagar). Com os selecionados que podem ser favoritos, a estrela tira a marca se todos já são; senão, favorita todos. Desativada se nenhum pode.
+  - No PC: o botão de estrela no topo do editor e **Alt+S** (pela tecla S física, então vale também no Mac) põem ou tiram a marca nos parágrafos dos cursores e das seleções (vários cursores: todos de uma vez). A mesma regra da estrela do celular. O botão fica aceso quando o parágrafo do cursor já é favorito, e desativado quando ele não pode ser. Aparece "Nas favoritas." ou "Fora das favoritas."; Ctrl+Z desfaz.
+- Editar um favorito na conversa mantém a marca. Enviar sem texto no campo de edição apaga o parágrafo (não sobra só a estrela).
+- **Esc** na Favoritas: com seleção, desmarca; sem seleção, volta para a lista. O **Voltar** do app ou do navegador também volta.
 
 ## Nota aberta
 
@@ -26,22 +43,33 @@
 
 ## Editor (PC)
 
-- A nota inteira num editor de tela cheia, em Markdown com destaque (títulos na cor do módulo, ênfases, marcas em cinza, código com fundo) e quebra de linha visual.
+- A nota inteira num editor de tela cheia, em Markdown, com quebra de linha visual.
+- **Formatação ao vivo** (como no Obsidian): a tela mostra o Markdown formatado; o texto gravado continua o Markdown puro, byte a byte.
+  - Títulos `#`, `##` e `###` maiores (1,6×, 1,35× e 1,15× da letra), na cor do módulo e em negrito. `####` a `######` ficam do tamanho de `###`.
+  - `-`, `*` e `+` de item sem número viram **•** (o espaço depois da marca fica). Item numerado fica como está.
+  - Ênfases formatadas: negrito (`**` ou `__`), itálico (`*` ou `_`) e riscado (`~~`). Código (crase) tem fundo; links sublinhados.
+  - As marcas (`#`, as de ênfase e a do item de lista) **somem fora das linhas do cursor e da seleção** e voltam nas linhas que eles tocam. Com vários cursores, cada linha de um cursor conta. Uma seleção mostra as marcas de todas as linhas que toca, do começo da primeira ao fim da última. Uma ênfase que passa de uma linha mostra as marcas das duas pontas quando o cursor está em qualquer uma delas.
+  - A ★ do favorito fica na cor do módulo, fora da linha do cursor (dentro de bloco de código, não ganha cor).
 - Atalhos como no VS Code: **Ctrl+D** seleciona a próxima ocorrência (vários cursores; digitar troca todas), **Ctrl+X** sem seleção recorta a linha inteira e **Ctrl+C** sem seleção copia a linha (a linha vai para a área de transferência sem a quebra do fim; colar no editor a põe inteira acima da linha do cursor), **Alt+↑/↓** move a linha, **Ctrl+Shift+K** apaga a linha, **Ctrl+Z**/**Ctrl+Y** desfazem e refazem, **Ctrl+F** busca, Tab indenta. Enter numa lista continua a lista.
+- **Ctrl+↑ / Ctrl+↓** rolam a página uma linha, sem mexer no cursor e sem criar cursores. **Ctrl+← / Ctrl+→** andam por palavra.
+- **Seleção em coluna:** arrastar com o **botão do meio** (ou Alt + arrastar com o esquerdo) faz um cursor por linha, na mesma coluna. O ponteiro não vira cruz ao segurar Alt. Um paste logo depois do botão do meio (até 1 s) é ignorado: é a seleção primária do Linux, não algo que se quer colar.
 - Grava sozinho 0,8 s depois de parar de digitar; sair da nota, trocar de modo ou esconder a página grava na hora. Desfazer começa do zero a cada nota aberta.
+- A estrela do topo e Alt+S: ver "Favoritas".
 
 ## Conversa (celular)
 
-- Cada parágrafo (linhas seguidas; linha em branco separa; um bloco de código ``` fica inteiro) é um balão, com o Markdown formatado: títulos, negrito, itálico, riscado, código, listas (com tarefas `[ ]`/`[x]`), citação, linha e links. Link só `http(s)`, `mailto` ou `tel`, abre em outra aba; o resto fica como texto. O mais novo embaixo, e a nota abre no fim.
+- Cada parágrafo (linhas seguidas; linha em branco separa; um bloco de código ``` fica inteiro) é um balão, com o Markdown formatado: títulos, negrito, itálico, riscado, código, listas (com tarefas `[ ]`/`[x]`), citação, linha e links. Link só `http(s)`, `mailto` ou `tel`, abre em outra aba; o resto fica como texto. O mais novo embaixo, e a nota abre no fim. Balão favorito leva a estrela no canto.
 - Campo embaixo, que cresce com o texto, e **enviar**: acrescenta um parágrafo no fim. Enter envia no PC (Shift+Enter quebra a linha); no celular, Enter quebra a linha e se envia pelo botão; **Ctrl+Enter** envia sempre. Toque repetido sem querer no enviar em menos de 0,5 s é ignorado. Campo vazio não envia.
 - **Segurar** um balão ~0,5 s seleciona (rolar não seleciona); com algo selecionado, um toque seleciona ou desseleciona outros. Barra de seleção no topo, com a quantidade:
   - **Apagar**: toque duplo; apaga os parágrafos selecionados ("Parágrafo apagado." ou "N parágrafos apagados.").
   - **Editar** (só com 1 selecionado): o texto do parágrafo vai para o campo de baixo; enviar troca o parágrafo no lugar (vazio apaga), **Cancelar** desiste.
-  - **Copiar**: os parágrafos selecionados, na ordem da nota, separados por uma linha em branco.
+  - **Copiar**: os parágrafos selecionados, na ordem da nota, sem a ★, separados por uma linha em branco.
+  - **Estrela**: favorita ou tira das favoritas (ver "Favoritas"); desativada se nenhum selecionado pode ser favorito.
   - **X**: desmarca.
 - O resto do texto da nota continua igual: só o parágrafo mexido muda.
 
 ## Esc
 
 - Na nota, na ordem: desmarca a seleção; cancela a edição do parágrafo; no editor, desfaz os vários cursores ou fecha a busca e depois só tira o foco; num campo de texto, o 1º Esc só tira o foco; sem nada disso, volta para a lista.
+- Na Favoritas: com seleção, desmarca; sem seleção, volta para a lista.
 - Na lista, durante um arraste, só cancela o arraste; sem arraste, sai do app para a página inicial do hub (`../`), como em todos os apps.

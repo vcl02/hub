@@ -1,6 +1,6 @@
 # Notas (`notas`)
 
-Anotações em Markdown, várias notas. No PC, um editor como o do VS Code (Ctrl+D, Ctrl+X na linha, Alt+↑/↓); no celular, a nota como conversa (um balão por parágrafo, segurar para selecionar, apagar, editar e copiar). A lista das notas se ordena arrastando a alça ⠿ (ou Alt+↑/↓ com a alça em foco). Abre pelo atalho Anotações da página inicial. Regras em `docs/REGRAS.md`; guia em `AGENTS.md`.
+Anotações em Markdown, várias notas. No PC, um editor como o do VS Code (Ctrl+D, Ctrl+X na linha, Alt+↑/↓) com o Markdown formatado ao vivo; no celular, a nota como conversa (um balão por parágrafo, segurar para selecionar, apagar, editar, copiar e favoritar). Parágrafo favorito termina com ` ★` e aparece no card Favoritas, no topo da lista. A lista das notas se ordena arrastando a alça ⠿ (ou Alt+↑/↓ com a alça em foco). Abre pelo atalho Anotações da página inicial. Regras em `docs/REGRAS.md`; guia em `AGENTS.md`.
 
 ## Implantação (uma vez, feita pelo mantenedor)
 

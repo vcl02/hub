@@ -35,7 +35,7 @@ const ENTRADA = `
 export { EditorState, EditorSelection, Compartment, Prec } from '@codemirror/state';
 export {
   EditorView, keymap, drawSelection, dropCursor, highlightActiveLine, highlightSpecialChars, rectangularSelection,
-  crosshairCursor, placeholder, Decoration, ViewPlugin, WidgetType
+  placeholder, Decoration, ViewPlugin, WidgetType
 } from '@codemirror/view';
 export { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 export {

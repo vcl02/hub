@@ -22,9 +22,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-#n-lista .oque small:empty {
-  display: none;
-}
 /* A linha com a alça à esquerda: alça · título · apagar (sem a data: a base tem 4 colunas para hora · o quê · valor · ação) */
 #n-lista li {
   grid-template-columns: auto 1fr auto;
