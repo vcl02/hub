@@ -282,45 +282,18 @@ const botaoDoMeio = CM.EditorView.domEventHandlers({
   },
 });
 
-// Ctrl+↑ / Ctrl+↓: um cursor a mais na linha de cima / de baixo, na mesma coluna (ou no fim, se a linha for menor), a partir
-// do cursor mais acima / mais abaixo, como o Ctrl+Alt+↑/↓ do VS Code. Ctrl+← / Ctrl+→ andam por palavra com todos os
-// cursores (do próprio CodeMirror). Esc volta a um cursor só.
-let colunaDosCursores = 0;
+// Ctrl+↑ / Ctrl+↓: rolam a página uma linha, sem mexer no cursor, como no VS Code. Para o lado não há o que rolar (as
+// linhas quebram na largura da tela); Ctrl+← / Ctrl+→ continuam andando por palavra.
+const rolarLinha = (direcao) => (view) => {
+  view.scrollDOM.scrollTop += direcao * view.defaultLineHeight;
 
-function cursorNaLinha(direcao) {
-  return (view) => {
-    const { state } = view,
-      ranges = state.selection.ranges,
-      ponta = ranges.reduce((a, r) =>
-        direcao < 0 ? (r.head < a.head ? r : a) : r.head > a.head ? r : a
-      ),
-      linha = state.doc.lineAt(ponta.head),
-      n = linha.number + direcao;
+  return true;
+};
 
-    // A coluna de partida vale para os cursores seguintes, mesmo passando por uma linha menor (como no VS Code)
-    if (ranges.length === 1) colunaDosCursores = ponta.head - linha.from;
-
-    if (n < 1 || n > state.doc.lines) return true;
-
-    const alvo = state.doc.line(n),
-      pos = alvo.from + Math.min(colunaDosCursores, alvo.length);
-
-    view.dispatch({
-      selection: CM.EditorSelection.create(
-        [...ranges, CM.EditorSelection.cursor(pos)],
-        ranges.length
-      ),
-      scrollIntoView: true,
-    });
-
-    return true;
-  };
-}
-
-const atalhosDeCursores = CM.Prec.high(
+const atalhosDeRolagem = CM.Prec.high(
   CM.keymap.of([
-    { key: 'Ctrl-ArrowUp', run: cursorNaLinha(-1) },
-    { key: 'Ctrl-ArrowDown', run: cursorNaLinha(1) },
+    { key: 'Ctrl-ArrowUp', run: rolarLinha(-1) },
+    { key: 'Ctrl-ArrowDown', run: rolarLinha(1) },
   ])
 );
 
@@ -342,7 +315,7 @@ function estadoDoEditor(texto, aoMudar) {
         eventFilter: (ev) => ev.button === 1 || (ev.altKey && ev.button === 0),
       }),
       botaoDoMeio,
-      atalhosDeCursores,
+      atalhosDeRolagem,
       CM.highlightActiveLine(),
       CM.highlightSelectionMatches(),
       CM.search({ top: true }),
