@@ -153,6 +153,25 @@ body.aberta {
   font-size: var(--t-xl);
   color: var(--cor);
 }
+/* Avisos da aba parada (conflito, nota que voltou): a linha da lista da base no laranja de atenção, com a frase, Abrir cópia
+   e o fechar; na nota, na coluna, logo abaixo do cabeçalho */
+.avisos li {
+  grid-template-columns: 1fr auto auto;
+  border-color: var(--aviso);
+  background: var(--aviso-soft);
+}
+.avisos .oque {
+  display: block;
+  font-size: var(--t-sm);
+  overflow-wrap: anywhere;
+}
+.nota > .avisos {
+  flex: none;
+  width: 100%;
+  max-width: var(--largura);
+  margin: 0 auto;
+  padding: var(--e-2) var(--e-4) 0;
+}
 .nota > .sync {
   flex: none;
   margin: 0;

@@ -5,6 +5,10 @@ function telaLogin(erro = '') {
   db = null;
   usuario = null;
   base = null;
+  conflitos = []; // os avisos de outra conta não aparecem nesta
+  mantidas = [];
+  avisos = [];
+  pintarAvisos();
   aberta = null;
   emFavoritas = false;
   document.body.classList.remove('aberta');

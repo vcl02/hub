@@ -212,6 +212,16 @@ test('migrations no formato do DataGrip e RLS só do Victor em todas as tabelas 
   const { TABELAS } = carregar(path.join(RAIZ, 'js/banco.js'), ['TABELAS']);
 
   for (const t of Object.keys(TABELAS)) assert.ok(tabelas.includes(t), t);
+
+  // A coluna das marcas de envio (migration 04) nas duas tabelas com contador, a que o banco.js grava junto
+  for (const t of ['al_item', 'al_marmita'])
+    assert.match(
+      tudo,
+      new RegExp(
+        `alter table public\\.${t} add column if not exists envios jsonb not null default '\\[\\]'`
+      ),
+      t
+    );
 });
 
 test('nenhum segredo no repositório; o app só fala com a IA pela Edge Function', () => {

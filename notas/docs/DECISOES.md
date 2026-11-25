@@ -8,13 +8,17 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md`; o jeito de trabalha
 - O atalho **Anotações** da doca abria a conversa do WhatsApp comigo mesmo (`wa.me`); passou a abrir `notas/`, com o mesmo ícone. Deixou de ser externo, então `?volta=notas/…` é aceito como o de qualquer app do hub.
 - **Várias notas**, como arquivos `.md` (decisão do mantenedor), numa tabela com uma linha por nota (`notas_nota`). O título é um campo separado do corpo Markdown e pode ser editado no cabeçalho. A migration `01` move o título antigo (primeira linha não vazia) para o campo separado e remove essa linha do corpo.
 
-## Nota gravada inteira, sem mescla (24/11/2026)
+## Nota gravada inteira, nunca por cima do que não foi visto (24/11/2026)
 
-- Decisão do mantenedor: "pega sempre o resultado final da edição e coloca no banco, não compara mudanças". Cada gravação faz upsert da nota inteira (`onConflict: 'user_id,id'`); quem salva por último vale.
-- Exceção à regra "Envio que mescla" de `../../AGENTS.md`: lá as listas do dia (água, xixis) mesclam porque dois aparelhos acrescentam itens ao mesmo dia. Aqui a unidade é o texto da nota; mesclar texto livre editado em dois aparelhos seria um diff de texto, com conflito a resolver na tela. Para uma pessoa só, que escreve num aparelho de cada vez, o último texto é o certo.
-- Sem "voo" (`notas.voo.<conta>`): o voo existe para a mescla não somar de novo o que já subiu. O upsert da nota inteira é idempotente (repetir deixa a nuvem igual), então envio sem resposta só é repetido.
-- O que é sobrescrito não se perde: a migration `02` da raiz liga `notas_nota` ao `hub_historico`, com antes e depois de cada gravação. É o "log a cada edição" que o mantenedor pediu, sem tabela de versões própria.
-- Com pendente no aparelho, o carregar envia antes e não troca a cópia pela nuvem (nem se o envio falhou): o que foi escrito sem internet nunca é substituído pelo texto velho da nuvem.
+- Decisão do mantenedor: "pega sempre o resultado final da edição e coloca no banco, não compara mudanças". A nota continua gravada inteira (texto final, sem diff de texto), mas a decisão original ("quem salva por último vale") perdia dado com a aba parada: app aberto horas, outro aparelho escreve, volta e digita, e o upsert apagava o que veio do outro. Corrigido no mesmo dia (regra do mantenedor: erro achado se corrige).
+- **Gravação condicional:** a nota que já existe sobe por `update` com `editada_em` igual à versão que este aparelho conhece; a nova, por `insert`; a apagada, por `delete` só se não mudou. Não pegou linha, a nuvem mudou: o texto daqui vira uma nota nova "<título> (conflito)", logo abaixo, a original fica com a da nuvem e as duas ficam. Conflito vira nota, e não pergunta na tela, porque o texto livre não se mescla sem escolher e nenhum texto pode se perder; a pessoa junta depois, com os dois à vista.
+- **Janela de 1 ms no `editada_em`:** a nuvem guarda microssegundos e o aparelho, milissegundos (`isoOk`); comparar por igualdade nunca bateria. O `update` usa `gte versão` e `lt versão + 1 ms`.
+- **Vista por campo:** a tela guarda a versão em que pegou o texto e a em que pegou o título (`vistaDoTexto`, `vistaDoTitulo`). Só o próprio campo mudado por baixo é conflito: título trocado aqui e depois o texto, ou outro aparelho trocar só o título enquanto se digita o texto, não são. Acrescentar um parágrafo na conversa parte do texto mais novo e nunca conflita; seleção ou edição de parágrafo sobre texto que mudou por baixo, sim.
+- **Voo (`notas.voo.<conta>`):** a gravação que chegou sem resposta não pode virar conflito com ela mesma na tentativa seguinte (a nuvem já tem a versão daqui, com `editada_em` que o aparelho não conhece). O voo guarda as versões mandadas por nota; a linha da nuvem igual a uma delas é a daqui.
+- **Trazer a nuvem:** `atualizar` roda ao voltar à aba, a internet voltar e a cada minuto com a página à vista (`aplicarNuvem`); a nota aberta só troca se não há nada digitado esperando (a troca não grava de volta nem entra no desfazer).
+- O que é substituído não se perde: a migration `02` da raiz liga `notas_nota` ao `hub_historico`, com antes e depois de cada gravação.
+- Com pendente no aparelho, o carregar envia antes e não troca a cópia pela nuvem: o que foi escrito sem internet nunca é substituído pelo texto velho.
+- **Testes:** funções com nuvem falsa em `tests/funcoes.test.mjs`; conversa no celular e editor do PC em `tests/notas.test.mjs` e `tests/editor.test.mjs`; todos com mutação (tirar a condição da vista, a vista que sempre se atualiza, o voo).
 
 ## Editor do PC: CodeMirror 6 vendorizado (24/11/2026)
 

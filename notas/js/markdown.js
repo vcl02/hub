@@ -206,6 +206,24 @@ const favoritas = (notas) =>
       .map((f) => ({ ...f, texto: semMarca(f.texto) }))
   );
 
+// Os índices de hoje, no texto atual da nota, das favoritas escolhidas na tela ([{ i, texto }] de favoritas): a nota pode ter
+// mudado depois do desenho (a nuvem, com a seleção na tela). Cada uma pelo mesmo índice com o mesmo texto; senão, pela 1ª
+// favorita ainda não usada com o mesmo texto; sumiu (ou deixou de ser favorita), fica de fora.
+function indicesDasFavoritas(texto, escolhidas) {
+  const atuais = favoritas([{ texto }]),
+    indices = [];
+
+  for (const f of escolhidas) {
+    const x =
+      atuais.find((a) => a.i === f.i && a.texto === f.texto && !indices.includes(a.i)) ||
+      atuais.find((a) => a.texto === f.texto && !indices.includes(a.i));
+
+    if (x) indices.push(x.i);
+  }
+
+  return indices;
+}
+
 // ===== Markdown → HTML (pequeno, só o que uma anotação usa) =====
 // Títulos (#), negrito (** ou __), itálico (* ou _), riscado (~~), código (`x` e blocos ``` ou ~~~), listas (-, *, +, 1.),
 // tarefas ([ ] e [x]), citação (>), linha (---) e links ([texto](https://…) e endereços soltos). Todo texto do usuário é

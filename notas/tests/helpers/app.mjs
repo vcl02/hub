@@ -132,43 +132,86 @@ export async function fakeSupabase(ctx, nuvem, id = DONO) {
 
     if (!linhas) return json({ message: 'tabela?' }, 404);
 
-    // eq.x e in.(a,b): os filtros que o banco usa
+    // eq.x, in.(a,b), gte.x e lt.x: os filtros que o banco usa (datas comparadas pelo instante, como o timestamptz)
+    const valor = (v) =>
+      typeof v === 'string' && !Number.isNaN(Date.parse(v)) ? Date.parse(v) : String(v);
+
     const filtros = [...u.searchParams]
-      .filter(([, v]) => /^(eq|in)\./.test(v))
-      .map(([k, v]) => [
-        k,
-        v.startsWith('eq.')
-          ? [v.slice(3)]
-          : v
-              .slice(4, -1)
-              .split(',')
-              .map((x) => x.replace(/^"|"$/g, '')),
-      ]);
+      .filter(([, v]) => /^(eq|in|gte|lt)\./.test(v))
+      .map(([k, v]) => {
+        const op = v.slice(0, v.indexOf('.')),
+          x = v.slice(op.length + 1);
+
+        return [
+          k,
+          op,
+          op === 'in'
+            ? x
+                .slice(1, -1)
+                .split(',')
+                .map((y) => y.replace(/^"|"$/g, ''))
+            : x,
+        ];
+      });
+
+    const passa = (l) =>
+      filtros.every(([k, op, x]) =>
+        op === 'eq'
+          ? String(l[k]) === x
+          : op === 'in'
+            ? x.includes(String(l[k]))
+            : op === 'gte'
+              ? valor(l[k]) >= valor(x)
+              : valor(l[k]) < valor(x)
+      );
+
+    // com ?select= (o .select('id') depois da gravação), a resposta leva as linhas afetadas
+    const afetadas = (L) =>
+      u.searchParams.has('select')
+        ? json(
+            L.map((l) => ({ id: l.id })),
+            req.method() === 'POST' ? 201 : 200
+          )
+        : route.fulfill({ status: req.method() === 'POST' ? 201 : 204 });
 
     if (req.method() === 'GET') {
       const off = +(u.searchParams.get('offset') || 0),
         lim = +(u.searchParams.get('limit') || 1e9);
 
-      return json(linhas.slice(off, off + lim));
+      return json(linhas.filter(passa).slice(off, off + lim));
     }
 
     if (req.method() === 'POST') {
-      for (const l of [].concat(req.postDataJSON())) {
+      const L = [].concat(req.postDataJSON()),
+        upsert = /merge-duplicates/.test(req.headers()['prefer'] || '');
+
+      for (const l of L) {
         const i = linhas.findIndex((x) => x.id === l.id);
+
+        if (i >= 0 && !upsert)
+          return json({ code: '23505', message: 'duplicate key value' }, 409);
 
         if (i >= 0) linhas[i] = l;
         else linhas.push(l);
       }
 
-      return route.fulfill({ status: 201 });
+      return afetadas(L);
+    }
+
+    if (req.method() === 'PATCH') {
+      const L = linhas.filter(passa);
+
+      for (const l of L) Object.assign(l, req.postDataJSON());
+
+      return afetadas(L);
     }
 
     if (req.method() === 'DELETE') {
-      nuvem.tabelas[t] = linhas.filter(
-        (l) => !filtros.every(([k, vs]) => vs.includes(String(l[k])))
-      );
+      const L = linhas.filter(passa);
 
-      return route.fulfill({ status: 204 });
+      nuvem.tabelas[t] = linhas.filter((l) => !passa(l));
+
+      return afetadas(L);
     }
 
     return json({}, 405);

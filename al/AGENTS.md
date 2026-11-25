@@ -33,7 +33,7 @@
 
 Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para todos fica lá).
 
-- **Migrations:** `migrations/` 00 a 03 (`03` marmitas; o histórico delas é a `01` da raiz), formato DataGrip, RLS só do Victor em todas as `al_*`; conferido em `tests/estrutura.test.mjs`, numeração em `../tests/documentacao.test.mjs`.
+- **Migrations:** `migrations/` 00 a 04 (`03` marmitas, o histórico delas é a `01` da raiz; `04` a coluna `envios`, as marcas de envio de `al_item` e `al_marmita`), formato DataGrip, RLS só do Victor em todas as `al_*`; conferido em `tests/estrutura.test.mjs`, numeração em `../tests/documentacao.test.mjs`.
 - **Testes:** navegador em `tests/dia.test.mjs` (Playwright da raiz, Supabase e IA falsos em `tests/helpers/app.mjs`); sem navegador, `tests/regras.test.mjs` (contas, avisos do saldo, comidas salvas, marmitas e respostas da IA, com as funções tiradas dos arquivos publicados) e `tests/helpers/rodar.mjs` (service worker e `bootstrap.js` em `node:vm`); a Edge Function em `tests/funcao.test.mjs` (SDK e rede simulados); estrutura em `tests/estrutura.test.mjs`. As contas de `gasto.js` também são conferidas pelos hábitos da raiz. O relógio falso vem de `../tests/relogio.mjs` (pausado; ver `../docs/DIRETRIZES.md`, seção 3). Auditoria de 02/11/2026 em `docs/DECISOES.md`.
 - **Pacotes:** sem `package.json`. `../supabase.js` da raiz; a função usa `npm:@anthropic-ai/sdk@0.133.0` (versão exata, conferida em `tests/funcao.test.mjs`) e os tipos `jsr:@supabase/functions-js@2.118.0`; Playwright da raiz.
 - **Backups:** cópia no aparelho (`al.db.<conta>`, base em `al.base.<conta>`) e `hub_historico` com `al_dia`, `al_item`, `al_registro` e `al_marmita`. `al_uso` (contador de consultas à IA) fica fora: não é dado a recuperar.
@@ -41,7 +41,7 @@ Resolução deste app para cada item de `../docs/DIRETRIZES.md` (o que vale para
 
 **Implantação (uma vez, feita pelo mantenedor):**
 
-1. Tabelas: rodar `migrations/00-tabelas-al.sql` no DataGrip (projeto do fin). Cria `al_item`, `al_registro`, `al_dia` e `al_uso`, com RLS só do Victor. Depois, na ordem, as outras de `migrations/`: `01` (tempo e distância) e `02` (caminhada em trechos); a `03` (marmitas) também.
+1. Tabelas: rodar `migrations/00-tabelas-al.sql` no DataGrip (projeto do fin). Cria `al_item`, `al_registro`, `al_dia` e `al_uso`, com RLS só do Victor. Depois, na ordem, as outras de `migrations/`: `01` (tempo e distância) e `02` (caminhada em trechos); a `03` (marmitas) e a `04` (marcas de envio) também.
 2. Chave da IA: criar uma chave em console.anthropic.com (cobrança da API, separada da assinatura do Claude). Não colar em chat, arquivo nem print.
 3. Secret: no painel do Supabase, Edge Functions → Secrets, criar `ANTHROPIC_API_KEY` com a chave. Pela CLI: `supabase secrets set ANTHROPIC_API_KEY=<chave> --project-ref yzmyncxoskvqzdczaill` (cuidado: fica no histórico do terminal).
 4. Função: dentro de `al/`, `supabase functions deploy al-estimar --project-ref yzmyncxoskvqzdczaill --no-verify-jwt`. O `--no-verify-jwt` deixa o pedido de CORS do navegador (sem sessão) chegar à função; a própria função confere a sessão no Auth e recusa quem não for o Victor.

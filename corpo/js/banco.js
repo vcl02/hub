@@ -15,7 +15,8 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 const K_LOCAL = (id) => 'corpo.db.' + id,
   K_BASE = (id) => 'corpo.base.' + id,
   K_AGUAS = (id) => 'corpo.aguas.' + id,
-  K_VOO = (id) => 'corpo.voo.' + id;
+  K_VOO = (id) => 'corpo.voo.' + id,
+  K_VOO_AQUI = (id) => 'corpo.vooAqui.' + id;
 
 // aguas = { dia: ml } da Água (agua_dia, só leitura), para a bexiga
 let aguas = {};
@@ -114,6 +115,17 @@ const lerVoo = () => {
   }
 };
 
+// O dia daqui no momento do envio em voo: se ele chegou, só o que mudou aqui depois dele entra na mescla. Usar o próprio voo como
+// base tiraria da nuvem o que o outro aparelho lançou no mesmo dia antes daquele envio (aba parada + metrô, 24/11/2026).
+// Voo sem este registro (versão anterior do app): como antes, a base é o voo.
+const lerVooAqui = () => {
+  try {
+    return JSON.parse(store.get(K_VOO_AQUI(usuario.id)) || 'null') || {};
+  } catch {
+    return {};
+  }
+};
+
 const temPendente = () => {
   if (!db || !usuario) return false;
   const d = diferenca(base, linhas(db));
@@ -181,7 +193,8 @@ async function enviar() {
 
   const agora = linhas(db),
     mud = diferenca(base, agora),
-    voo = semCorpoDia ? {} : lerVoo();
+    voo = semCorpoDia ? {} : lerVoo(),
+    vooAqui = semCorpoDia ? {} : lerVooAqui();
 
   if (!mud && !Object.keys(voo).length) {
     erroSync = '';
@@ -227,10 +240,16 @@ async function enviar() {
         finais[d] = diaMesclado(
           d,
           nuvem[d],
-          chegou(d) ? voo[d] : base?.corpo_dia?.[d],
+          chegou(d) ? (d in vooAqui ? vooAqui[d] : voo[d]) : base?.corpo_dia?.[d],
           agora.corpo_dia[d]
         );
       store.set(K_VOO(usuario.id), JSON.stringify(finais));
+      store.set(
+        K_VOO_AQUI(usuario.id),
+        JSON.stringify(
+          Object.fromEntries(diasMudados.map((d) => [d, agora.corpo_dia[d] ?? null]))
+        )
+      );
 
       const sobe = diasMudados.filter((d) => finais[d]),
         sai = diasMudados.filter((d) => !finais[d] && nuvem[d]);
@@ -251,26 +270,59 @@ async function enviar() {
       }
     }
 
-    for (const t in TABELAS) {
-      if (t === 'corpo_dia' || !mud) continue;
+    // corpo_medida: aba parada (24/11/2026). A pesagem do dia não sobe inteira por cima do que outro aparelho gravou nela
+    // depois da base: grava a mescla coluna por coluna com a linha da nuvem, e apagar só apaga se a nuvem ainda é a que este
+    // aparelho conhecia (senão, a da nuvem volta para cá). enviarMesclado e mesclarLinha: ../base/nucleo.js.
+    const medidasFinais = {};
 
-      if (mud.up[t].length) {
-        const { error } = await sb.from(t).upsert(
-          mud.up[t].map((l) => ({ user_id: usuario.id, ...l })),
-          { onConflict: 'user_id,' + TABELAS[t] }
-        );
+    if (mud && (mud.up.corpo_medida.length || mud.del.corpo_medida.length)) {
+      const finais = await enviarMesclado(sb, {
+        tabela: 'corpo_medida',
+        chaves: ['data'],
+        up: mud.up.corpo_medida.map((l) => ({
+          local: l,
+          base: base?.corpo_medida?.[l.data] ?? null,
+        })),
+        del: mud.del.corpo_medida.map((k) => base.corpo_medida[k]),
+        usuarioId: usuario.id,
+        vooChave: 'corpo.vooLinhas.' + usuario.id,
+      });
 
-        if (error) throw error;
-      }
-
-      for (const k of mud.del[t]) {
-        const { error } = await sb.from(t).delete().eq(TABELAS[t], k);
-
-        if (error) throw error;
-      }
+      for (const k of [
+        ...mud.up.corpo_medida.map((l) => l.data),
+        ...mud.del.corpo_medida,
+      ])
+        medidasFinais[k] = finais.get(chaveDaLinha(['data'], { data: k })) ?? null;
     }
 
     base = semCorpoDia ? { ...agora, corpo_dia: base?.corpo_dia || {} } : agora;
+
+    if (Object.keys(medidasFinais).length) {
+      // O aparelho e a base ficam com o que a nuvem tem agora (a mescla), menos o que mudou aqui durante o envio
+      const atual = linhas(db).corpo_medida;
+
+      for (const [k, f] of Object.entries(medidasFinais))
+        if (JSON.stringify(atual[k]) === JSON.stringify(agora.corpo_medida[k]))
+          db.medidas = [...db.medidas.filter((m) => m.data !== k), ...(f ? [f] : [])];
+
+      db = preparar(db);
+
+      const limpas = linhas({
+        medidas: preparar({ medidas: Object.values(medidasFinais).filter(Boolean) })
+          .medidas,
+        dias: [],
+      }).corpo_medida;
+
+      base = { ...base, corpo_medida: { ...base.corpo_medida } };
+
+      for (const k in medidasFinais)
+        if (limpas[k]) base.corpo_medida[k] = limpas[k];
+        else delete base.corpo_medida[k];
+      store.set(K_LOCAL(usuario.id), JSON.stringify(db));
+      guardarMedidas(usuario.id, db.medidas);
+
+      if (typeof desenhar === 'function' && !$('v-corpo').hidden) desenhar();
+    }
 
     if (diasMudados.length) {
       // O aparelho fica com o resultado da mescla (mais o que mudou aqui enquanto enviava); a base, com o que a nuvem tem agora
@@ -304,7 +356,9 @@ async function enviar() {
     }
 
     store.set(K_BASE(usuario.id), JSON.stringify(base));
+    limparVooLinhas('corpo.vooLinhas.' + usuario.id);
     store.set(K_VOO(usuario.id), '{}');
+    store.set(K_VOO_AQUI(usuario.id), '{}');
     erroSync = '';
   } catch (e) {
     erroSync = e.message || String(e);

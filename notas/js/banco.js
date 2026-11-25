@@ -2,11 +2,12 @@
 
 // Banco: Supabase + cópia local e sincronização por diferença (notas_nota, 1 linha por nota).
 // Cada mudança grava a cópia local na hora e, 0,8 s depois, envia ao Supabase só as notas que mudaram (diferença para "base",
-// a última versão confirmada pelo servidor), cada uma INTEIRA (upsert da linha toda), e apaga as que saíram. Sem internet,
-// fica pendente e envia ao reconectar.
-// Sem mescla entre aparelhos (decisão do mantenedor, 24/11/2026): quem salva por último vale. O que é sobrescrito não se perde:
-// o hub_historico (migration 02 da raiz) guarda antes e depois de cada gravação. Sem "voo": repetir o upsert da nota inteira
-// deixa a nuvem igual (não duplica nada), então envio sem resposta só é repetido.
+// a última versão confirmada pelo servidor), cada uma com as colunas que mudaram aqui, e apaga as que saíram. Sem internet,
+// fica pendente e envia ao reconectar. Voltar à aba, a internet voltar e o minuto à vista trazem a nuvem (atualizar).
+// Sem mescla de texto (decisão do mantenedor, 24/11/2026): a nota é gravada inteira. Mas nunca por cima de uma versão que este
+// aparelho não viu (aba parada, 24/11/2026): a gravação é condicional à editada_em conhecida; se a nuvem mudou, o texto daqui
+// vira uma nota nova "(conflito)" e a original fica com o da nuvem. O hub_historico (migration 02 da raiz) guarda antes e
+// depois de cada gravação. Voo (notas.voo.<conta>): as versões mandadas sem resposta, para não virarem conflito com si mesmas.
 // Ordem da lista (coluna ordem, migration 02): a que o Victor define arrastando, fracionária (mover muda só a nota movida).
 // Usa $, store e toast de js/util.js e fetchComTeto de ../base/nucleo.js (carregados antes).
 
@@ -19,14 +20,23 @@ const TABELA = 'notas_nota',
   COLUNAS = 'id,titulo,texto,ordem,criada_em,editada_em';
 
 const K_LOCAL = (id) => 'notas.db.' + id,
-  K_BASE = (id) => 'notas.base.' + id;
+  K_BASE = (id) => 'notas.base.' + id,
+  K_VOO = (id) => 'notas.voo.' + id;
 
+// envios: quantos começaram (a busca descarta a resposta que um envio pode ter deixado velha); aoMudarDeFora: a tela (mostrar),
+// chamada quando o db muda sem ser por ela (nuvem, conflito); conflitos ({ original, copia, titulo }) e mantidas ({ id, titulo }:
+// apagadas aqui que voltaram porque mudaram em outro aparelho): a tela avisa e esvazia
 let db = null,
   usuario = null,
   base = null,
   enviando = false,
   tEnvio = null,
-  erroSync = '';
+  erroSync = '',
+  envios = 0,
+  buscando = false,
+  aoMudarDeFora = null,
+  conflitos = [],
+  mantidas = [];
 
 // ===== Formato: db ↔ linhas da tabela =====
 const EPOCA = '1970-01-01T00:00:00.000Z'; // data que falta ou não se lê (fixa: a limpeza tem de dar sempre o mesmo resultado)
@@ -198,12 +208,17 @@ function criarNota(titulo = '', texto = '') {
   return notaPorId(id);
 }
 
-// Troca o texto inteiro da nota (o editor e a conversa mandam o texto final); texto igual não grava nada
-function salvarNota(id, texto) {
+// Troca o texto inteiro da nota (o editor e a conversa mandam o texto final); texto igual não grava nada.
+// vista (opcional): a editadaEm da nota quando a tela pegou o texto que está sendo editado. Se a nota mudou por baixo (a nuvem
+// trouxe outra versão enquanto se digitava, aba parada), o texto da tela não sobrescreve a versão que ela não viu: vira uma
+// nota nova "(conflito)" logo abaixo (conflitoNaTela). Devolve false (nada gravado), true ou o id da nota de conflito.
+function salvarNota(id, texto, vista) {
   const n = notaPorId(id),
     t = String(texto).replace(/\r\n?/g, '\n');
 
   if (!n || n.texto === t) return false;
+
+  if (vista !== undefined && vista !== n.editadaEm) return conflitoNaTela(n, n.titulo, t);
   n.texto = t;
   n.editadaEm = new Date().toISOString();
   db = preparar(db);
@@ -212,17 +227,31 @@ function salvarNota(id, texto) {
   return true;
 }
 
-function salvarTituloNota(id, titulo) {
+// O mesmo para o título (vista: como em salvarNota; a nota de conflito leva o título da tela e o texto atual)
+function salvarTituloNota(id, titulo, vista) {
   const n = notaPorId(id),
     t = String(titulo ?? '').trim();
 
   if (!n || n.titulo === t) return false;
+
+  if (vista !== undefined && vista !== n.editadaEm) return conflitoNaTela(n, t, n.texto);
   n.titulo = t;
   n.editadaEm = new Date().toISOString();
   db = preparar(db);
   gravar();
 
   return true;
+}
+
+// O que a tela digitou sobre uma versão que não é mais a da nota vira uma nota nova logo abaixo; a nota fica como está
+function conflitoNaTela(n, titulo, texto) {
+  const r = copiaDeConflito(db, n.id, titulo, texto);
+
+  db = r.db;
+  conflitos.push({ original: n.id, copia: r.copia.id, titulo: n.titulo });
+  gravar();
+
+  return r.copia.id;
 }
 
 // Leva a nota para a posição final `posicao` (0-based) da lista. Só ela muda (ordem entre as vizinhas, uma linha no envio);
@@ -261,14 +290,228 @@ function apagarNota(id) {
 }
 
 // ===== Sincronização =====
-async function enviar() {
+// Aba parada (24/11/2026): um aparelho com a cópia velha nunca grava por cima de uma versão que ele não viu. A versão de cada
+// nota é a editada_em; a "conhecida" é a da base (e as que este aparelho mesmo mandou e ficaram sem resposta, o voo). Antes de
+// gravar, lê a nota na nuvem e decide (decidirEnvio, decidirApagar); a gravação é condicional à versão lida (update ... where
+// editada_em = a lida), e 0 linhas afetadas = a nuvem mudou no meio: fica pendente e a próxima rodada decide de novo.
+// Conflito (a nuvem tem um texto que este aparelho não viu e aqui também mudou): a original fica com o da nuvem e o texto daqui
+// vira uma nota nova "<título> (conflito)", logo abaixo. Apagar uma nota que mudou na nuvem não apaga: ela volta com o da nuvem.
+const CONFLITO = ' (conflito)',
+  VOO_MAX = 20;
+
+// Coluna da tabela → campo do db (o update leva só as colunas que este aparelho mudou; as outras ficam com a nuvem)
+const CAMPOS = {
+  titulo: 'titulo',
+  texto: 'texto',
+  ordem: 'ordem',
+  criada_em: 'criadaEm',
+  editada_em: 'editadaEm',
+};
+
+// Conteúdo = tudo menos a ordem: mudar só a posição não sobrescreve texto de ninguém e não precisa de versão
+const conteudoMudou = (l, b) =>
+  !b || ['titulo', 'texto', 'criada_em', 'editada_em'].some((c) => l[c] !== b[c]);
+
+// As colunas em que a linha l difere da base b (sem base, todas menos o id)
+const camposMudados = (l, b) =>
+  Object.fromEntries(
+    Object.keys(CAMPOS)
+      .filter((c) => !b || l[c] !== b[c])
+      .map((c) => [c, l[c]])
+  );
+
+// O que fazer com a nota l (linha daqui) que mudou desde a base b, com a nuvem como está agora (n, linha limpa; undefined =
+// não existe) e as versões que este aparelho mandou sem resposta (voo):
+//   aceitarApagada: apagada na nuvem e aqui só mudou a posição (nada a perder: aceita);
+//   inserir: nota nova, ou apagada na nuvem com texto mudado aqui (o texto daqui não se perde);
+//   atualizar: a nuvem está numa versão conhecida (ou só a posição mudou aqui, ou o conteúdo já é o mesmo); versao = a
+//     editada_em que a nuvem tem de ter para o update valer (null: sem condição, só a ordem);
+//   conflito: a nuvem tem um conteúdo que este aparelho não viu, e aqui o conteúdo também mudou.
+function decidirEnvio(l, b, n, voo = []) {
+  const campos = camposMudados(l, b);
+
+  if (!n)
+    return b && !conteudoMudou(l, b) ? { acao: 'aceitarApagada' } : { acao: 'inserir' };
+
+  if (!conteudoMudou(l, b)) return { acao: 'atualizar', campos, versao: null };
+
+  const conhecida =
+    n.editada_em === b?.editada_em ||
+    voo.includes(n.editada_em) ||
+    (n.titulo === l.titulo && n.texto === l.texto);
+
+  return conhecida
+    ? { acao: 'atualizar', campos, versao: n.editada_em }
+    : { acao: 'conflito' };
+}
+
+// Apagar a nota que a base conhecia (b), com a nuvem n: pronto (já não existe), apagar (versão conhecida; condicional a ela) ou
+// manter (mudou na nuvem depois da base: não apaga, volta com o texto da nuvem).
+function decidirApagar(b, n, voo = []) {
+  if (!n) return { acao: 'pronto' };
+
+  return n.editada_em === b?.editada_em || voo.includes(n.editada_em)
+    ? { acao: 'apagar', versao: n.editada_em }
+    : { acao: 'manter' };
+}
+
+// Uma nota nova "<título> (conflito)" com o texto dado, id novo, logo abaixo da nota `id` do db d (sem folga até a seguinte,
+// renumera a lista com a cópia logo depois). Devolve { db, copia }.
+function copiaDeConflito(d, id, titulo, texto, agora = new Date().toISOString()) {
+  const original = d.notas.find((x) => x.id === id),
+    outras = d.notas.filter((x) => x.id !== id),
+    depois = outras.find((x) => pelaOrdem(original, x) < 0);
+
+  let idNovo;
+
+  do idNovo = Math.random().toString(36).slice(2, 10);
+  while (d.notas.some((x) => x.id === idNovo));
+
+  const copia = {
+    id: idNovo,
+    titulo: (titulo + CONFLITO).trim(),
+    texto,
+    ordem: ordemEntre(original.ordem, depois?.ordem ?? null),
+    criadaEm: agora,
+    editadaEm: agora,
+  };
+
+  let notas = [...outras, original, copia];
+
+  if (copia.ordem === null) {
+    const lista = preparar({ notas: [...outras, original] }).notas,
+      k = lista.findIndex((x) => x.id === id);
+
+    lista.splice(k + 1, 0, copia);
+    notas = lista.map((x, i) => ({ ...x, ordem: i + 1 }));
+  }
+
+  const novo = preparar({ notas });
+
+  return { db: novo, copia: novo.notas.find((x) => x.id === idNovo) };
+}
+
+// db com o conflito do envio resolvido: a nota `id` passa a ser a da nuvem (linha n) e a versão daqui (a nota do db) vira a
+// nota de conflito logo abaixo (copiaDeConflito). Devolve { db, copia }.
+function resolverConflito(d, id, n, agora = new Date().toISOString()) {
+  const local = d.notas.find((x) => x.id === id),
+    comNuvem = preparar({
+      notas: [...d.notas.filter((x) => x.id !== id), ...deLinhas([n]).notas],
+    });
+
+  return copiaDeConflito(comNuvem, id, local.titulo, local.texto, agora);
+}
+
+// A nuvem (linhas R) aplicada no db d com a base b, nota por nota: nota sem pendência aqui (a mesma da base, ou ausente nos
+// dois) fica como a nuvem (mudada, nova ou apagada em outro aparelho); nota com pendência (mudada, nova ou apagada aqui) fica
+// como está, para o envio decidir. Devolve { db, base, mudou } (mudou = o db mudou).
+function aplicarNuvem(d, b, R) {
+  const nuvem = linhas(deLinhas(R)),
+    local = linhas(d),
+    novaBase = { ...(b || {}) },
+    fica = [];
+
+  for (const id of new Set([...Object.keys(local), ...Object.keys(nuvem)])) {
+    const pendente = JSON.stringify(local[id]) !== JSON.stringify(b?.[id]);
+
+    if (pendente) {
+      if (local[id]) fica.push(local[id]);
+      continue;
+    }
+
+    if (nuvem[id]) {
+      fica.push(nuvem[id]);
+      novaBase[id] = nuvem[id];
+    } else delete novaBase[id];
+  }
+
+  // a base que a nuvem e o aparelho não têm mais (apagada nos dois) sai
+  for (const id of Object.keys(novaBase))
+    if (!local[id] && !nuvem[id]) delete novaBase[id];
+
+  const novo = deLinhas(fica);
+
+  return {
+    db: novo,
+    base: novaBase,
+    mudou: JSON.stringify(linhas(novo)) !== JSON.stringify(local),
+  };
+}
+
+// Voo: as versões (editada_em) que este aparelho mandou e ainda não teve resposta, por nota. Se a resposta se perdeu, a nuvem
+// tem uma delas, e ela é deste aparelho: não é conflito.
+function lerVoo(u) {
+  try {
+    const v = JSON.parse(store.get(K_VOO(u.id)));
+
+    return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+  } catch {
+    return {};
+  }
+}
+
+function marcarVoo(u, id, versao) {
+  const v = lerVoo(u);
+
+  v[id] = [...(Array.isArray(v[id]) ? v[id] : []), versao].slice(-VOO_MAX);
+  store.set(K_VOO(u.id), JSON.stringify(v));
+}
+
+function limparVoo(u, id) {
+  const v = lerVoo(u);
+
+  if (!(id in v)) return;
+  delete v[id];
+  store.set(K_VOO(u.id), JSON.stringify(v));
+}
+
+// O intervalo de 1 ms da versão: a nuvem guarda microssegundos e o aparelho, milissegundos (isoOk)
+const comVersao = (q, versao) =>
+  q
+    .gte('editada_em', versao)
+    .lt('editada_em', new Date(Date.parse(versao) + 1).toISOString());
+
+// As notas `ids` como estão na nuvem agora: { id: linha limpa }
+async function linhasDaNuvem(u, ids) {
+  const R = [];
+
+  for (let i = 0; i < ids.length; i += 100) {
+    const { data, error } = await sb
+      .from(TABELA)
+      .select(COLUNAS)
+      .eq('user_id', u.id)
+      .in('id', ids.slice(i, i + 100));
+
+    if (error) throw error;
+    R.push(...data);
+  }
+
+  return linhas(deLinhas(R));
+}
+
+const guardarBase = (u, id, linha) => {
+  base = { ...(base || {}) };
+
+  if (linha) base[id] = linha;
+  else delete base[id];
+  store.set(K_BASE(u.id), JSON.stringify(base));
+};
+
+const guardarDb = (u) => store.set(K_LOCAL(u.id), JSON.stringify(db));
+
+// Envia o que mudou desde a base, nota por nota, sem gravar por cima de versão não vista (ver acima). Depois de cada nota a base
+// dela passa a ser como a nuvem ficou; o que mudou aqui durante o envio continua pendente e sobe na rodada seguinte (até 3
+// seguidas; o resto no próximo gatilho). Conflito, nota mantida e nota aceita como apagada mudam o db: a tela é redesenhada
+// (aoMudarDeFora) e os conflitos ficam em `conflitos` ({ original, copia, titulo }) para a tela avisar.
+async function enviar(rodada = 0) {
   clearTimeout(tEnvio);
 
   if (enviando || !usuario || !db) return;
 
   const u = usuario,
     agora = linhas(db),
-    mud = diferenca(base, agora);
+    conhecida = base,
+    mud = diferenca(conhecida, agora);
 
   if (!mud) {
     erroSync = '';
@@ -278,31 +521,110 @@ async function enviar() {
   }
 
   enviando = true;
+  envios++;
+  let mudouDb = false;
 
   try {
-    if (mud.up.length) {
-      const { error } = await sb.from(TABELA).upsert(
-        mud.up.map((l) => ({ user_id: u.id, ...l })),
-        { onConflict: 'user_id,id' }
-      );
+    const nuvem = await linhasDaNuvem(u, [...mud.up.map((l) => l.id), ...mud.del]),
+      voo = lerVoo(u);
 
-      if (error) throw error;
+    for (const l of mud.up) {
+      if (usuario !== u) return;
+
+      const b = conhecida?.[l.id],
+        n = nuvem[l.id],
+        d = decidirEnvio(l, b, n, voo[l.id]);
+
+      if (d.acao === 'aceitarApagada') {
+        // aqui só a posição mudou e a nota foi apagada em outro aparelho: sai daqui também
+        if (JSON.stringify(linhas(db)[l.id]) === JSON.stringify(l)) {
+          db = { notas: db.notas.filter((x) => x.id !== l.id) };
+          mudouDb = true;
+        }
+
+        guardarBase(u, l.id, null);
+        limparVoo(u, l.id);
+      } else if (d.acao === 'inserir') {
+        marcarVoo(u, l.id, l.editada_em);
+
+        const { data, error } = await sb
+          .from(TABELA)
+          .insert({ user_id: u.id, ...l })
+          .select('id');
+
+        // já existe (outro aparelho, ou este sem resposta): a próxima rodada lê e decide
+        if (error && error.code !== '23505') throw error;
+
+        if (!error && data?.length) {
+          guardarBase(u, l.id, l);
+          limparVoo(u, l.id);
+        }
+      } else if (d.acao === 'atualizar') {
+        if (d.versao !== null) marcarVoo(u, l.id, l.editada_em);
+        let q = sb.from(TABELA).update(d.campos).eq('user_id', u.id).eq('id', l.id);
+
+        if (d.versao !== null) q = comVersao(q, d.versao);
+        const { data, error } = await q.select('id');
+
+        if (error) throw error;
+
+        if (!data?.length) continue; // a nuvem mudou (ou apagou) no meio: a próxima rodada decide
+
+        const ficou = { ...n, ...d.campos };
+
+        // o que este aparelho não mudou (a posição dada por outro aparelho) entra aqui, se não mudou durante o envio
+        const nota = notaPorId(l.id);
+
+        if (nota)
+          for (const c of Object.keys(CAMPOS))
+            if (!(c in d.campos) && nota[CAMPOS[c]] === l[c] && l[c] !== ficou[c]) {
+              nota[CAMPOS[c]] = ficou[c];
+              mudouDb = true;
+            }
+
+        guardarBase(u, l.id, ficou);
+        limparVoo(u, l.id);
+      } else if (notaPorId(l.id)) {
+        // conflito: nada se perde (a nuvem fica na original, o daqui numa nota nova, que sobe na rodada seguinte)
+        const r = resolverConflito(db, l.id, n);
+
+        db = r.db;
+        mudouDb = true;
+        conflitos.push({ original: l.id, copia: r.copia.id, titulo: n.titulo });
+        guardarBase(u, l.id, n);
+        limparVoo(u, l.id);
+      }
     }
 
-    for (let i = 0; i < mud.del.length; i += 100) {
-      const { error } = await sb
-        .from(TABELA)
-        .delete()
-        .eq('user_id', u.id)
-        .in('id', mud.del.slice(i, i + 100));
+    for (const id of mud.del) {
+      if (usuario !== u) return;
 
-      if (error) throw error;
-    }
+      const n = nuvem[id],
+        d = decidirApagar(conhecida?.[id], n, voo[id]);
 
-    // A base passa a ser o que foi enviado (o que mudou aqui enquanto enviava continua pendente)
-    if (usuario === u) {
-      base = agora;
-      store.set(K_BASE(u.id), JSON.stringify(base));
+      if (d.acao === 'pronto') {
+        guardarBase(u, id, null);
+        limparVoo(u, id);
+      } else if (d.acao === 'apagar') {
+        const { data, error } = await comVersao(
+          sb.from(TABELA).delete().eq('user_id', u.id).eq('id', id),
+          d.versao
+        ).select('id');
+
+        if (error) throw error;
+
+        if (data?.length) {
+          guardarBase(u, id, null);
+          limparVoo(u, id);
+        }
+      } else if (!notaPorId(id)) {
+        // mudou em outro aparelho depois que este a conheceu: não apaga, volta com o texto da nuvem
+        db = preparar({ notas: [...db.notas, ...deLinhas([n]).notas] });
+        mudouDb = true;
+        mantidas.push({ id, titulo: n.titulo });
+        guardarBase(u, id, n);
+        limparVoo(u, id);
+      }
     }
 
     erroSync = '';
@@ -310,11 +632,19 @@ async function enviar() {
     erroSync = e.message || String(e);
   } finally {
     enviando = false;
+
+    if (mudouDb && usuario === u) {
+      db = preparar(db);
+      guardarDb(u);
+    }
   }
 
+  if (usuario !== u) return;
+
+  if (mudouDb) aoMudarDeFora?.();
   pintarSync();
 
-  if (!erroSync && temPendente()) enviar(); // mudou algo enquanto enviava
+  if (!erroSync && rodada < 3 && temPendente()) return enviar(rodada + 1); // mudou algo enquanto enviava, ou a nuvem mudou no meio
 }
 
 async function baixar() {
@@ -334,11 +664,13 @@ async function baixar() {
   }
 }
 
-// Ao entrar (sessão válida da conta DONO): abre a cópia local na hora (mostrar), envia o pendente e só então traz a nuvem.
-// Pendente que não subiu (sem internet) continua valendo: a nuvem só entra quando não há nada a enviar. Sem a cópia e sem a
-// nuvem (ou a tabela ainda não criada), abre vazio e envia depois. mostrar() é chamado de novo no fim (dados da nuvem).
+// Ao entrar (sessão válida da conta DONO): abre a cópia local na hora (mostrar), envia o pendente e só então traz a nuvem, nota
+// por nota (aplicarNuvem): a nota com pendente que não subiu (sem internet) continua a daqui; as outras ficam como a nuvem.
+// Sem a cópia e sem a nuvem (ou a tabela ainda não criada), abre vazio e envia depois. mostrar() é chamado de novo no fim e
+// a cada mudança vinda de fora depois disso (aoMudarDeFora).
 async function carregar(u, mostrar) {
   usuario = u;
+  aoMudarDeFora = mostrar;
   let local;
 
   try {
@@ -359,21 +691,58 @@ async function carregar(u, mostrar) {
     const R = await baixar();
 
     if (usuario !== u) return;
+    const r = aplicarNuvem(db || preparar({}), local ? base : null, R);
 
-    if (!local || !temPendente()) {
-      db = deLinhas(R);
-      base = linhas(db);
-      store.set(K_BASE(u.id), JSON.stringify(base));
-      store.set(K_LOCAL(u.id), JSON.stringify(db));
-    }
+    db = r.db;
+    base = r.base;
+    store.set(K_BASE(u.id), JSON.stringify(base));
+    guardarDb(u);
   } catch (e) {
     if (usuario !== u) return;
     erroSync = e.message || String(e);
 
-    if (!local) db = preparar({});
+    if (!db) db = preparar({});
   }
 
   mostrar();
+  pintarSync();
+}
+
+// Buscar ao voltar (aba parada horas ou dias, internet de volta, a cada minuto com a página à vista): envia o pendente e traz a
+// nuvem para as notas sem pendência (aplicarNuvem), redesenhando a tela (aoMudarDeFora) se algo mudou. Envio que começou
+// durante a busca deixa esta busca de lado (a resposta pode ser de antes dele); a próxima traz.
+async function atualizar() {
+  if (buscando || !usuario || !db) return;
+
+  const u = usuario;
+
+  buscando = true;
+
+  try {
+    if (temPendente()) await enviar();
+
+    if (enviando || usuario !== u) return;
+
+    const n = envios,
+      R = await baixar();
+
+    if (usuario !== u || enviando || envios !== n) return;
+    const r = aplicarNuvem(db, base, R);
+
+    base = r.base;
+    store.set(K_BASE(u.id), JSON.stringify(base));
+
+    if (r.mudou) {
+      db = r.db;
+      guardarDb(u);
+      aoMudarDeFora?.();
+    }
+  } catch (e) {
+    if (usuario === u) erroSync = e.message || String(e);
+  } finally {
+    buscando = false;
+  }
+
   pintarSync();
 }
 
@@ -409,10 +778,12 @@ function pintarSync() {
   el.classList.toggle('erro', !!erroSync && !off);
 }
 
-addEventListener('online', () => enviar());
+// Voltar à aba, a internet voltar e, à vista, a cada minuto: envia e traz a nuvem; escondida, só envia o pendente
+addEventListener('online', () => atualizar());
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && temPendente()) enviar();
+  if (document.visibilityState === 'visible') atualizar();
 });
 setInterval(() => {
-  if (temPendente()) enviar();
+  if (document.visibilityState === 'visible') atualizar();
+  else if (temPendente()) enviar();
 }, 60000);

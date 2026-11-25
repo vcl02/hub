@@ -13,7 +13,8 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 
 const K_LOCAL = (id) => 'agua.db.' + id,
   K_BASE = (id) => 'agua.base.' + id,
-  K_VOO = (id) => 'agua.voo.' + id;
+  K_VOO = (id) => 'agua.voo.' + id,
+  K_VOO_AQUI = (id) => 'agua.vooAqui.' + id;
 
 let db = null,
   usuario = null,
@@ -57,6 +58,17 @@ const lerVoo = () => {
   }
 };
 
+// O dia daqui no momento do envio em voo: se ele chegou, só o que mudou aqui depois dele entra na mescla. Usar o próprio voo como
+// base tiraria da nuvem o que o outro aparelho lançou no mesmo dia antes daquele envio (aba parada + metrô, 24/11/2026).
+// Voo sem este registro (versão anterior do app): como antes, a base é o voo.
+const lerVooAqui = () => {
+  try {
+    return JSON.parse(store.get(K_VOO_AQUI(usuario.id)) || 'null') || {};
+  } catch {
+    return {};
+  }
+};
+
 const temPendente = () =>
   !!(db && usuario && (diferenca(base, linhas(db)) || Object.keys(lerVoo()).length));
 
@@ -92,7 +104,8 @@ async function enviar() {
 
   const agora = linhas(db),
     mud = diferenca(base, agora),
-    voo = lerVoo();
+    voo = lerVoo(),
+    vooAqui = lerVooAqui();
 
   if (!mud && !Object.keys(voo).length) {
     erroSync = '';
@@ -133,7 +146,7 @@ async function enviar() {
         aguasDe(
           mesclar(
             nuvem[d] || [],
-            chegou(d) ? voo[d] : base?.[d]?.aguas || [],
+            chegou(d) ? (d in vooAqui ? vooAqui[d] : voo[d]) : base?.[d]?.aguas || [],
             agora[d]?.aguas || []
           ),
           d
@@ -142,6 +155,10 @@ async function enviar() {
     );
 
     store.set(K_VOO(usuario.id), JSON.stringify(final));
+    store.set(
+      K_VOO_AQUI(usuario.id),
+      JSON.stringify(Object.fromEntries(dias.map((d) => [d, agora[d]?.aguas || []])))
+    );
 
     const sobe = dias.filter((d) => final[d].length),
       sai = dias.filter((d) => !final[d].length && nuvem[d]);
@@ -181,6 +198,7 @@ async function enviar() {
     store.set(K_BASE(usuario.id), JSON.stringify(base));
     store.set(K_LOCAL(usuario.id), JSON.stringify(db));
     store.set(K_VOO(usuario.id), '{}');
+    store.set(K_VOO_AQUI(usuario.id), '{}');
     erroSync = '';
 
     if (typeof desenhar === 'function' && !$('v-agua').hidden) desenhar();

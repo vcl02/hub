@@ -531,3 +531,37 @@ for (const arquivo of [
       assert.ok(!nomes.has(nome), `${arquivo} declara ${nome}`);
   });
 }
+
+// ---------- nenhum nome global do núcleo colide com um script da página ----------
+// Scripts clássicos dividem o escopo global: um `const` do núcleo com o mesmo nome de um `const` de um app derruba a página
+// inteira ("Identifier has already been declared"), como o `semMarca` da aba parada contra o das favoritas das Notas.
+for (const pagina of [
+  'index.html',
+  'tr/index.html',
+  'al/index.html',
+  'corpo/index.html',
+  'agua/index.html',
+  'notas/index.html',
+]) {
+  test(`${pagina}: nenhum script clássico da página declara um nome que o núcleo já declara`, () => {
+    const pasta = path.posix.dirname(pagina),
+      doNucleo = declarados('base/nucleo.js'),
+      scripts = etiquetas(readFileSync(pagina, 'utf8')).filter(
+        (e) => e.tag === 'script' && e.attrs.src && e.attrs.type !== 'module'
+      );
+
+    assert.ok(doNucleo.has('enviarMesclado') && doNucleo.has('mesmoValor'));
+
+    for (const { attrs } of scripts) {
+      const arquivo = path.posix.normalize(`${pasta}/${attrs.src}`);
+
+      if (arquivo === 'base/nucleo.js' || arquivo.endsWith('supabase.js')) continue;
+
+      for (const nome of declarados(arquivo))
+        assert.ok(
+          !doNucleo.has(nome),
+          `${arquivo} declara ${nome}, que o núcleo já declara`
+        );
+    }
+  });
+}

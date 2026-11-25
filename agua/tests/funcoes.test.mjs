@@ -454,6 +454,7 @@ function aparelho(nuvem, { local = [], base = null } = {}) {
       'baseNormal',
       'diferenca',
       'lerVoo',
+      'lerVooAqui',
       'temPendente',
       'mesclar',
       'aguasDe',

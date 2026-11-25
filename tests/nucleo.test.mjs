@@ -4,6 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { carregarArquivos } from './funcoes.mjs';
+import { rodarBanco, supabaseFalso } from './nuvem-falsa.mjs';
 
 const json = (x) => JSON.parse(JSON.stringify(x));
 
@@ -484,4 +485,206 @@ test('núcleo: o observador do toque duplo vigia document.documentElement, só c
   assert.equal(chamadas[0][1].childList, true);
   assert.equal(chamadas[0][1].subtree, true);
   assert.equal('attributes' in chamadas[0][1], false);
+});
+
+// ---------- linha mesclada com a nuvem (aba parada): mesclarLinha, mesclarLista, mesmoValor ----------
+const L = carregarArquivos(
+  ['base/nucleo.js'],
+  ['mesclarLinha', 'mesclarLista', 'mesmoValor', 'canonico'],
+  { ...PAGINA, setTimeout, clearTimeout }
+);
+
+test('mesmoValor: pelo conteúdo, com as chaves em qualquer ordem (jsonb); vazio, null e ausente são iguais', () => {
+  assert.equal(
+    L.mesmoValor({ a: 1, b: [{ x: 1, y: 2 }] }, { b: [{ y: 2, x: 1 }], a: 1 }),
+    true
+  );
+  assert.equal(L.mesmoValor(null, undefined), true);
+  assert.equal(L.mesmoValor('', null), true);
+  assert.equal(L.mesmoValor(0, null), false);
+  assert.equal(L.mesmoValor([1, 2], [2, 1]), false);
+});
+
+test('mesclarLista: a da nuvem + o que entrou aqui − o que saiu daqui; repetidos contam; chaves em outra ordem são o mesmo item', () => {
+  const a = { p: 10, r: 8 },
+    b = { p: 12, r: 8 },
+    c = { p: 14, r: 6 };
+
+  assert.deepEqual(json(L.mesclarLista([a, b], [a], [a, c])), [a, b, c]);
+  assert.deepEqual(json(L.mesclarLista([a, b], [a, b], [a])), [a]);
+  assert.deepEqual(json(L.mesclarLista([{ r: 8, p: 10 }], [a], [a])), [{ r: 8, p: 10 }]);
+  assert.deepEqual(json(L.mesclarLista([], [], [a, a])), [a, a]);
+  assert.deepEqual(json(L.mesclarLista([a, a, b], [a, a], [a])), [a, b]);
+});
+
+test('mesclarLinha: coluna que só mudou aqui vale a daqui; só na nuvem, a da nuvem; nos dois, lista mescla e valor simples fica o daqui; vazio numa linha que este aparelho não conhecia não apaga a nuvem; sem a linha na nuvem, a daqui; colunas só da nuvem não entram', () => {
+  const base = { data: 'd', peso: 80, cintura: 90, hora: '07:00', series: [{ p: 10 }] };
+
+  // outro aparelho mudou a cintura; este, o peso: as duas mudanças ficam
+  assert.deepEqual(
+    json(
+      L.mesclarLinha({ ...base, cintura: 88, user_id: 'u' }, base, { ...base, peso: 79 })
+    ),
+    { ...base, peso: 79, cintura: 88 }
+  );
+  // os dois mudaram a mesma lista: as duas séries novas ficam; o mesmo valor simples: o daqui
+  assert.deepEqual(
+    json(
+      L.mesclarLinha({ ...base, peso: 81, series: [{ p: 10 }, { p: 12 }] }, base, {
+        ...base,
+        peso: 79,
+        series: [{ p: 10 }, { p: 14 }],
+      })
+    ),
+    { ...base, peso: 79, series: [{ p: 10 }, { p: 12 }, { p: 14 }] }
+  );
+  // só a nuvem mudou (este aparelho só mexeu em outra coluna): a lista da nuvem fica inteira, na ordem dela
+  assert.deepEqual(
+    json(
+      L.mesclarLinha({ ...base, series: [{ p: 9 }, { p: 10 }] }, base, {
+        ...base,
+        hora: '08:00',
+      })
+    ).series,
+    [{ p: 9 }, { p: 10 }]
+  );
+  // só aqui: a lista daqui, na ordem daqui (editar a série 1 não a manda para o fim)
+  assert.deepEqual(
+    json(
+      L.mesclarLinha(
+        { ...base, series: [{ p: 10 }, { p: 12 }] },
+        { ...base, series: [{ p: 10 }, { p: 12 }] },
+        { ...base, series: [{ p: 11 }, { p: 12 }] }
+      )
+    ).series,
+    [{ p: 11 }, { p: 12 }]
+  );
+  // linha nova aqui (sem base) e a nuvem já tem o dia: o vazio daqui não apaga o peso de lá
+  assert.deepEqual(
+    json(
+      L.mesclarLinha({ data: 'd', hora: '07:00', peso: 80, cintura: null }, null, {
+        data: 'd',
+        hora: '',
+        peso: null,
+        cintura: 90,
+      })
+    ),
+    { data: 'd', hora: '07:00', peso: 80, cintura: 90 }
+  );
+  // a nuvem apagou a cintura e este não mexeu nela: fica apagada
+  assert.equal(
+    L.mesclarLinha({ ...base, cintura: null }, base, { ...base, peso: 1 }).cintura,
+    null
+  );
+  // contador (porções que restam) mexido nos dois: as duas mudanças somam, mesmo dando o mesmo número nos dois
+  assert.equal(
+    L.mesclarLinha({ restam: 3 }, { restam: 4 }, { restam: 3 }, ['restam']).restam,
+    2
+  );
+  assert.equal(L.mesclarLinha({ restam: 3 }, { restam: 4 }, { restam: 3 }).restam, 3); // sem contador: o daqui
+  // numeric que chega como texto e data com outro formato não são mudança
+  assert.equal(L.mesmoValor('12.50', 12.5), true);
+  assert.equal(
+    L.mesmoValor('2026-11-24T10:00:00+00:00', '2026-11-24T10:00:00.000Z'),
+    true
+  );
+  // não existe na nuvem: a daqui
+  assert.deepEqual(json(L.mesclarLinha(null, base, { ...base, peso: 70 })), {
+    ...base,
+    peso: 70,
+  });
+});
+
+test('mesmoValor: número contra texto numérico vale o número (numeric do Postgres); dois textos comparam como texto', () => {
+  assert.equal(L.mesmoValor('12.50', 12.5), true);
+  assert.equal(L.mesmoValor(12.5, '12.50'), true);
+  assert.equal(L.mesmoValor('007', 7), true);
+  assert.equal(L.mesmoValor('007', '7'), false);
+  assert.equal(L.mesmoValor('1.0', '1'), false);
+  assert.equal(L.mesmoValor('abc', 0), false);
+  assert.equal(L.mesmoValor({ kcal: '12.50' }, { kcal: 12.5 }), true);
+  assert.notEqual(L.canonico('007'), L.canonico('7'));
+  // a edição de um texto de dígitos para outro não some na mescla
+  assert.equal(
+    L.mesclarLinha(
+      { cod: '7', nome: 'a' },
+      { cod: '7', nome: 'a' },
+      { cod: '007', nome: 'a' }
+    ).cod,
+    '007'
+  );
+  assert.equal(L.mesclarLinha({ v: '1' }, { v: '1' }, { v: '1.0' }).v, '1.0');
+  // numeric "12.50" da nuvem contra 12.5 daqui: igual, não é mudança (a nuvem fica, a linha não vira pendente)
+  assert.equal(
+    L.mesclarLinha(
+      { kcal: '12.50', nome: 'b' },
+      { kcal: 12.5, nome: 'a' },
+      { kcal: 12.5, nome: 'b' }
+    ).kcal,
+    '12.50'
+  );
+  // lista com itens que só diferem em texto de dígitos: são itens diferentes
+  assert.deepEqual(json(L.mesclarLista(['7'], ['7'], ['7', '007'])), ['7', '007']);
+});
+
+test('enviarMesclado: a leitura filtra por todas as colunas da chave e pagina de 1000 em 1000 (a linha mexida que ficaria fora do corte não sobe por cima do outro aparelho, a apagada sai)', async () => {
+  const valores = Array.from({ length: 40 }, (_, i) => 'x' + String(i).padStart(2, '0')),
+    nuvem = { tabelas: { t: [] } };
+
+  // 40 × 40 = 1600 linhas que casam com o filtro das 40 mexidas (a diagonal)
+  for (const a of valores)
+    for (const b of valores) nuvem.tabelas.t.push({ user_id: 'u', a, b, n: 1, s: [1] });
+
+  const E = rodarBanco(['base/nucleo.js'], { nuvem, nomes: ['enviarMesclado'] }),
+    sb = supabaseFalso(nuvem),
+    linha = (a, b) => nuvem.tabelas.t.find((l) => l.a === a && l.b === b),
+    ult = valores[39];
+
+  linha(ult, ult).s.push(2); // outro aparelho, na última linha da nuvem
+
+  const up = valores.slice(0, 39).map((v) => ({
+    base: { a: v, b: v, n: 1, s: [1] },
+    local: { a: v, b: v, n: 2, s: [1] },
+  }));
+
+  up.push({
+    base: { a: ult, b: ult, n: 1, s: [1] },
+    local: { a: ult, b: ult, n: 1, s: [1, 3] },
+  });
+
+  const F = await E.enviarMesclado(sb, {
+    tabela: 't',
+    chaves: ['a', 'b'],
+    up,
+    usuarioId: 'u',
+  });
+
+  assert.deepEqual(json(linha(ult, ult).s), [1, 2, 3]);
+  assert.deepEqual(json(F.get(`"${ult}"|"${ult}"`).s), [1, 2, 3]);
+  assert.equal(linha('x00', 'x00').n, 2);
+  // a leitura veio em duas páginas, com as duas colunas no filtro
+  const leituras = nuvem.pedidos.filter(([tipo]) => tipo === 'select');
+
+  assert.equal(leituras.length, 2);
+  assert.deepEqual(
+    leituras[0][3].map(([op, c]) => [op, c]),
+    [
+      ['in', 'a'],
+      ['in', 'b'],
+    ]
+  );
+
+  // apagar a última: a nuvem ainda a tem como a base → sai
+  nuvem.pedidos = [];
+  const base = json(linha(ult, ult));
+
+  delete base.user_id;
+  await E.enviarMesclado(sb, {
+    tabela: 't',
+    chaves: ['a', 'b'],
+    del: [...up.slice(0, 39).map((x) => ({ ...x.local })), base],
+    usuarioId: 'u',
+  });
+  assert.equal(linha(ult, ult), undefined);
+  assert.equal(nuvem.tabelas.t.length, 1600 - 40);
 });

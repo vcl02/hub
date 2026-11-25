@@ -34,6 +34,7 @@ const M = carregarArquivos(
     'ligarFavorito',
     'blocosTocados',
     'favoritas',
+    'indicesDasFavoritas',
   ]
 );
 
@@ -229,73 +230,115 @@ test('notaDaUrl: ?nota=<id> com o formato da tabela; vazio, texto estranho ou lo
 });
 
 // ---------- banco: formato e envio, com uma nuvem falsa ----------
-// nuvem: { linhas: [linha da tabela com user_id], offline, recusar: erro do servidor na gravação, pedidos: [[tipo, …]] }
-function aparelho(nuvem, { local = [], base } = {}) {
-  const guardado = new Map(),
-    clonar = (x) => JSON.parse(JSON.stringify(x)),
-    falha = { message: 'Failed to fetch' };
+// nuvem: { linhas: [linha da tabela com user_id], offline, recusar: erro do servidor na gravação, semResposta: a gravação
+// chega mas a resposta se perde, pedidos: [[tipo, tabela, corpo, filtros]] }. A consulta aceita os filtros que o banco usa
+// (eq, in, gte, lt; datas comparadas pelo instante, como o timestamptz) e o .select('id') depois da gravação.
+function nuvemFalsa(nuvem) {
+  const clonar = (x) => JSON.parse(JSON.stringify(x)),
+    falha = { message: 'Failed to fetch' },
+    valor = (v) =>
+      typeof v === 'string' && !Number.isNaN(Date.parse(v)) ? Date.parse(v) : v;
 
   nuvem.pedidos ??= [];
 
-  const sb = {
-    from: (tabela) => ({
-      upsert: async (L, opcoes) => {
-        nuvem.pedidos.push(['upsert', tabela, clonar(L), opcoes]);
+  return {
+    from: (tabela) => {
+      const consulta = (tipo, corpo) => {
+        const filtros = [];
+        let colunas = null,
+          faixa = null;
 
-        if (nuvem.offline) return { error: falha };
-
-        if (nuvem.recusar) return { error: { message: nuvem.recusar } };
-
-        for (const l of L) {
-          const i = nuvem.linhas.findIndex(
-            (x) => x.user_id === l.user_id && x.id === l.id
+        const passa = (l) =>
+          filtros.every(([op, c, v]) =>
+            op === 'eq'
+              ? l[c] === v
+              : op === 'in'
+                ? v.includes(l[c])
+                : op === 'gte'
+                  ? valor(l[c]) >= valor(v)
+                  : valor(l[c]) < valor(v)
           );
 
-          if (i >= 0) nuvem.linhas[i] = clonar(l);
-          else nuvem.linhas.push(clonar(l));
-        }
+        const rodar = () => {
+          nuvem.pedidos.push([tipo, tabela, clonar(corpo ?? colunas), clonar(filtros)]);
 
-        return { error: null };
-      },
-      delete: () => ({
-        eq: (coluna, valor) => ({
-          in: async (coluna2, ids) => {
-            nuvem.pedidos.push(['delete', tabela, valor, [...ids]]);
+          if (nuvem.offline) return { data: null, error: falha };
 
-            if (nuvem.offline) return { error: falha };
-            nuvem.linhas = nuvem.linhas.filter(
-              (l) => !(l[coluna] === valor && ids.includes(l[coluna2]))
-            );
+          if (tipo === 'select') {
+            const R = nuvem.linhas
+              .filter(passa)
+              .map((l) => Object.fromEntries(colunas.split(',').map((c) => [c, l[c]])));
 
-            return { error: null };
-          },
-        }),
-      }),
-      select: (colunas) => ({
-        order: () => ({
-          range: async (de, ate) => {
-            nuvem.pedidos.push(['select', tabela, colunas]);
+            const resposta = {
+                data: clonar(faixa ? R.slice(faixa[0], faixa[1] + 1) : R),
+                error: null,
+              },
+              aoBaixar = faixa && nuvem.aoBaixar;
 
-            if (nuvem.offline) return { data: null, error: falha };
+            // aoBaixar: algo acontece aqui (um envio inteiro) enquanto a resposta da lista inteira (já lida) volta
+            if (!aoBaixar) return resposta;
+            nuvem.aoBaixar = null;
 
-            return {
-              data: clonar(nuvem.linhas.slice(de, ate + 1)).map(
-                ({ id, titulo, texto, ordem, criada_em, editada_em }) => ({
-                  id,
-                  titulo,
-                  texto,
-                  ordem,
-                  criada_em,
-                  editada_em,
-                })
-              ),
-              error: null,
-            };
-          },
-        }),
-      }),
-    }),
+            return Promise.resolve(aoBaixar()).then(() => resposta);
+          }
+
+          if (nuvem.recusar) return { data: null, error: { message: nuvem.recusar } };
+
+          // outro aparelho grava entre a leitura e a gravação deste (uma vez)
+          const antes = nuvem.antesDeGravar;
+
+          nuvem.antesDeGravar = null;
+          antes?.();
+          let feitas;
+
+          if (tipo === 'insert') {
+            if (
+              nuvem.linhas.some((x) => x.user_id === corpo.user_id && x.id === corpo.id)
+            )
+              return { data: null, error: { code: '23505', message: 'duplicate key' } };
+            nuvem.linhas.push(clonar(corpo));
+            feitas = [corpo];
+          } else if (tipo === 'update') {
+            feitas = nuvem.linhas.filter(passa);
+
+            for (const l of feitas) Object.assign(l, clonar(corpo));
+          } else {
+            feitas = nuvem.linhas.filter(passa);
+            nuvem.linhas = nuvem.linhas.filter((l) => !passa(l));
+          }
+
+          if (nuvem.semResposta) return { data: null, error: falha };
+
+          return { data: feitas.map((l) => ({ id: l.id })), error: null };
+        };
+
+        const q = {
+          eq: (c, v) => (filtros.push(['eq', c, v]), q),
+          in: (c, v) => (filtros.push(['in', c, [...v]]), q),
+          gte: (c, v) => (filtros.push(['gte', c, v]), q),
+          lt: (c, v) => (filtros.push(['lt', c, v]), q),
+          order: () => q,
+          range: (de, ate) => ((faixa = [de, ate]), q),
+          select: (c) => ((colunas ??= c), q),
+          then: (ok, erro) => Promise.resolve().then(rodar).then(ok, erro),
+        };
+
+        return q;
+      };
+
+      return {
+        select: (c) => consulta('select').select(c),
+        insert: (l) => consulta('insert', l),
+        update: (campos) => consulta('update', campos),
+        delete: () => consulta('delete'),
+      };
+    },
   };
+}
+
+function aparelho(nuvem, { local = [], base } = {}) {
+  const guardado = new Map(),
+    sb = nuvemFalsa(nuvem);
 
   const agendados = [];
 
@@ -326,9 +369,27 @@ function aparelho(nuvem, { local = [], base } = {}) {
       'salvarTituloNota',
       'apagarNota',
       'moverNota',
+      'CONFLITO',
+      'CAMPOS',
+      'conteudoMudou',
+      'camposMudados',
+      'decidirEnvio',
+      'decidirApagar',
+      'copiaDeConflito',
+      'resolverConflito',
+      'conflitoNaTela',
+      'aplicarNuvem',
+      'lerVoo',
+      'marcarVoo',
+      'limparVoo',
+      'comVersao',
+      'linhasDaNuvem',
+      'guardarBase',
+      'guardarDb',
       'enviar',
       'baixar',
       'carregar',
+      'atualizar',
       'gravar',
     ],
     {
@@ -348,6 +409,9 @@ function aparelho(nuvem, { local = [], base } = {}) {
       get usuario() { return usuario; }, set usuario(v) { usuario = v; },
       get base() { return base; }, set base(v) { base = v; },
       get erroSync() { return erroSync; },
+      get conflitos() { return conflitos; },
+      get mantidas() { return mantidas; },
+      set aoMudarDeFora(f) { aoMudarDeFora = f; },
     };`
   );
 
@@ -663,13 +727,20 @@ test('moverNota: sobe só a linha movida (ordem entre as vizinhas, editadaEm igu
   assert.deepEqual(ap.agendados, [800]);
 
   await ap.enviar();
-  const up = nuvem.pedidos.filter((p) => p[0] === 'upsert');
+  const up = nuvem.pedidos.filter((p) => p[0] !== 'select');
 
-  assert.equal(up.length, 1);
-  assert.deepEqual(
-    up[0][2].map((l) => [l.id, l.ordem]),
-    [['d', 1.5]]
-  );
+  // só a ordem da movida, sem condição de versão (mudar a posição não sobrescreve texto de ninguém)
+  assert.deepEqual(json(up), [
+    [
+      'update',
+      'notas_nota',
+      { ordem: 1.5 },
+      [
+        ['eq', 'user_id', 'u1'],
+        ['eq', 'id', 'd'],
+      ],
+    ],
+  ]);
   assert.deepEqual(json(nuvem.linhas.map((l) => [l.id, l.ordem])), [
     ['a', 1],
     ['b', 2],
@@ -794,59 +865,83 @@ test('formato antigo: cópia e base sem ordem (antes da migration 02) não viram
   assert.equal(ap.temPendente(), true);
 });
 
-test('envio: só a nota que mudou sobe, inteira (upsert com onConflict user_id,id); a apagada sai; depois a base é a nuvem e não há pendente', async () => {
+test('envio: lê a nota na nuvem e grava só as colunas que mudaram, condicional à versão conhecida (editada_em da base, intervalo de 1 ms); a apagada sai também condicional; depois a base é a nuvem e não há pendente', async () => {
   const nuvem = {
-    linhas: [N1, N2].map((n) => ({
+    linhas: [N1, N2].map((n, i) => ({
       user_id: 'u1',
       id: n.id,
       titulo: n.titulo,
       texto: n.texto,
+      ordem: i + 1,
       criada_em: n.criadaEm,
-      editada_em: n.editadaEm,
+      // a nuvem guarda microssegundos; o aparelho, milissegundos: a versão continua a mesma
+      editada_em: n.editadaEm.replace('.000Z', '.000456+00:00'),
     })),
   };
 
   const ap = aparelho(nuvem, { local: [N1, N2] });
 
   ap.salvarNota('n2', 'par\n\nnovo');
+  const editada = ap.notaPorId('n2').editadaEm;
+
   await ap.enviar();
   assert.deepEqual(json(nuvem.pedidos), [
     [
-      'upsert',
+      'select',
       'notas_nota',
+      'id,titulo,texto,ordem,criada_em,editada_em',
       [
-        {
-          user_id: 'u1',
-          id: 'n2',
-          titulo: 'Dois',
-          texto: 'par\n\nnovo',
-          ordem: 1,
-          criada_em: N2.criadaEm,
-          editada_em: ap.notaPorId('n2').editadaEm,
-        },
+        ['eq', 'user_id', 'u1'],
+        ['in', 'id', ['n2']],
       ],
-      { onConflict: 'user_id,id' },
+    ],
+    [
+      'update',
+      'notas_nota',
+      { texto: 'par\n\nnovo', editada_em: editada },
+      [
+        ['eq', 'user_id', 'u1'],
+        ['eq', 'id', 'n2'],
+        ['gte', 'editada_em', N2.editadaEm],
+        ['lt', 'editada_em', '2026-11-22T10:00:00.001Z'],
+      ],
     ],
   ]);
+  assert.equal(nuvem.linhas[1].texto, 'par\n\nnovo');
   assert.equal(ap.temPendente(), false);
   assert.deepEqual(
     JSON.parse(ap.guardado.get('notas.base.u1')),
     json(ap.linhas(ap.E.db))
   );
+  // a versão confirmada sai do voo
+  assert.deepEqual(JSON.parse(ap.guardado.get('notas.voo.u1')), {});
 
   // nada mudou: nenhum pedido
   nuvem.pedidos = [];
   await ap.enviar();
   assert.deepEqual(nuvem.pedidos, []);
 
-  // apagar: só o delete daquela nota, desta conta
+  // apagar: só o delete daquela nota, desta conta, na versão conhecida
   ap.apagarNota('n1');
   await ap.enviar();
-  assert.deepEqual(json(nuvem.pedidos), [['delete', 'notas_nota', 'u1', ['n1']]]);
+  assert.deepEqual(json(nuvem.pedidos.filter((p) => p[0] === 'delete')), [
+    [
+      'delete',
+      'notas_nota',
+      'id',
+      [
+        ['eq', 'user_id', 'u1'],
+        ['eq', 'id', 'n1'],
+        ['gte', 'editada_em', N1.editadaEm],
+        ['lt', 'editada_em', '2026-11-20T10:00:00.001Z'],
+      ],
+    ],
+  ]);
   assert.deepEqual(
     nuvem.linhas.map((l) => l.id),
     ['n2']
   );
+  assert.equal(ap.temPendente(), false);
 });
 
 test('envio sem internet: fica pendente (a base não muda); ao voltar, sobe; repetir o envio da nota inteira não duplica', async () => {
@@ -909,7 +1004,7 @@ test('carregar: com pendente no aparelho, envia antes e não troca pela nuvem (n
   assert.equal(ap.notaPorId('n1').texto, 'daqui');
   assert.deepEqual(
     nuvem.pedidos.map((p) => p[0]),
-    ['upsert', 'select']
+    ['select', 'update', 'select']
   );
   assert.equal(nuvem.linhas[0].texto, 'daqui');
 
@@ -926,6 +1021,358 @@ test('carregar: com pendente no aparelho, envia antes e não troca pela nuvem (n
   assert.equal(ap.notaPorId('n1').texto, 'daqui 2');
   assert.equal(ap.temPendente(), true);
   assert.equal(ap.E.erroSync, 'permission denied');
+});
+
+// ---------- aba parada: outro aparelho mudou a nuvem enquanto esta cópia estava velha ----------
+// linha da nuvem (com user_id) a partir de uma nota do db
+const naNuvem = (n, extra = {}) => ({
+  user_id: 'u1',
+  id: n.id,
+  titulo: n.titulo,
+  texto: n.texto,
+  ordem: n.ordem,
+  criada_em: n.criadaEm,
+  editada_em: n.editadaEm,
+  ...extra,
+});
+
+const A1 = { ...N1, texto: 'v0', ordem: 1 },
+  A2 = { ...N2, ordem: 2 },
+  OUTRO = '2026-11-23T08:00:00.000Z';
+
+test('aba parada: a nota mudou na nuvem e aqui (base velha) → nada se perde: a original fica com o texto da nuvem e o daqui vira uma nota nova "(conflito)" logo abaixo, que sobe', async () => {
+  const nuvem = {
+      linhas: [naNuvem(A1, { texto: 'do outro', editada_em: OUTRO }), naNuvem(A2)],
+    },
+    ap = aparelho(nuvem, { local: [A1, A2] });
+
+  let redesenhos = 0;
+
+  ap.E.aoMudarDeFora = () => redesenhos++;
+
+  ap.salvarNota('n1', 'daqui');
+  await ap.enviar();
+
+  // a nuvem da original não foi sobrescrita
+  const n1 = nuvem.linhas.find((l) => l.id === 'n1');
+
+  assert.equal(n1.texto, 'do outro');
+  assert.equal(n1.editada_em, OUTRO);
+  assert.equal(
+    nuvem.pedidos.some((p) => p[0] === 'update' && p[3].some((f) => f[2] === 'n1')),
+    false
+  );
+
+  // aqui: a original com o da nuvem, a cópia logo abaixo com o texto daqui
+  assert.equal(ap.notaPorId('n1').texto, 'do outro');
+  const copia = ap.E.db.notas[1];
+
+  assert.deepEqual(ids(ap), ['n1', copia.id, 'n2']);
+  assert.equal(copia.titulo, 'Um (conflito)');
+  assert.equal(copia.texto, 'daqui');
+  assert.ok(copia.ordem > 1 && copia.ordem < 2);
+  assert.notEqual(copia.id, 'n1');
+
+  // a cópia subiu (inserida) e não sobra pendente
+  const naCopia = nuvem.linhas.find((l) => l.id === copia.id);
+
+  assert.equal(naCopia.texto, 'daqui');
+  assert.equal(naCopia.titulo, 'Um (conflito)');
+  assert.equal(ap.temPendente(), false);
+  assert.deepEqual(json(ap.E.conflitos), [
+    { original: 'n1', copia: copia.id, titulo: 'Um' },
+  ]);
+  assert.ok(redesenhos >= 1);
+  // a cópia local também foi guardada
+  assert.equal(JSON.parse(ap.guardado.get('notas.db.u1')).notas.length, 3);
+});
+
+test('aba parada: outro aparelho só mexeu na posição → o texto daqui sobe normal (sem conflito) e a posição da nuvem fica', async () => {
+  const nuvem = { linhas: [naNuvem(A1, { ordem: 5 }), naNuvem(A2)] },
+    ap = aparelho(nuvem, { local: [A1, A2] });
+
+  ap.salvarNota('n1', 'daqui');
+  await ap.enviar();
+
+  const n1 = nuvem.linhas.find((l) => l.id === 'n1');
+
+  assert.equal(n1.texto, 'daqui');
+  assert.equal(n1.ordem, 5);
+  assert.equal(nuvem.linhas.length, 2);
+  assert.equal(ap.notaPorId('n1').ordem, 5);
+  assert.deepEqual(ids(ap), ['n2', 'n1']);
+  assert.equal(ap.temPendente(), false);
+  assert.deepEqual(json(ap.E.conflitos), []);
+});
+
+test('aba parada: apagar aqui uma nota que mudou na nuvem não apaga; ela volta com o texto da nuvem. A que não mudou é apagada', async () => {
+  const nuvem = {
+      linhas: [naNuvem(A1, { texto: 'do outro', editada_em: OUTRO }), naNuvem(A2)],
+    },
+    ap = aparelho(nuvem, { local: [A1, A2] });
+
+  ap.apagarNota('n1');
+  ap.apagarNota('n2');
+  await ap.enviar();
+
+  assert.deepEqual(
+    nuvem.linhas.map((l) => [l.id, l.texto]),
+    [['n1', 'do outro']]
+  );
+  assert.deepEqual(ids(ap), ['n1']);
+  assert.equal(ap.notaPorId('n1').texto, 'do outro');
+  assert.deepEqual(json(ap.E.mantidas), [{ id: 'n1', titulo: 'Um' }]);
+  assert.equal(ap.temPendente(), false);
+});
+
+test('aba parada: outro aparelho grava entre a leitura e a gravação deste → o update condicional não afeta nada e a rodada seguinte vira conflito (nada sobrescrito)', async () => {
+  const nuvem = { linhas: [naNuvem(A1), naNuvem(A2)] },
+    ap = aparelho(nuvem, { local: [A1, A2] });
+
+  nuvem.antesDeGravar = () => {
+    Object.assign(nuvem.linhas[0], { texto: 'do outro', editada_em: OUTRO });
+  };
+
+  ap.salvarNota('n1', 'daqui');
+  await ap.enviar();
+
+  assert.equal(nuvem.linhas.find((l) => l.id === 'n1').texto, 'do outro');
+  assert.deepEqual(nuvem.linhas.map((l) => l.texto).sort(), ['daqui', 'do outro', 'par']);
+  assert.equal(ap.notaPorId('n1').texto, 'do outro');
+  assert.equal(ap.temPendente(), false);
+});
+
+test('aba parada: gravação que chegou sem resposta (voo) não vira conflito consigo mesma; nota apagada na nuvem com texto mudado aqui volta (inserida); só com a posição mudada, aceita a apagada', async () => {
+  const nuvem = { linhas: [naNuvem(A1), naNuvem(A2)] },
+    ap = aparelho(nuvem, { local: [A1, A2] });
+
+  nuvem.semResposta = true;
+  ap.salvarNota('n1', 'v1');
+  await ap.enviar();
+  assert.equal(nuvem.linhas[0].texto, 'v1'); // chegou
+  assert.equal(ap.temPendente(), true); // mas aqui não se sabe
+
+  nuvem.semResposta = false;
+  ap.salvarTituloNota('n1', 'Um de novo');
+  ap.salvarNota('n1', 'v2');
+  await ap.enviar();
+  assert.deepEqual(
+    nuvem.linhas.map((l) => [l.id, l.titulo, l.texto]),
+    [
+      ['n1', 'Um de novo', 'v2'],
+      ['n2', 'Dois', 'par'],
+    ]
+  );
+  assert.deepEqual(json(ap.E.conflitos), []);
+  assert.equal(ap.temPendente(), false);
+
+  // apagada em outro aparelho: o texto mudado aqui sobe de novo; a só movida aqui sai daqui também
+  nuvem.linhas = [];
+  ap.salvarNota('n1', 'v3');
+  ap.moverNota('n2', 0);
+  await ap.enviar();
+  assert.deepEqual(
+    nuvem.linhas.map((l) => [l.id, l.texto]),
+    [['n1', 'v3']]
+  );
+  assert.deepEqual(ids(ap), ['n1']);
+  assert.equal(ap.temPendente(), false);
+});
+
+test('buscar ao voltar (atualizar): a nuvem entra nas notas sem pendência (mudada, nova e apagada em outro aparelho) e não mexe na nota com pendência; a tela é redesenhada', async () => {
+  const A3 = { ...N1, id: 'n3', titulo: 'Três', texto: 'x', ordem: 3 };
+
+  const nuvem = { linhas: [naNuvem(A1), naNuvem(A2), naNuvem(A3)] },
+    ap = aparelho(nuvem, { local: [A1, A2, A3] });
+
+  let redesenhos = 0;
+
+  ap.E.aoMudarDeFora = () => redesenhos++;
+
+  // outro aparelho: muda n1, apaga n3, cria n4
+  Object.assign(nuvem.linhas[0], { texto: 'do outro', editada_em: OUTRO });
+  nuvem.linhas.splice(2, 1);
+  nuvem.linhas.push(
+    naNuvem({ ...A3, id: 'n4', titulo: 'Quatro', texto: 'novo', ordem: 4 })
+  );
+
+  // aqui: n2 com pendência que não sobe (o servidor recusa a gravação; a leitura funciona)
+  ap.salvarNota('n2', 'daqui, sem subir');
+  nuvem.recusar = 'permission denied';
+  await ap.atualizar();
+
+  assert.deepEqual(ids(ap), ['n1', 'n2', 'n4']);
+  assert.equal(ap.notaPorId('n1').texto, 'do outro');
+  assert.equal(ap.notaPorId('n2').texto, 'daqui, sem subir');
+  assert.equal(ap.notaPorId('n4').texto, 'novo');
+  assert.equal(redesenhos, 1);
+  // a base acompanha a nuvem nas que vieram dela; a pendente continua pendente
+  assert.equal(ap.E.base.n1.texto, 'do outro');
+  assert.equal(ap.E.base.n3, undefined);
+  assert.equal(ap.E.base.n2.texto, 'par');
+  assert.equal(ap.temPendente(), true);
+  assert.equal(JSON.parse(ap.guardado.get('notas.db.u1')).notas.length, 3);
+
+  // de novo, sem nada novo: não redesenha
+  await ap.atualizar();
+  assert.equal(redesenhos, 1);
+
+  // a gravação volta a funcionar: a pendente sobe (a nuvem dela não mudou: sem conflito)
+  nuvem.recusar = null;
+  await ap.atualizar();
+  assert.equal(nuvem.linhas.find((l) => l.id === 'n2').texto, 'daqui, sem subir');
+  assert.equal(ap.temPendente(), false);
+});
+
+test('buscar ao voltar: voltar à aba, a internet voltar e o minuto à vista trazem a nuvem (o banco.js inteiro, com os gatilhos dele); escondida, o minuto só envia o pendente', async () => {
+  const nuvem = { linhas: [naNuvem(A1), naNuvem(A2)] },
+    guardado = new Map(),
+    gatilhos = {},
+    doc = { visibilityState: 'hidden', addEventListener: (ev, f) => (gatilhos[ev] = f) };
+
+  const B = carregarArquivos([A('js/banco.js')], ['carregar', 'notaPorId'], {
+    supabase: { createClient: () => nuvemFalsa(nuvem) },
+    SUPABASE_URL: '',
+    SUPABASE_KEY: '',
+    fetchComTeto: null,
+    store: {
+      get: (k) => guardado.get(k) ?? null,
+      set: (k, v) => guardado.set(k, v) && true,
+    },
+    toast: () => {},
+    $: () => null,
+    navigator: { onLine: true },
+    document: doc,
+    addEventListener: (ev, f) => (gatilhos[ev] = f),
+    setInterval: (f) => (gatilhos.minuto = f),
+    setTimeout: () => 0,
+    clearTimeout: () => {},
+  });
+
+  const esperar = () => new Promise((r) => setImmediate(r)),
+    calmo = async () => {
+      for (let i = 0; i < 20; i++) await esperar();
+    };
+
+  let telas = 0;
+
+  await B.carregar({ id: 'u1' }, () => telas++);
+  assert.equal(B.notaPorId('n1').texto, 'v0');
+
+  const mudar = (texto, versao) =>
+    Object.assign(nuvem.linhas[0], { texto, editada_em: versao });
+
+  // escondida: o minuto não busca
+  mudar('outro 1', '2026-11-23T08:00:00.000Z');
+  nuvem.pedidos = [];
+  gatilhos.minuto();
+  await calmo();
+  assert.deepEqual(nuvem.pedidos, []);
+  assert.equal(B.notaPorId('n1').texto, 'v0');
+
+  // voltou à aba: busca e redesenha
+  doc.visibilityState = 'visible';
+  telas = 0;
+  gatilhos.visibilitychange();
+  await calmo();
+  assert.equal(B.notaPorId('n1').texto, 'outro 1');
+  assert.equal(telas, 1);
+
+  // a internet voltou: busca
+  mudar('outro 2', '2026-11-23T09:00:00.000Z');
+  gatilhos.online();
+  await calmo();
+  assert.equal(B.notaPorId('n1').texto, 'outro 2');
+
+  // o minuto à vista: busca
+  mudar('outro 3', '2026-11-23T10:00:00.000Z');
+  gatilhos.minuto();
+  await calmo();
+  assert.equal(B.notaPorId('n1').texto, 'outro 3');
+});
+
+test('buscar ao voltar: um envio que acontece enquanto a lista volta deixa a resposta velha de lado (a nota recém-gravada não volta ao texto de antes)', async () => {
+  const nuvem = { linhas: [naNuvem(A1), naNuvem(A2)] },
+    ap = aparelho(nuvem, { local: [A1, A2] });
+
+  nuvem.aoBaixar = async () => {
+    ap.salvarNota('n1', 'novo');
+    await ap.enviar();
+  };
+
+  await ap.atualizar();
+
+  assert.equal(nuvem.linhas[0].texto, 'novo');
+  assert.equal(ap.notaPorId('n1').texto, 'novo');
+  assert.equal(ap.temPendente(), false);
+
+  // a busca seguinte traz a nuvem normalmente
+  await ap.atualizar();
+  assert.equal(ap.notaPorId('n1').texto, 'novo');
+});
+
+test('aba parada na tela: o texto (ou título) digitado sobre uma versão que a nuvem já trocou não sobrescreve; vira nota "(conflito)" logo abaixo e a original fica a da nuvem. Sem a versão vista, ou vista igual, grava normal', async () => {
+  const nuvem = { linhas: [naNuvem(A1), naNuvem(A2)] },
+    ap = aparelho(nuvem, { local: [A1, A2] });
+
+  // a tela pegou o texto na versão A1.editadaEm; a busca trouxe a do outro aparelho
+  const vista = ap.notaPorId('n1').editadaEm;
+
+  Object.assign(nuvem.linhas[0], { texto: 'do outro', editada_em: OUTRO });
+  await ap.atualizar();
+  assert.equal(ap.notaPorId('n1').texto, 'do outro');
+
+  const copia = ap.salvarNota('n1', 'v0 e o que digitei', vista);
+
+  assert.equal(typeof copia, 'string');
+  assert.equal(ap.notaPorId('n1').texto, 'do outro');
+  assert.equal(ap.notaPorId(copia).texto, 'v0 e o que digitei');
+  assert.equal(ap.notaPorId(copia).titulo, 'Um (conflito)');
+  assert.deepEqual(ids(ap), ['n1', copia, 'n2']);
+  assert.deepEqual(json(ap.E.conflitos), [{ original: 'n1', copia, titulo: 'Um' }]);
+
+  // título digitado sobre versão velha: o mesmo
+  const c2 = ap.salvarTituloNota('n1', 'Título da tela', vista);
+
+  assert.equal(ap.notaPorId('n1').titulo, 'Um');
+  assert.equal(ap.notaPorId(c2).titulo, 'Título da tela (conflito)');
+  assert.equal(ap.notaPorId(c2).texto, 'do outro');
+
+  await ap.enviar();
+  assert.equal(nuvem.linhas.find((l) => l.id === 'n1').texto, 'do outro');
+  assert.equal(nuvem.linhas.length, 4);
+
+  // vista igual à atual (ou sem vista): grava normal
+  assert.equal(ap.salvarNota('n1', 'agora sim', ap.notaPorId('n1').editadaEm), true);
+  assert.equal(ap.notaPorId('n1').texto, 'agora sim');
+  assert.equal(ap.salvarNota('n2', 'sem vista'), true);
+  assert.equal(ap.notaPorId('n2').texto, 'sem vista');
+  // texto igual: nada, nem conflito
+  assert.equal(ap.salvarNota('n2', 'sem vista', 'outra versão'), false);
+  assert.equal(ap.E.conflitos.length, 2);
+});
+
+test('aplicarNuvem: nota pendente (mudada, nova ou apagada aqui) fica como está mesmo com a nuvem diferente; sem pendência, vale a nuvem', () => {
+  const ap = aparelho({ linhas: [] }),
+    db = ap.preparar({
+      notas: [A1, { ...A2, texto: 'mudada aqui' }, { ...A1, id: 'n5', ordem: 5 }],
+    }),
+    base = ap.linhas(ap.preparar({ notas: [A1, A2, { ...A1, id: 'n9', ordem: 9 }] }));
+
+  const r = ap.aplicarNuvem(db, base, [
+    naNuvem(A1, { texto: 'nuvem', editada_em: OUTRO }),
+    naNuvem(A2, { texto: 'nuvem 2', editada_em: OUTRO }),
+    naNuvem({ ...A1, id: 'n9', ordem: 9 }, { texto: 'n9 mudou' }),
+  ]);
+
+  assert.deepEqual(json(r.db.notas.map((n) => [n.id, n.texto])), [
+    ['n1', 'nuvem'],
+    ['n2', 'mudada aqui'],
+    ['n5', 'v0'], // nova aqui, ainda não subiu
+  ]);
+  assert.equal(r.mudou, true);
+  assert.equal(r.base.n2.texto, 'par'); // a base da pendente não muda
+  assert.equal(r.base.n9.texto, 'v0'); // apagada aqui (pendente): a base fica para o envio decidir
 });
 
 // ---------- Favoritas: a marca " ★" no fim do parágrafo ----------
@@ -1096,6 +1543,38 @@ test('favoritas: todas as notas na ordem da lista (db.notas), dentro da nota na 
   const f = M.favoritas(notas)[1];
 
   assert.equal(M.favoritarBlocos(notas[0].texto, [f.i], false), 'a ★\n\nb\n\nc');
+});
+
+test('indicesDasFavoritas: as favoritas escolhidas na tela, no texto atual da nota (que mudou depois do desenho): mesmo índice e texto; senão, a 1ª ainda não usada com o mesmo texto; a que sumiu ou deixou de ser favorita fica de fora', () => {
+  const antes = 'a ★\n\nb ★\n\nc ★',
+    tela = M.favoritas([{ id: 'x', texto: antes }]);
+
+  // nada mudou: os índices da tela
+  assert.deepEqual(json(M.indicesDasFavoritas(antes, [tela[0], tela[2]])), [0, 2]);
+  // entrou um parágrafo no começo (outro aparelho): os mesmos parágrafos, uma posição abaixo
+  assert.deepEqual(
+    json(M.indicesDasFavoritas('novo\n\n' + antes, [tela[0], tela[2]])),
+    [1, 3]
+  );
+  // o "b" saiu e o "c" deixou de ser favorito: só o "a"
+  assert.deepEqual(
+    json(M.indicesDasFavoritas('a ★\n\nc', [tela[0], tela[1], tela[2]])),
+    [0]
+  );
+  // textos repetidos: cada escolhida pega uma diferente
+  const rep = 'x ★\n\nx ★';
+
+  assert.deepEqual(
+    json(M.indicesDasFavoritas('y\n\n' + rep, M.favoritas([{ id: 'r', texto: rep }]))),
+    [1, 2]
+  );
+  // tirar das favoritas com os índices de hoje tira a marca dos parágrafos certos
+  const agora = 'novo\n\n' + antes;
+
+  assert.equal(
+    M.favoritarBlocos(agora, M.indicesDasFavoritas(agora, [tela[0]]), false),
+    'novo\n\na\n\nb ★\n\nc ★'
+  );
 });
 
 test('copiarBlocos: leva o parágrafo favorito sem a " ★", o que não é favorito (código com " ★") igual, e o texto original não muda', () => {

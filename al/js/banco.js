@@ -22,7 +22,8 @@ const K_LOCAL = (id) => 'al.db.' + id,
   K_BASE = (id) => 'al.base.' + id,
   K_TR = (id) => 'al.tr.' + id,
   K_BEBIDAS = (id) => 'al.bebidas.' + id,
-  K_VOO = (id) => 'al.voo.' + id;
+  K_VOO = (id) => 'al.voo.' + id,
+  K_VOO_AQUI = (id) => 'al.vooAqui.' + id;
 
 // bebidas = { dia: [{ hora, bebida, volume }] }: suco, refri e as outras lançadas na Água (agua_dia, só leitura); contam como comido
 let bebidas = {};
@@ -134,6 +135,17 @@ const lerVoo = () => {
   }
 };
 
+// O dia daqui no momento do envio em voo: se ele chegou, só o que mudou aqui depois dele entra na mescla. Usar o próprio voo como
+// base tiraria da nuvem o que o outro aparelho lançou no mesmo dia antes daquele envio (aba parada + metrô, 24/11/2026).
+// Voo sem este registro (versão anterior do app): como antes, a base é o voo.
+const lerVooAqui = () => {
+  try {
+    return JSON.parse(store.get(K_VOO_AQUI(usuario.id)) || 'null') || {};
+  } catch {
+    return {};
+  }
+};
+
 const temPendente = () =>
   !!(db && usuario && (diferenca(base, linhas(db)) || Object.keys(lerVoo()).length));
 
@@ -173,7 +185,8 @@ async function enviar() {
       up: Object.fromEntries(ORDEM.map((t) => [t, []])),
       del: Object.fromEntries(ORDEM.map((t) => [t, []])),
     },
-    voo = lerVoo();
+    voo = lerVoo(),
+    vooAqui = lerVooAqui();
 
   if (
     !ORDEM.some((t) => mud.up[t].length || mud.del[t].length) &&
@@ -192,25 +205,60 @@ async function enviar() {
       (t) => t !== 'al_dia' && !(t === 'al_marmita' && semMarmita)
     );
 
-    for (const t of porId)
-      if (mud.up[t].length) {
-        const { error } = await sb.from(t).upsert(
-          mud.up[t].map((l) => ({ user_id: usuario.id, ...l })),
-          { onConflict: ['user_id', ...TABELAS[t]].join(',') }
-        );
+    // Aba parada (24/11/2026): comida, comida salva e marmita não sobem inteiras por cima do que outro aparelho gravou nelas
+    // depois da base: cada tabela lê as linhas mexidas na nuvem e grava a mescla coluna por coluna; apagar só apaga o que a
+    // nuvem ainda tem como a base (enviarMesclado, ../base/nucleo.js).
+    // usos da comida salva e porções que restam da marmita contam: mexidas nos dois aparelhos, as duas mudanças somam. A coluna
+    // envios (migration 04) guarda as marcas dos últimos envios, para o envio sem resposta não somar de novo a mudança daqui
+    // (al/docs/DECISOES.md). Marmita que fica com 0 (os dois aparelhos comeram as últimas) sai da nuvem.
+    const CONTADORES = { al_item: ['usos'], al_marmita: ['restam'] },
+      VAZIA = { al_marmita: (l) => l.restam <= 0 };
 
-        if (error) throw error;
+    const chave = (t, l) => TABELAS[t].map((k) => l[k]).join('|'),
+      finaisPorId = Object.fromEntries(porId.map((t) => [t, {}]));
+
+    for (const t of porId)
+      if (mud.up[t].length || mud.del[t].length) {
+        const F = await enviarMesclado(sb, {
+          tabela: t,
+          chaves: TABELAS[t],
+          up: mud.up[t].map((l) => ({
+            local: l,
+            base: base?.[t]?.[chave(t, l)] ?? null,
+          })),
+          del: mud.del[t],
+          usuarioId: usuario.id,
+          contadores: CONTADORES[t] || [],
+          marca: CONTADORES[t] ? 'envios' : null,
+          vazia: VAZIA[t] || null,
+          vooChave: 'al.vooLinhas.' + usuario.id,
+        });
+
+        for (const l of [...mud.up[t], ...mud.del[t]])
+          finaisPorId[t][chave(t, l)] = F.get(chaveDaLinha(TABELAS[t], l)) ?? null;
       }
 
+    // O aparelho fica com a nuvem como ficou (a mescla, a linha mantida), menos o que mudou aqui durante o envio
+    const L = linhas(db),
+      intocada = (t, k) => JSON.stringify(L[t][k]) === JSON.stringify(agora[t][k]);
+
+    let mudouPorId = false;
+
     for (const t of porId)
-      for (const l of mud.del[t]) {
-        let q = sb.from(t).delete();
+      for (const [k, f] of Object.entries(finaisPorId[t]))
+        if (intocada(t, k) && JSON.stringify(f) !== JSON.stringify(agora[t][k])) {
+          mudouPorId = true;
 
-        for (const k of TABELAS[t]) q = q.eq(k, l[k]);
-        const { error } = await q;
+          if (f) L[t][k] = f;
+          else delete L[t][k];
+        }
 
-        if (error) throw error;
-      }
+    if (mudouPorId) {
+      db = deLinhas(Object.fromEntries(ORDEM.map((t) => [t, Object.values(L[t])])));
+      store.set(K_LOCAL(usuario.id), JSON.stringify(db));
+    }
+
+    const depoisPorId = linhas(db);
 
     // Caminhada: dia a dia, mesclada com o que está na nuvem agora
     const dias = [
@@ -241,12 +289,22 @@ async function enviar() {
         final[d] = trechosDe(
           mesclar(
             nuvem[d] || [],
-            chegou(d) ? voo[d] : base?.al_dia?.[d]?.caminhadas || [],
+            chegou(d)
+              ? d in vooAqui
+                ? vooAqui[d]
+                : voo[d]
+              : base?.al_dia?.[d]?.caminhadas || [],
             agora.al_dia[d]?.caminhadas || []
           ),
           d
         );
       store.set(K_VOO(usuario.id), JSON.stringify(final));
+      store.set(
+        K_VOO_AQUI(usuario.id),
+        JSON.stringify(
+          Object.fromEntries(dias.map((d) => [d, agora.al_dia[d]?.caminhadas || []]))
+        )
+      );
 
       const sobe = dias.filter((d) => final[d].length),
         sai = dias.filter((d) => !final[d].length && nuvem[d]);
@@ -268,6 +326,22 @@ async function enviar() {
     }
 
     base = { ...agora, al_dia: { ...agora.al_dia } };
+
+    for (const t of porId) {
+      base[t] = { ...agora[t] };
+
+      for (const [k, f] of Object.entries(finaisPorId[t]))
+        if (!f) delete base[t][k];
+        else base[t][k] = (intocada(t, k) && depoisPorId[t][k]) || f;
+    }
+
+    if (
+      mudouPorId &&
+      !dias.length &&
+      typeof desenhar === 'function' &&
+      !$('v-dia').hidden
+    )
+      desenhar();
 
     if (dias.length) {
       // O aparelho fica com o resultado (mais o que mudou aqui enquanto enviava); a base, com o que a nuvem tem agora
@@ -293,7 +367,9 @@ async function enviar() {
     }
 
     store.set(K_BASE(usuario.id), JSON.stringify(base));
+    limparVooLinhas('al.vooLinhas.' + usuario.id);
     store.set(K_VOO(usuario.id), '{}');
+    store.set(K_VOO_AQUI(usuario.id), '{}');
     erroSync = '';
   } catch (e) {
     erroSync = e.message || String(e);

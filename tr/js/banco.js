@@ -147,28 +147,91 @@ async function enviar() {
   enviando = true;
 
   try {
+    // Aba parada (24/11/2026): nenhuma linha sobe inteira por cima do que outro aparelho gravou nela depois da base. Cada
+    // tabela lê as linhas mexidas na nuvem e grava a mescla coluna por coluna (as séries do mesmo exercício no mesmo dia,
+    // lançadas nos dois aparelhos, ficam todas); apagar só apaga o que a nuvem ainda tem como a base (enviarMesclado,
+    // ../base/nucleo.js). Pais antes dos filhos ao gravar; filhos antes dos pais ao apagar.
+    const chave = (t, l) => TABELAS[t].map((k) => l[k]).join('|'),
+      finais = Object.fromEntries(ORDEM.map((t) => [t, {}]));
+
+    const guardar = (t, linhasDaTabela, F) => {
+      for (const l of linhasDaTabela)
+        finais[t][chave(t, l)] = F.get(chaveDaLinha(TABELAS[t], l)) ?? null;
+    };
+
     for (const t of ORDEM)
-      if (mud.up[t].length) {
-        const { error } = await sb.from(t).upsert(
-          mud.up[t].map((l) => ({ user_id: usuario.id, ...l })),
-          { onConflict: ['user_id', ...TABELAS[t]].join(',') }
+      if (mud.up[t].length)
+        guardar(
+          t,
+          mud.up[t],
+          await enviarMesclado(sb, {
+            tabela: t,
+            chaves: TABELAS[t],
+            up: mud.up[t].map((l) => ({
+              local: l,
+              base: base?.[t]?.[chave(t, l)] ?? null,
+            })),
+            usuarioId: usuario.id,
+            vooChave: 'tr.vooLinhas.' + usuario.id,
+          })
         );
 
-        if (error) throw error;
-      }
-
     for (const t of [...ORDEM].reverse())
-      for (const l of mud.del[t]) {
-        let q = sb.from(t).delete();
+      if (mud.del[t].length)
+        guardar(
+          t,
+          mud.del[t],
+          await enviarMesclado(sb, {
+            tabela: t,
+            chaves: TABELAS[t],
+            del: mud.del[t],
+            usuarioId: usuario.id,
+          })
+        );
 
-        for (const k of TABELAS[t]) q = q.eq(k, l[k]);
-        const { error } = await q;
+    // O aparelho fica com a nuvem como ficou (a mescla, a linha mantida), menos o que mudou aqui durante o envio; a base, igual
+    const L = linhas(db),
+      intocada = (t, k) => JSON.stringify(L[t][k]) === JSON.stringify(agora[t][k]);
 
-        if (error) throw error;
+    let mudouAqui = false;
+
+    for (const t of ORDEM)
+      for (const [k, f] of Object.entries(finais[t])) {
+        if (!intocada(t, k)) continue;
+
+        if (JSON.stringify(f) === JSON.stringify(agora[t][k])) continue;
+        mudouAqui = true;
+
+        if (f) L[t][k] = f;
+        else delete L[t][k];
       }
 
-    base = agora;
+    if (mudouAqui) {
+      db = deLinhas(Object.fromEntries(ORDEM.map((t) => [t, Object.values(L[t])])));
+      store.set(K_LOCAL(usuario.id), JSON.stringify(db));
+    }
+
+    const depois = linhas(db);
+
+    base = { ...agora };
+
+    for (const t of ORDEM) {
+      base[t] = { ...agora[t] };
+
+      for (const [k, f] of Object.entries(finais[t]))
+        if (!f) delete base[t][k];
+        else base[t][k] = (intocada(t, k) && depois[t][k]) || f;
+    }
+
+    if (
+      mudouAqui &&
+      typeof TELAS_SEGURAS !== 'undefined' &&
+      TELAS_SEGURAS.includes(pilha[pilha.length - 1])
+    )
+      mostrar(pilha[pilha.length - 1]);
+
     store.set(K_BASE(usuario.id), JSON.stringify(base));
+    limparVooLinhas('tr.vooLinhas.' + usuario.id);
     erroSync = '';
   } catch (e) {
     erroSync = e.message || String(e);

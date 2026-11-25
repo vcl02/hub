@@ -5,7 +5,11 @@
 - Só a conta do Victor. Dentro do hub, sem sessão vai para o login do hub (`../?volta=notas/…`, com a nota do endereço) e volta depois de entrar; login próprio só fora do hub (testes). Outra conta sai na hora ("Esta conta não tem acesso."). Sem botão de sair.
 - Abre pelo atalho **Anotações** da doca da página inicial (mesmo ícone, `icons/anotacoes.svg`, e a mesma cor, `#f2b544`). Volta para a página inicial pelo ícone do hub.
 - Abre na hora com a cópia do aparelho, inclusive sem internet; depois envia o que estava pendente e traz a nuvem. Sem a cópia e sem a nuvem (ou sem a tabela ainda criada), abre vazio.
-- **Quem salva por último vale:** cada gravação manda a nota inteira (o texto final), sem comparar com o que outro aparelho mudou. A versão de antes fica guardada no histórico do banco (`hub_historico`), nunca na tela.
+- **Nada por cima do que não foi visto (aba parada):** cada gravação manda a nota inteira (o texto final), mas só por cima da versão que este aparelho viu. Se a nota mudou em outro aparelho enquanto aqui também mudava (o texto, ou o título), a nota fica com o de lá e o daqui vira uma nota nova **"<título> (conflito)"**, logo abaixo dela na lista. Vale também para a tela: o que se digita, edita, apaga ou favorita sobre um texto que mudou por baixo (a nuvem trouxe outro durante a digitação, a seleção ou a edição de um parágrafo) vai para a cópia, e a nota aberta passa a mostrar o texto de lá. Na tela, o título que mudou em outro aparelho não faz conflito com o texto que se está digitando aqui, e vice-versa. Acrescentar um parágrafo (enviar sem edição) parte sempre do texto mais novo: nunca conflita. Cada gravação fica também no histórico do banco (`hub_historico`).
+- **Avisos que ficam:** no alto da tela aberta (lista, nota ou Favoritas, logo abaixo do cabeçalho), no laranja de atenção, um por caso, até fechar no X ou no **Esc**:
+  - Conflito: _<título>: mudou em outro aparelho; sua versão foi salva como "<título> (conflito)"._ (título vazio, "Sem título"), com **Abrir cópia**, que grava a nota aberta (como ao sair dela) e abre a cópia (no endereço; Voltar volta).
+  - Apagada aqui que mudou em outro aparelho: não é apagada e volta para a lista com o texto de lá, com _<título> voltou: mudou em outro aparelho depois que você apagou._
+  - Os avisos são da conta: a tela de login os tira.
 - Pendente na nuvem aparece numa linha embaixo: "Sem internet: salvo no aparelho, envia quando conectar." ou "Erro ao enviar para a nuvem: …". Sem pendente, nada aparece.
 - **Rede ruim (metrô):** cada pedido ao Supabase tem limite de 15 s; estourou, conta como sem internet (fica salvo no aparelho e envia na próxima tentativa: ao reconectar, ao voltar para a página ou a cada minuto). Repetir o envio da nota inteira não duplica nada.
 
@@ -26,7 +30,7 @@
 - **A Favoritas é calculada na hora**, com o texto atual de cada nota: os favoritos de todas as notas, na ordem da lista e, dentro de cada nota, na ordem do texto. Cada balão tem o título da nota de origem em cima, pequeno ("Sem título" se vazio), e a estrela no canto; a ` ★` do texto não aparece. O mais novo fica embaixo e a tela abre no fim. Editar a origem muda a Favoritas; tirar a marca da origem tira o balão.
 - A Favoritas aparece sempre como conversa, também no PC.
 - **Tocar num balão** abre a nota de origem no parágrafo: no celular, rolado até ele com um destaque breve; no PC, com o cursor no começo do parágrafo, no meio da tela.
-- **Segurar** um balão seleciona (como na conversa). Com seleção, a barra no topo mostra a quantidade e tem: **Desmarcar** (X), **Copiar** (os parágrafos na ordem da lista, sem a ★, separados por uma linha em branco) e **Tirar das favoritas** (tira a marca só dos selecionados, em cada nota de origem; o resto do texto fica igual).
+- **Segurar** um balão seleciona (como na conversa). Com seleção, a barra no topo mostra a quantidade e tem: **Desmarcar** (X), **Copiar** (os parágrafos na ordem da lista, sem a ★, separados por uma linha em branco) e **Tirar das favoritas** (tira a marca só dos selecionados, em cada nota de origem; o resto do texto fica igual); se a origem mudou depois de a lista aparecer, cada selecionado é achado pelo texto, e o que sumiu ou já não é favorito fica de fora).
 - Sem favoritos, a Favoritas mostra: "Nenhuma favorita ainda. Na conversa, segure um parágrafo e toque na estrela; no editor, Alt+S."
 - **Como favoritar:**
   - No celular: segurar, selecionar e tocar na estrela da barra (ao lado do Apagar). Com os selecionados que podem ser favoritos, a estrela tira a marca se todos já são; senão, favorita todos. Desativada se nenhum pode.
@@ -70,6 +74,7 @@
 
 ## Esc
 
+- Com aviso na tela, o Esc fecha o mais antigo antes de tudo (não tira o foco, não desmarca, não volta e não sai do app); só um arraste da lista em andamento vem antes.
 - Na nota, na ordem: desmarca a seleção; cancela a edição do parágrafo; no editor, desfaz os vários cursores ou fecha a busca e depois só tira o foco; num campo de texto, o 1º Esc só tira o foco; sem nada disso, volta para a lista.
 - Na Favoritas: com seleção, desmarca; sem seleção, volta para a lista.
 - Na lista, durante um arraste, só cancela o arraste; sem arraste, sai do app para a página inicial do hub (`../`), como em todos os apps.

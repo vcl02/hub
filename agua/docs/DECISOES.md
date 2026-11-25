@@ -37,3 +37,7 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md`; o jeito de trabalha
 - Continua em Playwright: beber e ver o botão na tela, os lembretes desenhados, os dias (gestos e `?dia`), os últimos 7 dias com o caso sem internet, e login, tema e rolagem no celular.
 - Ressalva fechada em 02/11/2026: o `js/bootstrap.js` roda em `node:vm` (`rodarBootstrapApp`, `tests/bootstrap-falso.mjs`), em `tests/estrutura.test.mjs` da Água. Com sessão salva, baixa a nuvem em vez de ir ao login; sem sessão, dentro do hub vai ao login do hub; fora dele mostra o login próprio. O `install` do `sw.js` também sai do teste de estrutura: `instalar()` de `tests/sw-falso.mjs` confere que o evento segura o `waitUntil` e que o cache `agua-estatico` guarda exatamente `ARQUIVOS_ESTATICOS`.
 - Relógio falso pausado (02/11/2026): o helper de navegador usa `../tests/relogio.mjs`, o mesmo dos outros apps e da raiz; a regra está em `../docs/DIRETRIZES.md`, seção 3.
+
+## Aba parada (24/11/2026)
+
+- O envio em voo usava o próprio voo como base da mescla e tirava da nuvem o copo que outro aparelho lançou no mesmo dia antes daquele envio. Agora o voo guarda também o dia daqui (`agua.vooAqui.<conta>`) e, se o envio chegou sem resposta, só o que mudou aqui depois dele entra. Voo de versão anterior (sem `vooAqui`) segue como antes. Testes em `tests/aba-parada.test.mjs` (aba parada, metrô e voo antigo), com mutação. Visão geral em `../../docs/DECISOES.md`.

@@ -229,6 +229,86 @@ test('celular: texto da nuvem não limpa o campo nem cancela a edição; enviar 
   await ctx.close();
 });
 
+// Outro aparelho grava a nota (texto e versão novos) e o app baixa, como no carregar() ao entrar
+const outroAparelhoGravou = (pg, nuvem, texto, editadaEm) => {
+  Object.assign(nuvem.tabelas.notas_nota[0], { texto, editada_em: editadaEm });
+
+  return pg.evaluate(() => carregar(usuario, mostrar));
+};
+
+test('celular, aba parada: apagar um parágrafo selecionado antes de a nuvem mudar a nota vira a cópia "(conflito)"; a conversa mostra o da nuvem, o aviso fica no alto até o Esc (que não sai da nota) e Abrir cópia abre a cópia, que chega à nuvem', async () => {
+  const nuvem = novaNuvem([nota('A\n\nB')]),
+    { ctx, pg, erros } = await abrirApp({ busca: '?nota=n1', nuvem }),
+    cdp = await ctx.newCDPSession(pg);
+
+  await pg.waitForSelector('#conversa:not([hidden])');
+
+  // 1º conflito: "A" selecionado; outro aparelho acrescenta "C" (a seleção segura a tela); apagar grava sobre o texto velho
+  await segurar(pg, cdp, 0);
+  await outroAparelhoGravou(pg, nuvem, 'A\n\nB\n\nC', '2026-11-23T11:00:00.000Z');
+  assert.equal((await baloes(pg)).length, 2);
+  await pg.tap('#s-apagar');
+  await pg.tap('#s-apagar');
+
+  // a nota fica com o da nuvem (nada se perdeu) e a versão daqui é a cópia, logo abaixo
+  assert.deepEqual(await baloes(pg), ['<p>A</p>', '<p>B</p>', '<p>C</p>']);
+  const copia1 = await pg.evaluate(() => db.notas[1]);
+
+  assert.deepEqual([copia1.titulo, copia1.texto], ['Lista (conflito)', 'B']);
+  assert.deepEqual(
+    await pg.$$eval('#avisos li .oque', (L) => L.map((x) => x.textContent)),
+    ['Lista: mudou em outro aparelho; sua versão foi salva como "Lista (conflito)".']
+  );
+
+  // o aviso fica no alto da nota (logo abaixo do cabeçalho, acima dos balões), dentro da tela
+  const [topo, aviso, baloesBox] = await Promise.all(
+    ['#n-topo', '#avisos', '#c-baloes'].map((s) => pg.locator(s).boundingBox())
+  );
+
+  assert.ok(
+    aviso.y >= topo.y + topo.height - 1 && aviso.y + aviso.height <= baloesBox.y + 1
+  );
+  assert.ok(aviso.x >= 0 && aviso.x + aviso.width <= 390);
+
+  // Esc fecha o aviso primeiro (não volta para a lista)
+  await pg.keyboard.press('Escape');
+  assert.equal(await pg.isHidden('#avisos'), true);
+  assert.match(pg.url(), /\?nota=n1$/);
+
+  // 2º conflito, agora pelo Editar: Abrir cópia leva à cópia (no endereço), com o texto daqui
+  await segurar(pg, cdp, 1);
+  await pg.tap('#s-editar');
+  await outroAparelhoGravou(pg, nuvem, 'A\n\nB\n\nC\n\nD', '2026-11-23T12:00:00.000Z');
+  await pg.fill('#c-texto', 'B2');
+  await pg.tap('#c-enviar');
+  assert.equal((await baloes(pg)).length, 4);
+  assert.equal(await pg.isVisible('#avisos [data-abrir]'), true);
+  await pg.tap('#avisos [data-abrir]');
+
+  const copia2 = await pg.evaluate(() => notaPorId(aberta));
+
+  assert.ok(copia2.id !== 'n1' && copia2.id !== copia1.id);
+  assert.match(pg.url(), new RegExp(`\\?nota=${copia2.id}$`));
+  assert.equal(await pg.inputValue('#n-titulo'), 'Lista (conflito)');
+  assert.deepEqual(await baloes(pg), ['<p>A</p>', '<p>B2</p>', '<p>C</p>']);
+  assert.equal(await pg.isHidden('#avisos'), true);
+
+  // na nuvem: a original como o outro aparelho deixou e as duas cópias
+  await sincronizado(pg);
+
+  const naNuvem = Object.fromEntries(
+    nuvem.tabelas.notas_nota.map((l) => [l.id, l.texto])
+  );
+
+  assert.deepEqual(naNuvem, {
+    n1: 'A\n\nB\n\nC\n\nD',
+    [copia1.id]: 'B',
+    [copia2.id]: 'A\n\nB2\n\nC',
+  });
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
 test('título da aba: volta a "Notas" ao voltar para a lista, na conversa e no editor', async () => {
   for (const pc of [false, true]) {
     const nuvem = novaNuvem([nota('item', 'Compras')]),
@@ -303,9 +383,10 @@ test('celular: arrastar a alça com o dedo leva a nota para onde soltou, a nuvem
       ['c', 0],
     ]
   );
+  // mover não muda a edição: a coluna nem é enviada (fica como a nuvem tinha)
   assert.equal(
-    nuvem.tabelas.notas_nota.find((l) => l.id === 'c').editada_em,
-    '2026-11-23T10:00:00.000Z'
+    Date.parse(nuvem.tabelas.notas_nota.find((l) => l.id === 'c').editada_em),
+    Date.parse('2026-11-23T10:00:00.000Z')
   );
 
   // recarregar: a ordem definida fica

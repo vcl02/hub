@@ -195,6 +195,10 @@ test('bootstrap: com sessão salva carrega (cópia local e nuvem) em vez de ir a
     carregado: false,
     aberta: null,
     emFavoritas: false,
+    conflitos: [],
+    mantidas: [],
+    avisos: [],
+    pintarAvisos: () => chamadas.push(['pintarAvisos']), // a tela de login some com os avisos da conta anterior
     $: (id) => ({
       addEventListener: () => {},
       classList: { add() {}, remove() {} },
@@ -231,5 +235,5 @@ test('bootstrap: com sessão salva carrega (cópia local e nuvem) em vez de ir a
   const fora = await rodarBootstrapApp(arquivo, { pathname: '/', extras });
 
   assert.deepEqual(fora.destinos, []);
-  assert.deepEqual(fora.chamadas, [['telaLogin']]);
+  assert.deepEqual(fora.chamadas, [['pintarAvisos'], ['telaLogin']]);
 });

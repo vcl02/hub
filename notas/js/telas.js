@@ -5,6 +5,9 @@
 // " ★" de todas as notas; a estrela da barra de seleção (celular) e o botão do topo com Alt+S (editor do PC) põem e tiram a
 // marca (js/markdown.js).
 // Tudo grava pelo banco (salvarNota, criarNota, apagarNota, moverNota de js/banco.js), que envia à nuvem 0,8 s depois.
+// Aba parada: cada gravação leva a versão da nota (editadaEm) em que a tela pegou o texto ou o título; se a nota mudou por
+// baixo (outro aparelho), o banco salva o da tela como uma nota "(conflito)" e a tela passa a mostrar o da nuvem. Os avisos
+// (conflitos e mantidas de js/banco.js) ficam no alto da tela até fechar (X ou Esc), com "Abrir cópia" no conflito.
 
 const SALVAR_MS = 800; // o editor grava 0,8 s depois de parar de digitar
 const SEGURAR_MS = 500; // segurar um balão esse tempo seleciona
@@ -21,6 +24,11 @@ let aberta = null, // id da nota aberta (null: a lista ou a Favoritas)
   tSalvarTitulo = null,
   mostrado = '', // o texto da nota como está na tela (editor ou balões)
   tituloMostrado = '',
+  textoBase = '', // o texto da nota quando a tela o pegou (o editor e a conversa partem dele)
+  vistaTexto = null, // a editadaEm da nota naquela hora (a vista de salvarNota)
+  tituloBase = '', // o mesmo para o título (a vista de salvarTituloNota)
+  vistaTitulo = null,
+  avisos = [], // os avisos na tela: [{ texto, copia }] (copia: o id da nota "(conflito)", que o aviso abre)
   selecionados = new Set(), // índices dos parágrafos selecionados na conversa
   editando = null; // índice do parágrafo sendo editado no campo de baixo (null: o campo acrescenta)
 
@@ -45,6 +53,9 @@ const estrela = (tam, cheia, riscada = false) =>
 const ICONE_FAVORITAR = estrela(18, false),
   ICONE_DESFAVORITAR = estrela(18, false, true),
   ESTRELA_BALAO = `<span class="estrela" title="Favorita" aria-label="Favorita">${estrela(12, true)}</span>`;
+
+const ICONE_FECHAR =
+  '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 
 // Alça da linha (⠿): 6 pontos, 2 colunas de 3
 const ICONE_ALCA =
@@ -88,6 +99,7 @@ function mostrarLista() {
   $('v-login').hidden = true;
   $('v-lista').hidden = false;
   $('w-lista').append($('sync'));
+  $('v-lista').querySelector(':scope > .topo').after($('avisos'));
   desenharLista();
 }
 
@@ -266,6 +278,31 @@ $('n-nova').addEventListener('click', () => {
 });
 
 // ===== Nota aberta =====
+// A versão que a tela viu (a vista de salvarNota e salvarTituloNota): a editadaEm da nota quando a tela pegou o texto (ou o
+// título). Enquanto o campo na nota ainda é o que a tela pegou, a versão atual vale (mudou só o outro campo: aqui mesmo, ao
+// gravar o título, ou em outro aparelho); mudou o próprio campo por baixo, fica a antiga e a gravação vira conflito.
+function pegarTexto(n) {
+  textoBase = n.texto;
+  vistaTexto = n.editadaEm;
+}
+
+function pegarTitulo(n) {
+  tituloBase = n.titulo;
+  vistaTitulo = n.editadaEm;
+}
+
+function vistaDoTexto(n) {
+  if (n && n.texto === textoBase) vistaTexto = n.editadaEm;
+
+  return vistaTexto;
+}
+
+function vistaDoTitulo(n) {
+  if (n && n.titulo === tituloBase) vistaTitulo = n.editadaEm;
+
+  return vistaTitulo;
+}
+
 function abrirNota(id, empilhar = true) {
   const n = notaPorId(id);
 
@@ -276,6 +313,7 @@ function abrirNota(id, empilhar = true) {
   favSel.clear();
   $('v-fav').hidden = true;
   mostrado = n.texto;
+  pegarTexto(n);
   tituloMostrado = n.titulo;
   selecionados.clear();
   editando = null;
@@ -284,6 +322,7 @@ function abrirNota(id, empilhar = true) {
   $('w-lista').hidden = true;
   $('v-nota').hidden = false;
   $('v-nota').append($('sync'));
+  $('s-barra').after($('avisos'));
   trocarModo(modoAtual(), true, false);
 }
 
@@ -305,6 +344,7 @@ function trocarModo(novo, focar = false, salvar = true) {
   $('conversa').hidden = modo !== 'conversa';
   $('n-favorito').hidden = modo !== 'editor';
   mostrado = n.texto;
+  pegarTexto(n);
   limparSelecao();
   cancelarEdicao();
 
@@ -356,7 +396,12 @@ function desenharTitulo() {
   const n = notaPorId(aberta);
   const titulo = n?.titulo ?? '';
 
-  if (!tSalvarTitulo) $('n-titulo').value = titulo;
+  if (!tSalvarTitulo) {
+    $('n-titulo').value = titulo;
+
+    if (n) pegarTitulo(n);
+  }
+
   tituloMostrado = titulo;
   document.title = (titulo || 'Nota') + ' · Notas';
 }
@@ -367,8 +412,16 @@ function salvarTituloAgora() {
 
   if (!aberta) return;
 
-  salvarTituloNota(aberta, $('n-titulo').value);
+  // conflito: a nota fica com o título da nuvem (desenharTitulo) e o daqui vai para a cópia
+  const r = salvarTituloNota(
+    aberta,
+    $('n-titulo').value,
+    vistaDoTitulo(notaPorId(aberta))
+  );
+
   desenharTitulo();
+
+  if (typeof r === 'string') receberAvisos();
 }
 
 $('n-titulo').addEventListener('input', () => {
@@ -399,7 +452,19 @@ function salvarAgora() {
 
   if (!aberta || modo !== 'editor' || !editor) return;
 
-  if (salvarNota(aberta, textoDoEditor())) desenharTitulo();
+  const texto = textoDoEditor(),
+    r = salvarNota(aberta, texto, vistaDoTexto(notaPorId(aberta))),
+    n = notaPorId(aberta);
+
+  if (typeof r === 'string') {
+    // conflito: o texto daqui foi para a cópia; o editor passa a mostrar o da nuvem (fora do desfazer, sem gravar de volta)
+    mostrado = n.texto;
+    pegarTexto(n);
+    trocarTextoDoEditor(n.texto);
+    receberAvisos();
+  } else if (n && n.texto === texto) pegarTexto(n);
+
+  if (r) desenharTitulo();
 }
 
 function salvarTudoAgora() {
@@ -462,6 +527,8 @@ function rotear() {
 
 // Chamado pelo banco (carregar) com a cópia local e de novo com a nuvem, e depois de cada mudança vinda de fora
 function mostrar() {
+  receberAvisos();
+
   if (!aberta) return rotear();
   const n = notaPorId(aberta);
 
@@ -485,12 +552,14 @@ function mostrar() {
   if (modo === 'editor') {
     if (tSalvar || textoDoEditor() !== mostrado) return;
     mostrado = n.texto;
+    pegarTexto(n);
     trocarTextoDoEditor(n.texto);
   } else {
     // na conversa, "digitado esperando" é o campo com texto, um parágrafo em edição ou balões selecionados (os índices
     // são do texto da tela): a tela fica como está e o texto novo entra quando isso acabar (cancelar, desmarcar, enviar)
     if (editando !== null || $('c-texto').value.trim() || selecionados.size) return;
     mostrado = n.texto;
+    pegarTexto(n);
     desenharConversa();
   }
 
@@ -514,12 +583,24 @@ function desenharConversa(irProFim = false) {
   if (irProFim || noFim) el.scrollTop = el.scrollHeight;
 }
 
-// Grava o texto novo vindo da conversa (cada ação grava na hora) e redesenha
-function gravarConversa(texto, irProFim = false) {
-  salvarNota(aberta, texto);
-  mostrado = notaPorId(aberta)?.texto ?? texto;
+// Grava o texto novo vindo da conversa (cada ação grava na hora) e redesenha. vista: a versão de onde o texto saiu (sem ela,
+// a do texto da tela; acrescentar parte do texto atual da nota). Conflito (a nota mudou por baixo de uma seleção ou de uma
+// edição): o da tela vai para a cópia e a conversa passa a mostrar o da nuvem.
+function gravarConversa(
+  texto,
+  irProFim = false,
+  vista = vistaDoTexto(notaPorId(aberta))
+) {
+  const r = salvarNota(aberta, texto, vista),
+    n = notaPorId(aberta);
+
+  mostrado = n?.texto ?? texto;
+
+  if (n) pegarTexto(n);
   desenharConversa(irProFim);
   desenharTitulo();
+
+  if (typeof r === 'string') receberAvisos();
 }
 
 // Seleção: segurar ~0,5 s um balão seleciona; com algo selecionado, um toque seleciona ou desseleciona outro
@@ -737,8 +818,10 @@ $('c-form').addEventListener('submit', (ev) => {
     );
   } else {
     if (!limparParagrafo(novo)) return;
-    // acrescenta ao texto mais novo da nota (o que chegou da nuvem enquanto se digitava não se perde)
-    gravarConversa(acrescentarBloco(notaPorId(aberta)?.texto ?? mostrado, novo), true);
+    // acrescenta ao texto mais novo da nota (o que chegou da nuvem enquanto se digitava não se perde): a vista é a atual
+    const n = notaPorId(aberta);
+
+    gravarConversa(acrescentarBloco(n?.texto ?? mostrado, novo), true, n?.editadaEm);
   }
 
   $('c-texto').value = '';
@@ -760,6 +843,7 @@ function mostrarFavoritas() {
   $('v-nota').hidden = true;
   $('v-fav').hidden = false;
   $('v-fav').append($('sync'));
+  $('f-barra').after($('avisos'));
   pintarSelecaoFav();
   desenharFavoritas(true);
 }
@@ -874,18 +958,109 @@ $('f-desfavoritar').addEventListener('click', () => {
   for (const k of favSel) {
     const f = favMostradas[k];
 
-    if (f) porNota.set(f.notaId, [...(porNota.get(f.notaId) || []), f.i]);
+    if (f) porNota.set(f.notaId, [...(porNota.get(f.notaId) || []), f]);
   }
 
-  for (const [id, indices] of porNota) {
-    const n = notaPorId(id);
+  // pelo texto atual de cada nota (a origem pode ter mudado depois do desenho: os índices da tela não valem mais)
+  for (const [id, escolhidas] of porNota) {
+    const n = notaPorId(id),
+      indices = n ? indicesDasFavoritas(n.texto, escolhidas) : [];
 
-    if (n) salvarNota(id, favoritarBlocos(n.texto, indices, false));
+    if (indices.length) salvarNota(id, favoritarBlocos(n.texto, indices, false));
   }
 
   limparSelecaoFav();
   toast('Fora das favoritas.');
 });
+
+// ===== Avisos (aba parada) =====
+// O banco junta em `conflitos` as notas que mudaram em outro aparelho enquanto aqui também mudavam (a versão daqui virou a nota
+// "<título> (conflito)") e em `mantidas` as apagadas aqui que voltaram porque mudaram lá. A tela esvazia as duas e mostra um
+// aviso por item no alto da tela aberta (lista, nota ou Favoritas), até fechar: o X, o Esc (o mais antigo primeiro, antes de
+// qualquer outro uso da tecla) ou, no conflito, Abrir cópia.
+function receberAvisos() {
+  for (const c of conflitos.splice(0)) {
+    const titulo = c.titulo || 'Sem título',
+      copia = notaPorId(c.copia)?.titulo || (c.titulo + ' (conflito)').trim();
+
+    avisos.push({
+      texto: `${titulo}: mudou em outro aparelho; sua versão foi salva como "${copia}".`,
+      copia: c.copia,
+    });
+  }
+
+  for (const m of mantidas.splice(0))
+    avisos.push({
+      texto: `${m.titulo || 'Sem título'} voltou: mudou em outro aparelho depois que você apagou.`,
+      copia: null,
+    });
+  pintarAvisos();
+}
+
+function pintarAvisos() {
+  $('avisos').innerHTML = avisos
+    .map(
+      (a, k) =>
+        `<li data-k="${k}"><span class="oque">${esc(a.texto)}</span>` +
+        (a.copia
+          ? '<button type="button" class="btn" data-abrir>Abrir cópia</button>'
+          : '') +
+        `<button type="button" class="bt-ic" data-fechar title="Fechar (Esc)" aria-label="Fechar o aviso">${ICONE_FECHAR}</button></li>`
+    )
+    .join('');
+  $('avisos').hidden = !avisos.length;
+}
+
+function fecharAviso(k) {
+  avisos.splice(k, 1);
+  pintarAvisos();
+}
+
+// Abre a nota "(conflito)" no lugar do que está aberto (a nota aberta grava antes, como ao sair dela)
+function abrirCopia(id) {
+  if (!notaPorId(id)) {
+    toast('Nota não encontrada.');
+
+    return;
+  }
+
+  if (aberta === id) return;
+
+  if (aberta) fecharNota();
+  abrirNota(id);
+}
+
+$('avisos').addEventListener('click', (ev) => {
+  const li = ev.target.closest('li[data-k]'),
+    a = li && avisos[+li.dataset.k];
+
+  if (!a) return;
+
+  if (ev.target.closest('[data-fechar]')) fecharAviso(+li.dataset.k);
+  else if (ev.target.closest('[data-abrir]')) {
+    fecharAviso(+li.dataset.k);
+    abrirCopia(a.copia);
+  }
+});
+
+// Esc com aviso na tela: fecha o mais antigo antes de tudo (fase de captura: o editor, os campos e a nota nem veem a tecla,
+// pelo preventDefault); durante um arraste da lista, o Esc é do arraste
+addEventListener(
+  'keydown',
+  (ev) => {
+    if (
+      ev.key !== 'Escape' ||
+      ev.defaultPrevented ||
+      ev.isComposing ||
+      !avisos.length ||
+      arraste
+    )
+      return;
+    ev.preventDefault();
+    fecharAviso(0);
+  },
+  true
+);
 
 // ===== Esc dentro da nota (e Alt+S no editor) =====
 // Na Favoritas: desmarca a seleção; sem seleção, volta para a lista. Na nota, na ordem: desmarca a seleção; cancela a edição de um parágrafo; no editor, só tira o foco; sem nada, volta para a lista.
@@ -900,11 +1075,10 @@ document.addEventListener('keydown', (ev) => {
   ) {
     ev.preventDefault();
 
+    // na conversa cada ação já gravou: só o título pode estar esperando (gravar o texto da tela de novo só traria de volta
+    // um texto velho por cima do que chegou da nuvem durante uma seleção)
     if (modo === 'editor') salvarTudoAgora();
-    else {
-      salvarTituloAgora();
-      salvarNota(aberta, mostrado);
-    }
+    else salvarTituloAgora();
 
     return;
   }

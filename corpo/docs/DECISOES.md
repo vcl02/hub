@@ -32,3 +32,7 @@ O porquê das escolhas. A regra vigente fica em `REGRAS.md`; o jeito de trabalha
 - Continua em Playwright: pesagem, barriga, evacuação, xixi e sono na tela e no banco; o histórico (só a medida de hoje se edita); dois aparelhos; o caso "metrô"; o dia anterior pelo `?dia`; os gestos; o gráfico com o mouse ou o dedo; o caso sem internet; o Esc.
 - Lacunas: nenhuma registrada nesta rodada.
 - Relógio falso pausado (02/11/2026): o helper de navegador usa `../tests/relogio.mjs`, o mesmo dos outros apps e da raiz; a regra está em `../docs/DIRETRIZES.md`, seção 3.
+
+## Aba parada (24/11/2026)
+
+- A pesagem do dia (`corpo_medida`) não sobe mais inteira por cima do que outro aparelho gravou: mescla coluna a coluna (peso aqui, barriga lá ficam as duas); apagar aqui a pesagem que mudou lá não apaga. O dia do Corpo (`corpo_dia`) usa `corpo.vooAqui.<conta>` como a Água. Testes em `tests/aba-parada.test.mjs`, com mutação. Visão geral em `../../docs/DECISOES.md`.

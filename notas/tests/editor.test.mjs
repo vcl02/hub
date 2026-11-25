@@ -811,3 +811,86 @@ test('PC: Ctrl+↓ e Ctrl+↑ rolam o editor uma linha sem mexer no cursor nem c
   assert.deepEqual(erros, []);
   await ctx.close();
 });
+
+// Aba parada no editor do PC: o que aqui se digita contra o que outro aparelho gravou por baixo. Só o próprio campo mudado
+// por baixo é conflito; trocar o outro campo (aqui ou lá) nunca é.
+const notaDe = (texto) => ({
+  user_id: DONO,
+  id: 'n1',
+  titulo: 'Lista',
+  texto,
+  criada_em: '2026-11-23T10:00:00+00:00',
+  editada_em: '2026-11-23T10:00:00+00:00',
+});
+
+const outroAparelho = (pg, nuvem, campos) => {
+  Object.assign(nuvem.tabelas.notas_nota[0], campos);
+
+  return pg.evaluate(() => carregar(usuario, mostrar));
+};
+
+test('PC, aba parada: título trocado aqui e depois o texto não dá conflito; outro aparelho trocar só o título enquanto se digita também não', async () => {
+  const nuvem = novaNuvem([notaDe('um')]),
+    { ctx, pg, erros } = await abrirApp({ pc: true, busca: '?nota=n1', nuvem });
+
+  await pg.waitForSelector('#editor:not([hidden]) .cm-content');
+
+  // título aqui, texto depois
+  await pg.fill('#n-titulo', 'Compras');
+  await pg.locator('.cm-content').click();
+  await pg.keyboard.press('Control+End');
+  await pg.keyboard.type(' dois');
+  await andarAte(pg, () => notaPorId('n1').texto === 'um dois');
+  await sincronizado(pg);
+  assert.deepEqual(
+    nuvem.tabelas.notas_nota.map((l) => [l.titulo, l.texto]),
+    [['Compras', 'um dois']]
+  );
+
+  // outro aparelho troca só o título enquanto aqui se digita o texto
+  await pg.keyboard.type(' três');
+  await outroAparelho(pg, nuvem, {
+    titulo: 'Mercado',
+    editada_em: '2026-11-23T11:00:00.000Z',
+  });
+  await andarAte(pg, () => notaPorId('n1').texto === 'um dois três');
+  await sincronizado(pg);
+  assert.deepEqual(
+    nuvem.tabelas.notas_nota.map((l) => [l.titulo, l.texto]),
+    [['Mercado', 'um dois três']]
+  );
+  assert.equal(await pg.inputValue('#n-titulo'), 'Mercado');
+  assert.equal(await pg.isHidden('#avisos'), true);
+  assert.equal(await pg.evaluate(() => db.notas.length), 1);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
+
+test('PC, aba parada: outro aparelho troca o texto enquanto se digita: o digitado vira a cópia "(conflito)", o editor mostra o da nuvem e nada fica para gravar', async () => {
+  const nuvem = novaNuvem([notaDe('um')]),
+    { ctx, pg, erros } = await abrirApp({ pc: true, busca: '?nota=n1', nuvem });
+
+  await pg.waitForSelector('#editor:not([hidden]) .cm-content');
+  await pg.locator('.cm-content').click();
+  await pg.keyboard.press('Control+End');
+  await pg.keyboard.type(' meu');
+  // o outro aparelho gravou o texto por baixo; a nuvem só chega aqui depois da gravação do que foi digitado
+  Object.assign(nuvem.tabelas.notas_nota[0], {
+    texto: 'um deles',
+    editada_em: '2026-11-23T11:00:00.000Z',
+  });
+  await pg.evaluate(() => carregar(usuario, mostrar));
+  await andarAte(pg, () => db.notas.length === 2);
+  await sincronizado(pg);
+
+  assert.equal(await doc(pg), 'um deles');
+  assert.equal(await pg.evaluate(() => tSalvar), null);
+  assert.equal(await pg.evaluate(() => temPendente()), false);
+  assert.deepEqual(
+    Object.fromEntries(nuvem.tabelas.notas_nota.map((l) => [l.titulo, l.texto])),
+    { Lista: 'um deles', 'Lista (conflito)': 'um meu' }
+  );
+  assert.equal(await pg.isVisible('#avisos [data-abrir]'), true);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});
