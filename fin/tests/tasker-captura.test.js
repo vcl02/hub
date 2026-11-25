@@ -55,24 +55,43 @@ test('o profile Nubank leva a mesma tarefa do arquivo avulso; só há essa taref
 test('a tarefa é curta: lê, para se não é gasto, manda o POST, apaga a notificação do Nubank ou avisa a falha', () => {
   const a = acoes(ler('tasker/Nubank_A.tsk.xml'));
 
-  // JavaScriptlet, Stop, JavaScriptlet, HTTP Request, AutoNotification Cancel, Flash
+  // JavaScriptlet, Stop, JavaScriptlet, HTTP Request, 3 AutoNotification Cancel (texto simples), Flash
   assert.deepEqual(
     a.map((x) => x.codigo),
-    ['129', '137', '129', '339', '2046367074', '548']
+    ['129', '137', '129', '339', '2046367074', '2046367074', '2046367074', '548']
   );
   assert.match(a[1].corpo, /<lhs>%tipo<\/lhs>\s*<op>3<\/op>\s*<rhs>despesa\*<\/rhs>/);
   assert.match(a[3].corpo, /captura-nubank<\/Str>/);
   assert.match(a[3].corpo, /x-fin-token:%FINTOKEN/);
   assert.match(a[3].corpo, /<Str sr="arg5" ve="3">%body<\/Str>/);
-  // Só com resposta 2xx apaga a notificação do Nubank (app Nubank, compra, NuPay ou boleto); senão avisa e a deixa lá.
-  assert.match(a[4].corpo, /_array_InterceptApps0&gt;com\.nu\.production&lt;/);
-  assert.match(a[4].corpo, /<Text>\(\?is\)\.\*\(compra\|nupay\|boleto\)\.\*<\/Text>/);
-  assert.match(
-    a[4].corpo,
-    /<lhs>%http_response_code<\/lhs>\s*<op>2<\/op>\s*<rhs>2\*<\/rhs>/
+
+  // Só com resposta 2xx apaga a notificação do Nubank, por texto simples sem diferenciar caixa (a regex não
+  // apagava: 25/11/2026): uma ação para compra, uma para NuPay e uma para boleto; senão avisa e a deixa lá.
+  for (const [i, palavra] of [
+    [4, 'Compra'],
+    [5, 'NuPay'],
+    [6, 'boleto'],
+  ]) {
+    assert.match(a[i].corpo, /_array_InterceptApps0&gt;com\.nu\.production&lt;/);
+    assert.match(a[i].corpo, new RegExp(`<Text>${palavra}</Text>`));
+    assert.match(a[i].corpo, /<RegexText>false<\/RegexText>/);
+    assert.match(a[i].corpo, /<CaseinsensitiveText>true<\/CaseinsensitiveText>/);
+    assert.match(
+      a[i].corpo,
+      /<lhs>%http_response_code<\/lhs>\s*<op>2<\/op>\s*<rhs>2\*<\/rhs>/
+    );
+  }
+
+  assert.equal(
+    new Set(
+      a
+        .slice(4, 7)
+        .map((x) => x.corpo.match(/<plugininstanceid>(.*?)<\/plugininstanceid>/)[1])
+    ).size,
+    3
   );
   assert.match(
-    a[5].corpo,
+    a[7].corpo,
     /<lhs>%http_response_code<\/lhs>\s*<op>3<\/op>\s*<rhs>2\*<\/rhs>/
   );
   assert.doesNotMatch(
