@@ -26,16 +26,30 @@ const { CM, decoracoesMarkdown, linhasAtivas, tocaAtiva } = ctx;
 
 // cursores: [[de, ate], ...] ou uma posição; o padrão é o cursor no fim do texto
 function ver(doc, cursores = [[doc.length, doc.length]]) {
-  const state = CM.EditorState.create({
-    doc,
-    selection: CM.EditorSelection.create(
-      cursores.map(([a, b]) => CM.EditorSelection.range(a, b))
-    ),
-    extensions: [
-      new CM.LanguageSupport(CM.markdownLanguage),
-      CM.EditorState.allowMultipleSelections.of(true),
-    ],
-  });
+  const criar = () =>
+    CM.EditorState.create({
+      doc,
+      selection: CM.EditorSelection.create(
+        cursores.map(([a, b]) => CM.EditorSelection.range(a, b))
+      ),
+      extensions: [
+        new CM.LanguageSupport(CM.markdownLanguage),
+        CM.EditorState.allowMultipleSelections.of(true),
+      ],
+    });
+
+  // O CodeMirror lê o Markdown com um orçamento de tempo (~20 ms): numa máquina ocupada (testes em paralelo) a árvore pode
+  // sair pela metade e faltar título lá embaixo. Refaz o estado até a árvore cobrir o texto todo (cada tentativa ganha um
+  // orçamento novo); o limite só evita laço infinito.
+  let state = criar();
+
+  for (let i = 0; i < 100 && CM.syntaxTree(state).length < doc.length; i++)
+    state = criar();
+  assert.equal(
+    CM.syntaxTree(state).length,
+    doc.length,
+    'a árvore do Markdown ficou incompleta'
+  );
 
   const set = decoracoesMarkdown({
       state,

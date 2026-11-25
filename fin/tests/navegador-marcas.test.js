@@ -96,9 +96,14 @@ async function duplicarEEditar(c) {
   );
   await pg.click('#fechaNovo');
   await pg.waitForSelector('#modalNovo', { state: 'hidden' });
-  await ocioso(); // fechar limpa a seleção logo depois: espera acabar
-
-  if (!(await pg.isVisible('#selbar'))) await pg.click(linha(1) + ' td:last-child'); // fechar o cadastro pode limpar a seleção
+  await ocioso();
+  // O evento 'close' do <dialog> chega numa tarefa à parte, às vezes depois de o modal já estar escondido: ele limpa a seleção
+  // (que veio do Duplicar) e esconde a barra. Espera isso acontecer, em vez de adivinhar, e só então seleciona de novo.
+  await pg.waitForFunction(
+    () => document.getElementById('selbar').style.display === 'none'
+  );
+  await pg.click(linha(1) + ' td:last-child');
+  await pg.waitForSelector('#selbar', { state: 'visible' });
   await pg.click('#seledit');
   await pg.waitForSelector('#modalNovo', { state: 'visible' });
   assert.deepEqual(
