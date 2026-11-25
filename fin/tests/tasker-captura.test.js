@@ -52,25 +52,42 @@ test('o profile Nubank leva a mesma tarefa do arquivo avulso; só há essa taref
   ]);
 });
 
-test('a tarefa é curta: lê, para se não é gasto, manda o POST, apaga a notificação do Nubank ou avisa a falha', () => {
+test('a tarefa é curta: lê, para se não é gasto, manda o POST, apaga a notificação do Nubank (duas vezes) ou avisa a falha', () => {
   const a = acoes(ler('tasker/Nubank_A.tsk.xml'));
 
-  // JavaScriptlet, Stop, JavaScriptlet, HTTP Request, 3 AutoNotification Cancel (texto simples), Flash
+  // JavaScriptlet, Stop, JavaScriptlet, HTTP Request, 3 Cancel, Wait 8 s, 3 Cancel de novo, Flash
   assert.deepEqual(
     a.map((x) => x.codigo),
-    ['129', '137', '129', '339', '2046367074', '2046367074', '2046367074', '548']
+    [
+      '129',
+      '137',
+      '129',
+      '339',
+      '2046367074',
+      '2046367074',
+      '2046367074',
+      '30',
+      '2046367074',
+      '2046367074',
+      '2046367074',
+      '548',
+    ]
   );
   assert.match(a[1].corpo, /<lhs>%tipo<\/lhs>\s*<op>3<\/op>\s*<rhs>despesa\*<\/rhs>/);
   assert.match(a[3].corpo, /captura-nubank<\/Str>/);
   assert.match(a[3].corpo, /x-fin-token:%FINTOKEN/);
   assert.match(a[3].corpo, /<Str sr="arg5" ve="3">%body<\/Str>/);
 
-  // Só com resposta 2xx apaga a notificação do Nubank, por texto simples sem diferenciar caixa (a regex não
-  // apagava: 25/11/2026): uma ação para compra, uma para NuPay e uma para boleto; senão avisa e a deixa lá.
+  // Só com resposta 2xx apaga a notificação do Nubank, por texto simples sem diferenciar caixa: uma ação para
+  // compra, uma para NuPay e uma para boleto. Na 1ª compra de 25/11/2026 o Nubank só mostrou a notificação
+  // depois do 1º apagar (a compra seguinte levou as duas), então há uma 2ª passada depois de 8 s.
   for (const [i, palavra] of [
     [4, 'Compra'],
     [5, 'NuPay'],
     [6, 'boleto'],
+    [8, 'Compra'],
+    [9, 'NuPay'],
+    [10, 'boleto'],
   ]) {
     assert.match(a[i].corpo, /_array_InterceptApps0&gt;com\.nu\.production&lt;/);
     assert.match(a[i].corpo, new RegExp(`<Text>${palavra}</Text>`));
@@ -82,16 +99,26 @@ test('a tarefa é curta: lê, para se não é gasto, manda o POST, apaga a notif
     );
   }
 
-  assert.equal(
-    new Set(
-      a
-        .slice(4, 7)
-        .map((x) => x.corpo.match(/<plugininstanceid>(.*?)<\/plugininstanceid>/)[1])
-    ).size,
-    3
+  // Wait: 8 segundos (MS, segundos, minutos, horas, dias), também só com resposta 2xx.
+  assert.deepEqual(
+    [...a[7].corpo.matchAll(/<Int sr="arg\d" val="(\d+)"\/>/g)].map((m) => Number(m[1])),
+    [0, 8, 0, 0, 0]
   );
   assert.match(
     a[7].corpo,
+    /<lhs>%http_response_code<\/lhs>\s*<op>2<\/op>\s*<rhs>2\*<\/rhs>/
+  );
+
+  assert.equal(
+    new Set(
+      a
+        .filter((x) => x.codigo === '2046367074')
+        .map((x) => x.corpo.match(/<plugininstanceid>(.*?)<\/plugininstanceid>/)[1])
+    ).size,
+    6
+  );
+  assert.match(
+    a[11].corpo,
     /<lhs>%http_response_code<\/lhs>\s*<op>3<\/op>\s*<rhs>2\*<\/rhs>/
   );
   assert.doesNotMatch(
