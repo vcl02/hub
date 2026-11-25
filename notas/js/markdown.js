@@ -107,6 +107,58 @@ function copiarBlocos(texto, indices) {
     .join('\n\n');
 }
 
+// ===== Mover parágrafos para outra nota (como o encaminhar do WhatsApp, mas sem deixar cópia) =====
+// Os índices que valem no texto: inteiros dentro da faixa, sem repetição, em ordem crescente
+const indicesValidos = (texto, indices) => {
+  const n = blocos(texto).length;
+
+  return [...new Set(indices)]
+    .filter((i) => Number.isInteger(i) && i >= 0 && i < n)
+    .sort((a, b) => a - b);
+};
+
+// Os parágrafos dos índices saem da origem (apagarBlocos) e vão, na ordem do texto, para o fim do destino, cada um byte a byte
+// (a marca ★ e os espaços do fim da linha inclusive), separados por uma linha em branco. O resto dos dois textos fica igual
+// (do destino só saem os espaços e linhas em branco do fim, como em acrescentarBloco). movidos: quantos foram (0: nada muda).
+function moverBlocos(textoOrigem, indices, textoDestino) {
+  const origem = String(textoOrigem ?? ''),
+    B = blocos(origem),
+    I = indicesValidos(origem, indices),
+    destino = String(textoDestino ?? '');
+
+  if (!I.length) return { origem, destino, movidos: 0 };
+
+  const d = destino.replace(/\s+$/, ''),
+    movidos = I.map((i) => B[i].texto).join('\n\n');
+
+  return {
+    origem: apagarBlocos(origem, I),
+    destino: d ? d + '\n\n' + movidos : movidos,
+    movidos: I.length,
+  };
+}
+
+// Os índices de hoje, no texto atual, dos parágrafos que a tela mostrava (texto visto) nos índices dados: a nota pode ter
+// mudado por baixo da seleção (a nuvem). Cada um pelo mesmo índice com o mesmo texto; senão, pelo 1º ainda não usado com o
+// mesmo texto; sumiu, fica de fora (nunca move um parágrafo que não era o escolhido).
+function indicesNoTexto(textoAtual, textoVisto, indices) {
+  const atuais = blocos(textoAtual),
+    vistos = blocos(textoVisto),
+    R = [];
+
+  for (const i of indicesValidos(textoVisto, indices)) {
+    const t = vistos[i].texto,
+      k =
+        atuais[i]?.texto === t && !R.includes(i)
+          ? i
+          : atuais.findIndex((b, j) => b.texto === t && !R.includes(j));
+
+    if (k >= 0) R.push(k);
+  }
+
+  return R.sort((a, b) => a - b);
+}
+
 // ===== Favoritas: a marca " ★" no fim do parágrafo =====
 const MARCA_FAVORITO = /[ \t]+★[ \t]*$/; // o espaço (ou vários) e a estrela do fim (espaço digitado depois dela não conta)
 

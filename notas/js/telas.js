@@ -4,6 +4,9 @@
 // Favoritas: o card fixo no topo da lista abre a "nota" Favoritas (?nota=favoritas), calculada na hora com os parágrafos com
 // " ★" de todas as notas; a estrela da barra de seleção (celular) e o botão do topo com Alt+S (editor do PC) põem e tiram a
 // marca (js/markdown.js).
+// Temp: o card logo abaixo do Favoritas abre a nota Temp (?nota=temp, uma nota de verdade de título fixo, criada ao abrir).
+// Mover (sem cópia, como o encaminhar do WhatsApp): a seta da barra de seleção (conversa e Favoritas) e, no editor, o botão do
+// topo e Alt+M abrem o seletor de destino; os parágrafos vão para o fim da nota escolhida e saem da origem (moverParagrafos).
 // Tudo grava pelo banco (salvarNota, criarNota, apagarNota, moverNota de js/banco.js), que envia à nuvem 0,8 s depois.
 // Aba parada: cada gravação leva a versão da nota (editadaEm) em que a tela pegou o texto ou o título; se a nota mudou por
 // baixo (outro aparelho), o banco salva o da tela como uma nota "(conflito)" e a tela passa a mostrar o da nuvem. Os avisos
@@ -54,6 +57,10 @@ const ICONE_FAVORITAR = estrela(18, false),
   ICONE_DESFAVORITAR = estrela(18, false, true),
   ESTRELA_BALAO = `<span class="estrela" title="Favorita" aria-label="Favorita">${estrela(12, true)}</span>`;
 
+// Mover: a seta do encaminhar
+const ICONE_MOVER =
+  '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5l7 7-7 7"/><path d="M21 12H10a6 6 0 0 0-6 6v1"/></svg>';
+
 const ICONE_FECHAR =
   '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 
@@ -71,7 +78,7 @@ function desenharLista() {
     return;
   }
 
-  const L = db?.notas || [];
+  const L = notasDaLista();
 
   $('n-lista').innerHTML = L.map(
     (n) =>
@@ -80,12 +87,16 @@ function desenharLista() {
       `<button type="button" class="bt-ic perigo" data-apagar="${esc(n.id)}" data-armavel="nota:${esc(n.id)}" title="Apagar (toque duas vezes)" aria-label="Apagar">${ICONE_LIXO}</button></li>`
   ).join('');
   $('n-vazio').hidden = L.length > 0;
-  $('n-favs-qtd').textContent = contagemFavoritas(favoritas(L).length);
+  $('n-favs-qtd').textContent = contagemFavoritas(favoritas(db?.notas || []).length);
+  $('n-temp-qtd').textContent = contagemTemp(blocos(notaPorId(ID_TEMP)?.texto).length);
 }
 
-// O detalhe do card Favoritas
+// O detalhe do card Favoritas e o do Temp (os parágrafos da nota)
 const contagemFavoritas = (n) =>
   n === 0 ? 'Nenhuma ainda' : n === 1 ? '1 mensagem' : n + ' mensagens';
+
+const contagemTemp = (n) =>
+  n === 0 ? 'Vazia' : n === 1 ? '1 mensagem' : n + ' mensagens';
 
 function mostrarLista() {
   aberta = null;
@@ -127,6 +138,14 @@ $('n-favs').addEventListener('click', (ev) => {
   ev.preventDefault();
   notaNaUrl(ID_FAVORITAS);
   mostrarFavoritas();
+});
+
+// O card Temp: abre a nota Temp (criada aqui se ainda não existe), como qualquer nota
+$('n-temp').addEventListener('click', (ev) => {
+  if (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.button) return;
+  ev.preventDefault();
+
+  if (db && criarTemp()) abrirNota(ID_TEMP);
 });
 
 // ===== Ordem da lista: arrastar pela alça (⠿) =====
@@ -205,7 +224,7 @@ function terminarArraste(cancelar) {
   if (!cancelar && pos !== i) {
     // a posição pela vizinha de cima na tela (se a lista mudou durante o arraste, a nota fica logo abaixo dela)
     const antes = ids.filter((x) => x !== id)[pos - 1],
-      atual = (db?.notas || []).filter((n) => n.id !== id),
+      atual = notasDaLista().filter((n) => n.id !== id),
       k = antes ? atual.findIndex((n) => n.id === antes) : -1;
 
     mudou = moverNota(id, antes && k >= 0 ? k + 1 : antes ? pos : 0);
@@ -254,7 +273,7 @@ $('n-lista').addEventListener('keydown', (ev) => {
   if (arraste) return;
 
   const id = alca.closest('li').dataset.id,
-    i = (db?.notas || []).findIndex((n) => n.id === id);
+    i = notasDaLista().findIndex((n) => n.id === id);
 
   if (i < 0 || !moverNota(id, i + (ev.key === 'ArrowUp' ? -1 : 1))) return;
   desenharLista();
@@ -315,6 +334,7 @@ function abrirNota(id, empilhar = true) {
   mostrado = n.texto;
   pegarTexto(n);
   tituloMostrado = n.titulo;
+  $('n-titulo').readOnly = id === ID_TEMP; // o título da Temp é fixo
   selecionados.clear();
   editando = null;
   $('c-texto').value = '';
@@ -343,6 +363,7 @@ function trocarModo(novo, focar = false, salvar = true) {
   $('editor').hidden = modo !== 'editor';
   $('conversa').hidden = modo !== 'conversa';
   $('n-favorito').hidden = modo !== 'editor';
+  $('n-mover').hidden = modo !== 'editor';
   mostrado = n.texto;
   pegarTexto(n);
   limparSelecao();
@@ -477,7 +498,7 @@ function fecharNota() {
   salvarTudoAgora();
   const n = notaPorId(aberta);
 
-  if (n && !n.titulo.trim() && !n.texto.trim()) apagarNota(n.id);
+  if (n && n.id !== ID_TEMP && !n.titulo.trim() && !n.texto.trim()) apagarNota(n.id);
   aberta = null;
 }
 
@@ -510,6 +531,8 @@ function rotear() {
 
     return;
   }
+
+  if (id === ID_TEMP) criarTemp(); // a Temp existe sempre: ainda não criada, nasce aqui
 
   if (id && notaPorId(id)) {
     if (aberta !== id) abrirNota(id, false);
@@ -748,6 +771,32 @@ $('s-favoritar').addEventListener('click', () => {
   toast(ligar ? 'Nas favoritas.' : 'Fora das favoritas.');
 });
 
+// Mover os selecionados para outra nota: a seleção fica até escolher o destino (fechar o seletor desiste e ela continua)
+$('s-mover').innerHTML = ICONE_MOVER;
+$('s-mover').addEventListener('click', () => {
+  if (!selecionados.size) return;
+
+  const origem = aberta,
+    indices = [...selecionados],
+    visto = mostrado;
+
+  abrirSeletorMover(origem, (destino) => {
+    const movidos = moverParagrafos(origem, indices, destino, visto),
+      n = notaPorId(origem);
+
+    limparSelecao();
+    cancelarEdicao();
+
+    if (aberta === origem && n) {
+      mostrado = n.texto;
+      pegarTexto(n);
+      desenharConversa();
+    }
+
+    return movidos;
+  });
+});
+
 $('s-apagar').addEventListener('click', (ev) => {
   if (!confirmar(ev.currentTarget)) return;
   const indices = [...selecionados];
@@ -973,6 +1022,151 @@ $('f-desfavoritar').addEventListener('click', () => {
   toast('Fora das favoritas.');
 });
 
+// Mover as favoritas selecionadas: cada uma sai da nota de origem (achada pelo texto atual, como o tirar das favoritas) e vai,
+// na ordem da Favoritas, para o fim do destino; a que já está no destino fica onde está
+$('f-mover').innerHTML = ICONE_MOVER;
+$('f-mover').addEventListener('click', () => {
+  const escolhidas = [...favSel]
+    .sort((a, b) => a - b)
+    .map((k) => favMostradas[k])
+    .filter(Boolean);
+
+  if (!escolhidas.length) return;
+
+  abrirSeletorMover(null, (destino) => {
+    const porNota = new Map();
+    let movidos = 0;
+
+    for (const f of escolhidas)
+      porNota.set(f.notaId, [...(porNota.get(f.notaId) || []), f]);
+
+    for (const [id, deLa] of porNota) {
+      const n = notaPorId(id);
+
+      if (n && id !== destino)
+        movidos += moverParagrafos(id, indicesDasFavoritas(n.texto, deLa), destino);
+    }
+
+    limparSelecaoFav();
+
+    return movidos;
+  });
+});
+
+// ===== Mover para outra nota (o seletor de destino) =====
+// Lista: a Temp, as notas na ordem da lista (sem a de origem) e "Nova nota" no fim. Escolhido o destino (a Temp e a nota nova
+// nascem aqui), aoEscolher(destinoId) move e devolve quantos parágrafos foram; o aviso diz para onde, com Abrir. Esc, o X ou
+// tocar fora fecham sem mover.
+let aoEscolherDestino = null;
+
+function abrirSeletorMover(origemId, aoEscolher) {
+  if (!db || $('m-mover').open) return;
+
+  const destinos = [
+    { id: ID_TEMP, titulo: notaPorId(ID_TEMP)?.titulo || TITULO_TEMP },
+    ...notasDaLista().map((n) => ({ id: n.id, titulo: n.titulo || 'Sem título' })),
+  ].filter((d) => d.id !== origemId);
+
+  $('m-lista').innerHTML =
+    destinos
+      .map(
+        (d) =>
+          `<li><button type="button" class="oque" data-destino="${esc(d.id)}"><b>${esc(d.titulo)}</b></button></li>`
+      )
+      .join('') +
+    '<li class="nova"><button type="button" class="oque" data-destino=""><b>Nova nota</b></button></li>';
+  aoEscolherDestino = aoEscolher;
+  $('m-mover').showModal();
+}
+
+function fecharSeletorMover() {
+  aoEscolherDestino = null;
+
+  if ($('m-mover').open) $('m-mover').close();
+}
+
+$('m-lista').addEventListener('click', (ev) => {
+  const bt = ev.target.closest('[data-destino]'),
+    aoEscolher = aoEscolherDestino;
+
+  if (!bt || !aoEscolher || !db) return;
+  fecharSeletorMover();
+
+  const nova = !bt.dataset.destino,
+    destino = nova
+      ? criarNota('').id
+      : bt.dataset.destino === ID_TEMP
+        ? criarTemp().id
+        : bt.dataset.destino,
+    movidos = aoEscolher(destino);
+
+  if (!movidos) {
+    if (nova) apagarNota(destino); // nada foi: a nota nova não fica vazia na lista
+    toast('Nada para mover.');
+  } else
+    toast(`Movido para ${notaPorId(destino)?.titulo || 'Sem título'}`, false, {
+      rotulo: 'Abrir',
+      fazer: () => abrirCopia(destino),
+    });
+
+  if (!aberta && !emFavoritas) desenharLista();
+  else if (emFavoritas) desenharFavoritas();
+});
+
+$('m-fechar').addEventListener('click', fecharSeletorMover);
+$('m-mover').addEventListener('close', () => {
+  aoEscolherDestino = null;
+});
+// tocar fora do seletor (no fundo escuro) fecha
+$('m-mover').addEventListener('click', (ev) => {
+  if (ev.target === $('m-mover')) fecharSeletorMover();
+});
+
+// Esc com o seletor aberto: fecha só ele, antes de tudo (avisos, seleção, editor e sair do app nem veem a tecla)
+addEventListener(
+  'keydown',
+  (ev) => {
+    if (ev.key !== 'Escape' || ev.isComposing || !$('m-mover').open) return;
+    ev.preventDefault();
+    fecharSeletorMover();
+  },
+  true
+);
+
+// No editor (o botão do topo e Alt+M): os parágrafos dos cursores e das seleções (o que está digitado grava antes)
+function moverDoEditor() {
+  if (!aberta || modo !== 'editor' || !editor) return;
+  salvarAgora();
+
+  const origem = aberta,
+    visto = textoDoEditor(),
+    indices = tocadosNoEditor(editor.state);
+
+  if (!indices.length) {
+    toast('Nada para mover: o cursor não está num parágrafo.');
+
+    return;
+  }
+
+  abrirSeletorMover(origem, (destino) => {
+    const movidos = moverParagrafos(origem, indices, destino, visto),
+      n = notaPorId(origem);
+
+    if (aberta === origem && n && modo === 'editor') {
+      mostrado = n.texto;
+      pegarTexto(n);
+      trocarTextoDoEditor(n.texto);
+      pintarEstrelaDoEditor(editor.state);
+      editor.focus();
+    }
+
+    return movidos;
+  });
+}
+
+$('n-mover').innerHTML = ICONE_MOVER;
+$('n-mover').addEventListener('click', moverDoEditor);
+
 // ===== Avisos (aba parada) =====
 // O banco junta em `conflitos` as notas que mudaram em outro aparelho enquanto aqui também mudavam (a versão daqui virou a nota
 // "<título> (conflito)") e em `mantidas` as apagadas aqui que voltaram porque mudaram lá. A tela esvazia as duas e mostra um
@@ -1053,7 +1247,8 @@ addEventListener(
       ev.defaultPrevented ||
       ev.isComposing ||
       !avisos.length ||
-      arraste
+      arraste ||
+      $('m-mover').open
     )
       return;
     ev.preventDefault();
@@ -1095,6 +1290,22 @@ document.addEventListener('keydown', (ev) => {
   ) {
     ev.preventDefault();
     estrelaDoEditor();
+
+    return;
+  }
+
+  // Alt+M no editor: mover os parágrafos dos cursores para outra nota (pela tecla M física, como o Alt+S)
+  if (
+    aberta &&
+    modo === 'editor' &&
+    ev.altKey &&
+    !ev.ctrlKey &&
+    !ev.metaKey &&
+    !ev.shiftKey &&
+    ev.code === 'KeyM'
+  ) {
+    ev.preventDefault();
+    moverDoEditor();
 
     return;
   }

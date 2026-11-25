@@ -593,3 +593,107 @@ test('celular: favoritar pela barra → o card conta → a Favoritas mostra o ba
   assert.deepEqual(erros, []);
   await ctx.close();
 });
+
+test('celular: o card Temp (igual ao Favoritas, logo abaixo) abre a nota Temp; escrever, selecionar e Mover para outra nota → some da Temp, aparece no fim da outra, a nuvem fica com as duas e recarregar mantém', async () => {
+  const nuvem = novaNuvem([
+      { ...nota('antes', 'Destino'), ordem: 1 },
+      { ...nota('outra', 'Outra'), id: 'n2', ordem: 2 },
+    ]),
+    { ctx, pg, erros } = await abrirApp({ nuvem }),
+    cdp = await ctx.newCDPSession(pg),
+    texto = (id) => pg.evaluate((i) => notaPorId(i)?.texto, id);
+
+  await pg.waitForSelector('#v-lista:not([hidden])');
+
+  // o card: logo abaixo do Favoritas, com a mesma altura, largura e fundo; fora da lista (sem alça, sem lixeira)
+  const caixa = (sel) => pg.locator(sel).boundingBox(),
+    fav = await caixa('#n-favs li'),
+    temp = await caixa('#n-temp li');
+
+  assert.equal(temp.height, fav.height);
+  assert.equal(temp.width, fav.width);
+  assert.equal(temp.x, fav.x);
+  assert.ok(
+    temp.y > fav.y + fav.height && temp.y < (await caixa('#n-lista li:first-child')).y
+  );
+  assert.equal(
+    await pg.$eval('#n-temp li', (li) => getComputedStyle(li).backgroundColor),
+    await pg.$eval('#n-favs li', (li) => getComputedStyle(li).backgroundColor)
+  );
+  assert.equal(await pg.textContent('#n-temp-qtd'), 'Vazia');
+  assert.equal(await pg.locator('#n-lista li').count(), 2);
+
+  // abre (e nasce) a Temp, de título fixo
+  await pg.tap('#n-temp');
+  await pg.waitForSelector('#conversa:not([hidden])');
+  assert.match(pg.url(), /\?nota=temp$/);
+  assert.equal(await pg.inputValue('#n-titulo'), 'Temp');
+  assert.equal(await pg.$eval('#n-titulo', (i) => i.readOnly), true);
+
+  await enviarParagrafo(pg, 'fica');
+  await enviarParagrafo(pg, 'vai ★');
+  await enviarParagrafo(pg, 'vai também');
+
+  // seleciona os dois de baixo e Mover: o seletor tem a Temp de fora (é a origem), as notas na ordem e Nova nota
+  await segurar(pg, cdp, 1);
+  await pg.tap('#c-baloes li.balao[data-i="2"]');
+  await pg.tap('#s-mover');
+  await pg.waitForSelector('#m-mover[open]');
+  assert.deepEqual(
+    await pg.$$eval('#m-lista button', (B) => B.map((b) => b.textContent)),
+    ['Destino', 'Outra', 'Nova nota']
+  );
+
+  // Esc fecha só o seletor: a seleção continua e a nota fica aberta
+  await pg.keyboard.press('Escape');
+  assert.equal(await pg.$eval('#m-mover', (d) => d.open), false);
+  assert.equal(await pg.textContent('#s-qtd'), '2');
+  assert.match(pg.url(), /\?nota=temp$/);
+
+  await pg.tap('#s-mover');
+  await pg.tap('#m-lista button[data-destino="n1"]');
+  assert.equal(await pg.$eval('#m-mover', (d) => d.open), false);
+  assert.equal(await pg.isHidden('#s-barra'), true);
+  assert.equal(await texto('temp'), 'fica');
+  assert.equal(await texto('n1'), 'antes\n\nvai ★\n\nvai também');
+  assert.equal(await texto('n2'), 'outra');
+  assert.equal(await pg.locator('#c-baloes li.balao').count(), 1);
+  assert.equal(await pg.textContent('#toast-msg'), 'Movido para Destino');
+  assert.equal(await pg.textContent('#toast-acao'), 'Abrir');
+
+  await sincronizado(pg);
+  assert.deepEqual(
+    nuvem.tabelas.notas_nota.map((l) => [l.id, l.titulo, l.texto]).sort(),
+    [
+      ['n1', 'Destino', 'antes\n\nvai ★\n\nvai também'],
+      ['n2', 'Outra', 'outra'],
+      ['temp', 'Temp', 'fica'],
+    ]
+  );
+
+  // Abrir no aviso leva ao destino
+  await pg.tap('#toast-acao');
+  await pg.waitForFunction(
+    () => new URLSearchParams(location.search).get('nota') === 'n1'
+  );
+  assert.equal(await pg.locator('#c-baloes li.balao').count(), 3);
+  assert.equal(await pg.$eval('#n-titulo', (i) => i.readOnly), false);
+
+  // recarregar mantém; o card conta o que ficou na Temp
+  await pg.reload();
+  await pg.waitForSelector('#conversa:not([hidden])');
+  assert.equal(await texto('n1'), 'antes\n\nvai ★\n\nvai também');
+  // Voltar: o destino foi aberto por cima da Temp, então volta para ela e depois para a lista
+  await pg.tap('#n-voltar');
+  await pg.waitForFunction(
+    () => new URLSearchParams(location.search).get('nota') === 'temp'
+  );
+  assert.equal(await pg.locator('#c-baloes li.balao').count(), 1);
+  await pg.tap('#n-voltar');
+  await pg.waitForSelector('#v-lista:not([hidden])');
+  assert.equal(await pg.textContent('#n-temp-qtd'), '1 mensagem');
+  assert.equal(await pg.textContent('#n-favs-qtd'), '1 mensagem');
+  assert.equal(await pg.locator('#n-lista li').count(), 2);
+  assert.deepEqual(erros, []);
+  await ctx.close();
+});

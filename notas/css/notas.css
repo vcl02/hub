@@ -1,7 +1,7 @@
 /* Notas — o que é só delas, sobre a base comum (../base/tokens.css e ../base/componentes.css): a cor (a do atalho
    Anotações), a nota aberta na tela toda (o editor do PC sem a coluna de 560 px; a conversa na coluna), os balões com o
    Markdown formatado, a seleção e o campo que cresce; as Favoritas (o card amarelo fraco no topo da lista, a estrela dos
-   balões e a do topo do editor). */
+   balões e a do topo do editor); o card Temp (igual ao Favoritas), o seletor do Mover e o aviso com a ação Abrir. */
 :root {
   --cor: #f2b544;
 }
@@ -64,8 +64,8 @@ body.arrastando-lista .alca {
   cursor: grabbing;
 }
 
-/* Favoritas: o card sempre primeiro, fora da ordem manual (outra lista, logo acima), no amarelo fraco e opaco do módulo; a
-   estrela na coluna da alça, e a linha inteira abre a "nota" */
+/* Favoritas (e Temp, logo abaixo, igual): o card sempre primeiro, fora da ordem manual (outra lista, logo acima), no amarelo
+   fraco e opaco do módulo; o ícone (.estrela) na coluna da alça, e a linha inteira abre a "nota" */
 .favs li {
   grid-template-columns: 40px 1fr;
   padding-left: var(--e-1);
@@ -83,6 +83,62 @@ body.arrastando-lista .alca {
   text-decoration: none;
   min-height: 36px;
   justify-content: center;
+}
+
+/* Seletor do Mover (o modal da base): cada nota um botão do tamanho da linha; "Nova nota" no fim, na cor do módulo */
+.destinos {
+  margin-top: var(--e-3);
+}
+.destinos li {
+  display: block;
+  padding: 0;
+}
+.destinos button {
+  width: 100%;
+  min-height: 50px;
+  padding: var(--e-2) var(--e-3);
+  border: 0;
+  border-radius: var(--r);
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+  justify-content: center;
+  cursor: pointer;
+}
+.destinos button:hover,
+.destinos button:focus-visible {
+  outline: 0;
+  background: var(--surface-2);
+}
+.destinos b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.destinos .nova b {
+  color: var(--cor);
+}
+
+/* Aviso embaixo (o da base) com a ação (Abrir, depois de mover) */
+#toast {
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+}
+#toast-msg {
+  flex: 1;
+  min-width: 0;
+}
+#toast-acao {
+  flex: none;
+  padding: var(--e-1) 2px;
+  border: 0;
+  background: none;
+  color: var(--cor);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 /* ---------- Nota aberta: a página inteira (cabeçalho, o editor ou a conversa, o aviso de envio) ---------- */

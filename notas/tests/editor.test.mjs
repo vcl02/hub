@@ -509,7 +509,7 @@ test('PC: Alt+S favorita o parágrafo do cursor (a ★ fica na cor fora da linha
     'true',
     'Tirar das favoritas (Alt+S)',
   ]);
-  assert.equal(await pg.textContent('.toast, #toast').catch(() => ''), 'Nas favoritas.');
+  assert.equal(await pg.textContent('#toast-msg').catch(() => ''), 'Nas favoritas.');
 
   // com o cursor em outro parágrafo, a ★ do primeiro fica na cor e o botão volta a "favoritar"
   await pg.keyboard.press('Control+End');

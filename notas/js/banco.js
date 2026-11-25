@@ -185,6 +185,39 @@ const temPendente = () => !!(db && usuario && diferenca(base, linhas(db)));
 // ===== Notas (o que a tela chama; cada uma grava e agenda o envio) =====
 const notaPorId = (id) => db?.notas.find((n) => n.id === id) || null;
 
+// Temp: uma nota de verdade (mesma tabela, mesmo envio e conflito), de id e título fixos, que a lista mostra num card logo
+// abaixo do Favoritas, fora da ordem manual (não arrasta, não apaga). Os ids gerados têm 8 letras: "temp" nunca bate.
+const ID_TEMP = 'temp',
+  TITULO_TEMP = 'Temp';
+
+// As notas da lista (a ordem manual): todas menos a Temp
+const notasDaLista = () => (db?.notas || []).filter((n) => n.id !== ID_TEMP);
+
+// Cria a Temp se ainda não existe (ao abrir ou ao mover para ela) e a devolve
+function criarTemp() {
+  if (!db) return null;
+
+  if (notaPorId(ID_TEMP)) return notaPorId(ID_TEMP);
+  const agora = new Date().toISOString();
+
+  db = preparar({
+    notas: [
+      ...db.notas,
+      {
+        id: ID_TEMP,
+        titulo: TITULO_TEMP,
+        texto: '',
+        ordem: ordemEntre(null, notasDaLista()[0]?.ordem ?? null),
+        criadaEm: agora,
+        editadaEm: agora,
+      },
+    ],
+  });
+  gravar();
+
+  return notaPorId(ID_TEMP);
+}
+
 function criarNota(titulo = '', texto = '') {
   let id;
 
@@ -197,7 +230,7 @@ function criarNota(titulo = '', texto = '') {
     id,
     titulo: String(titulo).trim(),
     texto: String(texto),
-    ordem: ordemEntre(null, db.notas[0]?.ordem ?? null),
+    ordem: ordemEntre(null, notasDaLista()[0]?.ordem ?? null),
     criadaEm: agora,
     editadaEm: agora,
   };
@@ -254,11 +287,13 @@ function conflitoNaTela(n, titulo, texto) {
   return r.copia.id;
 }
 
-// Leva a nota para a posição final `posicao` (0-based) da lista. Só ela muda (ordem entre as vizinhas, uma linha no envio);
-// sem folga entre as vizinhas, renumera todas 1, 2, 3… (várias linhas sobem, raro). Não muda editadaEm. Mesma posição (ou
-// nota que não existe, posição que não é número) não grava nada. Posição fora da lista vai para o topo ou para o fim.
+// Leva a nota para a posição final `posicao` (0-based) da lista (sem a Temp, que fica fora da ordem manual). Só ela muda
+// (ordem entre as vizinhas, uma linha no envio); sem folga entre as vizinhas, renumera todas 1, 2, 3… (várias linhas sobem,
+// raro). Não muda editadaEm. Mesma posição (ou nota que não existe, a Temp, posição que não é número) não grava nada.
+// Posição fora da lista vai para o topo ou para o fim.
 function moverNota(id, posicao) {
-  const lista = db?.notas || [],
+  const lista = notasDaLista(),
+    temp = (db?.notas || []).filter((n) => n.id === ID_TEMP),
     i = lista.findIndex((n) => n.id === id),
     p = Math.min(Math.max(Math.trunc(posicao), 0), lista.length - 1);
 
@@ -270,15 +305,46 @@ function moverNota(id, posicao) {
       o === null ? null : preparar({ notas: [...outras, { ...lista[i], ordem: o }] });
 
   // sem folga (ou o empate da ordenação não a pôs no lugar): renumera a lista inteira já na ordem nova
-  if (movida && movida.notas[p].id === id) db = movida;
+  if (movida && movida.notas[p].id === id)
+    db = preparar({ notas: [...movida.notas, ...temp] });
   else {
     outras.splice(p, 0, lista[i]);
-    db = preparar({ notas: outras.map((n, k) => ({ ...n, ordem: k + 1 })) });
+    db = preparar({
+      notas: [...outras.map((n, k) => ({ ...n, ordem: k + 1 })), ...temp],
+    });
   }
 
   gravar();
 
   return true;
+}
+
+// Move os parágrafos `indices` da nota origemId para o fim da destinoId (moverBlocos, js/markdown.js): sem cópia, o texto
+// byte a byte; as duas notas mudam numa gravação só (o envio sobe as duas, cada uma com a gravação condicional de sempre).
+// textoVisto (opcional): o texto da origem de onde a tela tirou os índices; se a nota mudou por baixo, cada parágrafo é achado
+// pelo texto (indicesNoTexto) e o que sumiu fica de fora. Mesma nota, nota que não existe ou nada a mover: não grava (0).
+// Devolve quantos parágrafos foram.
+function moverParagrafos(origemId, indices, destinoId, textoVisto) {
+  const o = notaPorId(origemId),
+    d = notaPorId(destinoId);
+
+  if (!o || !d || origemId === destinoId) return 0;
+
+  const I =
+      textoVisto === undefined ? indices : indicesNoTexto(o.texto, textoVisto, indices),
+    r = moverBlocos(o.texto, I, d.texto);
+
+  if (!r.movidos) return 0;
+  const agora = new Date().toISOString();
+
+  d.texto = r.destino;
+  d.editadaEm = agora;
+  o.texto = r.origem;
+  o.editadaEm = agora;
+  db = preparar(db);
+  gravar();
+
+  return r.movidos;
 }
 
 function apagarNota(id) {

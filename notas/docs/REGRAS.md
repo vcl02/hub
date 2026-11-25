@@ -16,7 +16,7 @@
 ## Lista de notas
 
 - Uma linha por nota, na ordem que eu defino (fica para sempre, em todos os aparelhos): alça **⠿**, título (vazio, "Sem título") e a lixeira. A linha só tem o título: sem prévia do corpo e sem a data da última edição.
-- O card **Favoritas** fica sempre em primeiro, acima da lista (ver "Favoritas").
+- O card **Favoritas** fica sempre em primeiro, acima da lista (ver "Favoritas"), e o card **Temp** logo abaixo dele (ver "Temp").
 - **Ordem:** a alça **⠿** à esquerda de cada linha arrasta a nota (mouse ou dedo, só pela alça; o resto da linha abre a nota e rola a página); a linha segue o ponteiro, as outras abrem espaço e, ao soltar, a nota fica ali. Esc (ou o sistema interromper o toque) durante o arraste cancela e a nota volta ao lugar, sem sair do app. Com a alça em foco, **Alt+↑**/**Alt+↓** sobe ou desce uma posição. Nota nova entra no topo; editar não muda a posição.
 - **+** cria uma nota nova (no topo) e já a abre, pronta para escrever. Toque repetido sem querer no + em menos de 0,5 s é ignorado.
 - **Apagar** (lixeira da linha): toque duplo, como em todos os apps (o 1º deixa vermelho por 3 s, o 2º apaga).
@@ -37,6 +37,18 @@
   - No PC: o botão de estrela no topo do editor e **Alt+S** (pela tecla S física, então vale também no Mac) põem ou tiram a marca nos parágrafos dos cursores e das seleções (vários cursores: todos de uma vez). A mesma regra da estrela do celular. O botão fica aceso quando o parágrafo do cursor já é favorito, e desativado quando ele não pode ser. Aparece "Nas favoritas." ou "Fora das favoritas."; Ctrl+Z desfaz.
 - Editar um favorito na conversa mantém a marca. Enviar sem texto no campo de edição apaga o parágrafo (não sobra só a estrela).
 - **Esc** na Favoritas: com seleção, desmarca; sem seleção, volta para a lista. O **Voltar** do app ou do navegador também volta.
+
+## Temp
+
+- O card **Temp** (o mesmo visual do Favoritas, com o ícone de caixa de entrada, logo abaixo dele, fora da ordem: não arrasta e não apaga) mostra "Vazia", "1 mensagem" ou "N mensagens" (os parágrafos da nota). Tocar abre a nota Temp (`?nota=temp`).
+- A Temp é uma nota como as outras (conversa no celular, editor no PC, escrever, editar, apagar e favoritar parágrafos, a mesma gravação e o mesmo conflito), com o título fixo **Temp** (o campo não edita). Nasce na primeira vez que é aberta ou que recebe parágrafos; esvaziada, continua.
+
+## Mover para outra nota
+
+- Como o encaminhar do WhatsApp, mas **sem deixar cópia**: os parágrafos saem da nota de origem e vão para o **fim** da nota escolhida, na ordem do texto, exatamente como eram (a ★ do favorito vai junto).
+- Onde: a **seta** da barra de seleção da conversa (qualquer nota, a Temp inclusive) e da Favoritas (cada favorita sai da nota dela; a que já está no destino fica); no PC, o botão de seta no topo do editor e **Alt+M** (pela tecla M física), com os parágrafos dos cursores e das seleções (cursor fora de um parágrafo: "Nada para mover: o cursor não está num parágrafo.").
+- O seletor **Mover para** lista a Temp, as notas na ordem da lista (sem a de origem) e **Nova nota** no fim (cria uma nota no topo da lista com os parágrafos). Esc, o X ou tocar fora fecham sem mover (a seleção continua).
+- Movido, aparece "Movido para <título>" com **Abrir**, que abre o destino. As duas notas gravam juntas e sobem para a nuvem; se o destino mudou em outro aparelho, vale a regra do conflito (nada se perde).
 
 ## Nota aberta
 
@@ -74,6 +86,7 @@
 
 ## Esc
 
+- Com o seletor **Mover para** aberto, o Esc só o fecha, antes de tudo.
 - Com aviso na tela, o Esc fecha o mais antigo antes de tudo (não tira o foco, não desmarca, não volta e não sai do app); só um arraste da lista em andamento vem antes.
 - Na nota, na ordem: desmarca a seleção; cancela a edição do parágrafo; no editor, desfaz os vários cursores ou fecha a busca e depois só tira o foco; num campo de texto, o 1º Esc só tira o foco; sem nada disso, volta para a lista.
 - Na Favoritas: com seleção, desmarca; sem seleção, volta para a lista.

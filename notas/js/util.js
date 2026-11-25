@@ -35,17 +35,34 @@ const esc = (s) =>
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
   );
 
-let tToast;
+// Aviso embaixo; acao (opcional): { rotulo, fazer }, um botão no aviso (Abrir, depois de mover), que fica mais tempo
+let tToast,
+  acaoToast = null;
 
-function toast(msg, erro = false) {
-  $('toast').textContent = msg;
+function toast(msg, erro = false, acao = null) {
+  $('toast-msg').textContent = msg;
+  acaoToast = acao?.fazer || null;
+  $('toast-acao').textContent = acao?.rotulo || '';
+  $('toast-acao').hidden = !acao;
   $('toast').classList.toggle('erro', erro);
   $('toast').hidden = false;
   clearTimeout(tToast);
-  tToast = setTimeout(() => {
-    $('toast').hidden = true;
-  }, 2800);
+  tToast = setTimeout(
+    () => {
+      $('toast').hidden = true;
+      acaoToast = null;
+    },
+    acao ? 6000 : 2800
+  );
 }
+
+$('toast-acao').addEventListener('click', () => {
+  const f = acaoToast;
+
+  acaoToast = null;
+  $('toast').hidden = true;
+  f?.();
+});
 
 // ===== A nota no endereço, como o ?ciclo do Fin: ?nota=<id> com a nota aberta, nada na lista =====
 // O id tem o formato da tabela (letras, números, _ e -); outro texto vale como lista.

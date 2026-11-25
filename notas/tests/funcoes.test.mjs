@@ -35,6 +35,9 @@ const M = carregarArquivos(
     'blocosTocados',
     'favoritas',
     'indicesDasFavoritas',
+    'indicesValidos',
+    'moverBlocos',
+    'indicesNoTexto',
   ]
 );
 
@@ -369,6 +372,10 @@ function aparelho(nuvem, { local = [], base } = {}) {
       'salvarTituloNota',
       'apagarNota',
       'moverNota',
+      'ID_TEMP',
+      'notasDaLista',
+      'criarTemp',
+      'moverParagrafos',
       'CONFLITO',
       'CAMPOS',
       'conteudoMudou',
@@ -402,6 +409,8 @@ function aparelho(nuvem, { local = [], base } = {}) {
       clearTimeout: () => {},
       setTimeout: (f, ms) => agendados.push(ms),
       pintarSync: () => {},
+      moverBlocos: M.moverBlocos,
+      indicesNoTexto: M.indicesNoTexto,
     },
     `__saida.K_BASE = K_BASE;
     __saida.E = {
@@ -1594,4 +1603,181 @@ test('editar um favorito mantém a marca, apagar o conteúdo não deixa parágra
     M.favoritarBlocos(M.trocarBloco(t, 0, 'novo ★'), [0], true),
     'novo ★\n\nb'
   );
+});
+
+// ---------- Mover parágrafos para outra nota (sem cópia) ----------
+// Nada some e nada duplica: os parágrafos da origem depois, mais os movidos, são os de antes; os do destino depois são os de
+// antes mais os movidos, no fim e na ordem do texto
+const textos = (t) => json(M.blocos(t)).map((b) => b.texto);
+
+function semPerda(antes, depois, I) {
+  const movidos = I.map((i) => textos(antes.origem)[i]);
+
+  assert.deepEqual(
+    textos(depois.origem),
+    textos(antes.origem).filter((_, i) => !I.includes(i))
+  );
+  assert.deepEqual(textos(depois.destino), [...textos(antes.destino), ...movidos]);
+}
+
+test('moverBlocos: os parágrafos saem da origem e vão para o fim do destino byte a byte (★ e espaços do fim inclusive), na ordem do texto; o resto dos dois textos fica igual', () => {
+  const origem = 'a\n\nb  \n\n```\nx\n\ny\n```\n\nc ★\n',
+    destino = 'd1\n\nd2\n\n\n',
+    r = M.moverBlocos(origem, [3, 1], destino);
+
+  assert.deepEqual(json(r), {
+    origem: 'a\n\n```\nx\n\ny\n```\n',
+    destino: 'd1\n\nd2\n\nb  \n\nc ★',
+    movidos: 2,
+  });
+  semPerda({ origem, destino }, r, [1, 3]);
+
+  // o bloco de código vai inteiro (com a linha em branco de dentro)
+  const codigo = M.moverBlocos(origem, [2], 'd');
+
+  assert.equal(codigo.destino, 'd\n\n```\nx\n\ny\n```');
+  semPerda({ origem, destino: 'd' }, codigo, [2]);
+
+  // destino vazio: só os movidos; mover tudo deixa a origem vazia
+  const tudo = M.moverBlocos('p1\n\np2', [0, 1], '');
+
+  assert.deepEqual(json(tudo), { origem: '', destino: 'p1\n\np2', movidos: 2 });
+});
+
+test('moverBlocos: índice repetido conta uma vez; fora da faixa, negativo, fracionário ou texto ficam de fora; sem nenhum válido nada muda (nem o fim do destino)', () => {
+  const origem = 'a\n\nb\n\nc',
+    destino = 'd\n\n';
+
+  const r = M.moverBlocos(origem, [1, 1, 1, -1, 3, 9, 0.5, '2', NaN], destino);
+
+  assert.deepEqual(json(r), { origem: 'a\n\nc', destino: 'd\n\nb', movidos: 1 });
+  semPerda({ origem, destino }, r, [1]);
+
+  assert.deepEqual(json(M.moverBlocos(origem, [7, -2], destino)), {
+    origem,
+    destino,
+    movidos: 0,
+  });
+  assert.deepEqual(json(M.moverBlocos(origem, [], destino)), {
+    origem,
+    destino,
+    movidos: 0,
+  });
+  assert.deepEqual(json(M.moverBlocos('', [0], destino)), {
+    origem: '',
+    destino,
+    movidos: 0,
+  });
+});
+
+test('indicesNoTexto: o parágrafo escolhido no texto que a tela via, achado no texto atual (mesmo índice e texto; senão o 1º não usado com o mesmo texto); o que sumiu fica de fora', () => {
+  assert.deepEqual(json(M.indicesNoTexto('a\n\nb\n\nc', 'a\n\nb\n\nc', [2, 0])), [0, 2]);
+  // a nuvem pôs um parágrafo antes: o "b" agora é o 2
+  assert.deepEqual(
+    json(M.indicesNoTexto('novo\n\na\n\nb\n\nc', 'a\n\nb\n\nc', [1])),
+    [2]
+  );
+  // repetidos: cada um uma vez; sumiu um, só o que ficou
+  assert.deepEqual(json(M.indicesNoTexto('x\n\nx', 'x\n\nx', [0, 1])), [0, 1]);
+  assert.deepEqual(json(M.indicesNoTexto('x', 'x\n\nx', [0, 1])), [0]);
+  assert.deepEqual(json(M.indicesNoTexto('y', 'x', [0])), []);
+  assert.deepEqual(json(M.indicesNoTexto('x', 'x', [5, -1])), []);
+});
+
+test('moverParagrafos: origem e destino mudam numa gravação só, o envio sobe as duas (cada uma inteira) e nada some nem duplica; mesma nota, nota que não existe e nada a mover não gravam', async () => {
+  const nuvem = { linhas: [] },
+    ap = aparelho(nuvem, {
+      local: [
+        nt('n1', 1, { texto: 'p1\n\np2 ★\n\np3' }),
+        nt('n2', 2, { texto: 'q' }),
+        nt('n3', 3, { texto: 'r' }),
+      ],
+      base: null,
+    });
+
+  await ap.enviar();
+  nuvem.pedidos = [];
+  ap.agendados.length = 0;
+
+  assert.equal(ap.moverParagrafos('n1', [0], 'n1'), 0);
+  assert.equal(ap.moverParagrafos('n1', [0], 'nada'), 0);
+  assert.equal(ap.moverParagrafos('nada', [0], 'n2'), 0);
+  assert.equal(ap.moverParagrafos('n1', [9, -1], 'n2'), 0);
+  assert.deepEqual(ap.agendados, []);
+  assert.equal(ap.notaPorId('n1').texto, 'p1\n\np2 ★\n\np3');
+
+  assert.equal(ap.moverParagrafos('n1', [2, 1, 1, 7], 'n2'), 2);
+  assert.equal(ap.notaPorId('n1').texto, 'p1');
+  assert.equal(ap.notaPorId('n2').texto, 'q\n\np2 ★\n\np3');
+  assert.equal(ap.notaPorId('n3').texto, 'r');
+  assert.deepEqual(ap.agendados, [800]);
+
+  await ap.enviar();
+  assert.deepEqual(json(nuvem.linhas.map((l) => [l.id, l.texto])), [
+    ['n1', 'p1'],
+    ['n2', 'q\n\np2 ★\n\np3'],
+    ['n3', 'r'],
+  ]);
+  // só as duas subiram, e a n3 não
+  assert.deepEqual(
+    json(
+      nuvem.pedidos
+        .filter((p) => p[0] === 'update')
+        .map((p) => p[3].find((f) => f[1] === 'id')[2])
+        .sort()
+    ),
+    ['n1', 'n2']
+  );
+  assert.equal(ap.temPendente(), false);
+});
+
+test('moverParagrafos com o texto que a tela via: a nota mudou por baixo da seleção → move o parágrafo escolhido pelo texto; o que sumiu não move nada', () => {
+  const ap = aparelho(
+    { linhas: [] },
+    { local: [nt('n1', 1, { texto: 'p0\n\np1\n\np2' }), nt('n2', 2)], base: null }
+  );
+
+  // a tela via "p1\n\np2" e escolheu o "p2" (índice 1); a nuvem pôs o "p0" antes
+  assert.equal(ap.moverParagrafos('n1', [1], 'n2', 'p1\n\np2'), 1);
+  assert.equal(ap.notaPorId('n1').texto, 'p0\n\np1');
+  assert.equal(ap.notaPorId('n2').texto, 'p2');
+
+  assert.equal(ap.moverParagrafos('n1', [0], 'n2', 'sumiu'), 0);
+  assert.equal(ap.notaPorId('n1').texto, 'p0\n\np1');
+  assert.equal(ap.notaPorId('n2').texto, 'p2');
+});
+
+test('Temp: nota de id fixo "temp" e título "Temp", criada uma vez; fora da lista e da ordem manual (moverNota a ignora, nota nova entra no topo da lista sem ela) e recebe parágrafos como qualquer nota', async () => {
+  const nuvem = { linhas: [] },
+    ap = aparelho(nuvem, { local: [nt('a', 1), nt('b', 2)], base: null });
+
+  const t = ap.criarTemp();
+
+  assert.equal(t.id, 'temp');
+  assert.equal(t.titulo, 'Temp');
+  assert.equal(t.texto, '');
+  assert.equal(ap.criarTemp(), ap.notaPorId('temp'));
+  assert.equal(ap.E.db.notas.filter((n) => n.id === 'temp').length, 1);
+  assert.deepEqual(json(ap.notasDaLista().map((n) => n.id)), ['a', 'b']);
+
+  // a ordem manual não a vê: a nota nova fica antes de "a", mover pelas posições da lista
+  const nova = ap.criarNota('Nova');
+
+  assert.deepEqual(json(ap.notasDaLista().map((n) => n.id)), [nova.id, 'a', 'b']);
+  assert.equal(ap.moverNota('temp', 0), false);
+  assert.equal(ap.moverNota('b', 0), true);
+  assert.deepEqual(json(ap.notasDaLista().map((n) => n.id)), ['b', nova.id, 'a']);
+  assert.ok(ap.notaPorId('temp'));
+
+  ap.salvarNota('temp', 'x\n\ny');
+  assert.equal(ap.moverParagrafos('temp', [0], 'a'), 1);
+  assert.equal(ap.notaPorId('temp').texto, 'y');
+  assert.equal(ap.notaPorId('a').texto, 'x');
+
+  await ap.enviar();
+  assert.deepEqual(
+    json(nuvem.linhas.filter((l) => l.id === 'temp').map((l) => [l.titulo, l.texto])),
+    [['Temp', 'y']]
+  );
+  assert.equal(ap.temPendente(), false);
 });
